@@ -169,6 +169,7 @@ int main(int argc, char **argv)
   if (!diff.empty())
     cout << "### UNIT TEST FAILED! :" << endl << diff << endl;
   //exit(0);
+
   ofstream ofs("/home/torsten/eclipse-workspace/C2/command_log.txt");
   Shared_ostream logfile(ofs);
   Game game;
