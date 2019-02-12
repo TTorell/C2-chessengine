@@ -1,0 +1,66 @@
+#ifndef _MOVELIST
+#define _MOVELIST
+#include <deque>
+//const int MAX = 1000;
+class Movelist
+{
+ protected:
+   enum
+    {
+      _LISTMAX = 1000
+    };
+    deque<Move*> _list;
+    int _listindex;
+  public:
+    Movelist();
+    Movelist(const Movelist&);
+    virtual ~Movelist();
+    Movelist& operator=(const Movelist&);
+    Move* first() const;
+    Move* next() const;
+    void into(Move* const newmove);
+    void into_as_first(Move* const newmove);
+    void into_as_last(Move* const newmove);
+    void out(Move* const rubbish);
+    int cardinal() const;
+    bool empty() const;
+    bool in_list(Move* m,int* index) const;
+    void clear();
+    Move* operator[](int) const;
+    virtual ostream& write(ostream& os) const;
+    friend ostream& operator<<(ostream& os, const Movelist& ml)
+    {
+      ml.write(os);
+      return os;
+    }
+};
+
+class Movelog: public Movelist
+{
+  protected:
+    col _col_to_start = white;
+
+  public:
+    Movelog() :
+        Movelist()
+    {
+      _col_to_start = white;
+    }
+
+    Movelog(col col_to_start) :
+        Movelist()
+    {
+      _col_to_start = col_to_start;
+    }
+
+
+    void set_col_to_start(col c)
+    {
+      _col_to_start = c;
+    }
+
+    virtual ostream& write(ostream& os) const;
+};
+
+#endif
+
