@@ -1,0 +1,10 @@
+*.[ao]
+.cproject
+.project
+.settings
+.tracecompass/
+Debug/
+Release/
+command_log.txt
+test/
+*~
