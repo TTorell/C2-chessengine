@@ -1,4 +1,12 @@
+#include "square.hpp"
+#include "piece.hpp"
 #include "chesstypes.hpp"
+
+namespace C2_chess
+{
+
+using std::endl;
+
 Square::Square() // Not available (private)
 {
   _piece = 0;
@@ -270,6 +278,15 @@ bool Square::same_diagonal(Square* const s) const
   return _position.same_diagonal(s->_position);
 }
 
+bool Square::contains(col c, piecetype pt)
+{
+  if (_piece && _piece->is(c, pt))
+  {
+    return true;
+  }
+  return false;
+}
+
 int Square::count_controls() const
 {
   // We have to consider if the square holds a piece.
@@ -288,4 +305,4 @@ int Square::count_controls() const
   // no piece (no protections only mixed threats)
   return (count_threats(white) - count_threats(black));
 }
-
+}

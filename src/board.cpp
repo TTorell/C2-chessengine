@@ -1,6 +1,27 @@
+#include <memory>
+#include <sstream>
+#include "board.hpp"
+#include "square.hpp"
+#include "piece.hpp"
+#include "current_time.hpp"
 #include "chesstypes.hpp"
+#include "chessfuncs.hpp"
 
-static CurrentTime current_time;
+extern "C"
+{
+#include <string.h>
+}
+
+namespace
+{
+C2_chess::CurrentTime current_time;
+}
+
+namespace C2_chess
+{
+
+using std::unique_ptr;
+using std::stringstream;
 
 // To reach level 15 is but a dream, but to be on the safe side ...
 Board Board::level_boards[15]; // definition, complete type
@@ -230,6 +251,31 @@ Move Board::get_last_move() const
   return _last_move;
 }
 
+Castling_state& Board::get_castling_state()
+{
+  return _castling_state;
+}
+
+void Board::set_castling_state(const Castling_state& cs)
+{
+  _castling_state = cs;
+}
+
+void Board::set_enpassant_square(int file, int rank)
+{
+  _en_passant_square = _file[file][rank];
+}
+
+void Board::set_mate(bool is_mate)
+{
+  _last_move.set_mate(is_mate);
+}
+
+void Board::set_stalemate(bool is_stalemate)
+{
+  _last_move.set_stalemate(is_stalemate);
+}
+
 ostream& Board::write(ostream& os, output_type wt, col from_perspective) const
 {
   switch (wt)
@@ -301,6 +347,12 @@ Shared_ostream& Board::write(Shared_ostream& os, output_type wt, col from_perspe
   stringstream ss;
   write(ss, wt, from_perspective);
   os << ss.str();
+  return os;
+}
+
+ostream& Board::write_possible_moves(ostream& os)
+{
+  os << _possible_moves << endl;
   return os;
 }
 
@@ -1167,7 +1219,9 @@ void Board::calculate_moves_K_not_threatened(col col_to_move)
   Square* s;
   unique_ptr<Move> m;
   for (int i = a; i <= h; i++)
+  {
     for (int j = 1; j <= 8; j++)
+    {
       if (_file[i][j]->get_piece())
       {
         if (_file[i][j]->get_piece()->get_color() == col_to_move)
@@ -1181,6 +1235,8 @@ void Board::calculate_moves_K_not_threatened(col col_to_move)
           }
         }
       }
+    }
+  }
 }
 
 void Board::check_put_a_piece_on_square(int i, int j, col col_to_move)
@@ -1272,6 +1328,48 @@ void Board::check_rook_or_queen(Square* __restrict__ threat_square, Square* __re
   }
 }
 
+void Board::check_if_threat_can_be_taken_en_passant(col col_to_move, Square* threat_square)
+{
+  unique_ptr<Move> m;
+  int rank_increment = (col_to_move == white) ? 1 : -1;
+  int ep_file = _en_passant_square->get_fileindex();
+  int ep_rank = _en_passant_square->get_rankindex();
+  int thr_file = threat_square->get_fileindex();
+  int thr_rank = threat_square->get_rankindex();
+  if (ep_rank == thr_rank + 1)
+  {
+    if (ep_file == thr_file && ep_rank == thr_rank + rank_increment)
+    {
+      int file = thr_file - 1;
+      if (allowed(file, thr_rank))
+      {
+        Square* s = _file[file][thr_rank];
+        if (s->contains(col_to_move, Pawn))
+        {
+          if (s->in_movelist(_en_passant_square))
+          {
+            unique_ptr<Move> m(new Move(_file[file][thr_rank], _en_passant_square));
+            _possible_moves.into_as_first(m.get());
+          }
+        }
+      }
+      file = thr_file + 1;
+      if (allowed(file, thr_rank))
+      {
+        Square* s = _file[file][thr_rank];
+        if (s->contains(col_to_move, Pawn))
+        {
+          if (s->in_movelist(_en_passant_square))
+          {
+            m.reset(new Move(_file[file][thr_rank], _en_passant_square));
+            _possible_moves.into_as_first(m.get());
+          }
+        }
+      }
+    }
+  }
+}
+
 void Board::calculate_moves(col col_to_move)
 {
   uint64_t nsec_start = current_time.nanoseconds();
@@ -1331,33 +1429,50 @@ void Board::calculate_moves(col col_to_move)
         temp_square = threat_square->next_threat();
       }
 
-      // TO DO:Attention!!! Not implemented!!!
-      //If the threatening piece is a pawn, then
-      // in some very rare cases that pawn can be
-      // removed with e.p.
-
-      if (threat_piece == 0)
+      if (_en_passant_square)
       {
-        cerr << "Error: threat_piece undefined" << endl;
-      }
+        switch (col_to_move)
+        {
+          case white:
+            if (kings_square->get_rankindex() == 4 && threat_piece->is(Pawn)) // we know it's black
+            {
+              check_if_threat_can_be_taken_en_passant(col_to_move, threat_square);
+            }
+            break;
+          case black:
+            if (kings_square->get_rankindex() == 5 && threat_piece->is(Pawn)) // we know it's black
+            {
+              check_if_threat_can_be_taken_en_passant(col_to_move, threat_square);
+            }
+            break;
+          default:
+            cerr << "Error: unknown color" << endl;
+            break;
+        }
 
-      // Can we put some piece in between threat-piece and our king?
-      switch (threat_piece->get_type())
-      {
-        case Bishop:
-          check_bishop_or_queen(threat_square, kings_square, col_to_move);
-          break;
-        case Rook:
-          check_rook_or_queen(threat_square, kings_square, col_to_move);
-          break;
-        case Queen:
-          check_bishop_or_queen(threat_square, kings_square, col_to_move);
-          check_rook_or_queen(threat_square, kings_square, col_to_move);
-          break;
-        default:
-          // If it's a Knight or a pawn that threatens our king, then we can't
-          // Put anything in between.
-          break;
+        if (threat_piece == 0)
+        {
+          cerr << "Error: threat_piece undefined" << endl;
+        }
+
+        // Can we put some piece in between threat-piece and our king?
+        switch (threat_piece->get_type())
+        {
+          case Bishop:
+            check_bishop_or_queen(threat_square, kings_square, col_to_move);
+            break;
+          case Rook:
+            check_rook_or_queen(threat_square, kings_square, col_to_move);
+            break;
+          case Queen:
+            check_bishop_or_queen(threat_square, kings_square, col_to_move);
+            check_rook_or_queen(threat_square, kings_square, col_to_move);
+            break;
+          default:
+            // If it's a Knight or a pawn that threatens our king, then we can't
+            // Put anything in between.
+            break;
+        }
       }
     }
   }
@@ -1370,19 +1485,19 @@ void Board::calculate_moves(col col_to_move)
   // What about _list_index in into as first? increment?
 
   // Duplicate "promotion moves" for all possible promotions (Q,R,B,N)
-  Move* m = _possible_moves.first();
-  while (m)
+  Move* mo = _possible_moves.first();
+  while (mo)
   {
-    if (m->get_promotion() && m->get_promotion_piece_type() == Undefined)
+    if (mo->get_promotion() && mo->get_promotion_piece_type() == Undefined)
     {
-      require(col_to_move == white ? (m->get_from_rankindex() == 7) : (m->get_from_rankindex() == 2),
+      require(col_to_move == white ? (mo->get_from_rankindex() == 7) : (mo->get_from_rankindex() == 2),
       __FILE__,
               __func__,
               __LINE__);
-      _possible_moves.out(m);
-      fix_promotion_move(m);
+      _possible_moves.out(mo);
+      fix_promotion_move(mo);
     }
-    m = _possible_moves.next();
+    mo = _possible_moves.next();
   }
   uint64_t nsec_stop = current_time.nanoseconds();
   int timediff = nsec_stop - nsec_start;
@@ -1391,45 +1506,13 @@ void Board::calculate_moves(col col_to_move)
 
 void Board::fix_promotion_move(Move* m)
 {
-  unique_ptr<Move> um(new Move(m->get_from(),
-                              m->get_to(),
-                              m->get_piece_type(),
-                              m->get_take(),
-                              m->get_target_piece_type(),
-                              false,
-                              true,
-                              Queen,
-                              false));
+  unique_ptr < Move > um(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_take(), m->get_target_piece_type(), false, true, Queen, false));
   _possible_moves.into(um.get());
-  um.reset(new Move(m->get_from(),
-                    m->get_to(),
-                    m->get_piece_type(),
-                    m->get_take(),
-                    m->get_target_piece_type(),
-                    false,
-                    true,
-                    Rook,
-                    false));
+  um.reset(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_take(), m->get_target_piece_type(), false, true, Rook, false));
   _possible_moves.into(um.get());
-  um.reset(new Move(m->get_from(),
-                    m->get_to(),
-                    m->get_piece_type(),
-                    m->get_take(),
-                    m->get_target_piece_type(),
-                    false,
-                    true,
-                    Bishop,
-                    false));
+  um.reset(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_take(), m->get_target_piece_type(), false, true, Bishop, false));
   _possible_moves.into(um.get());
-  um.reset(new Move(m->get_from(),
-                    m->get_to(),
-                    m->get_piece_type(),
-                    m->get_take(),
-                    m->get_target_piece_type(),
-                    false,
-                    true,
-                    Knight,
-                    false));
+  um.reset(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_take(), m->get_target_piece_type(), false, true, Knight, false));
   _possible_moves.into(um.get());
 }
 
@@ -1556,7 +1639,7 @@ int Board::make_move(int i, int& move_no, col col_to_move, bool silent)
       _last_move = *m;
       // Check if the move is a check and init the board for the opponents
       // next move.
-      clear(false); // Clear board but don't remove pieces
+      clear(false);      // Clear board but don't remove pieces
       init(other_col);
       if (_king_square[other_col]->count_threats(col_to_move))
         _last_move.set_check(true);
@@ -1571,7 +1654,7 @@ int Board::make_move(int i, int& move_no, col col_to_move, bool silent)
 
 int Board::make_move(player_type pt, int& move_no, col col_to_move)
 {
-  //cout << "make_move player" << endl;
+  unique_ptr < Move > m;
   if (pt != human)
   {
     cout << "Error: Using wrong make_move() method for computer." << endl;
@@ -1716,17 +1799,14 @@ int Board::make_move(player_type pt, int& move_no, col col_to_move)
         if (_en_passant_square->get_position() == to)
           en_passant = true;
     }
-    //	Move is OK,make it
-    Move* m = new Move(from, to, pt, take, target_pt, en_passant, promotion, promotion_pt, check);
+    m.reset(new Move(from, to, pt, take, target_pt, en_passant, promotion, promotion_pt, check));
+    // find index of move
     int move_index;
-    if (!_possible_moves.in_list(m, &move_index))
+    if (!_possible_moves.in_list(m.get(), &move_index))
     {
-      delete m;
       continue;
     }
-    // find index of move
-    delete m;
-
+    //  Move is OK,make it
     return make_move(move_index, move_no, col_to_move, true);
   } // while not read
 }
@@ -1957,7 +2037,7 @@ float Board::max(int level, int move_no, float alpha, float beta, int& best_move
           //clean up and prune
           //cout << "pruning in max" << endl;
           //level_boards[level].clear();
-          return max_value; // same as tmp_value
+          return max_value;          // same as tmp_value
         }
         if (tmp_value > alpha)
         {
@@ -2017,5 +2097,6 @@ float Board::min(int level, int move_no, float alpha, float beta, int& best_move
     }
     return min_value;
   }
+}
 }
 

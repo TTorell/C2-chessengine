@@ -1,4 +1,11 @@
+#include "piece.hpp"
 #include "chesstypes.hpp"
+
+namespace C2_chess
+{
+
+using std::endl;
+using std::cerr;
 
 Piece::Piece():_type(Undefined),_color(white)
 {
@@ -26,6 +33,10 @@ bool Piece::is(col c, piecetype pt) const
   return (_color == c && _type == pt);
 }
 
+bool Piece::is(piecetype pt) const
+{
+  return (_type == pt);
+}
 
 Piece& Piece::operator=(const Piece& p)
 {
@@ -105,4 +116,5 @@ ostream& operator<<(ostream& os, const Piece& p)
             default: os << '?';
 	}
 	return os;
+}
 }

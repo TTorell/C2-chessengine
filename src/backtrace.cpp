@@ -14,6 +14,9 @@ extern "C"
 #include <unistd.h>
 }
 
+namespace C2_chess
+{
+
 Backtrace::Backtrace()
 {
 }
@@ -108,4 +111,5 @@ void Backtrace::print() const
 ostream& operator<<(ostream& os, const Backtrace& bt)
 {
   return bt.print(os);
+}
 }

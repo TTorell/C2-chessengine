@@ -1,4 +1,10 @@
-#include "chesstypes.hpp"
+#include <iostream>
+#include "castling_state.hpp"
+
+using namespace std;
+
+namespace C2_chess
+{
 
 ostream& operator<<(ostream& os, const Castling_state& cm)
 {
@@ -46,4 +52,4 @@ istream& operator>>(istream& is, Castling_state& cm)
 
   return is;
 }
-
+}

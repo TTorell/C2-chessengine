@@ -1,6 +1,14 @@
 #ifndef _MOVE
 #define _MOVE
+
+#include "position.hpp"
+#include "chesstypes.hpp"
+
 using namespace std;
+
+namespace C2_chess
+{
+
 class Move
 {
   protected:
@@ -154,7 +162,6 @@ class Move
     string bestmove_engine_style();
     friend ostream& operator<<(ostream& os, const Move& m);
 };
-
-
+}
 #endif
 

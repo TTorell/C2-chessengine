@@ -1,4 +1,10 @@
-#include "chesstypes.hpp"
+#include "squarelist.hpp"
+#include "chessfuncs.hpp"
+
+using namespace std;
+
+namespace C2_chess
+{
 
 Squarelist::Squarelist() :
     _no_of_elements(0),
@@ -39,8 +45,8 @@ void Squarelist::into(Square* const newsquare)
   {
     cerr << "squarelist full" << endl;
     cerr << _no_of_elements << " " << SQUARELISTMAX << endl;
-    for (int i = 0; i < _no_of_elements; i++)
-      _list[i]->write_name(cerr);
+//    for (int i = 0; i < _no_of_elements; i++)
+//      _list[i]->write_name(cerr);
     require(false, __FILE__, __func__, __LINE__);
   }
 }
@@ -54,7 +60,7 @@ void Squarelist::out(Square* const rubbish)
     {
       found = true;
       _no_of_elements--;
-      // The _listindex variable will be set to point to the preceeding
+      // The _listindex variable will be set to point to the preceding
       // element (decreased by 1) if the element to be removed (rubbish)
       // is placed before the object being pointed out by _listindex,
       // or if _listindex actually points to the rubbish-element
@@ -106,4 +112,5 @@ Square* Squarelist::operator[](int i) const
     cerr << "index out of bound error in Squarelist[]" << endl;
     return (Square*) _list[i];
   }
+}
 }

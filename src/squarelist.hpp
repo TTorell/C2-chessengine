@@ -1,6 +1,13 @@
 #ifndef SQUARELIST
 #define SQUARELIST
+
+namespace C2_chess
+{
+
+class Square;
+
 const int SQUARELISTMAX=30;
+
 class Squarelist
 {
 	protected:
@@ -8,7 +15,7 @@ class Squarelist
 		int _no_of_elements;
 		int _listindex; //Changes to _listindex is not considered
 							 //to change the object status,
-							 //So memberfunctions can change _listindex but still
+							 //So member functions can change _listindex but still
 							 //be declared const. See first() and next().
 	public:
 		Squarelist();
@@ -24,5 +31,6 @@ class Squarelist
 		void clear();
 		Square* operator[](int) const;
 };
+}
 #endif
 

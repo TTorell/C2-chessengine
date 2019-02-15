@@ -1,5 +1,18 @@
+#include <sstream>
+#include "game.hpp"
+#include "current_time.hpp"
 #include "chesstypes.hpp"
-static CurrentTime current_time;
+#include "chessfuncs.hpp"
+
+namespace
+{
+C2_chess::CurrentTime current_time;
+}
+
+namespace C2_chess
+{
+
+using std::stringstream;
 
 Game::Game() :
     _move_log(), _chessboard(), _player1(human, white, _chessboard), _player2(computer, black, _chessboard), _moveno(1), _col_to_move(white), _score(0)
@@ -27,6 +40,89 @@ Game::Game(col c, player_type pt1, player_type pt2) :
 
 Game::~Game()
 {
+}
+
+void Game::init()
+{
+  _chessboard.init(_col_to_move);
+  _chessboard.calculate_moves(_col_to_move);
+}
+
+void Game::clear_chessboard()
+{
+  _chessboard.clear();
+}
+
+void Game::setup_pieces()
+{
+  _chessboard.setup_pieces();
+}
+
+col Game::get_col_to_move() const
+{
+  return _col_to_move;
+}
+
+void Game::set_col_to_move(col c)
+{
+  _col_to_move = c;
+}
+
+void Game::set_col_to_start(col c)
+{
+  _move_log.set_col_to_start(c);
+}
+
+void Game::set_castling_state(const Castling_state &cs)
+{
+  _chessboard.set_castling_state(cs);
+}
+
+void Game::put_piece(Piece* const p, int file, int rank)
+{
+  _chessboard.put_piece(p, file, rank);
+}
+
+void Game::set_en_passant_square(int file, int rank)
+{
+  _chessboard.set_enpassant_square(file, rank);
+}
+
+void Game::set_half_move_counter(int half_move_counter)
+{
+  _half_move_counter = half_move_counter;
+}
+
+void Game::set_moveno(int moveno)
+{
+  _moveno = moveno;
+}
+
+ostream& Game::write_chessboard(ostream& os, output_type ot, col from_perspective) const
+{
+  _chessboard.write(os, ot, from_perspective);
+  return os;
+}
+
+ostream& Game::write_diagram(ostream& os) const
+{
+  if (_player[white]->get_type() == human)
+    _chessboard.write(os, cmd_line_diagram, white) << endl;
+  else if (_player[black]->get_type() == human)
+    _chessboard.write(os, cmd_line_diagram, black) << endl;
+  else
+    // The computer is playing itself
+    _chessboard.write(os, cmd_line_diagram, white) << endl;
+  return os;
+}
+
+Shared_ostream& Game::write_diagram(Shared_ostream& os) const
+{
+  stringstream ss;
+  write_diagram(ss);
+  ss.flush();
+  os << ss.str();
+  return os;
 }
 
 void Game::start()
@@ -134,4 +230,4 @@ Move Game::engine_go(Shared_ostream& logfile)
   }
   return _chessboard.get_last_move();
 }
-
+}

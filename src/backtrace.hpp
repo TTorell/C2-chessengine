@@ -10,6 +10,8 @@
 using namespace std;
 
 #include <iostream>
+namespace C2_chess
+{
 
 class Backtrace
 {
@@ -21,5 +23,5 @@ class Backtrace
     ostream& print(ostream& os) const;
     void print() const;
 };
-
+}
 #endif /* SRC_BACKTRACE_HPP_ */

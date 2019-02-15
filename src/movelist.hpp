@@ -1,7 +1,19 @@
 #ifndef _MOVELIST
 #define _MOVELIST
+
+#include <iostream>
 #include <deque>
-//const int MAX = 1000;
+#include "chesstypes.hpp"
+
+namespace C2_chess
+{
+
+using std::ostream;
+using std::deque;
+
+class Move;
+class Square;
+
 class Movelist
 {
  protected:
@@ -61,6 +73,6 @@ class Movelog: public Movelist
 
     virtual ostream& write(ostream& os) const;
 };
-
+}
 #endif
 

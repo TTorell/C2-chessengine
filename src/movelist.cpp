@@ -1,7 +1,14 @@
-#include "chesstypes.hpp"
+#include <iomanip>
 #include <deque>
 #include <iterator>
-Movelist::Movelist() :
+#include "movelist.hpp"
+#include "move.hpp"
+#include "backtrace.hpp"
+
+namespace C2_chess
+{
+
+  Movelist::Movelist() :
     _listindex(0)
 {
 }
@@ -177,4 +184,5 @@ ostream & Movelog::write(ostream & os) const
     }
   }
   return os;
+}
 }

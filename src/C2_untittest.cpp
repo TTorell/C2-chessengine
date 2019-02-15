@@ -4,7 +4,11 @@
  *  Created on: 29 jan. 2019
  *      Author: torsten
  */
-#include "chesstypes.hpp"
+#include "C2_unittest.hpp"
+#include "movelist.hpp"
+#include "move.hpp"
+namespace C2_chess
+{
 
 int C2_unit_test::main_test(ostream& os)
 {
@@ -173,4 +177,5 @@ int C2_unit_test::main_test(ostream& os)
 
 
   return 0;
+}
 }

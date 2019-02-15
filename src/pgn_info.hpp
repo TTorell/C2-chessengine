@@ -8,6 +8,8 @@
 #ifndef _PGN_INFO
 #define _PGN_INFO
 
+namespace C2_chess
+{
 
 class PGN_info
 {
@@ -103,5 +105,5 @@ class PGN_info
       return os;
     }
 };
-
+}
 #endif /* _PGN_INFO */

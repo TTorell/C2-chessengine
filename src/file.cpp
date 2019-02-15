@@ -1,4 +1,10 @@
+#include "file.hpp"
+#include "square.hpp"
 #include "chesstypes.hpp"
+#include "chessfuncs.hpp"
+
+namespace C2_chess
+{
 
 File::File() :
     _name('?')
@@ -34,7 +40,7 @@ File::~File()
 
 Square*& File::operator[](int index) const
 {
-  chess_funcs::require(index > 0 && index < 9,
+  require(index > 0 && index < 9,
   __FILE__,
                        __FUNCTION__,
                        __LINE__);
@@ -56,4 +62,4 @@ ostream& operator<<(ostream& os, const File& f)
   os << f._name;
   return os;
 }
-
+}

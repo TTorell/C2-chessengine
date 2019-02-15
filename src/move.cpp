@@ -1,45 +1,24 @@
+#include "move.hpp"
+#include "square.hpp"
+#include "piece.hpp"
+#include "backtrace.hpp"
 #include "chesstypes.hpp"
+#include "chessfuncs.hpp"
+
+namespace C2_chess
+{
 
 Move::Move() :
-    _from(f, 6),
-    _to(g, 8),
-    _piece_type(Knight),
-    _take(false),
-    _target_piece_type(Pawn),
-    _en_passant(false),
-    _promotion(false),
-    _promotion_piece_type(Undefined),
-    _check(false),
-    _mate(false),
-    _stalemate(false)
+    _from(f, 6), _to(g, 8), _piece_type(Knight), _take(false), _target_piece_type(Pawn), _en_passant(false), _promotion(false), _promotion_piece_type(Undefined), _check(false),
+    _mate(false), _stalemate(false)
 {
 }
 
-Move::Move(const Square* from,
-           const Square* to,
-           piecetype pt,
-           bool take,
-           piecetype target_pt,
-           bool ep,
-           bool promotion,
-           piecetype promotion_pt,
-           bool check,
-           bool mate,
+Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecetype target_pt, bool ep, bool promotion, piecetype promotion_pt, bool check, bool mate,
            bool stalemate) :
-    _from(from->get_position()),
-    _to(to->get_position()),
-    _piece_type(pt),
-    _take(take),
-    _target_piece_type(target_pt),
-    _en_passant(ep),
-    _promotion(promotion),
-    _promotion_piece_type(promotion_pt),
-    _check(check),
-    _mate(mate),
-    _stalemate(stalemate)
+    _from(from->get_position()), _to(to->get_position()), _piece_type(pt), _take(take), _target_piece_type(target_pt), _en_passant(ep), _promotion(promotion),
+    _promotion_piece_type(promotion_pt), _check(check), _mate(mate), _stalemate(stalemate)
 {
-  //from->write_name(cout);
-  //to->write_name(cout);
   Piece* p = from->get_piece();
   require_m(p,
   __FILE__,
@@ -222,60 +201,24 @@ Move::Move(const Square* from,
   }
 }
 
-Move::Move(const Position& from,
-           const Position& to,
-           piecetype pt,
-           bool take,
-           piecetype target_pt,
-           bool ep,
-           bool promotion,
-           piecetype promotion_pt,
-           bool is_check,
-           bool is_mate,
+Move::Move(const Position& from, const Position& to, piecetype pt, bool take, piecetype target_pt, bool ep, bool promotion, piecetype promotion_pt, bool is_check, bool is_mate,
            bool is_stalemate) :
-    _from(from),
-    _to(to),
-    _piece_type(pt),
-    _take(take),
-    _target_piece_type(target_pt),
-    _en_passant(ep),
-    _promotion(promotion),
-    _promotion_piece_type(promotion_pt),
-    _check(is_check),
-    _mate(is_mate),
-    _stalemate(is_stalemate)
+    _from(from), _to(to), _piece_type(pt), _take(take), _target_piece_type(target_pt), _en_passant(ep), _promotion(promotion), _promotion_piece_type(promotion_pt),
+    _check(is_check), _mate(is_mate), _stalemate(is_stalemate)
 {
   //int file_diff=abs(_to.get_file()-_from.get_file());
   //int rank_diff=abs(_to.get_file()-_from.get_file());
 }
 
 Move::Move(const Move& m) :
-    _from(m._from),
-    _to(m._to),
-    _piece_type(m._piece_type),
-    _take(m._take),
-    _target_piece_type(m._target_piece_type),
-    _en_passant(m._en_passant),
-    _promotion(m._promotion),
-    _promotion_piece_type(m._promotion_piece_type),
-    _check(m._check),
-    _mate(m._mate),
-    _stalemate(m._stalemate)
+    _from(m._from), _to(m._to), _piece_type(m._piece_type), _take(m._take), _target_piece_type(m._target_piece_type), _en_passant(m._en_passant), _promotion(m._promotion),
+    _promotion_piece_type(m._promotion_piece_type), _check(m._check), _mate(m._mate), _stalemate(m._stalemate)
 {
 }
 
 Move::Move(Move* const m) :
-    _from((*m)._from),
-    _to((*m)._to),
-    _piece_type((*m)._piece_type),
-    _take((*m)._take),
-    _target_piece_type((*m)._target_piece_type),
-    _en_passant((*m)._en_passant),
-    _promotion((*m)._promotion),
-    _promotion_piece_type((*m)._promotion_piece_type),
-    _check((*m)._check),
-    _mate((*m)._mate),
-    _stalemate((*m)._stalemate)
+    _from((*m)._from), _to((*m)._to), _piece_type((*m)._piece_type), _take((*m)._take), _target_piece_type((*m)._target_piece_type), _en_passant((*m)._en_passant),
+    _promotion((*m)._promotion), _promotion_piece_type((*m)._promotion_piece_type), _check((*m)._check), _mate((*m)._mate), _stalemate((*m)._stalemate)
 {
 }
 
@@ -317,8 +260,7 @@ ostream& operator<<(ostream& os, const Move& m)
   {
     case King:
     {
-      if ((m._to.get_file() - m._from.get_file()) == 2 || (m._to.get_file() - m._from.get_file())
-          == -2)
+      if ((m._to.get_file() - m._from.get_file()) == 2 || (m._to.get_file() - m._from.get_file()) == -2)
       {
         if (m._to.get_file() == g)
           os << "0-0";
@@ -377,6 +319,4 @@ ostream& operator<<(ostream& os, const Move& m)
     os << " stalemate";
   return os;
 }
-
-
-
+}

@@ -1,6 +1,14 @@
 #ifndef _SQUARE
 #define _SQUARE
+
+#include "squarelist.hpp"
 #include "position.hpp"
+#include "chesstypes.hpp"
+
+namespace C2_chess
+{
+class Piece;
+
 class Square {
   protected:
     Piece* _piece;
@@ -22,9 +30,6 @@ class Square {
     ~Square();
     Square& operator=(const Square& s);
     void clear(bool delete_piece = true);
-    //void belong_to_file(File&);
-    //void belong_to_rank(Rank&);
-    //void belong_to_diagonals(Diagonal&,Diagonal&);
     void contain_piece(Piece*);
     bool contains_piece(col c, piecetype pt) const;
     Piece* release_piece();
@@ -37,10 +42,6 @@ class Square {
     {
       return _colour;
     }
-    //File* get_file() const {return _file;};
-    //Rank* get_rank() const {return _rank;};
-    //Diagonal* get_diagonal1() const {return _diagonal[1];};
-    //Diagonal* get_diagonal2() const {return _diagonal[2];};
     void into_threat(Square* const);
     void into_protection(Square* const);
     void into_move(Square* const);
@@ -88,6 +89,7 @@ class Square {
     bool same_file(Square* const s) const;
     bool same_rank(Square* const s) const;
     bool same_diagonal(Square* const s) const;
+    bool contains(col c, piecetype pt);
     int count_controls() const;
     Position get_position() const
     {
@@ -106,5 +108,6 @@ class Square {
       return _position;
     }
 };
+}
 #endif
 

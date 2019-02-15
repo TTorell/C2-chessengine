@@ -1,4 +1,13 @@
+#include "position.hpp"
 #include "chesstypes.hpp"
+#include "chessfuncs.hpp"
+
+namespace C2_chess
+{
+
+using std::cerr;
+using std::endl;
+
 Position::Position() :
     _file(a), _rank(1)
 {
@@ -28,6 +37,48 @@ Position& Position::operator=(const Position& p)
 bool Position::operator==(const Position& p) const
 {
   return _file == p._file && _rank == p._rank;
+}
+
+int Position::get_file() const
+{
+  return _file;
+};
+
+int Position::get_rank() const
+{
+  return _rank;
+}
+
+bool Position::set_file(char filechar)
+{
+  _file=filechar-'a'; return (filechar >='a' && filechar <='h');
+}
+
+bool Position::set_file(int fileindex)
+{
+  _file=fileindex;
+  return (fileindex >=a && fileindex <=h);
+}
+
+bool Position::set_rank(char rankchar)
+{
+  _rank=rankchar + 1 - '1';
+  return (rankchar >='1' && rankchar <='8');
+}
+
+bool Position::set_rank(int rankindex)
+{
+  _rank=rankindex; return (rankindex >=1 && rankindex <=8);
+}
+
+bool Position::same_file(const Position& p) const
+{
+  return _file==p._file;
+}
+
+bool Position::same_rank(const Position& p) const
+{
+  return _rank==p._rank;
 }
 
 ostream& operator<<(ostream& os, const Position& p)
@@ -70,7 +121,7 @@ bool Position::same_diagonal(const Position& p) const
 {
   return abs(_file - p._file) == abs(_rank - p._rank);
 }
-
+}
 /*bool Position::same_file(const Square& s) const
  {
  return _file==s.get_position()._file;

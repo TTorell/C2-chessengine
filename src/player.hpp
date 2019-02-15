@@ -1,7 +1,13 @@
 #ifndef _PLAYER
 #define _PLAYER
+
 #include "chesstypes.hpp"
-#include <random>
+
+namespace C2_chess
+{
+
+class Board;
+
 class Player
 {
   protected:
@@ -20,26 +26,10 @@ class Player
                     bool& playing,
                     const int& search_level,
                     bool use_pruning);
-    col get_colour()
-    {
-      return _colour;
-    }
-    ;
-    void set_colour(col tc)
-    {
-      _colour = tc;
-      _other_col = tc == white ? black : white;
-    }
-    ;
-    player_type get_type()
-    {
-      return _type;
-    }
-    ;
-    void set_type(player_type t)
-    {
-      _type = t;
-    }
-    ;
+    col get_colour();
+    void set_colour(col tc);
+    player_type get_type();
+    void set_type(player_type t);
 };
+}
 #endif

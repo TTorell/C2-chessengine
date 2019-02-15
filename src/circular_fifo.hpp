@@ -11,8 +11,11 @@
 #include <mutex>
 #include <iostream>
 using namespace std;
-class Circular_fifo;
+
 static const int size = 256;
+
+namespace C2_chess
+{
 
 class Circular_fifo {
   protected:
@@ -100,6 +103,6 @@ class Shared_ostream {
     }
 
 };
-
+}
 
 #endif /* CIRCULAR_FIFO_HPP_ */

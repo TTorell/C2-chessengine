@@ -1,5 +1,38 @@
-#include "chesstypes.hpp"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <regex>
+#include "position_reader.hpp"
+#include "game.hpp"
+#include "piece.hpp"
+#include "chessfuncs.hpp"
 
+namespace C2_chess
+{
+
+  using std::istringstream;
+  using std::regex;
+
+Position_reader::Position_reader(Game& game) :
+    _game(game)
+{
+}
+
+FEN_reader::FEN_reader(Game& game) :
+    Position_reader(game)
+{
+}
+
+FEN_reader::~FEN_reader()
+{
+}
+
+int read_position(const string& inputfile);
+istream& FEN_reader::read_position(istream& is)
+{
+  return is;
+}
 
 const string FEN_reader::get_infotext(const string& line)
 {
@@ -230,4 +263,4 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
   _game.set_moveno(move_number);
   return 0;
 }
-
+}

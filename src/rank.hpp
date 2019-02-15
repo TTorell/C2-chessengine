@@ -1,5 +1,15 @@
 #ifndef _RANK
 #define _RANK
+
+#include <iostream>
+
+namespace C2_chess
+{
+
+class Square;
+
+using std::ostream;
+
 class Rank
 {
 	protected:
@@ -17,4 +27,5 @@ class Rank
 		Square*& operator[](int) const;
 		friend ostream& operator<<(ostream& os, const Rank& m);
 };
+}
 #endif

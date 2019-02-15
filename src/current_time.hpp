@@ -10,6 +10,8 @@
 
 #include <chrono>
 #include <cstdint>
+namespace C2_chess
+{
 
 class CurrentTime
 {
@@ -32,6 +34,6 @@ class CurrentTime
       return std::chrono::duration_cast<std::chrono::nanoseconds>(m_clock.now().time_since_epoch()).count();
     };
 };
-
+}
 #endif  /* CURRENT_TIME_H */
 

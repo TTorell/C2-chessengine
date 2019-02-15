@@ -1,4 +1,9 @@
+#include "rank.hpp"
 #include "chesstypes.hpp"
+#include "chessfuncs.hpp"
+
+namespace C2_chess
+{
 
 Rank::Rank(char name):_name(name)
 {
@@ -22,7 +27,7 @@ Rank::~Rank()
 
 Square*& Rank::operator[](int index) const
 {
-    chess_funcs::require(index >= a && index <= h, __FILE__, __FUNCTION__, __LINE__);
+    require(index >= a && index <= h, __FILE__, __FUNCTION__, __LINE__);
 	return (Square*&)_file[index];
 }
 
@@ -38,4 +43,5 @@ ostream& operator<<(ostream& os, const Rank& r)
 {
 	os << r._name;
 	return os;
+}
 }

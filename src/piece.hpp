@@ -1,5 +1,14 @@
 #ifndef _PIECE
 #define _PIECE
+
+#include <iostream>
+#include "chesstypes.hpp"
+
+namespace C2_chess
+{
+
+using std::ostream;
+
 class Piece
 {
 	protected:
@@ -13,6 +22,7 @@ class Piece
 		~Piece();
 		bool operator==(const Piece& p) const;
 		bool is(col c, piecetype pt) const;
+        bool is(piecetype pt) const;
 		Piece& operator=(const Piece& p);
 		piecetype get_type() const {return _type;};
 		col get_color() const {return _color;};
@@ -22,4 +32,5 @@ class Piece
         ostream& write_diagram_style(ostream& os) const;
       friend ostream& operator<<(ostream& os, const Piece& m);
 };
+}
 #endif

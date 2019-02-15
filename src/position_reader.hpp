@@ -1,16 +1,21 @@
 #ifndef _POSITION_READER
 #define _POSITION_READER
 
-class Position_reader
+#include <string>
+
+using namespace std;
+
+namespace C2_chess
 {
+
+class Game;
+
+class Position_reader {
   protected:
     Game& _game;
 
   public:
-    Position_reader(Game& game) :
-        _game(game)
-    {
-    }
+    Position_reader(Game& game);
 
     virtual int read_position(const string& inputfile) = 0;
 
@@ -21,29 +26,18 @@ class Position_reader
     }
 };
 
-class FEN_reader: public Position_reader
-{
+class FEN_reader: public Position_reader {
   public:
-    FEN_reader(Game& game) :
-        Position_reader(game)
-    {
-    }
-
-    ~FEN_reader()
-    {
-    }
+    FEN_reader(Game& game);
+    ~FEN_reader();
 
     int parse_FEN_string(const string& FEN_string) const;
     int read_position(const string& inputfile);
-    istream& read_position(istream& is)
-    {
-      return is;
-    }
-
+    istream& read_position(istream& is);
   private:
     const string get_infotext(const string& line);
     void parse_string();
 
 };
-
+}
 #endif

@@ -1,5 +1,15 @@
 #ifndef _FIL
 #define _FIL
+
+#include <iostream>
+
+namespace C2_chess
+{
+
+class Square;
+
+using std::ostream;
+
 class File
 {
 	protected:
@@ -16,4 +26,5 @@ class File
 		Square*& operator[](int) const;
 		friend ostream& operator<<(ostream& os, const File& m);
 };
+}
 #endif

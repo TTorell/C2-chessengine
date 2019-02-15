@@ -1,14 +1,24 @@
-#include "chesstypes.hpp"
 #include <random>
+#include "chesstypes.hpp"
+#include "player.hpp"
+#include "board.hpp"
+
 //    std::random_device rd; // obtain a random number from hardware
 //    std::mt19937 eng(rd()); // seed the generator
 //    std::uniform_int_distribution<> distr(25, 63); // define the range
 //    for(int n=0; n<40; ++n)
 //       std::cout << distr(eng) << ' '; // generate numbers
 
+namespace
+{
 // random generator
-static std::random_device rd; // obtain a random number from hardware
-static std::mt19937 eng(rd()); // seed the generator engine
+std::random_device rd; // obtain a random number from hardware
+std::mt19937 eng(rd()); // seed the generator engine
+}
+
+namespace C2_chess
+{
+
 
 Player::Player(player_type p, col c, Board& bo) : _chessboard(bo),
     _type(p), _colour(c), _other_col(c == white ? black : white)
@@ -18,6 +28,27 @@ Player::Player(player_type p, col c, Board& bo) : _chessboard(bo),
 
 Player::~Player()
 {
+}
+
+col Player::get_colour()
+{
+  return _colour;
+}
+
+void Player::set_colour(col tc)
+{
+  _colour = tc;
+  _other_col = tc == white ? black : white;
+}
+
+player_type Player::get_type()
+{
+  return _type;
+}
+
+void Player::set_type(player_type t)
+{
+  _type = t;
 }
 
 //bool Player::mate_in(const int& n, const Board& board, int k, int& make_move_no)
@@ -112,6 +143,6 @@ int Player::make_a_move(int& move_no, float& score, bool& playing, const int& ma
     return _chessboard.make_move(best_move_index, move_no, _colour);
   }
 }
-
+}
 
 

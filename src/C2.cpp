@@ -1,11 +1,20 @@
-#include "chesstypes.hpp"
+#include <iostream>
+#include <fstream>
 #include <sstream>
 #include <thread>
 #include <chrono>
 #include <vector>
-#include <iostream>
+#include "game.hpp"
+#include "position_reader.hpp"
+#include "C2_unittest.hpp"
+#include "chessfuncs.hpp"
+#include "chesstypes.hpp"
+
 using namespace std;
 using namespace std::chrono;
+
+namespace C2_chess
+{
 
 int write_menue_get_choice(ostream& os)
 {
@@ -157,6 +166,9 @@ void write_output(Circular_fifo* output_buffer, Shared_ostream* logfile)
   cout << "output_thread: quit" << endl;
   this_thread::yield();
 }
+}
+
+using namespace C2_chess;
 
 int main(int argc, char **argv)
 {
