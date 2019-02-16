@@ -7,43 +7,8 @@ namespace C2_chess
 using std::endl;
 using std::cerr;
 
-Piece::Piece():_type(Undefined),_color(white)
-{
-}
 
-Piece::Piece(piecetype t, col c):_type(t),_color(c)
-{
-}
 
-Piece::Piece(const Piece& p):_type(p._type),_color(p._color)
-{
-}
-
-Piece::~Piece()
-{
-}
-
-bool Piece::operator==(const Piece& p) const
-{
-	return (p._type==_type && p._color==_color);
-}
-
-bool Piece::is(col c, piecetype pt) const
-{
-  return (_color == c && _type == pt);
-}
-
-bool Piece::is(piecetype pt) const
-{
-  return (_type == pt);
-}
-
-Piece& Piece::operator=(const Piece& p)
-{
-	_type = p._type;
-	_color = p._color;
-	return *this;
-}
 
 ostream& Piece::write_describing(ostream& os) const
 {

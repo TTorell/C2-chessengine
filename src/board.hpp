@@ -28,34 +28,55 @@ class Board {
     Board();
     Board(const Board&);
     ~Board();
+    void setup_pieces();
     void clear(bool remove_pieces = true);
     void init_castling(col this_col);
     void init_bishop_or_queen(int file, int rank, Square* s, Piece* p);
     void init_rook_or_queen(int file, int rank, Square* s, Piece* p);
     int init(col col_to_move);
-    void write(char* filename) const;
+    float evaluate_position(col col_to_move, output_type ot, int level) const;
     ostream& write(ostream& os, output_type wt, col from_perspective) const;
     Shared_ostream& write(Shared_ostream& os, output_type wt, col from_perspective) const;
     ostream& write_possible_moves(ostream& os);
     void read_position(ifstream& positionfile, col& col_to_move);
     void calculate_moves(col col_to_move);
-    int no_of_moves() const;
     istream& operator>>(istream&);
     int make_move(int, int&, col col_to_move, bool silent = true);
     int make_move(player_type, int&, col col_to_move);
     Board& operator=(const Board&);
     Board& operator[](int) const;
-    Move get_last_move() const;
-    float evaluate_position(col col_to_move, output_type ot, int level) const;
     void put_piece(Piece* const p, int file, int rank);
-    Castling_state& get_castling_state();
-    void set_castling_state(const Castling_state& cs);
-    void set_enpassant_square(int file, int rank);
-    void set_mate(bool is_mate);
-    void set_stalemate(bool is_stalemate);
+    Move get_last_move() const
+    {
+      return _last_move;
+    }
+    Castling_state& get_castling_state()
+    {
+      return _castling_state;
+    }
+    void set_castling_state(const Castling_state& cs)
+    {
+      _castling_state = cs;
+    }
+    void set_enpassant_square(int file, int rank)
+    {
+      _en_passant_square = _file[file][rank];
+    }
+    void set_mate(bool is_mate)
+    {
+      _last_move.set_mate(is_mate);
+    }
+    void set_stalemate(bool is_stalemate)
+    {
+      _last_move.set_stalemate(is_stalemate);
+    }
+    int no_of_moves() const
+    {
+      return _possible_moves.cardinal();
+    }
+
     float max(int level, int move_no, float alpha, float beta, int& best_move_index, const int& search_level, bool prune) const;
     float min(int level, int move_no, float alpha, float beta, int& best_move_index, const int& search_level, bool prune) const;
-    void setup_pieces();
 
   private:
     bool read_piece_type(piecetype& pt, char c) const;

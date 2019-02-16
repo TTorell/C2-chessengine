@@ -1,30 +1,54 @@
 #ifndef _FIL
 #define _FIL
 
-#include <iostream>
+#include "square.hpp"
+#include "chessfuncs.hpp" //only for require()
 
 namespace C2_chess
 {
 
-class Square;
+class File {
+  protected:
+    Square* _rank[9];
+    char _name;
 
-using std::ostream;
-
-class File
-{
-	protected:
-		Square* _rank[9];
-		char _name;
-	public:
-		File();
-		File(char name);
-		~File();
-		char get_filename() {return _name;};
-		void set_name(char name) {_name=name;};
-		int get_fileindex() {return ((int)_name - 97);};
-		bool is_included(Square*) const;
-		Square*& operator[](int) const;
-		friend ostream& operator<<(ostream& os, const File& m);
+  public:
+    File() :
+        _name('?')
+    {
+      for (int i = 1; i <= 8; ++i)
+      {
+        _rank[i] = 0;
+      }
+    }
+    ~File()
+    {
+      for (int i = 1; i <= 8; ++i)
+      {
+        if (_rank[i])
+        {
+          delete _rank[i];
+          //_rank[i] = 0;
+        }
+      }
+    }
+//    char get_filename()
+//    {
+//      return _name;
+//    }
+    void set_name(char name)
+    {
+      _name = name;
+    }
+    int get_fileindex()
+    {
+      return ((int) _name - 97);
+    }
+    Square*& operator[](int index) const
+    {
+      require(index > 0 && index < 9, __FILE__, __FUNCTION__, __LINE__);
+      return const_cast<Square*&>(_rank[index]);
+    }
 };
 }
 #endif
