@@ -226,11 +226,11 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
   }
   Castling_state cs;
   is >> cs;
-  //cout << "cs = " << cs << endl;
+  cout << "cs = " << cs << endl;
   _game.set_castling_state(cs);
   string eps; // en passant string;
   is >> eps;
-  //cout << "x" << eps << "x" << endl;
+  cout << "x" << eps << "x" << endl;
   if (eps.size() > 2)
   {
     cerr << "Read Error: unexpected en passant character" << endl;
@@ -241,18 +241,18 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
     cerr << "Read Error: unexpected en passant character" << endl;
     return -1;
   }
-  if (eps.size() == 2 && (eps[1] < 'a' || eps[1] > 'h'))
+  if (eps.size() == 2 && (eps[0] < 'a' || eps[0] > 'h'))
   {
     cerr << "Read Error: unexpected en passant character" << endl;
     return -1;
   }
-  if (eps.size() == 2 && (eps[2] != '3' && eps[1] != '6'))
+  if (eps.size() == 2 && (eps[1] != '3' && eps[1] != '6'))
   {
     cerr << "Read Error: unexpected en passant character" << endl;
     return -1;
   }
   if (eps.size() == 2)
-    _game.set_en_passant_square(eps[1] - 'a', eps[2] - '1' + 1);
+    _game.set_en_passant_square(eps[0] - 'a', eps[1] - '1' + 1);
 
   int half_move_counter;
   is >> half_move_counter;

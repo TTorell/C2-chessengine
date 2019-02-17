@@ -182,7 +182,7 @@ void Game::start()
 Move Game::engine_go(Shared_ostream& logfile)
 {
   logfile << "Engine go" << "\n";
-  const int max_search_level = 4;
+  const int max_search_level = 7;
   const bool use_pruning = true;
   bool playing = true;
 

@@ -29,102 +29,18 @@ Board Board::level_boards[15]; // definition, complete type
 Board::Board() :
     _last_move(), _possible_moves(), _castling_state(), _en_passant_square(0)
 {
-  // cout << "Board default constr" << endl;
-  _file[a].set_name('a');
-  _file[b].set_name('b');
-  _file[c].set_name('c');
-  _file[d].set_name('d');
-  _file[e].set_name('e');
-  _file[f].set_name('f');
-  _file[g].set_name('g');
-  _file[h].set_name('h');
-
-  _rank[0].set_name('0'); // not used
-  _rank[1].set_name('1');
-  _rank[2].set_name('2');
-  _rank[3].set_name('3');
-  _rank[4].set_name('4');
-  _rank[5].set_name('5');
-  _rank[6].set_name('6');
-  _rank[7].set_name('7');
-  _rank[8].set_name('8');
-
-  _file[a][1] = new Square(a, 1, black);
-  _file[a][2] = new Square(a, 2, white);
-  _file[a][3] = new Square(a, 3, black);
-  _file[a][4] = new Square(a, 4, white);
-  _file[a][5] = new Square(a, 5, black);
-  _file[a][6] = new Square(a, 6, white);
-  _file[a][7] = new Square(a, 7, black);
-  _file[a][8] = new Square(a, 8, white);
-
-  _file[b][1] = new Square(b, 1, white);
-  _file[b][2] = new Square(b, 2, black);
-  _file[b][3] = new Square(b, 3, white);
-  _file[b][4] = new Square(b, 4, black);
-  _file[b][5] = new Square(b, 5, white);
-  _file[b][6] = new Square(b, 6, black);
-  _file[b][7] = new Square(b, 7, white);
-  _file[b][8] = new Square(b, 8, black);
-
-  _file[c][1] = new Square(c, 1, black);
-  _file[c][2] = new Square(c, 2, white);
-  _file[c][3] = new Square(c, 3, black);
-  _file[c][4] = new Square(c, 4, white);
-  _file[c][5] = new Square(c, 5, black);
-  _file[c][6] = new Square(c, 6, white);
-  _file[c][7] = new Square(c, 7, black);
-  _file[c][8] = new Square(c, 8, white);
-
-  _file[d][1] = new Square(d, 1, white);
-  _file[d][2] = new Square(d, 2, black);
-  _file[d][3] = new Square(d, 3, white);
-  _file[d][4] = new Square(d, 4, black);
-  _file[d][5] = new Square(d, 5, white);
-  _file[d][6] = new Square(d, 6, black);
-  _file[d][7] = new Square(d, 7, white);
-  _file[d][8] = new Square(d, 8, black);
-
-  _file[e][1] = new Square(e, 1, black);
-  _file[e][2] = new Square(e, 2, white);
-  _file[e][3] = new Square(e, 3, black);
-  _file[e][4] = new Square(e, 4, white);
-  _file[e][5] = new Square(e, 5, black);
-  _file[e][6] = new Square(e, 6, white);
-  _file[e][7] = new Square(e, 7, black);
-  _file[e][8] = new Square(e, 8, white);
-
-  _file[f][1] = new Square(f, 1, white);
-  _file[f][2] = new Square(f, 2, black);
-  _file[f][3] = new Square(f, 3, white);
-  _file[f][4] = new Square(f, 4, black);
-  _file[f][5] = new Square(f, 5, white);
-  _file[f][6] = new Square(f, 6, black);
-  _file[f][7] = new Square(f, 7, white);
-  _file[f][8] = new Square(f, 8, black);
-
-  _file[g][1] = new Square(g, 1, black);
-  _file[g][2] = new Square(g, 2, white);
-  _file[g][3] = new Square(g, 3, black);
-  _file[g][4] = new Square(g, 4, white);
-  _file[g][5] = new Square(g, 5, black);
-  _file[g][6] = new Square(g, 6, white);
-  _file[g][7] = new Square(g, 7, black);
-  _file[g][8] = new Square(g, 8, white);
-
-  _file[h][1] = new Square(h, 1, white);
-  _file[h][2] = new Square(h, 2, black);
-  _file[h][3] = new Square(h, 3, white);
-  _file[h][4] = new Square(h, 4, black);
-  _file[h][5] = new Square(h, 5, white);
-  _file[h][6] = new Square(h, 6, black);
-  _file[h][7] = new Square(h, 7, white);
-  _file[h][8] = new Square(h, 8, black);
-
-// *** FIX THE RANKS ***
-
+  for (int file = a; file <= h; file++)
+  {
+    _file[a].set_name('a' + file);
+   for (int rank = 1; rank <= 8; rank++)
+    {
+      _file[file][rank] = new Square(file, rank);
+    }
+  }
+  // fix the ranks
   for (int rank = 1; rank <= 8; rank++)
   {
+    _rank[rank].set_name('0' + rank);
     for (int file = a; file <= h; file++)
     {
       _rank[rank][file] = _file[file][rank];
@@ -1118,6 +1034,7 @@ void Board::check_put_a_pawn_on_square(int file, int rank, col col_to_move)
         // Is there a piece and is it a white pawn?
         if (piece && piece->is(col_to_move, Pawn))
         {
+          // Check that the pawn isn't pinned
           if (from_square->in_movelist(_file[file][rank]))
           {
             unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
@@ -1221,6 +1138,7 @@ void Board::check_put_a_piece_on_square(int i, int j, col col_to_move)
   Square* temp_square = _file[i][j]->first_threat();
   while (temp_square)
   {
+    // Check that the piece isn't pinned
     if (temp_square->in_movelist(_file[i][j]))
     {
       if (temp_square->get_piece()->is(col_to_move))
@@ -1326,6 +1244,7 @@ void Board::check_if_threat_can_be_taken_en_passant(col col_to_move, Square* thr
         Square* s = _file[file][thr_rank];
         if (s->contains(col_to_move, Pawn))
         {
+          // Check that the pawn isn't pinned
           if (s->in_movelist(_en_passant_square))
           {
             unique_ptr<Move> m(new Move(_file[file][thr_rank], _en_passant_square));
@@ -1397,7 +1316,7 @@ void Board::calculate_moves(col col_to_move)
       {
         if (temp_square != kings_square)
         {
-          // Check that the piece isn't bound,
+          // Check that the piece isn't pinned,
           // in which case it would not be allowed to move.
           if (temp_square->in_movelist(threat_square))
           {
