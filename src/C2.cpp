@@ -219,15 +219,15 @@ using namespace C2_chess;
 
 int main(int argc, char **argv)
 {
-  ofstream testlog("testlog.txt");
-  C2_unit_test test;
+
+  //ofstream testlog("testlog.txt");
+  //C2_unit_test test;
   //test.main_test(cout);
-  test.main_test(testlog);
-  testlog.close();
-  string diff = GetStdoutFromCommand("diff testlog.txt testref.txt");
-  if (!diff.empty())
-    cout << "### UNIT TEST FAILED! :" << endl << diff << endl;
-  //exit(0);
+  //test.main_test(testlog);
+  //testlog.close();
+  //string diff = GetStdoutFromCommand("diff testlog.txt testref.txt");
+  //if (!diff.empty())
+  // cout << "### UNIT TEST FAILED! :" << endl << diff << endl;
 
   ofstream ofs("/home/torsten/eclipse-workspace/C2/command_log.txt");
   Shared_ostream logfile(ofs);
