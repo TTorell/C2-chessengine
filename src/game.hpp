@@ -1,10 +1,12 @@
 #ifndef _GAME
 #define _GAME
 
+#include <map>
 #include "player.hpp"
 #include "board.hpp"
 #include "movelist.hpp"
 #include "pgn_info.hpp"
+#include "Config_param.hpp"
 
 namespace C2_chess
 {
@@ -32,7 +34,7 @@ class Game {
     void clear_chessboard();
     void setup_pieces();
     void start();
-    Move engine_go(Shared_ostream& logfile);
+    Move engine_go(Shared_ostream& logfile, map<string, Config_param>& config_params);
     void save() const;
     col get_col_to_move() const;
     void set_col_to_move(col c);

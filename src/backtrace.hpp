@@ -9,7 +9,8 @@
 #define SRC_BACKTRACE_HPP_
 using namespace std;
 
-#include <iostream>
+#include <ostream>
+
 namespace C2_chess
 {
 

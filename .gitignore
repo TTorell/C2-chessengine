@@ -6,5 +6,6 @@
 Debug/
 Release/
 command_log.txt
+testlog.txt
 test/
 *~

@@ -1,8 +1,10 @@
 #include <sstream>
+#include <map>
 #include "game.hpp"
 #include "current_time.hpp"
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
+#include "Config_param.hpp"
 
 namespace
 {
@@ -134,7 +136,7 @@ void Game::start()
   while (playing)
   {
     write_diagram(cout);
-    //write_chessboard(cout, debug, white);
+    write_chessboard(cout, debug, white);
     uint64_t nsec_start = current_time.nanoseconds();
     if (_player[_col_to_move]->make_a_move(_moveno, _score, playing, max_search_level, use_pruning) != 0)
     {
@@ -179,13 +181,22 @@ void Game::start()
   }
 }
 
-Move Game::engine_go(Shared_ostream& logfile)
+Move Game::engine_go(Shared_ostream& logfile, map<string, Config_param>& config_params)
 {
   logfile << "Engine go" << "\n";
-  const int max_search_level = 7;
-  const bool use_pruning = true;
+  int max_search_level = 7;
+  bool use_pruning = true;
+  auto it = config_params.find("max_search_level");
+  if (it != config_params.end())
+    max_search_level = atol(it->second.get_value().c_str());
+  else
+    max_search_level = 7; // default
+  it = config_params.find("use_pruning");
+  if (it != config_params.end())
+    use_pruning = it->second.get_value() == "true";
+  else
+    use_pruning = true;
   bool playing = true;
-
   write_diagram(logfile) << "\n";
   uint64_t nsec_start = current_time.nanoseconds();
   if (_player[_col_to_move]->make_a_move(_moveno, _score, playing, max_search_level, use_pruning) != 0)

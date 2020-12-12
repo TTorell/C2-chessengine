@@ -111,7 +111,7 @@ void Movelist::out(Move* const rubbish)
 
 bool Movelist::empty() const
 {
-  return (_list.size() == 0);
+  return (_list.empty());
 }
 
 void Movelist::clear()

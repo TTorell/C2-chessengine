@@ -192,7 +192,7 @@ ostream& Board::write(ostream& os, output_type wt, col from_perspective) const
             if (p)
               p->write_diagram_style(os);
             else
-              os << "-";
+              os << "\u2662";
           }
           os << "|#" << " " << i << endl;
         }

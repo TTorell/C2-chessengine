@@ -8,7 +8,7 @@
 #ifndef C2_UNITTEST_HPP_
 #define C2_UNITTEST_HPP_
 
-#include <iostream>
+#include <ostream>
 
 using namespace std;
 

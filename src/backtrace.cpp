@@ -5,11 +5,12 @@
  *      Author: torsten
  */
 
+#include <cstdio>
+#include <cstdlib>
 #include "backtrace.hpp"
+
 extern "C"
 {
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
 }

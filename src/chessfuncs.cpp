@@ -10,15 +10,15 @@
 #include <regex>
 #include "move.hpp"
 #include "chesstypes.hpp"
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
+#include <ctime>
 
 extern "C"
 {
-#include <stdlib.h>
-#include <stdio.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <string.h>
-#include <time.h>
 }
 
 namespace C2_chess
