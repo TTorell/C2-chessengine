@@ -285,7 +285,7 @@ int main(int argc, char **argv)
       case 2:
       {
         string input;
-        string filename = GetStdoutFromCommand("java -classpath \"/home/torsten/eclipse/workspace/ChooseFile/bin\" choosefile.ChooseFile");
+        string filename = GetStdoutFromCommand("java -classpath \".\" ChooseFile");
         col human_color = white_or_black();
         Game game(human_color);
         FEN_reader fr(game);
