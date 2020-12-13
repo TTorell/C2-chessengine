@@ -136,7 +136,7 @@ void Game::start()
   while (playing)
   {
     write_diagram(cout);
-    write_chessboard(cout, debug, white);
+//    write_chessboard(cout, debug, white);
     uint64_t nsec_start = current_time.nanoseconds();
     if (_player[_col_to_move]->make_a_move(_moveno, _score, playing, max_search_level, use_pruning) != 0)
     {

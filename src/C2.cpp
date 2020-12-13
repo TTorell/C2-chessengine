@@ -229,7 +229,7 @@ int main(int argc, char **argv)
   //if (!diff.empty())
   // cout << "### UNIT TEST FAILED! :" << endl << diff << endl;
 
-  ofstream ofs("/home/torsten/eclipse-workspace/C2/command_log.txt");
+  ofstream ofs("command_log.txt");
   Shared_ostream logfile(ofs);
   Game game;
   string command;
@@ -293,7 +293,7 @@ int main(int argc, char **argv)
         int status = pr.read_position(filename);
         if (status != 0)
         {
-          cout << "Sorry." << endl;
+          cout << "Sorry, Couldn't read position from " << filename << endl;
           continue;
         }
         game.init();

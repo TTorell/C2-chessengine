@@ -1,1 +1,36 @@
-My Project
+C2-chessengine
+--------------
+
+This repository contains the code for a simple UCI chess-engine.
+I started on it long ago, and returned to it occasionally.
+It, doesn't play too well and it's kind of slow.
+It has been an interesting task though.
+
+I've tried it connected to the SCID-chessprogram on Ubuntu 20.04.
+(Just configure a new engine in SCID pointing out the executable.)
+There is also a rudimentary command-line interface.
+(Just run the executable from the commandline and enter quit from
+the keyboard to try that. The input move syntax is simply e2e4 g1f3 etc
+but it accepts for instance Ng1-f3 as well.)
+It plays, but doesn't yet work as an analysis engine. The number
+of possible commands, from a chess-GUI, which it responds
+to is limited.
+
+I normally compile it with gcc (g++) from within Eclipse on Ubuntu.
+The only linkage-flag needed seems to be -lpthread,
+And I use (among others) the dialect-compiler-flag
+-std=c++14 and -o3 in a futile attempt to make it as
+fast as Fritz or Stockfish ;-).
+
+The main routine is in C2.cpp
+
+To calculate the best move in a given position I use the
+min/max-algorithm with pruning of the "search-tree". No AI.
+It only searches about 7 moves ahead, because of performance
+issues, but this can be configured.
+And when judging the positions in the final search-three nodes it
+has a reverance for materialistic concerns, however
+control of the center squares, devolopment and casteling etc. also
+plays a minor part in the judgement.
+It "thinks" until it's ready and ignores time-limits on the clock.
+It always comes up with the same move in a given position. 

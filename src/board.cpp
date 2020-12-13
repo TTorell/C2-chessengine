@@ -12,10 +12,10 @@ extern "C"
 #include <string.h>
 }
 
-namespace
-{
-C2_chess::CurrentTime current_time;
-}
+//namespace
+//{
+//C2_chess::CurrentTime current_time;
+//}
 
 namespace C2_chess
 {
@@ -367,7 +367,7 @@ void Board::init_bishop_or_queen(int file, int rank, Square* s, Piece* p)
 int Board::init(col col_to_move)
 {
   // Attention! no clear is made here.
-  uint64_t nsec_start = current_time.nanoseconds();
+//  uint64_t nsec_start = current_time.nanoseconds();
   bool pieces_found = false;
   col other_col = col_to_move == white ? black : white;
   int tf;
@@ -499,8 +499,8 @@ int Board::init(col col_to_move)
     cout << "Error: No pieces on the board!" << endl;
     return -1;
   }
-  uint64_t nsec_stop = current_time.nanoseconds();
-  int timediff = nsec_stop - nsec_start;
+//  uint64_t nsec_stop = current_time.nanoseconds();
+//  int timediff = nsec_stop - nsec_start;
 //  cout << "init_nsecs = " << timediff << endl;
   Square* king_square = _king_square[col_to_move];
   int king_file_index = king_square->get_fileindex();
@@ -1271,7 +1271,7 @@ void Board::check_if_threat_can_be_taken_en_passant(col col_to_move, Square* thr
 
 void Board::calculate_moves(col col_to_move)
 {
-  uint64_t nsec_start = current_time.nanoseconds();
+//  uint64_t nsec_start = current_time.nanoseconds();
   col other_col = col_to_move == white ? black : white;
   _possible_moves.clear();
 
@@ -1393,8 +1393,8 @@ void Board::calculate_moves(col col_to_move)
     }
     mo = _possible_moves.next();
   }
-  uint64_t nsec_stop = current_time.nanoseconds();
-  int timediff = nsec_stop - nsec_start;
+//  uint64_t nsec_stop = current_time.nanoseconds();
+//  int timediff = nsec_stop - nsec_start;
 //  cout << "calculate_moves_nsecs = " << timediff << endl;
 }
 
