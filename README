@@ -1,20 +1,24 @@
 C2-chessengine
 --------------
 
-This repository contains the code for a simple UCI chess-engine.
-I started on it long ago, and returned to it occasionally.
+This repository contains the code for a simple UCI chess-engine,
+written in C++. I started on it long ago, and returned to it occasionally.
 It, doesn't play too well and it's kind of slow.
 It has been an interesting task though.
 
 I've tried it connected to the SCID-chessprogram on Ubuntu 20.04.
 (Just configure a new engine in SCID pointing out the executable.)
+It plays, but doesn't yet work as an analysis-engine. The number
+of possible commands, from a chess-GUI, which it responds
+to is limited.
+
 There is also a rudimentary command-line interface.
 (Just run the executable from the commandline and enter quit from
 the keyboard to try that. The input move syntax is simply e2e4 g1f3 etc
-but it accepts for instance Ng1-f3 as well.)
-It plays, but doesn't yet work as an analysis engine. The number
-of possible commands, from a chess-GUI, which it responds
-to is limited.
+but it accepts for instance Ng1-f3 as well. Use a terminal with black
+text on a white background. Starting from a position given in a
+.pgn-file requires you to copy the file ChooseFile.class into he same
+directory as the executable and to have java installed.)
 
 I normally compile it with gcc (g++) from within Eclipse on Ubuntu.
 The only linkage-flag needed seems to be -lpthread,
@@ -22,7 +26,8 @@ And I use (among others) the dialect-compiler-flag
 -std=c++14 and -o3 in a futile attempt to make it as
 fast as Fritz or Stockfish ;-).
 
-The main routine is in C2.cpp
+The main routine is in C2.cpp.
+The chess-logic is in Board.cpp. 
 
 To calculate the best move in a given position I use the
 min/max-algorithm with pruning of the "search-tree". No AI.
