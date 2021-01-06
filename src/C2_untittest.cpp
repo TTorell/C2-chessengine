@@ -157,7 +157,7 @@ int C2_unit_test::main_test(ostream& os)
   movelog.into(m5);
   movelog.write(os) << endl;
 
-  Movelog movelog2(black);
+  Movelog movelog2(black, 1);
   movelog2.into(m2);
   movelog2.into(m3);
   movelog2.into(m4);

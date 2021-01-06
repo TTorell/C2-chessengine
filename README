@@ -3,39 +3,161 @@ C2-chessengine
 
 This repository contains the code for a simple UCI chess-engine,
 written in C++. I started on it long ago, and returned to it occasionally.
-It, doesn't play too well and it's kind of slow.
-It has been an interesting task though.
+It doesn't play too well and it's kind of slow. It has been an interesting
+task though.
+
+It has beaten me a small number of times.
+(My hess-rating was once 1970 in long games)
 
 I've tried it connected to the SCID-chessprogram on Ubuntu 20.04.
-(Just configure a new engine in SCID pointing out the executable.)
+(Just configure a new engine in SCID pointing out the executable file.
+If you configure SCID to start the engine from a working directory
+where you have write-permissions, it will log all commands and responses
+from/to the GUI in a file named command_log.txt)
 It plays, but doesn't yet work as an analysis-engine. The number
 of possible commands, from a chess-GUI, which it responds
 to is limited.
 
-There is also a rudimentary command-line interface.
-(Just run the executable from the commandline and enter quit from
-the keyboard to try that. The input move syntax is simply e2e4 g1f3 etc
-but it accepts for instance Ng1-f3 as well. Use a terminal with black
-text on a white background. Starting from a position given in a
-.pgn-file requires you to copy the file ChooseFile.class into he same
-directory as the executable and to have java installed.)
+There is also a rudimentary command-line interface. Which I have used
+for testing some times. (Just run the executable from the commandline,
+there will be no output or prompt, but enter "cmd" from the keyboard
+to try that. The input move syntax  is simply e2e4 g1f3 etc but it
+accepts for instance Ng1-f3 as well. Use a terminal with black text on
+a white background. Starting from a position given in a .pgn-file 
+requires you to copy the file ChooseFile.class into the GUI:s configurable
+ working-directory from where it starts C2, and to have java installed.)
 
 I normally compile it with gcc (g++) from within Eclipse on Ubuntu.
 The only linkage-flag needed seems to be -lpthread,
 And I use (among others) the dialect-compiler-flag
--std=c++14 and -o3 in a futile attempt to make it as
+-std=c++14, and -o3 in a futile attempt to make it as
 fast as Fritz or Stockfish ;-).
+I have added a CMakeLists.txt in the src-directory just now,
+so it should hopefully be possible to build it with cmake as well.
+(It probably won't build on windows yet though, only Linux/Unix,
+for the moment).
 
 The main routine is in C2.cpp.
 The chess-logic is in Board.cpp. 
 
 To calculate the best move in a given position I use the
 min/max-algorithm with pruning of the "search-tree". No AI.
-It only searches about 7 moves ahead, because of performance
+There are some videos on youtube explaining how it works.
+The pruning took me a while to understand.
+(I've heard or read somewhere that it was ALan Turing who invented
+this algorithm for playing games, such as chess, long before there
+were any computers to do the job, and that he did it during a coffe
+break. True or not, he was a smart guy.)
+
+It searches default about 7 moves ahead, because of performance
 issues, but this can be configured.
-And when judging the positions in the final search-three nodes it
-has a reverance for materialistic concerns, however
-control of the center squares, devolopment and casteling etc. also
-plays a minor part in the judgement.
-It "thinks" until it's ready and ignores time-limits on the clock.
-It always comes up with the same move in a given position. 
+And when judging the positions in the final search-tree nodes it
+has a reverance for materialistic concerns, however control of the
+center squares, devolopment and casteling etc. also plays minor parts
+in the judgement.
+( There are some weights, one for each evaluation category, inside board.cpp
+which can be tweaked up or down a little to change the evaluation of positions
+and thereby also affect the behaviour of the program.)
+
+It "thinks" until it's ready (on my rather old lap-top computer, normally under
+20 sekunds with search-level set to 7, faster as the position gets more simple,
+naturally.) and ignores the time-limits it recieves together with the "go"-command
+from the GUI. It always comes up with the same move in a given position.
+(No random beaviour). It cannot yet "ponder" when the opponent is thinking.
+It just waits for next input-command.
+
+I update and improve it once in a while when I feel for it.
+To make it really fast will probably require serious redesign.
+I think it copies too much data and claculates too much when
+traversing the "search-tree" going to a lower node.
+(copying the current board, making the move, calculating all 
+possible moves in the new position from scratch. 
+
+My next step will probably be to make it work on Windows as well.
+
+The rest of this file is just curiosa, some speculations about
+improvements and a thought about the algorithm.
+No more useful info abot how to build or use the program.
+
+-----------------------------------------------------------------
+ 
+I have plans of improving the evaluation of a position by making the
+weights depend on the current move number or simply turning off some of
+the evaluation categories after a couple of moves.
+(counting development of pieces is hardly relevant in a rook and pawn
+endgame. Center control and pawns in the center is mostly important in
+the opening and the early middle game, once both Kings have castled
+we don't have to check that anymore etc. Instead we could add other
+categories which could "grow" in importance as the game proceeds and
+consider passed pawns, isolated pawns, two bishops, pawn majorities
+and others).
+
+The problem with adding to much logic in the evaluation is that the 
+evaluation itself takes time and evaluation happens once in all the 
+"outermost leaves of the search tree". So, turning off is good but adding
+more will come with a cost.
+
+Another reflection one can make is that some of the "minor advantage
+categories" such as bishops vs bishop and night, for instance, is
+almost only relevant to look for in fairly equal (and open, I know)
+positions. If there is a major difference in material we don't have to
+spend time on checking the "bishops-category".
+
+So, we can make some of the evaluations depend on the overall important
+material count category.
+ 
+It would also be fun to make C2 able to play against a version of itself, 
+with just slightly differently tweaked evaluation weights. The winner could
+then meet another C2 with a slightly, randomly, tweaked copy of the winner's
+weights etc, in some kind of evolution process, which in time (a very long
+time considering 20 seconds per move) could result in the optimal setting
+of the weights, if the process converges towards a result at all.
+
+Adding AI to select moves would be intresting, but I don't have a clear
+picture of how to do it yet. I may have the necessary tools, at least.
+( In another project I have a home made configurable Neural Network C++-class.
+The necessary Matrix-class I took from the web somewhere and added some more
+functionality to it. I tried it on the MNIST data for learning number
+recogniton, but failed to make it any "wiser". So I got tired of it and
+temporarily laid the project to rest. (On the much simpler XOR problem with
+only two inputs and small numbers of nodes in the netork-layers it worked
+smoothly, converged nicely and when I printed the cost-function during the
+learning process it came out as a nice exponential curve, So it looks like
+my MNIST-problem may be somewhere outside the NN-class.)
+
+A thing about the Min/Max-algorithm I have thought about:
+When the search has reached the maximum level of the search tree,
+(we're in one of the leaves), the algorithm says to the program "You're
+not allowed to move any further, you must stop here and make an evaluation
+of this posion as it is right now. These are my rules. It's time to
+return an evaluation value back to the previous node".
+The program (the min- or the max-function to be more precise) thinks
+"Ah No, I've just taken my oppenent's Queen with my Queen and if I can't
+look any further I don't know if he can take it back. How (the hell) am
+I supposed to evaluate this?". Let's say it's the min-function.
+"Well OK, node above me, (perhaps I should clearify that I always think
+of the tree upside down) here you have my evaluation, but black is a Queen
+over in material right now, so don't be surprised that the value is
+a huge negative one", but I'm still not at all sure that I stand better,
+I may even stand much worse if white can take back my Queen next move".
+The node above, represented by the max-function, receives the value, but
+in the nature of max a huge negative value is bad. "Hm, I like large positive
+numbers, this value is the lowest I've received so far, and yet you say
+that white may stand better if he can take back the Queen. Sorry, Can't
+risk that. So far I have collected a much better value than yours from 
+another of my sub-nodes, I'll stick with that for now, because the algorithm
+insists that I must find the largest value from all my subnodes and return
+that value to the node above me". So, the max-function continues with
+another possible move and sends it to next sub-node for evaluation.
+
+Suppose white would have stood much better after recapturing the queen.
+Didn't the program miss an opportunity here, because of min's forced "bad" evaluation,
+which in it's turn made max take the "wrong" decission and discard the variation.
+
+I've heard about continuing the search, but only among moves which are either a
+a check or a take until there are no such moves left, and then evaluate.
+Don't know if that works. Don't we miss other important moves then, which indirectly
+can lead to check mate, for instance.
+
+
+

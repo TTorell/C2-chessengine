@@ -621,7 +621,7 @@ int Board::init(col col_to_move)
       {
         if (p->is(Rook) || p->is(Queen))
           if (own_piece_square)
-            fix_bound_piece_rank(king_square, own_piece_square, _file[tf][tr]);
+            fix_bound_piece_rank(own_piece_square, _file[tf][tr]);
         break; // Even if it's not a Queen or Rook
       }
       else // p is of col_to_move
@@ -644,7 +644,7 @@ int Board::init(col col_to_move)
       {
         if (p->is(Rook) || p->is(Queen))
           if (own_piece_square)
-            fix_bound_piece_rank(king_square, own_piece_square, _file[tf][tr]);
+            fix_bound_piece_rank(own_piece_square, _file[tf][tr]);
         break; // Even if it's not a Queen or Rook
       }
       else // p is of col_to_move
@@ -667,7 +667,7 @@ int Board::init(col col_to_move)
       {
         if (p->is(Rook) || p->is(Queen))
           if (own_piece_square)
-            fix_bound_piece_file(king_square, own_piece_square, _file[tf][tr]);
+            fix_bound_piece_file(own_piece_square, _file[tf][tr]);
         break; // Even if it's not a Queen or Rook
       }
       else // p is of col_to_move
@@ -690,7 +690,7 @@ int Board::init(col col_to_move)
       {
         if (p->is(Rook) || p->is(Queen))
           if (own_piece_square)
-            fix_bound_piece_file(king_square, own_piece_square, _file[tf][tr]);
+            fix_bound_piece_file(own_piece_square, _file[tf][tr]);
         break; // Even if it's not a Queen or Rook
       }
       else // p is of col_to_move
@@ -817,7 +817,7 @@ void Board::fix_threat_prot(int file, int rank, Piece* p, Square* s)
   }
 }
 
-void Board::fix_bound_piece_file(const Square* king_square, Square* own_piece_square, const Square* threat_square)
+void Board::fix_bound_piece_file(Square* own_piece_square, const Square* threat_square)
 {
   // Requirements:
   // King_square, own_piece_square and threat_square is on the
@@ -859,7 +859,7 @@ void Board::fix_bound_piece_file(const Square* king_square, Square* own_piece_sq
   }
 }
 
-void Board::fix_bound_piece_rank(const Square* king_square, Square* own_piece_square, const Square* threat_square)
+void Board::fix_bound_piece_rank(Square* own_piece_square, const Square* threat_square)
 {
   // Requirements:
   // King_square, own_piece_square and threat_square is on the
@@ -1410,7 +1410,8 @@ void Board::fix_promotion_move(Move* m)
   _possible_moves.into(um.get());
 }
 
-int Board::make_move(int i, int& move_no, col col_to_move, bool silent)
+// First make a move, then init the board and possible moves for other_col
+int Board::make_move(int i, int& move_no, col col_to_move)
 {
   col other_col = col_to_move == white ? black : white;
   Move* m = _possible_moves[i];
@@ -1701,7 +1702,7 @@ int Board::make_move(player_type pt, int& move_no, col col_to_move)
       continue;
     }
     //  Move is OK,make it
-    return make_move(move_index, move_no, col_to_move, true);
+    return make_move(move_index, move_no, col_to_move);
   } // while not read
 }
 
@@ -1718,22 +1719,22 @@ float Board::evaluate_position(col col_to_move, output_type ot, int level) const
     else
     {
       // This must be stalemate
-      // cout << "STALEMATE " << col_to_move << endl;
-      return 0;
+      return 0.0;
     }
   }
-  float sum = 0.0;
-  count_material(sum, 0.95, col_to_move, ot);
-  count_center_control(sum, 0.01, col_to_move, ot);
-  //count_possible_moves(sum, 0.01, col_to_move);
-  count_development(sum, 0.01, col_to_move, ot);
-  count_pawns_in_centre(sum, 0.01, col_to_move, ot);
-  count_castling(sum, 0.01, col_to_move, ot);
-  //cout << "sum " << sum << endl << endl;
+  // Start with a very small number in sum, just so we don't return 0.0 in an
+  // equal position. 0.0 is reserved for stalemate.
+  float sum = epsilon;
+  count_material(sum, 0.95, ot);
+  count_center_control(sum, 0.02, ot);
+  //count_possible_moves(sum, 0.01, col_to_move); // of doubtful value.
+  count_development(sum, 0.05, ot);
+  count_pawns_in_centre(sum, 0.03, ot);
+  count_castling(sum, 0.10, ot);
   return sum;
 }
 
-void Board::count_material(float& sum, float weight, col col_to_move, output_type ot) const
+void Board::count_material(float& sum, float weight, output_type ot) const
 {
   float counter = 0.0;
   Piece* p;
@@ -1790,7 +1791,7 @@ void Board::count_material(float& sum, float weight, col col_to_move, output_typ
   sum += counter * weight;
 }
 
-void Board::count_center_control(float& sum, float weight, col col_to_move, output_type ot) const
+void Board::count_center_control(float& sum, float weight, output_type ot) const
 {
   int counter = 0;
   counter += _file[d][4]->count_controls();
@@ -1802,7 +1803,7 @@ void Board::count_center_control(float& sum, float weight, col col_to_move, outp
   sum += counter * weight;
 }
 
-void Board::count_pawns_in_centre(float& sum, float weight, col col_to_move, output_type ot) const
+void Board::count_pawns_in_centre(float& sum, float weight, output_type ot) const
 {
   int counter = 0;
   if (_file[d][4]->contains_piece(white, Pawn))
@@ -1832,7 +1833,7 @@ void Board::count_pawns_in_centre(float& sum, float weight, col col_to_move, out
 //  sum += weight * _possible_moves.cardinal();
 //}
 
-void Board::count_development(float& sum, float weight, col col_to_move, output_type ot) const
+void Board::count_development(float& sum, float weight, output_type ot) const
 {
   int counter = 0;
   if (!_file[a][1]->contains_piece(white, Rook))
@@ -1870,7 +1871,7 @@ void Board::count_development(float& sum, float weight, col col_to_move, output_
   sum += counter * weight;
 }
 
-void Board::count_castling(float& sum, float weight, col col_to_move, output_type ot) const
+void Board::count_castling(float& sum, float weight, output_type ot) const
 {
   int counter = 0;
   if (_castling_state.has_castled(white))
@@ -1911,7 +1912,7 @@ float Board::max(int level, int move_no, float alpha, float beta, int& best_move
       //  return -100.0;
       //}
       //level_boards[level].calculate_moves(white);
-      level_boards[level].make_move(i, move_no, white, true);
+      level_boards[level].make_move(i, move_no, white);
 
       float tmp_value = level_boards[level].min(level, move_no, alpha, beta, dummy_index, max_search_level, use_pruning);
       if (tmp_value > max_value)
@@ -1954,6 +1955,7 @@ float Board::min(int level, int move_no, float alpha, float beta, int& best_move
   {
     for (int i = 0; i < _possible_moves.cardinal(); i++)
     {
+      // save current bord in list
       level_boards[level] = *this;
       //if (level_boards[level].init(black) != 0)
       //{
@@ -1961,7 +1963,7 @@ float Board::min(int level, int move_no, float alpha, float beta, int& best_move
       //  return -100.0;
       //}
       //level_boards[level].calculate_moves(black);
-      level_boards[level].make_move(i, move_no, black, true);
+      level_boards[level].make_move(i, move_no, black);
       float tmp_value = level_boards[level].max(level, move_no, alpha, beta, dummy_index, max_search_level, use_pruning);
       if (tmp_value < min_value)
       {

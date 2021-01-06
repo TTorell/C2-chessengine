@@ -108,12 +108,9 @@ void Player::set_type(player_type t)
 
 int Player::make_a_move(int& move_no, float& score, bool& playing, const int& max_search_level ,bool use_pruning)
 {
-  //int best_moves[20]; // There can be more than one move with best score
-  //int best_move_index = 0; // Keep track of how many best moves there are
   playing = true;
   if (_type == human)
   {
-    // cout << "Human" << endl;
     return _chessboard.make_move(human, move_no, _colour);
   }
   else // _type == computer
@@ -125,7 +122,7 @@ int Player::make_a_move(int& move_no, float& score, bool& playing, const int& ma
       score = _chessboard.max(0,  move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
       if (best_move_index == -1 && score == -100.0)
       {
-        cout << "White was check mated." << endl;
+        cout << "White was check mated." << endl; // TODO
         playing = false;
         return 0;
       }
@@ -135,7 +132,7 @@ int Player::make_a_move(int& move_no, float& score, bool& playing, const int& ma
       score = _chessboard.min(0,  move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
       if (best_move_index == -1 && score == 100.0)
       {
-        cout << "Black was check mated." << endl;
+        cout << "Black was check mated." << endl; // TODO
         playing = false;
         return 0;
       }

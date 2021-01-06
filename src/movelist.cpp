@@ -1,6 +1,7 @@
 #include <iomanip>
 #include <deque>
 #include <iterator>
+#include <sstream>
 #include "movelist.hpp"
 #include "move.hpp"
 #include "backtrace.hpp"
@@ -159,7 +160,7 @@ ostream & Movelist::write(ostream & os) const
 
 ostream & Movelog::write(ostream & os) const
 {
-  int moveno = 1;
+  int moveno = _first_moveno;
   int increment = 0;
   for (int i = 0; i < (int) _list.size(); i++)
   {

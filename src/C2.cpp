@@ -4,6 +4,7 @@
 #include <thread>
 #include <chrono>
 #include <vector>
+#include <atomic>
 #include "game.hpp"
 #include "position_reader.hpp"
 #include "C2_unittest.hpp"
@@ -17,9 +18,11 @@ using namespace std::chrono;
 namespace C2_chess
 {
 
+// Method for the cmdline-interface
 int write_menue_get_choice(ostream& os)
 {
-
+  os << endl;
+  os << "----------------------------" << endl;
   os << "Welcome to C2 Chess Program." << endl;
   os << "" << endl;
   os << "Menue:" << endl;
@@ -49,6 +52,7 @@ int write_menue_get_choice(ostream& os)
   }
 }
 
+// Method for the cmdline-interface
 int back_to_main_menu()
 {
   string input;
@@ -63,6 +67,7 @@ int back_to_main_menu()
   }
 }
 
+// Method for the cmdline-interface
 col white_or_black()
 {
   char st[100];
@@ -87,6 +92,57 @@ col white_or_black()
   return white;
 }
 
+// Method for the cmdline-interface
+int play_on_cmd_line()
+{
+  while (true)
+  {
+    int choice = write_menue_get_choice(cout);
+    switch (choice)
+    {
+      case 1:
+
+      {
+        col c = white_or_black();
+        Game game(c);
+        game.setup_pieces();
+        game.init();
+        game.start();
+        if (back_to_main_menu() != 0)
+          return -1;
+        continue;
+      }
+      case 2:
+      {
+        string input;
+        string filename = GetStdoutFromCommand("java -classpath \".\" ChooseFile");
+        col human_color = white_or_black();
+        Game game(human_color);
+        FEN_reader fr(game);
+        Position_reader& pr = fr;
+        int status = pr.read_position(filename);
+        if (status != 0)
+        {
+          cout << "Sorry, Couldn't read position from " << filename << endl;
+          continue;
+        }
+        game.init();
+        game.start();
+        if (back_to_main_menu() != 0)
+          exit(0);
+        continue;
+      }
+      default:
+        require(false,
+        __FILE__,
+                __FUNCTION__,
+                __LINE__);
+    }
+  }
+  return 0;
+}
+
+// This Mthod e.g. splits up commands from the GUI into tokens (words)
 vector<string> split(const string &s, char delim)
 {
   vector<string> result;
@@ -101,27 +157,38 @@ vector<string> split(const string &s, char delim)
   return result;
 }
 
-
+// Set default values for the few config parameters
 void init_config_params(map<string, Config_param>& config_params)
 {
-  cout << "init_config_params" << endl;
   config_params.insert(make_pair("use_pruning", *(new Config_param("use_pruning", "true", "check", "true"))));
   config_params.insert(make_pair("max_search_level", *(new Config_param("max_search_level", "7", "spin", "7", "1", "8"))));
 }
 
+// Global booleans which can be set to false to stop input and output threads
+// and to tell if the engine succeeded to open the command_log.txt file, where
+// it e.g. saves all input and output commands it receives and sends during a
+// game or (in the future) also during an analysis task.
+// If the chess-GUI has been set to start the C2-engine from a working
+// directory which is write-protected for the user who starts it, then C2 will
+// fail to open that logfile. I'm not sure if it matters, but I have tried to
+// protect against writing to a file that never was opened, throughout the code.
+// (The engine seemed to work fine even before I did this. -- easy to test if I
+// wish to do so.)
+std::atomic<bool> input_thread_running(true);
+std::atomic<bool> output_thread_running(true);
+std::atomic<bool> logfile_is_open(true);
+
+// Method for parsing input-commands from a chess-GUI (some commands are taken care of already in ḿain().
 int parse_command(const string& command, Circular_fifo& output_buffer, Shared_ostream& logfile, Game& game, map<string, Config_param>& config_params)
 {
+  // We know at this point that the command string isn't empty
   vector<string> tokens = split(command, ' ');
-//  for (auto token : tokens)
-//    cout << token << endl;
   if (tokens[0] == "uci")
   {
     output_buffer.put("id name C2 pre release");
     output_buffer.put("id author Torsten Torell");
     // Tell GUI which parameters are configurable.
-//    map<string, Config_parameter>::iterator it = config_params.begin();
-//    while (it != config_params.end())
-    pair<const string,Config_param> pair;
+    pair<const string, Config_param> pair;
     pair.second.get_command_for_gui();
     for (auto it : config_params)
     {
@@ -130,13 +197,13 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Shared_os
     output_buffer.put("uciok");
   }
 
-  // Since we are inside parse_command(), the engine is ready.
+  // Since we are inside parse_command(), the engine obviously has been started.
   if (tokens[0] == "isready")
     output_buffer.put("readyok");
 
   if (tokens[0] == "setoption")
   {
-    // All my parameters have names which are only one token long.
+    // All my config-parameters have names which are only one token long.
     string name = "", value = "";
     bool read_name = false;
     bool read_value = false;
@@ -167,12 +234,23 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Shared_os
   if (tokens[0] == "position")
   {
     FEN_reader reader(game);
+    // Discard the first 13 characters, "position fen ", from the command.
     string fen_string = command.substr(13, command.size() - 12);
-    logfile << "fen_string = " << fen_string << "\n";
-    game.write_diagram(logfile) << "\n";
+    // Remove possible pieces and information from the main chessboard.
     game.clear_chessboard();
+    // The information about the new requested position comes in
+    // Forsyth–Edwards Notation.
+    // Read the FEN-coded position from the GUI command and set up
+    // the board accordingly.
     reader.parse_FEN_string(fen_string);
+    // print the position to the logfile
+    if (logfile_is_open)
+    {
+      game.write_diagram(logfile) << "\n";
+    }
   }
+  // To implement go I think I needed some variables not available here,
+  // So I took care of it in main instead.
   if (tokens[0] == "go")
     return 1;
 
@@ -181,43 +259,45 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Shared_os
 
 void read_input(Circular_fifo* input_buffer, Shared_ostream* logfile)
 {
-  while (true)
+  while (input_thread_running)
   {
     string command;
     getline(cin, command);
     (*input_buffer).put(command);
-    (*logfile) << "input: " << command << "\n";
+    if (logfile_is_open)
+      (*logfile) << "input: " << command << "\n";
     if (command == "quit")
       break;
     this_thread::sleep_for(milliseconds(20));
   }
-  cout << "input_thread: quit" << endl;
+  //cout << "input_thread: quit" << endl;
   this_thread::yield();
 }
 
 void write_output(Circular_fifo* output_buffer, Shared_ostream* logfile)
 {
   string command;
-  while (true)
+  while (output_thread_running)
   {
     command = (*output_buffer).get();
     if (!command.empty())
     {
+      if (logfile_is_open)
+        (*logfile) << "output: " << command << "\n";
       if (command == "quit")
         break;
       cout << command << endl;
-      (*logfile) << "output: " << command << "\n";
     }
     this_thread::sleep_for(milliseconds(20));
   }
-  cout << "output_thread: quit" << endl;
   this_thread::yield();
 }
 
-}
+} // End of namespace C2_chess
+
 using namespace C2_chess;
 
-int main(int argc, char **argv)
+int main()
 {
 
   //ofstream testlog("testlog.txt");
@@ -230,6 +310,8 @@ int main(int argc, char **argv)
   // cout << "### UNIT TEST FAILED! :" << endl << diff << endl;
 
   ofstream ofs("command_log.txt");
+  if (!ofs.is_open())
+    logfile_is_open = false;
   Shared_ostream logfile(ofs);
   Game game;
   string command;
@@ -240,6 +322,7 @@ int main(int argc, char **argv)
 
   map<string, Config_param> config_params;
   init_config_params(config_params);
+  logfile << "Engine started" << "\n";
   while (true)
   {
     command = input_buffer.get();
@@ -250,11 +333,21 @@ int main(int argc, char **argv)
         output_buffer.put("quit"); // closes output_thread
         break;
       }
-      int rc = parse_command(command, output_buffer, logfile, game, config_params);
-      if (rc == 1)
+      if (command == "cmd")
       {
+        input_thread_running = false;
+        output_thread_running = false;
+        play_on_cmd_line();
+        break;
+      }
+      int rc = parse_command(command, output_buffer, logfile, game, config_params);
+      if (rc == 1) // = go
+      {
+        // Init the main chess board with preserved position
+        // and calculate all possible moves.
         game.init();
-        Move bestmove = game.engine_go(logfile, config_params);
+        // Find best move
+        Move bestmove = game.engine_go(logfile, logfile_is_open, config_params);
         output_buffer.put(bestmove.bestmove_engine_style());
       }
       if (command == "quit")
@@ -262,53 +355,10 @@ int main(int argc, char **argv)
     }
     this_thread::sleep_for(milliseconds(20));
   }
+  input_thread_running = false;
+  output_thread_running = false;
+  this_thread::sleep_for(milliseconds(40));
   ofs.close();
-  input_thread.join();
-  output_thread.join();
-  while (true)
-  {
-    int choice = write_menue_get_choice(cout);
-    switch (choice)
-    {
-      case 1:
-
-      {
-        col c = white_or_black();
-        Game game(c);
-        game.setup_pieces();
-        game.init();
-        game.start();
-        if (back_to_main_menu() != 0)
-          exit(0);
-        continue;
-      }
-      case 2:
-      {
-        string input;
-        string filename = GetStdoutFromCommand("java -classpath \".\" ChooseFile");
-        col human_color = white_or_black();
-        Game game(human_color);
-        FEN_reader fr(game);
-        Position_reader& pr = fr;
-        int status = pr.read_position(filename);
-        if (status != 0)
-        {
-          cout << "Sorry, Couldn't read position from " << filename << endl;
-          continue;
-        }
-        game.init();
-        game.start();
-        if (back_to_main_menu() != 0)
-          exit(0);
-        continue;
-      }
-      default:
-        require(false,
-        __FILE__,
-                __FUNCTION__,
-                __LINE__);
-    }
-  }
-  cout << "Main: program completed. Exiting.\n" << endl;
+  return 0;
 }
 

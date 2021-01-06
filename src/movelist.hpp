@@ -51,24 +51,31 @@ class Movelog: public Movelist
 {
   protected:
     col _col_to_start = white;
-
+    int _first_moveno = 1;
   public:
     Movelog() :
         Movelist()
     {
       _col_to_start = white;
+      _first_moveno = 1;
     }
 
-    Movelog(col col_to_start) :
+    Movelog(col col_to_start, int first_moveno) :
         Movelist()
     {
       _col_to_start = col_to_start;
+      _first_moveno = first_moveno;
     }
 
 
     void set_col_to_start(col c)
     {
       _col_to_start = c;
+    }
+
+    void set_first_moveno(int moveno)
+    {
+      _first_moveno = moveno;
     }
 
     virtual ostream& write(ostream& os) const;

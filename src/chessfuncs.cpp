@@ -75,6 +75,7 @@ void require_m(bool b, string file, string method, int line, const Move& m)
   }
 }
 
+// Run a linux/Unix-command and return it's output as a string
 string GetStdoutFromCommand(string cmd)
 {
 
@@ -82,7 +83,7 @@ string GetStdoutFromCommand(string cmd)
   FILE * stream;
   const int max_buffer = 256;
   char buffer[max_buffer];
-  cmd.append(" 2>&1");
+  cmd.append(" 2>&1"); // redirect stderr to same as stdin
 
   stream = popen(cmd.c_str(), "r");
   if (stream)

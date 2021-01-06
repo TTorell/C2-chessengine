@@ -123,7 +123,6 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
   {
     Piece* p = 0;
     c = FEN_string[i];
-    //cout << "c = " << c << endl;
     switch (c)
     {
       case ' ':
@@ -220,7 +219,7 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
   }
   else
   {
-    cerr << "Read Error: unexpected color" << endl;
+    cerr << "Read Error: unexpected color" << endl; // TODO write to logfile if engine
     return -1;
   }
   Castling_state cs;

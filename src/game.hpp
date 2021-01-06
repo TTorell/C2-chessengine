@@ -2,6 +2,7 @@
 #define _GAME
 
 #include <map>
+#include <atomic>
 #include "player.hpp"
 #include "board.hpp"
 #include "movelist.hpp"
@@ -14,12 +15,14 @@ namespace C2_chess
 class Castling_state;
 class Game {
   protected:
+    bool _is_first_position;
     Movelog _move_log;
     Board _chessboard;
     Player _player1;
     Player _player2;
     Player* _player[2];
     int _moveno = 0;
+
     col _col_to_move;
     float _score = 0.0;
     int _half_move_counter = 0.0;
@@ -34,7 +37,7 @@ class Game {
     void clear_chessboard();
     void setup_pieces();
     void start();
-    Move engine_go(Shared_ostream& logfile, map<string, Config_param>& config_params);
+    Move engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open, map<string, Config_param>& config_params);
     void save() const;
     col get_col_to_move() const;
     void set_col_to_move(col c);
