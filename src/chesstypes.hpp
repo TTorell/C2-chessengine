@@ -14,7 +14,7 @@ const int g = 6;
 const int h = 7;
 const float eval_max = 100.0F;
 const float eval_min = -eval_max;
-const float epsilon = 0.00000001;
+const float epsilon = 0.00000001F;
 enum piecetype {
   King,
   Queen,

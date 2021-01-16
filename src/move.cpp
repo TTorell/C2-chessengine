@@ -1,9 +1,9 @@
 #include "move.hpp"
 #include "square.hpp"
 #include "piece.hpp"
-#include "backtrace.hpp"
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
+#include <sstream>
 
 namespace C2_chess
 {

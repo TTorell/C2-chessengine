@@ -31,7 +31,7 @@ Board::Board() :
 {
   for (int file = a; file <= h; file++)
   {
-    _file[a].set_name('a' + file);
+    _file[a].set_name('a' + (char)file);
    for (int rank = 1; rank <= 8; rank++)
     {
       _file[file][rank] = new Square(file, rank);
@@ -40,7 +40,7 @@ Board::Board() :
   // fix the ranks
   for (int rank = 1; rank <= 8; rank++)
   {
-    _rank[rank].set_name('0' + rank);
+    _rank[rank].set_name('0' + (char)rank);
     for (int file = a; file <= h; file++)
     {
       _rank[rank][file] = _file[file][rank];
@@ -131,10 +131,10 @@ void Board::put_piece(Piece* const p, int file, int rank)
   _file[file][rank]->contain_piece(p);
 }
 
-bool Board::read_piece_type(piecetype& pt, char c) const
+bool Board::read_piece_type(piecetype& pt, char ch) const
 {
   // method not important for efficiency
-  switch (c)
+  switch (ch)
   {
     case 'P':
       pt = Pawn;
@@ -192,7 +192,7 @@ ostream& Board::write(ostream& os, output_type wt, col from_perspective) const
             if (p)
               p->write_diagram_style(os);
             else
-              os << "\u2662";
+              os << u"\u2662";
           }
           os << "|#" << " " << i << endl;
         }
@@ -367,7 +367,7 @@ void Board::init_bishop_or_queen(int file, int rank, Square* s, Piece* p)
 int Board::init(col col_to_move)
 {
   // Attention! no clear is made here.
-//  uint64_t nsec_start = current_time.nanoseconds();
+  //  uint64_t nsec_start = current_time.nanoseconds();
   bool pieces_found = false;
   col other_col = col_to_move == white ? black : white;
   int tf;
@@ -499,9 +499,9 @@ int Board::init(col col_to_move)
     cout << "Error: No pieces on the board!" << endl;
     return -1;
   }
-//  uint64_t nsec_stop = current_time.nanoseconds();
-//  int timediff = nsec_stop - nsec_start;
-//  cout << "init_nsecs = " << timediff << endl;
+  //  uint64_t nsec_stop = current_time.nanoseconds();
+  //  int timediff = nsec_stop - nsec_start;
+  //  cout << "init_nsecs = " << timediff << endl;
   Square* king_square = _king_square[col_to_move];
   int king_file_index = king_square->get_fileindex();
   int king_rank_index = king_square->get_rankindex();
@@ -731,17 +731,17 @@ int Board::init(col col_to_move)
   {
     int kf = _king_square[col_to_move]->get_fileindex();
     int kr = _king_square[col_to_move]->get_rankindex();
-    int tf = temp_square->get_fileindex();
-    int tr = temp_square->get_rankindex();
+    int to_f = temp_square->get_fileindex();
+    int to_r = temp_square->get_rankindex();
 
     if (temp_square->same_rank(_king_square[col_to_move]))
     {
-      if (tf == min(tf, kf))
+      if (to_f == min(to_f, kf))
         if (allowed(kf + 1, kr))
         {
           _king_square[col_to_move]->out_move(_file[kf + 1][kr]);
         }
-      if (tf == max(tf, kf))
+      if (to_f == max(to_f, kf))
         if (allowed(kf - 1, kr))
         {
           _king_square[col_to_move]->out_move(_file[kf - 1][kr]);
@@ -749,14 +749,14 @@ int Board::init(col col_to_move)
     }
     else if (temp_square->same_file(_king_square[col_to_move]))
     {
-      if (tr == min(tr, kr))
+      if (to_r == min(to_r, kr))
       {
         if (allowed(kf, kr + 1))
         {
           _king_square[col_to_move]->out_move(_file[kf][kr + 1]);
         }
       }
-      if (tr == max(tr, kr))
+      if (to_r == max(to_r, kr))
         if (allowed(kf, kr - 1))
         {
           _king_square[col_to_move]->out_move(_file[kf][kr - 1]);
@@ -764,22 +764,22 @@ int Board::init(col col_to_move)
     }
     else if (temp_square->same_diagonal(_king_square[col_to_move]))
     {
-      if (tr == min(tr, kr) && tf == min(tf, kf))
+      if (to_r == min(to_r, kr) && to_f == min(to_f, kf))
         if (allowed(kf + 1, kr + 1))
         {
           _king_square[col_to_move]->out_move(_file[kf + 1][kr + 1]);
         }
-      if (tr == min(tr, kr) && tf == max(tf, kf))
+      if (to_r == min(to_r, kr) && to_f == max(to_f, kf))
         if (allowed(kf - 1, kr + 1))
         {
           _king_square[col_to_move]->out_move(_file[kf - 1][kr + 1]);
         }
-      if (tr == max(tr, kr) && tf == min(tf, kf))
+      if (to_r == max(to_r, kr) && to_f == min(to_f, kf))
         if (allowed(kf + 1, kr - 1))
         {
           _king_square[col_to_move]->out_move(_file[kf + 1][kr - 1]);
         }
-      if (tr == max(tr, kr) && tf == max(tf, kf))
+      if (to_r == max(to_r, kr) && to_f == max(to_f, kf))
         if (allowed(kf - 1, kr - 1))
         {
           _king_square[col_to_move]->out_move(_file[kf - 1][kr - 1]);
@@ -1018,15 +1018,12 @@ int Board::max(int i, int j)
 
 void Board::check_put_a_pawn_on_square(int file, int rank, col col_to_move)
 {
-//  uint64_t nsec_start = current_time.nanoseconds();
-//  uint64_t nsec_stop = current_time.nanoseconds();
-//  cout << "nsecs = " << nsec_stop - nsec_start << endl;
-  Piece* piece;
   Square* from_square;
+  Piece* piece;
   switch (col_to_move)
   {
     case white:
-      // cout << "white" << endl;
+      // Check for one-square-pawn-moves
       if (rank > 2) // otherwise white can never move a pawn there.
       {
         from_square = _file[file][rank - 1];
@@ -1039,71 +1036,65 @@ void Board::check_put_a_pawn_on_square(int file, int rank, col col_to_move)
           {
             unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
             _possible_moves.into(m.get());
-            //cout << "nsecs = " << current_time.nanoseconds() - nsec_start << endl;
             return;
           }
         }
       }
       // White can only make two-squares-pawn-moves to rank 4
       // and if the square in between is free.
-      if ((!piece) && rank == 4)
+      if (rank == 4)
       {
-        Square* from_square = _file[file][rank - 2];
+        from_square = _file[file][rank - 2];
         piece = from_square->get_piece();
+        // Is there a piece and is it a white pawn?
         if (piece && piece->is(col_to_move, Pawn))
         {
           if (from_square->in_movelist(_file[file][rank]))
           {
             unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
             _possible_moves.into(m.get());
-            //cout << "nsecs = " << current_time.nanoseconds() - nsec_start << endl;
             return;
           }
         }
       }
       break;
     case black:
-      // cout << "black" << endl;
+      // Check for one-square-pawn-moves
       if (rank < 7) // otherwise black can never move a pawn there.
       {
         from_square = _file[file][rank + 1];
         piece = from_square->get_piece();
-//        write(cout,
-//              cmd_line_diagram);
-//        cout << piece << endl;
-//        if (piece)
-//          cout << piece->get_type() << endl;
         // Is there a piece and is it a black pawn?
         if (piece && piece->is(col_to_move, Pawn))
         {
-          if (from_square->in_movelist(_file[file][rank]))
+            // Check that the pawn isn't pinned
+            if (from_square->in_movelist(_file[file][rank]))
           {
             unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
             _possible_moves.into(m.get());
-            //cout << "nsecs = " << current_time.nanoseconds() - nsec_start << endl;
             return;
           }
         }
       }
-      if ((!piece) && rank == 5)
+      if (rank == 5)
       {
         // It could be that a black pawn can move two steps to this square.
         from_square = _file[file][rank + 2];
         piece = from_square->get_piece();
+        // Is there a piece and is it a black pawn?
         if (piece && piece->is(col_to_move, Pawn))
         {
+          // Check that the pawn isn't pinned
           if (from_square->in_movelist(_file[file][rank]))
           {
             unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
             _possible_moves.into(m.get());
-            //cout << "nsecs = " << current_time.nanoseconds() - nsec_start << endl;
             return;
           }
         }
       }
       break;
   }
-  //cout << "nsecs2 = " << current_time.nanoseconds() - nsec_start << endl;
 }
 
 void Board::calculate_moves_K_not_threatened(col col_to_move)
@@ -1199,7 +1190,7 @@ void Board::check_bishop_or_queen(Square* threat_square, Square* kings_square, c
   }
 }
 
-void Board::check_rook_or_queen(Square* __restrict__ threat_square, Square* __restrict__ kings_square, col col_to_move)
+void Board::check_rook_or_queen(Square* threat_square, Square* kings_square, col col_to_move)
 {
   if (threat_square->same_rank(kings_square))
   {
@@ -1247,8 +1238,8 @@ void Board::check_if_threat_can_be_taken_en_passant(col col_to_move, Square* thr
           // Check that the pawn isn't pinned
           if (s->in_movelist(_en_passant_square))
           {
-            unique_ptr<Move> m(new Move(_file[file][thr_rank], _en_passant_square));
-            _possible_moves.into_as_first(m.get());
+            unique_ptr<Move> move(new Move(_file[file][thr_rank], _en_passant_square));
+            _possible_moves.into_as_first(move.get());
           }
         }
       }
@@ -1310,21 +1301,21 @@ void Board::calculate_moves(col col_to_move)
       // The piece that checks the king maybe can be taken.
       // If it is the king that can take it, that was covered
       // when the king's moves were calculated
-      unique_ptr<Move> m;
-      Square* temp_square = threat_square->first_threat();
-      while (temp_square)
+      Square* tmp_square = threat_square->first_threat();
+      while (tmp_square)
       {
-        if (temp_square != kings_square)
+        if (tmp_square != kings_square)
         {
           // Check that the piece isn't pinned,
           // in which case it would not be allowed to move.
-          if (temp_square->in_movelist(threat_square))
+          if (tmp_square->in_movelist(threat_square))
           {
-            m.reset(new Move(temp_square, threat_square));
-            _possible_moves.into(m.get());
+            unique_ptr<Move> move;
+            move.reset(new Move(tmp_square, threat_square));
+            _possible_moves.into(move.get());
           }
         }
-        temp_square = threat_square->next_threat();
+        tmp_square = threat_square->next_threat();
       }
 
       // Maybe the threatening piece is a pawn and can be taken en passant.
@@ -1547,10 +1538,10 @@ int Board::make_move(int i, int& move_no, col col_to_move)
   return -1;
 }
 
-int Board::make_move(player_type pt, int& move_no, col col_to_move)
+int Board::make_move(player_type player, int& move_no, col col_to_move)
 {
   unique_ptr<Move> m;
-  if (pt != human)
+  if (player != human)
   {
     cout << "Error: Using wrong make_move() method for computer." << endl;
     return -1;
@@ -1725,12 +1716,12 @@ float Board::evaluate_position(col col_to_move, output_type ot, int level) const
   // Start with a very small number in sum, just so we don't return 0.0 in an
   // equal position. 0.0 is reserved for stalemate.
   float sum = epsilon;
-  count_material(sum, 0.95, ot);
-  count_center_control(sum, 0.02, ot);
-  //count_possible_moves(sum, 0.01, col_to_move); // of doubtful value.
-  count_development(sum, 0.05, ot);
-  count_pawns_in_centre(sum, 0.03, ot);
-  count_castling(sum, 0.10, ot);
+  count_material(sum, 0.95F, ot);
+  count_center_control(sum, 0.02F, ot);
+  //count_possible_moves(sum, 0.01F, col_to_move); // of doubtful value.
+  count_development(sum, 0.05F, ot);
+  count_pawns_in_centre(sum, 0.03F, ot);
+  count_castling(sum, 0.10F, ot);
   return sum;
 }
 

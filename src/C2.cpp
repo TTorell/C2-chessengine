@@ -103,8 +103,8 @@ int play_on_cmd_line()
       case 1:
 
       {
-        col c = white_or_black();
-        Game game(c);
+        col color = white_or_black();
+        Game game(color);
         game.setup_pieces();
         game.init();
         game.start();
@@ -115,16 +115,17 @@ int play_on_cmd_line()
       case 2:
       {
         string input;
-        string filename = GetStdoutFromCommand("java -classpath \".\" ChooseFile");
+       
         col human_color = white_or_black();
         Game game(human_color);
         FEN_reader fr(game);
         Position_reader& pr = fr;
+        string filename = GetStdoutFromCommand("cmd java -classpath \".\" ChooseFile");
         int status = pr.read_position(filename);
         if (status != 0)
         {
-          cout << "Sorry, Couldn't read position from " << filename << endl;
-          continue;
+            cout << "Sorry, Couldn't read position from " << filename << endl;
+            continue;
         }
         game.init();
         game.start();

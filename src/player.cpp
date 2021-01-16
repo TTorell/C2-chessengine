@@ -20,8 +20,8 @@ namespace C2_chess
 {
 
 
-Player::Player(player_type p, col c, Board& bo) : _chessboard(bo),
-    _type(p), _colour(c), _other_col(c == white ? black : white)
+Player::Player(player_type p, col color, Board& bo) : _chessboard(bo),
+    _type(p), _colour(color), _other_col(color == white ? black : white)
 {
   //cout << "Player construcor1" << endl;
 }

@@ -147,9 +147,9 @@ class Move
     {
       _promotion_piece_type = pt;
     }
-    void set_check(bool c)
+    void set_check(bool color)
     {
-      _check = c;
+      _check = color;
     }
     void set_mate(bool m)
     {

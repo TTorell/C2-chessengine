@@ -4,7 +4,6 @@
 #include <sstream>
 #include "movelist.hpp"
 #include "move.hpp"
-#include "backtrace.hpp"
 
 namespace C2_chess
 {
@@ -141,8 +140,10 @@ Move* Movelist::operator[](int i) const
   else
   {
     cout << "index " << i << " out of bounds error in Movelist[], size = " << _list.size() << endl;
-    Backtrace bt;
-    bt.print();
+#ifdef linux
+    print_backtrace(cerr) << endl;
+#endif // linux
+
     for (auto it : _list)
       cout << *(Move*) (it) << endl;
     exit(0);

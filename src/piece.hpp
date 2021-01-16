@@ -21,8 +21,8 @@ class Piece {
     }
 
   public:
-    Piece(piecetype t, col c) :
-        _type(t), _color(c)
+    Piece(piecetype t, col color) :
+        _type(t), _color(color)
     {
     }
     Piece(const Piece& p) :
@@ -42,17 +42,17 @@ class Piece {
       _color = p._color;
       return *this;
     }
-    bool is(col c, piecetype pt) const
+    bool is(col color, piecetype pt) const
     {
-      return (_color == c && _type == pt);
+      return (_color == color && _type == pt);
     }
     bool is(piecetype pt) const
     {
       return (_type == pt);
     }
-    bool is(col c) const
+    bool is(col color) const
     {
-      return (_color == c);
+      return (_color == color);
     }
     piecetype get_type() const
     {
@@ -66,9 +66,9 @@ class Piece {
     {
       _type = t;
     }
-    void set_color(col c)
+    void set_color(col color)
     {
-      _color = c;
+      _color = color;
     }
     ostream& write_describing(ostream& os) const;
     ostream& write_diagram_style(ostream& os) const;

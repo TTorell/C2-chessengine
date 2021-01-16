@@ -8,4 +8,7 @@ Release/
 command_log.txt
 testlog.txt
 test/
+src/out/
+src/CMakeSettings.json
+.vs
 *~

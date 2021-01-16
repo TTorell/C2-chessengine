@@ -33,32 +33,32 @@ Game::Game() :
   _chessboard.calculate_moves(_col_to_move);
 }
 
-Game::Game(col c) :
+Game::Game(col color) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player1(human, c, _chessboard),
-    _player2(computer, c == white ? black : white, _chessboard),
+    _player1(human, color, _chessboard),
+    _player2(computer, color == white ? black : white, _chessboard),
     _moveno(1),
     _col_to_move(white),
     _score(0)
 {
-  _player[c] = &_player1;
-  _player[c == white ? black : white] = &_player2;
+  _player[color] = &_player1;
+  _player[color == white ? black : white] = &_player2;
 }
 
-Game::Game(col c, player_type pt1, player_type pt2) :
+Game::Game(col color, player_type pt1, player_type pt2) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player1(pt1, c, _chessboard),
-    _player2(pt2, c == white ? black : white, _chessboard),
+    _player1(pt1, color, _chessboard),
+    _player2(pt2, color == white ? black : white, _chessboard),
     _moveno(1),
     _col_to_move(white),
     _score(0)
 {
-  _player[c] = &_player1;
-  _player[c == white ? black : white] = &_player2;
+  _player[color] = &_player1;
+  _player[color == white ? black : white] = &_player2;
 }
 
 Game::~Game()
@@ -86,14 +86,14 @@ col Game::get_col_to_move() const
   return _col_to_move;
 }
 
-void Game::set_col_to_move(col c)
+void Game::set_col_to_move(col color)
 {
-  _col_to_move = c;
+  _col_to_move = color;
 }
 
-void Game::set_col_to_start(col c)
+void Game::set_col_to_start(col color)
 {
-  _move_log.set_col_to_start(c);
+  _move_log.set_col_to_start(color);
 }
 
 void Game::set_castling_state(const Castling_state &cs)
@@ -171,7 +171,7 @@ void Game::start()
       playing = false;
     }
     uint64_t nsec_stop = current_time.nanoseconds();
-    long timediff = nsec_stop - nsec_start;
+    uint64_t timediff = nsec_stop - nsec_start;
     cout << "time spent = " << timediff << " ns" << endl;
     _col_to_move = (_col_to_move == white) ? black : white;
 
@@ -230,9 +230,9 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
       logfile << "Error: Stopped playing" << "\n";
   }
   uint64_t nsec_stop = current_time.nanoseconds();
-  long timediff = (nsec_stop - nsec_start)/1e6; // us
+  uint64_t timediff = (nsec_stop - nsec_start);
   if (logfile_is_open)
-    logfile << "time spent by C2 = " << timediff << " milliseconds" << "\n";
+    logfile << "time spent by C2 = " << (float)timediff << " milliseconds" << "\n";
   // We have made move and the board and possible_moves has been calculated for the other player,
   // (inside_make_a_move() so we must evaluate the position from his point of view.
   _col_to_move = _col_to_move == white?black:white;

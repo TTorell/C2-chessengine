@@ -68,9 +68,9 @@ class Movelog: public Movelist
     }
 
 
-    void set_col_to_start(col c)
+    void set_col_to_start(col color)
     {
-      _col_to_start = c;
+      _col_to_start = color;
     }
 
     void set_first_moveno(int moveno)

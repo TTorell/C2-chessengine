@@ -118,12 +118,12 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
 {
   int rank = 8;
   int file = a;
-  char c = '0';
-  for (unsigned i = 0; i < FEN_string.size() && c != ' '; i++)
+  char ch = '0';
+  for (unsigned i = 0; i < FEN_string.size() && ch != ' '; i++)
   {
     Piece* p = 0;
-    c = FEN_string[i];
-    switch (c)
+    ch = FEN_string[i];
+    switch (ch)
     {
       case ' ':
         continue;
@@ -171,7 +171,7 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
       case '6':
       case '7':
       case '8':
-        file += c - '0';
+        file += ch - '0';
         if (file > h + 1)
         {
           cerr << "Read error: corrupt input " << endl;
@@ -188,7 +188,7 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
         }
         break;
       default:
-        cerr << "Read error: unexpected character" << c << endl;
+        cerr << "Read error: unexpected character" << ch << endl;
         return -1;
     }
     if (p)

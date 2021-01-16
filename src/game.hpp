@@ -25,7 +25,7 @@ class Game {
 
     col _col_to_move;
     float _score = 0.0;
-    int _half_move_counter = 0.0;
+    int _half_move_counter = 0;
     PGN_info _pgn_info;
 
   public:

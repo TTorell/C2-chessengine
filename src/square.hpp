@@ -70,9 +70,9 @@ class Square {
         delete (_piece);
       _piece = newpiece;
     }
-    bool contains_piece(col c, piecetype pt) const
+    bool contains_piece(col color, piecetype pt) const
     {
-      if (_piece && _piece->is(c, pt))
+      if (_piece && _piece->is(color, pt))
         return true;
       return false;
     }
@@ -201,9 +201,9 @@ class Square {
     {
       return _position.same_diagonal(s->_position);
     }
-    bool contains(col c, piecetype pt)
+    bool contains(col color, piecetype pt)
     {
-      if (_piece && _piece->is(c, pt))
+      if (_piece && _piece->is(color, pt))
         return true;
       return false;
     }

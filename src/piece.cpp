@@ -40,22 +40,22 @@ ostream& Piece::write_diagram_style(ostream& os) const
     switch (_type)
     {
       case King:
-        os << ((_color==white) ? "\u2654" : "\u265A");
+        os << ((_color==white) ? u"\u2654" : u"\u265A");
         break;
       case Queen:
-        os << ((_color==white) ? "\u2655":"\u265B");
+        os << ((_color==white) ? u"\u2655":u"\u265B");
         break;
       case Rook:
-        os << ((_color==white) ? "\u2656":"\u265C");
+        os << ((_color==white) ? u"\u2656":u"\u265C");
         break;
       case Bishop:
-        os << ((_color==white) ? "\u2657":"\u265D");
+        os << ((_color==white) ? u"\u2657":u"\u265D");
         break;
       case Knight:
-        os << ((_color==white) ? "\u2658":"\u265E");
+        os << ((_color==white) ? u"\u2658":u"\u265E");
         break;
       case Pawn:
-        os << ((_color==white) ? "\u2659":"\u265F");
+        os << ((_color==white) ? u"\u2659":u"\u265F");
         break;
       default: cerr << "Undefined piece type in Piece::write_diagram_style" << endl;
     }
