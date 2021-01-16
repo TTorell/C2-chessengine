@@ -4,6 +4,7 @@
 #include <sstream>
 #include "movelist.hpp"
 #include "move.hpp"
+#include "chessfuncs.hpp"
 
 namespace C2_chess
 {

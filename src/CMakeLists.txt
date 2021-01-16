@@ -34,13 +34,6 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-#if(MSVC)
-#    target_compile_options(${TARGET} PRIVATE /W4 /WX)
-#results in warning: cl : Command line warning D9025 : overriding '/W3' with '/W4'
-#else(MSVC)
-#    target_compile_options(${TARGET} PRIVATE -Wall -Wextra -pedantic -Werror)
-#endif(MSVC)
-
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest /W4")
     # Default debug flags are OK 
@@ -60,11 +53,15 @@ endif()
 # add the executable
 add_executable(C2 C2.cpp ${SOURCE_FILES})
 
+if(UNIX AND NOT APPLE)
+    # for Linux, BSD, Solaris, Minix
+    target_link_libraries(C2 pthread)
+endif()
+
 configure_file(C2Config.h.in C2Config.h)
 
 target_include_directories(C2 PUBLIC
                            "${PROJECT_BINARY_DIR}"
                            )
 
-target_link_libraries(C2
-)
+
