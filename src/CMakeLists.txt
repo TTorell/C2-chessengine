@@ -56,12 +56,10 @@ add_executable(C2 C2.cpp ${SOURCE_FILES})
 if(UNIX AND NOT APPLE)
     # for Linux, BSD, Solaris, Minix
     target_link_libraries(C2 pthread)
-    target_link_libraries(C2 PRIVATE "-Wl,--stack,100000000")
-    # or set_target_properties(<target> PROPERTIES LINK_FLAGS -Wl,--stack,10000000)
-    # or set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--stack,10000000")
+    #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--stack,10000000") didn't work
+    # or set_target_properties(<target> PROPERTIES LINK_FLAGS -Wl,--stack,10000000") didn't work
 else()
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:100000000")
-    #target_link_libraries(C2 PRIVATE "/STACK:10000000") didn't work'
 endif()
 
 configure_file(C2Config.h.in C2Config.h)

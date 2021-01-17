@@ -1888,9 +1888,13 @@ float Board::max(int level, int move_no, float alpha, float beta, int& best_move
   int dummy_index;
   best_move_index = -1;
   level++;
-  cout << "level = " << level << endl;
-  bool last_move_was_take_or_check = _last_move.get_take() || _last_move.get_check();
-  if (is_end_node() || (level >= max_search_level && !last_move_was_take_or_check))
+//  cout << "level = " << level << endl;
+//  bool last_move_was_take_or_check = _last_move.get_take() || _last_move.get_check();
+//  if (is_end_node() || (level >= max_search_level && !last_move_was_take_or_check))
+//  {
+//    return evaluate_position(col::white, outputtype::silent, level);
+//  }
+  if (is_end_node() || level >= max_search_level)
   {
     return evaluate_position(col::white, outputtype::silent, level);
   }
@@ -1940,8 +1944,12 @@ float Board::min(int level, int move_no, float alpha, float beta, int& best_move
 
   best_move_index = -1;
   level++;
-  bool last_move_was_take_or_check = _last_move.get_take() || _last_move.get_check();
-  if (is_end_node() || (level >= max_search_level && !last_move_was_take_or_check))
+//  bool last_move_was_take_or_check = _last_move.get_take() || _last_move.get_check();
+//  if (is_end_node() || (level >= max_search_level && !last_move_was_take_or_check))
+//  {
+//    return evaluate_position(col::black, outputtype::silent, level);
+//  }
+  if (is_end_node() || level >= max_search_level)
   {
     return evaluate_position(col::black, outputtype::silent, level);
   }
