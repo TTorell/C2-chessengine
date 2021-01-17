@@ -157,7 +157,7 @@ int C2_unit_test::main_test(ostream& os)
   movelog.into(m5);
   movelog.write(os) << endl;
 
-  Movelog movelog2(black, 1);
+  Movelog movelog2(col::black, 1);
   movelog2.into(m2);
   movelog2.into(m3);
   movelog2.into(m4);
@@ -167,7 +167,7 @@ int C2_unit_test::main_test(ostream& os)
   movelist = movelog2;
   movelog.write(os) << endl;
 
-  movelog.set_col_to_start(white);
+  movelog.set_col_to_start(col::white);
   movelog.into_as_first(m1);
   movelog.write(os) << endl;
 

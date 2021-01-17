@@ -216,13 +216,13 @@ class Square {
       // threats are only from the other color.
       if (_piece)
       {
-        if (_piece->is(white))
+        if (_piece->is(col::white))
           return (count_protections() - count_threats());
         else
           return (count_threats() - count_protections());
       }
       // no piece (no protections only mixed threats)
-      return (count_threats(white) - count_threats(black));
+      return (count_threats(col::white) - count_threats(col::black));
     }
     operator const Position&() const
     {

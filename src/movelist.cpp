@@ -168,7 +168,7 @@ ostream & Movelog::write(ostream & os) const
   {
     ostringstream move;
     move << *_list[i];
-    if (i == 0 && _col_to_start == black)
+    if (i == 0 && _col_to_start == col::black)
     {
       os << moveno++ << "." << left << setw(9) << "  ...  " << move.str() << endl;
       increment = 1;

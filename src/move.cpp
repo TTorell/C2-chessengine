@@ -8,8 +8,8 @@
 namespace C2_chess
 {
 
-Move::Move() :
-    _from(f, 6), _to(g, 8), _piece_type(Knight), _take(false), _target_piece_type(Pawn), _en_passant(false), _promotion(false), _promotion_piece_type(Undefined), _check(false),
+    Move::Move() :
+        _from(f, 6), _to(g, 8), _piece_type(piecetype::Knight), _take(false), _target_piece_type(piecetype::Pawn), _en_passant(false), _promotion(false), _promotion_piece_type(piecetype::Undefined), _check(false),
     _mate(false), _stalemate(false)
 {
 }
@@ -37,18 +37,18 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
     _take = true;
     _target_piece_type = p2->get_type();
     _en_passant = false;
-    if (_piece_type == Pawn)
-      if (p->get_color() == white ? _from.get_rank() == 7 : _from.get_rank() == 2)
+    if (_piece_type == piecetype::Pawn)
+      if (p->get_color() == col::white ? _from.get_rank() == 7 : _from.get_rank() == 2)
         _promotion = true;
   }
   else // No piece on targetsquare
   {
-    _target_piece_type = Undefined;
+    _target_piece_type = piecetype::Undefined;
     int file_diff = abs(_to.get_file() - _from.get_file());
     int rank_diff = abs(_to.get_rank() - _from.get_rank());
     switch (_piece_type)
     {
-      case Pawn:
+      case piecetype::Pawn:
       {
         require_m(rank_diff <= 2,
         __FILE__,
@@ -62,14 +62,14 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
                     __func__,
                     __LINE__,
                     *this);
-          require_m(p->get_color() == white ? _from.get_rank() == 2 : _from.get_rank() == 7,
+          require_m(p->get_color() == col::white ? _from.get_rank() == 2 : _from.get_rank() == 7,
           __FILE__,
                     __func__,
                     __LINE__,
                     *this);
           _take = false;
           _promotion = false;
-          _promotion_piece_type = Undefined;
+          _promotion_piece_type = piecetype::Undefined;
         }
         else
         {
@@ -78,30 +78,30 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
                     __func__,
                     __LINE__,
                     *this);
-          if (p->get_color() == white ? _from.get_rank() == 7 : _from.get_rank() == 2)
+          if (p->get_color() == col::white ? _from.get_rank() == 7 : _from.get_rank() == 2)
             _promotion = true;
           if (file_diff == 0)
           {
             _take = false;
             _en_passant = false;
-            _target_piece_type = Pawn;
+            _target_piece_type = piecetype::Pawn;
           }
           else //rank_diff==1 and file_diff==1 and not a take
           {
-            require_m(p->get_color() == white ? _from.get_rank() == 5 : _from.get_rank() == 4,
+            require_m(p->get_color() == col::white ? _from.get_rank() == 5 : _from.get_rank() == 4,
             __FILE__,
                       __func__,
                       __LINE__,
                       *this);
             _en_passant = true;
             _take = true;
-            _target_piece_type = Pawn;
+            _target_piece_type = piecetype::Pawn;
             _promotion = false;
           }
         }
         break;
       }
-      case Rook:
+      case piecetype::Rook:
       {
         require_m(file_diff == 0 || rank_diff == 0,
         __FILE__,
@@ -109,11 +109,11 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
                   __LINE__,
                   *this);
         _promotion = false;
-        _promotion_piece_type = Undefined;
+        _promotion_piece_type = piecetype::Undefined;
         _en_passant = false;
         break;
       }
-      case Knight:
+      case piecetype::Knight:
       {
         require_m(file_diff <= 2 && rank_diff <= 2 && file_diff >= 1 && rank_diff >= 1,
         __FILE__,
@@ -126,11 +126,11 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
                   __LINE__,
                   *this);
         _promotion = false;
-        _promotion_piece_type = Undefined;
+        _promotion_piece_type = piecetype::Undefined;
         _en_passant = false;
         break;
       }
-      case Bishop:
+      case piecetype::Bishop:
       {
         require_m(file_diff == rank_diff,
         __FILE__,
@@ -138,11 +138,11 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
                   __LINE__,
                   *this);
         _promotion = false;
-        _promotion_piece_type = Undefined;
+        _promotion_piece_type = piecetype::Undefined;
         _en_passant = false;
         break;
       }
-      case Queen:
+      case piecetype::Queen:
       {
         require_m(file_diff == 0 || rank_diff == 0 || file_diff == rank_diff,
         __FILE__,
@@ -150,11 +150,11 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
                   __LINE__,
                   *this);
         _promotion = false;
-        _promotion_piece_type = Undefined;
+        _promotion_piece_type = piecetype::Undefined;
         _en_passant = false;
         break;
       }
-      case King:
+      case piecetype::King:
       {
         require_m(rank_diff <= 1 && file_diff <= 2,
         __FILE__,
@@ -173,7 +173,7 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
                     __func__,
                     __LINE__,
                     *this);
-          if (p->get_color() == white)
+          if (p->get_color() == col::white)
             require_m(from->get_position().get_rank() == 1,
             __FILE__,
                       __func__,
@@ -187,7 +187,7 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
                       *this);
         }
         _promotion = false;
-        _promotion_piece_type = Undefined;
+        _promotion_piece_type = piecetype::Undefined;
         _en_passant = false;
         break;
       }
@@ -258,7 +258,7 @@ ostream& operator<<(ostream& os, const Move& m)
 {
   switch (m._piece_type)
   {
-    case King:
+    case piecetype::King:
     {
       if ((m._to.get_file() - m._from.get_file()) == 2 || (m._to.get_file() - m._from.get_file()) == -2)
       {
@@ -271,16 +271,16 @@ ostream& operator<<(ostream& os, const Move& m)
       os << "K";
       break;
     }
-    case Queen:
+    case piecetype::Queen:
       os << "Q";
       break;
-    case Rook:
+    case piecetype::Rook:
       os << "R";
       break;
-    case Bishop:
+    case piecetype::Bishop:
       os << "B";
       break;
-    case Knight:
+    case piecetype::Knight:
       os << "N";
       break;
     default:
@@ -296,16 +296,16 @@ ostream& operator<<(ostream& os, const Move& m)
     os << " " << "e.p.";
   switch (m._promotion_piece_type)
   {
-    case Queen:
+    case piecetype::Queen:
       os << "Q";
       break;
-    case Rook:
+    case piecetype::Rook:
       os << "R";
       break;
-    case Bishop:
+    case piecetype::Bishop:
       os << "B";
       break;
-    case Knight:
+    case piecetype::Knight:
       os << "N";
       break;
     default:

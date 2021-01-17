@@ -46,44 +46,44 @@ class Castling_state {
 
     bool is_castling_OK(col color) const
     {
-      return (color == white ? _w_kingside_OK || _w_queenside_OK : _b_kingside_OK || _b_queenside_OK);
+      return (color == col::white ? _w_kingside_OK || _w_queenside_OK : _b_kingside_OK || _b_queenside_OK);
     }
 
     bool is_kingside_castling_OK(col color) const
     {
-      return (color == white ? _w_kingside_OK : _b_kingside_OK);
+      return (color == col::white ? _w_kingside_OK : _b_kingside_OK);
     }
 
     bool is_queenside_castling_OK(col color) const
     {
-      return (color == white ? _w_queenside_OK : _b_queenside_OK);
+      return (color == col::white ? _w_queenside_OK : _b_queenside_OK);
     }
 
     void king_rook_moved(col color)
     {
-      color == white ? _w_kingside_OK = false : _b_kingside_OK = false;
+      color == col::white ? _w_kingside_OK = false : _b_kingside_OK = false;
     }
 
     void queen_rook_moved(col color)
     {
-      color == white ? _w_queenside_OK = false : _b_queenside_OK = false;
+      color == col::white ? _w_queenside_OK = false : _b_queenside_OK = false;
     }
 
     void king_moved(col color)
     {
-      color == white ? _w_kingside_OK = false, _w_queenside_OK = false : _b_kingside_OK = false, _b_queenside_OK = false;
+      color == col::white ? _w_kingside_OK = false, _w_queenside_OK = false : _b_kingside_OK = false, _b_queenside_OK = false;
     }
 
     bool has_castled(col color) const
     {
-      if (color == white)
+      if (color == col::white)
         return _w_has_castled;
       return _b_has_castled;
     }
 
     void set_has_castled(col color)
     {
-      color == white ? _w_has_castled = true : _b_has_castled = true;
+      color == col::white ? _w_has_castled = true : _b_has_castled = true;
     }
 
     friend ostream& operator<<(ostream& os, const Castling_state& p);

@@ -78,18 +78,18 @@ col white_or_black()
     cin >> st;
     if (st[0] == 'w')
     {
-      return white;
+      return col::white;
       try_again = false;
     }
     else if (st[0] == 'b')
     {
-      return black;
+      return col::black;
       try_again = false;
     }
     else
       cout << "Enter w or b" << endl;
   }
-  return white;
+  return col::white;
 }
 
 // Method for the cmdline-interface

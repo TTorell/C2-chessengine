@@ -15,7 +15,8 @@ const int h = 7;
 const float eval_max = 100.0F;
 const float eval_min = -eval_max;
 const float epsilon = 0.00000001F;
-enum piecetype {
+
+enum class piecetype {
   King,
   Queen,
   Rook,
@@ -24,19 +25,20 @@ enum piecetype {
   Pawn,
   Undefined
 };
-enum col {
+enum class col {
   white = 0,
   black = 1
 };
-enum player_type {
+enum class playertype {
   computer,
   human
 };
-enum output_type {
+
+enum class outputtype {
   verbose,
   silent,
   debug,
   cmd_line_diagram
 };
-}
+} // namespace
 #endif

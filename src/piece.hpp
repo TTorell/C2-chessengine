@@ -16,7 +16,7 @@ class Piece {
 
   private:
     Piece() :
-        _type(Undefined), _color(white)
+        _type(piecetype::Undefined), _color(col::white)
     {
     }
 

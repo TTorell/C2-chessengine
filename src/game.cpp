@@ -20,14 +20,14 @@ Game::Game() :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player1(human, white, _chessboard),
-    _player2(computer, black, _chessboard),
+    _player1(playertype::human, col::white, _chessboard),
+    _player2(playertype::computer, col::black, _chessboard),
     _moveno(1),
-    _col_to_move(white),
+    _col_to_move(col::white),
     _score(0)
 {
-  _player[white] = &_player1;
-  _player[black] = &_player2;
+  _player[static_cast<int>(col::white)] = &_player1;
+  _player[static_cast<int>(col::black)] = &_player2;
   _chessboard.setup_pieces();
   _chessboard.init(_col_to_move);
   _chessboard.calculate_moves(_col_to_move);
@@ -37,28 +37,28 @@ Game::Game(col color) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player1(human, color, _chessboard),
-    _player2(computer, color == white ? black : white, _chessboard),
+    _player1(playertype::human, color, _chessboard),
+    _player2(playertype::computer, color == col::white ? col::black : col:: white, _chessboard),
     _moveno(1),
-    _col_to_move(white),
+    _col_to_move(col::white),
     _score(0)
 {
-  _player[color] = &_player1;
-  _player[color == white ? black : white] = &_player2;
+  _player[static_cast<int>(color)] = &_player1;
+  _player[static_cast<int>(color == col::white ? col::black : col::white)] = &_player2;
 }
 
-Game::Game(col color, player_type pt1, player_type pt2) :
+Game::Game(col color, playertype pt1, playertype pt2) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
     _player1(pt1, color, _chessboard),
-    _player2(pt2, color == white ? black : white, _chessboard),
+    _player2(pt2, color == col::white ? col::black : col::white, _chessboard),
     _moveno(1),
-    _col_to_move(white),
+    _col_to_move(col::white),
     _score(0)
 {
-  _player[color] = &_player1;
-  _player[color == white ? black : white] = &_player2;
+  _player[static_cast<int>(color)] = &_player1;
+  _player[static_cast<int>(color == col::white ? col::black : col::white)] = &_player2;
 }
 
 Game::~Game()
@@ -126,7 +126,7 @@ void Game::set_moveno(int moveno)
   }
 }
 
-ostream& Game::write_chessboard(ostream& os, output_type ot, col from_perspective) const
+ostream& Game::write_chessboard(ostream& os, outputtype ot, col from_perspective) const
 {
   _chessboard.write(os, ot, from_perspective);
   return os;
@@ -134,13 +134,13 @@ ostream& Game::write_chessboard(ostream& os, output_type ot, col from_perspectiv
 
 ostream& Game::write_diagram(ostream& os) const
 {
-  if (_player[white]->get_type() == human)
-    _chessboard.write(os, cmd_line_diagram, white) << endl;
-  else if (_player[black]->get_type() == human)
-    _chessboard.write(os, cmd_line_diagram, black) << endl;
+  if (_player[static_cast<int>(col::white)]->get_type() == playertype::human)
+    _chessboard.write(os, outputtype::cmd_line_diagram, col::white) << endl;
+  else if (_player[static_cast<int>(col::black)]->get_type() == playertype::human)
+    _chessboard.write(os, outputtype::cmd_line_diagram, col::black) << endl;
   else
     // The computer is playing itself
-    _chessboard.write(os, cmd_line_diagram, white) << endl;
+    _chessboard.write(os, outputtype::cmd_line_diagram, col::white) << endl;
   return os;
 }
 
@@ -165,7 +165,7 @@ void Game::start()
     write_diagram(cout);
 //    write_chessboard(cout, debug, white);
     uint64_t nsec_start = current_time.nanoseconds();
-    if (_player[_col_to_move]->make_a_move(_moveno, _score, playing, max_search_level, use_pruning) != 0)
+    if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, playing, max_search_level, use_pruning) != 0)
     {
       cout << "Stopped playing" << endl;
       playing = false;
@@ -173,9 +173,9 @@ void Game::start()
     uint64_t nsec_stop = current_time.nanoseconds();
     uint64_t timediff = nsec_stop - nsec_start;
     cout << "time spent = " << timediff << " ns" << endl;
-    _col_to_move = (_col_to_move == white) ? black : white;
+    _col_to_move = (_col_to_move == col::white) ? col::black : col::white;
 
-    float evaluation = _chessboard.evaluate_position(_col_to_move, silent, 0);
+    float evaluation = _chessboard.evaluate_position(_col_to_move, outputtype::silent, 0);
     if (evaluation == eval_max || evaluation == eval_min)
     {
       _chessboard.set_mate(true);
@@ -196,9 +196,9 @@ void Game::start()
     }
     else
     {
-      cout << _chessboard.evaluate_position(_col_to_move, debug, 0) << endl << endl;
+      cout << _chessboard.evaluate_position(_col_to_move, outputtype::debug, 0) << endl << endl;
       Move last_move = _chessboard.get_last_move();
-      if (last_move.get_take() || last_move.get_piece_type() == Pawn)
+      if (last_move.get_take() || last_move.get_piece_type() == piecetype::Pawn)
         _half_move_counter = 0;
       else
         _half_move_counter++;
@@ -224,7 +224,7 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
     use_pruning = true;
   bool playing = true;
   uint64_t nsec_start = current_time.nanoseconds();
-  if (_player[_col_to_move]->make_a_move(_moveno, _score, playing, max_search_level, use_pruning) != 0)
+  if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, playing, max_search_level, use_pruning) != 0)
   {
     if (logfile_is_open)
       logfile << "Error: Stopped playing" << "\n";
@@ -235,8 +235,8 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
     logfile << "time spent by C2 = " << (float)timediff << " milliseconds" << "\n";
   // We have made move and the board and possible_moves has been calculated for the other player,
   // (inside_make_a_move() so we must evaluate the position from his point of view.
-  _col_to_move = _col_to_move == white?black:white;
-  float evaluation = _chessboard.evaluate_position(_col_to_move, silent, 0);
+  _col_to_move = _col_to_move == col::white? col::black : col::white;
+  float evaluation = _chessboard.evaluate_position(_col_to_move, outputtype::silent, 0);
   if (evaluation == eval_max || evaluation == eval_min)
   {
     _chessboard.set_mate(true);
@@ -266,9 +266,9 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
   else
   {
     if (logfile_is_open)
-      logfile << _chessboard.evaluate_position(_col_to_move, silent, 0) << "\n" << "\n";
+      logfile << _chessboard.evaluate_position(_col_to_move, outputtype::silent, 0) << "\n" << "\n";
     Move last_move = _chessboard.get_last_move();
-    if (last_move.get_take() || last_move.get_piece_type() == Pawn)
+    if (last_move.get_take() || last_move.get_piece_type() == piecetype::Pawn)
       _half_move_counter = 0;
     else
       _half_move_counter++;

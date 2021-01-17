@@ -20,8 +20,8 @@ namespace C2_chess
 {
 
 
-Player::Player(player_type p, col color, Board& bo) : _chessboard(bo),
-    _type(p), _colour(color), _other_col(color == white ? black : white)
+Player::Player(playertype p, col color, Board& bo) : _chessboard(bo),
+    _type(p), _colour(color), _other_col(color == col::white ? col::black : col::white)
 {
   //cout << "Player construcor1" << endl;
 }
@@ -38,15 +38,15 @@ col Player::get_colour()
 void Player::set_colour(col tc)
 {
   _colour = tc;
-  _other_col = tc == white ? black : white;
+  _other_col = tc == col::white ? col::black : col::white;
 }
 
-player_type Player::get_type()
+playertype Player::get_type()
 {
   return _type;
 }
 
-void Player::set_type(player_type t)
+void Player::set_type(playertype t)
 {
   _type = t;
 }
@@ -109,15 +109,15 @@ void Player::set_type(player_type t)
 int Player::make_a_move(int& move_no, float& score, bool& playing, const int& max_search_level ,bool use_pruning)
 {
   playing = true;
-  if (_type == human)
+  if (_type == playertype::human)
   {
-    return _chessboard.make_move(human, move_no, _colour);
+    return _chessboard.make_move(playertype::human, move_no, _colour);
   }
   else // _type == computer
   {
     int best_move_index;
     float alpha = -100, beta = 100;
-    if (_colour == white)
+    if (_colour == col::white)
     {
       score = _chessboard.max(0,  move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
       if (best_move_index == -1 && score == -100.0)

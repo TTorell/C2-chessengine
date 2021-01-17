@@ -50,13 +50,13 @@ class Movelist
 class Movelog: public Movelist
 {
   protected:
-    col _col_to_start = white;
+    col _col_to_start = col::white;
     int _first_moveno = 1;
   public:
     Movelog() :
         Movelist()
     {
-      _col_to_start = white;
+      _col_to_start = col::white;
       _first_moveno = 1;
     }
 

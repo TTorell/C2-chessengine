@@ -128,40 +128,40 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
       case ' ':
         continue;
       case 'K':
-        p = new Piece(King, white);
+        p = new Piece(piecetype::King, col::white);
         break;
       case 'k':
-        p = new Piece(King, black);
+        p = new Piece(piecetype::King, col::black);
         break;
       case 'Q':
-        p = new Piece(Queen, white);
+        p = new Piece(piecetype::Queen, col::white);
         break;
       case 'q':
-        p = new Piece(Queen, black);
+        p = new Piece(piecetype::Queen, col::black);
         break;
       case 'B':
-        p = new Piece(Bishop, white);
+        p = new Piece(piecetype::Bishop, col::white);
         break;
       case 'b':
-        p = new Piece(Bishop, black);
+        p = new Piece(piecetype::Bishop, col::black);
         break;
       case 'N':
-        p = new Piece(Knight, white);
+        p = new Piece(piecetype::Knight, col::white);
         break;
       case 'n':
-        p = new Piece(Knight, black);
+        p = new Piece(piecetype::Knight, col::black);
         break;
       case 'R':
-        p = new Piece(Rook, white);
+        p = new Piece(piecetype::Rook, col::white);
         break;
       case 'r':
-        p = new Piece(Rook, black);
+        p = new Piece(piecetype::Rook, col::black);
         break;
       case 'P':
-        p = new Piece(Pawn, white);
+        p = new Piece(piecetype::Pawn, col::white);
         break;
       case 'p':
-        p = new Piece(Pawn, black);
+        p = new Piece(piecetype::Pawn, col::black);
         break;
       case '1':
       case '2':
@@ -209,13 +209,13 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
   is >> col_to_move;
   if (col_to_move == "w")
   {
-    _game.set_col_to_move(white);
-    _game.set_col_to_start(white);
+    _game.set_col_to_move(col::white);
+    _game.set_col_to_start(col::white);
   }
   else if (col_to_move == "b")
   {
-    _game.set_col_to_move(black);
-    _game.set_col_to_start(black);
+    _game.set_col_to_move(col::black);
+    _game.set_col_to_start(col::black);
   }
   else
   {

@@ -31,7 +31,7 @@ class Game {
   public:
     Game();
     Game(col c);
-    Game(col c, player_type pt1, player_type pt2);
+    Game(col c, playertype pt1, playertype pt2);
     ~Game();
     void init();
     void clear_chessboard();
@@ -47,7 +47,7 @@ class Game {
     void set_en_passant_square(int file, int rank);
     void set_half_move_counter(int half_move_counter);
     void set_moveno(int moveno);
-    ostream& write_chessboard(ostream& os, output_type ot, col from_perspective) const;
+    ostream& write_chessboard(ostream& os, outputtype ot, col from_perspective) const;
     ostream& write_diagram(ostream& os) const;
     Shared_ostream& write_diagram(Shared_ostream& os) const;
 };
