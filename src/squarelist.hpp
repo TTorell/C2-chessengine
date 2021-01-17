@@ -14,9 +14,9 @@ class Squarelist
 		Square* _list[SQUARELISTMAX];
 		int _no_of_elements;
 		int _listindex; //Changes to _listindex is not considered
-							 //to change the object status,
-							 //So member functions can change _listindex but still
-							 //be declared const. See first() and next().
+					    //to change the object status,
+					    //So member functions can change _listindex but still
+					    //be declared const. See first() and next().
 	public:
 		Squarelist();
 		~Squarelist();

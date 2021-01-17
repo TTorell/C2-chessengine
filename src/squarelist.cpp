@@ -110,7 +110,7 @@ Square* Squarelist::operator[](int i) const
   else
   {
     cerr << "index out of bound error in Squarelist[]" << endl;
-    return (Square*) _list[i];
+    return NULL;
   }
 }
 }
