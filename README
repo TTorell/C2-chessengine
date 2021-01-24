@@ -6,40 +6,54 @@ written in C++. I started on it long ago, and returned to it occasionally.
 It doesn't play too well and it's kind of slow. It has been an interesting
 task though.
 
-It has beaten me a small number of times.
+It has beaten me a small number of times,
 (My hess-rating was once 1970 in long games)
 
-I've tried it connected to the SCID-chessprogram on Ubuntu 20.04.
-(Just configure a new engine in SCID pointing out the executable file.
+It requires another program to run it, a UCI-speaking chess GUI.
+There are some of them easily downloded from the web, SCID or Jerry-chess GUI,
+for instance. You can of coarse connect them to much better chess-engines
+than this one, The free Stockfish is a good one. (comes with Ubuntu to install
+with "sudo apt install stockfish".) The gui and the engine simply communicates
+through stdin and stdout.
+
+I've tried C2 e.g.connected to the SCID-chessprogram on Ubuntu 20.04.
+(Just configure a new analysis-engine in SCID pointing out the executable file.
 If you configure SCID to start the engine from a working directory
 where you have write-permissions, it will log all commands and responses
 from/to the GUI in a file named command_log.txt)
-It plays, but doesn't yet work as an analysis-engine. The number
-of possible commands, from a chess-GUI, which it responds
-to is limited.
+It plays, but doesn't yet work as a true analysis-engine. The number
+of possible commands, from a chess-GUI, which it responds to is limited.
 
-There is also a rudimentary command-line interface. Which I have used
-for testing some times. (Just run the executable from the commandline,
-there will be no output or prompt, but enter "cmd" from the keyboard
-to try that. The input move syntax  is simply e2e4 g1f3 etc but it
-accepts for instance Ng1-f3 as well. Use a terminal with black text on
-a white background. Starting from a position given in a .pgn-file 
-requires you to copy the file ChooseFile.class into the GUI:s configurable
- working-directory from where it starts C2, and to have java installed.)
+There is also a rudimentary, to say the least, command-line interface. Which I
+have used for testing some times. (Just run the executable from the commandline,
+there will be no output or prompt, but enter "cmd" from the keyboard to try that.
+The input move syntax is simply e2e4 g1f3 etc but it accepts for instance Ng1-f3
+as well. Use a terminal with black text on a white background.
+Starting from a position given in a .pgn-file requires you to copy the file 
+ChooseFile.class into the GUI:s configurable working-directory from where it
+starts C2, and to have java installed.)
 
+Linux:
+------
 I normally compile it with gcc (g++) from within Eclipse on Ubuntu.
-The only linkage-flag needed seems to be -lpthread,
-And I use (among others) the dialect-compiler-flag
--std=c++14, and -o3 in a futile attempt to make it as
-fast as Fritz or Stockfish ;-).
-I have added a CMakeLists.txt in the src-directory just now,
+The only linkage-flag needed seems to be -lpthread.
+And I use (among others) the dialect-compiler-flag -std=c++14, and
+-o3 in a completely futile attempt to make it as fast as Fritz or Stockfish.
+I have added a CMakeLists.txt in the src-directory a while ago,
 so it should hopefully be possible to build it with cmake as well.
-(It probably won't build on windows yet though, only Linux/Unix,
-for the moment).
+
+Windows:
+--------
+Actually, I made it build on windows 10 too with the help of
+the Cmake file and I tried it with the free Visual studio Community
+edition there. Unfortunately it runs even a bit slower on windows,
+though I specified max optimization with the -O2 flag in CMakelist.txt.
 
 The main routine is in C2.cpp.
 The chess-logic is in Board.cpp. 
 
+How does it work?:
+------------------
 To calculate the best move in a given position I use the
 min/max-algorithm with pruning of the "search-tree". No AI.
 There are some videos on youtube explaining how it works.
@@ -66,14 +80,16 @@ from the GUI. It always comes up with the same move in a given position.
 (No random beaviour). It cannot yet "ponder" when the opponent is thinking.
 It just waits for next input-command.
 
-I update and improve it once in a while when I feel for it.
-To make it really fast will probably require serious redesign.
-I think it copies too much data and claculates too much when
-traversing the "search-tree" going to a lower node.
-(copying the current board, making the move, calculating all 
-possible moves in the new position from scratch. 
+What's wrong with it?:
+------------------------
+I update, and improve it once in a while when I feel for it. To make it really
+fast will probably require serious redesign. I think it copies too much data and
+claculates too much when traversing the "search-tree" going to a lower node.
+(copying the current board position, making the move, calculating all possible moves
+in the new position from scratch.) The board-representation is also way too clumsy
+compared to stockfish bitboards.
 
-My next step will probably be to make it work on Windows as well.
+You can stop reading here.
 
 The rest of this file is just curiosa, some speculations about
 improvements and a thought about the algorithm.
@@ -81,7 +97,7 @@ No more useful info abot how to build or use the program.
 
 -----------------------------------------------------------------
  
-I have plans of improving the evaluation of a position by making the
+I have thoughts about improving the evaluation of a position by making the
 weights depend on the current move number or simply turning off some of
 the evaluation categories after a couple of moves.
 (counting development of pieces is hardly relevant in a rook and pawn
@@ -114,50 +130,35 @@ time considering 20 seconds per move) could result in the optimal setting
 of the weights, if the process converges towards a result at all.
 
 Adding AI to select moves would be intresting, but I don't have a clear
-picture of how to do it yet. I may have the necessary tools, at least.
-( In another project I have a home made configurable Neural Network C++-class.
-The necessary Matrix-class I took from the web somewhere and added some more
-functionality to it. I tried it on the MNIST data for learning number
-recogniton, but failed to make it any "wiser". So I got tired of it and
-temporarily laid the project to rest. (On the much simpler XOR problem with
-only two inputs and small numbers of nodes in the netork-layers it worked
-smoothly, converged nicely and when I printed the cost-function during the
-learning process it came out as a nice exponential curve, So it looks like
-my MNIST-problem may be somewhere outside the NN-class.)
+picture of how to do it yet.
 
 A thing about the Min/Max-algorithm I have thought about:
-When the search has reached the maximum level of the search tree,
-(we're in one of the leaves), the algorithm says to the program "You're
-not allowed to move any further, you must stop here and make an evaluation
-of this posion as it is right now. These are my rules. It's time to
-return an evaluation value back to the previous node".
-The program (the min- or the max-function to be more precise) thinks
-"Ah No, I've just taken my oppenent's Queen with my Queen and if I can't
-look any further I don't know if he can take it back. How (the hell) am
-I supposed to evaluate this?". Let's say it's the min-function.
-"Well OK, node above me, (perhaps I should clearify that I always think
-of the tree upside down) here you have my evaluation, but black is a Queen
-over in material right now, so don't be surprised that the value is
-a huge negative one", but I'm still not at all sure that I stand better,
-I may even stand much worse if white can take back my Queen next move".
-The node above, represented by the max-function, receives the value, but
-in the nature of max a huge negative value is bad. "Hm, I like large positive
-numbers, this value is the lowest I've received so far, and yet you say
-that white may stand better if he can take back the Queen. Sorry, Can't
-risk that. So far I have collected a much better value than yours from 
-another of my sub-nodes, I'll stick with that for now, because the algorithm
-insists that I must find the largest value from all my subnodes and return
-that value to the node above me". So, the max-function continues with
-another possible move and sends it to next sub-node for evaluation.
+All evaluations are done in the leaves of the search-three and
+almost always the reason to evalute is that we have reached the maximum
+search level. But such evaluations are hard to do if e.g. the last move
+was one where some piece was taken by another one. The min- or max-function
+isn't allowed to look any further. So, they don't know if the piece can
+be taken back or not. Suppose e.g.white would have stood much better after
+recapturing the queen. Didn't the program miss an opportunity here, because
+of min's forced "bad" evaluation, which in it's turn made max take the
+"wrong" decission and discard the variation.
 
-Suppose white would have stood much better after recapturing the queen.
-Didn't the program miss an opportunity here, because of min's forced "bad" evaluation,
-which in it's turn made max take the "wrong" decission and discard the variation.
+So, quite many of the evaluations will be completely wrong, because of
+the "material count evaluation category". How can the chess-engine still
+play decent chess?
 
-I've heard about continuing the search, but only among moves which are either a
-a check or a take until there are no such moves left, and then evaluate.
-Don't know if that works. Don't we miss other important moves then, which indirectly
-can lead to check mate, for instance.
+I made an experiment to continue the search down the "search-tree", just and
+only if the last move at max-level was a "take" or check, until we reached a node 
+were the last move wasn't a take or a check, and at that point evaluate and
+return. It worked for some seconds until we reached level 20 in some long
+move-series with only checks and takes, so that doesn't seem to be a feasible
+way to solve this problem. At least not for my slow chess-engine.
+(I had only pre-allocated 20 boards, one for each search level so the program
+crashed at level 21.) On the other hand, skiping checking for checks, there are
+only 32 pieces to be taken, and two of them are Kings. So a move-series with only
+takes can for sure never be longer than 30 moves. Maybe Stockfish can handle that.
+
+
 
 
 
