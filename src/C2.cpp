@@ -143,7 +143,7 @@ int play_on_cmd_line()
   return 0;
 }
 
-// This Mthod e.g. splits up commands from the GUI into tokens (words)
+// This Method e.g. splits up commands from the GUI into tokens (words)
 vector<string> split(const string &s, char delim)
 {
   vector<string> result;

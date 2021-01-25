@@ -7,15 +7,14 @@
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 
-extern "C"
-{
+extern "C" {
 #include <string.h>
 }
 
-//namespace
-//{
+namespace
+{
 //C2_chess::CurrentTime current_time;
-//}
+}
 
 namespace C2_chess
 {
@@ -23,7 +22,6 @@ namespace C2_chess
 using std::unique_ptr;
 using std::stringstream;
 
-// To reach level 15 is but a dream, but to be on the safe side ...
 Board Board::level_boards[15]; // definition, complete type
 
 Board::Board() :
@@ -31,8 +29,8 @@ Board::Board() :
 {
   for (int file = a; file <= h; file++)
   {
-    _file[a].set_name('a' + (char)file);
-   for (int rank = 1; rank <= 8; rank++)
+    _file[a].set_name('a' + (char) file);
+    for (int rank = 1; rank <= 8; rank++)
     {
       _file[file][rank] = new Square(file, rank);
     }
@@ -40,7 +38,7 @@ Board::Board() :
   // fix the ranks
   for (int rank = 1; rank <= 8; rank++)
   {
-    _rank[rank].set_name('0' + (char)rank);
+    _rank[rank].set_name('0' + (char) rank);
     for (int file = a; file <= h; file++)
     {
       _rank[rank][file] = _file[file][rank];
@@ -48,7 +46,7 @@ Board::Board() :
   }
 }
 
-Board::Board(const Board& from) :
+Board::Board(const Board &from) :
     Board()
 {
   *this = from;
@@ -60,7 +58,7 @@ Board::~Board()
   // The squares are "automatically" deleted in File::~File()
 }
 
-Board& Board::operator=(const Board& from)
+Board& Board::operator=(const Board &from)
 {
 
   clear();
@@ -90,7 +88,7 @@ Board& Board::operator=(const Board& from)
   {
     for (int rank = 1; rank <= 8; rank++)
     {
-      Piece* p = from._file[file][rank]->get_piece();
+      Piece *p = from._file[file][rank]->get_piece();
       if (p)
       {
         _file[file][rank]->contain_piece(new Piece(*p));
@@ -126,12 +124,12 @@ void Board::setup_pieces()
   _file[h][8]->contain_piece(new Piece(piecetype::Rook, col::black));
 }
 
-void Board::put_piece(Piece* const p, int file, int rank)
+void Board::put_piece(Piece *const p, int file, int rank)
 {
   _file[file][rank]->contain_piece(p);
 }
 
-bool Board::read_piece_type(piecetype& pt, char ch) const
+bool Board::read_piece_type(piecetype &pt, char ch) const
 {
   // method not important for efficiency
   switch (ch)
@@ -160,11 +158,11 @@ bool Board::read_piece_type(piecetype& pt, char ch) const
   return true;
 }
 
-ostream& Board::write(ostream& os, outputtype wt, col from_perspective) const
+ostream& Board::write(ostream &os, outputtype wt, col from_perspective) const
 {
   switch (wt)
   {
-      case outputtype::debug:
+    case outputtype::debug:
       os << "The latest move was: ";
       os << _last_move << endl;
       os << "Castling state is: " << _castling_state << endl;
@@ -188,11 +186,11 @@ ostream& Board::write(ostream& os, outputtype wt, col from_perspective) const
           for (int j = a; j <= h; j++)
           {
             os << "|";
-            Piece* p = _file[j][i]->get_piece();
+            Piece *p = _file[j][i]->get_piece();
             if (p)
               p->write_diagram_style(os);
             else
-              os << u"\u2662";
+              os << "\u2662";
           }
           os << "|#" << " " << i << endl;
         }
@@ -208,7 +206,7 @@ ostream& Board::write(ostream& os, outputtype wt, col from_perspective) const
           for (int j = h; j >= a; j--)
           {
             os << "|";
-            Piece* p = _file[j][i]->get_piece();
+            Piece *p = _file[j][i]->get_piece();
             if (p)
               p->write_diagram_style(os);
             else
@@ -226,7 +224,7 @@ ostream& Board::write(ostream& os, outputtype wt, col from_perspective) const
   return os;
 }
 
-Shared_ostream& Board::write(Shared_ostream& os, outputtype wt, col from_perspective) const
+Shared_ostream& Board::write(Shared_ostream &os, outputtype wt, col from_perspective) const
 {
   stringstream ss;
   write(ss, wt, from_perspective);
@@ -234,7 +232,7 @@ Shared_ostream& Board::write(Shared_ostream& os, outputtype wt, col from_perspec
   return os;
 }
 
-ostream& Board::write_possible_moves(ostream& os)
+ostream& Board::write_possible_moves(ostream &os)
 {
   os << _possible_moves << endl;
   return os;
@@ -292,7 +290,7 @@ void Board::init_castling(col this_col)
   }
 }
 
-void Board::init_rook_or_queen(int file, int rank, Square* s, Piece* p)
+void Board::init_rook_or_queen(int file, int rank, Square *s, Piece *p)
 {
   int tf = file;
   int tr = rank;
@@ -328,7 +326,7 @@ void Board::init_rook_or_queen(int file, int rank, Square* s, Piece* p)
   }
 }
 
-void Board::init_bishop_or_queen(int file, int rank, Square* s, Piece* p)
+void Board::init_bishop_or_queen(int file, int rank, Square *s, Piece *p)
 {
   int tf = file;
   int tr = rank;
@@ -377,11 +375,11 @@ int Board::init(col col_to_move)
   {
     for (int file = a; file <= h; file++)
     {
-      Piece* p = _file[file][rank]->get_piece();
+      Piece *p = _file[file][rank]->get_piece();
       if (p)
       {
         pieces_found = true;
-        Square* s = _file[file][rank];
+        Square *s = _file[file][rank];
         piecetype pt = p->get_type();
         switch (pt)
         {
@@ -502,15 +500,15 @@ int Board::init(col col_to_move)
   //  uint64_t nsec_stop = current_time.nanoseconds();
   //  int timediff = nsec_stop - nsec_start;
   //  cout << "init_nsecs = " << timediff << endl;
-  Square* king_square = _king_square[static_cast<int>(col_to_move)];
+  Square *king_square = _king_square[static_cast<int>(col_to_move)];
   int king_file_index = king_square->get_fileindex();
   int king_rank_index = king_square->get_rankindex();
   tf = king_file_index;
   tr = king_rank_index;
-  Square* own_piece_square = 0;
+  Square *own_piece_square = 0;
   while (allowed(++tf, ++tr))
   {
-    Piece* p = _file[tf][tr]->get_piece();
+    Piece *p = _file[tf][tr]->get_piece();
     if (p)
     {
       if (p->is(other_col))
@@ -536,7 +534,7 @@ int Board::init(col col_to_move)
   own_piece_square = 0;
   while (allowed(--tf, --tr))
   {
-    Piece* p = _file[tf][tr]->get_piece();
+    Piece *p = _file[tf][tr]->get_piece();
     if (p)
     {
       if (p->is(other_col))
@@ -563,7 +561,7 @@ int Board::init(col col_to_move)
   own_piece_square = 0;
   while (allowed(++tf, --tr))
   {
-    Piece* p = _file[tf][tr]->get_piece();
+    Piece *p = _file[tf][tr]->get_piece();
     if (p)
     {
       if (p->is(other_col))
@@ -589,7 +587,7 @@ int Board::init(col col_to_move)
   own_piece_square = 0;
   while (allowed(--tf, ++tr))
   {
-    Piece* p = _file[tf][tr]->get_piece();
+    Piece *p = _file[tf][tr]->get_piece();
     if (p)
     {
       if (p->is(other_col))
@@ -614,7 +612,7 @@ int Board::init(col col_to_move)
   own_piece_square = 0;
   while (allowed(--tf, tr))
   {
-    Piece* p = _file[tf][tr]->get_piece();
+    Piece *p = _file[tf][tr]->get_piece();
     if (p)
     {
       if (p->get_color() == other_col)
@@ -637,7 +635,7 @@ int Board::init(col col_to_move)
   own_piece_square = 0;
   while (allowed(++tf, tr))
   {
-    Piece* p = _file[tf][tr]->get_piece();
+    Piece *p = _file[tf][tr]->get_piece();
     if (p)
     {
       if (p->is(other_col))
@@ -660,7 +658,7 @@ int Board::init(col col_to_move)
   own_piece_square = 0;
   while (allowed(tf, ++tr))
   {
-    Piece* p = _file[tf][tr]->get_piece();
+    Piece *p = _file[tf][tr]->get_piece();
     if (p)
     {
       if (p->is(other_col))
@@ -683,7 +681,7 @@ int Board::init(col col_to_move)
   own_piece_square = 0;
   while (allowed(tf, --tr))
   {
-    Piece* p = _file[tf][tr]->get_piece();
+    Piece *p = _file[tf][tr]->get_piece();
     if (p)
     {
       if (p->is(other_col))
@@ -707,7 +705,7 @@ int Board::init(col col_to_move)
   // pieces are not allowed, and it's not allowed for the king to take
   // a piece if it's protected by another one of the opponents pieces.
   // Such moves will be removed from the move-list of the king_square
-  Square* temp_square;
+  Square *temp_square;
   for (temp_square = _king_square[static_cast<int>(col_to_move)]->first_move(); temp_square != 0; temp_square = _king_square[static_cast<int>(col_to_move)]->next_move())
   {
     if (temp_square->get_piece())
@@ -797,9 +795,9 @@ int Board::init(col col_to_move)
   return 0;
 }
 
-void Board::fix_threat_prot(int file, int rank, Piece* p, Square* s)
+void Board::fix_threat_prot(int file, int rank, Piece *p, Square *s)
 {
-  Square* temp_square = _file[file][rank];
+  Square *temp_square = _file[file][rank];
   if (temp_square->get_piece())
   {
     if (temp_square->get_piece()->get_color() == p->get_color())
@@ -817,7 +815,7 @@ void Board::fix_threat_prot(int file, int rank, Piece* p, Square* s)
   }
 }
 
-void Board::fix_bound_piece_file(Square* own_piece_square, const Square* threat_square)
+void Board::fix_bound_piece_file(Square *own_piece_square, const Square *threat_square)
 {
   // Requirements:
   // King_square, own_piece_square and threat_square is on the
@@ -837,7 +835,7 @@ void Board::fix_bound_piece_file(Square* own_piece_square, const Square* threat_
   // For Rooks and Queens there are some moves which leaves
   // the piece on the original file.
   // For pawns all moves except "takes" will be allowed.
-  for (Square* temp_square = own_piece_square->first_move(); temp_square != 0; temp_square = own_piece_square->next_move())
+  for (Square *temp_square = own_piece_square->first_move(); temp_square != 0; temp_square = own_piece_square->next_move())
   {
     switch (pt)
     {
@@ -859,7 +857,7 @@ void Board::fix_bound_piece_file(Square* own_piece_square, const Square* threat_
   }
 }
 
-void Board::fix_bound_piece_rank(Square* own_piece_square, const Square* threat_square)
+void Board::fix_bound_piece_rank(Square *own_piece_square, const Square *threat_square)
 {
   // Requirements:
   // King_square, own_piece_square and threat_square is on the
@@ -878,7 +876,7 @@ void Board::fix_bound_piece_rank(Square* own_piece_square, const Square* threat_
   // all moves make the piece step out of the rank.
   // For Rooks and Queens there are some moves which leaves
   // the piece on the original rank.
-  for (Square* temp_square = own_piece_square->first_move(); temp_square != 0; temp_square = own_piece_square->next_move())
+  for (Square *temp_square = own_piece_square->first_move(); temp_square != 0; temp_square = own_piece_square->next_move())
   {
     switch (pt)
     {
@@ -900,7 +898,7 @@ void Board::fix_bound_piece_rank(Square* own_piece_square, const Square* threat_
   }
 }
 
-void Board::fix_bound_piece_diagonal(const Square* king_square, Square* own_piece_square, const Square* threat_square)
+void Board::fix_bound_piece_diagonal(const Square *king_square, Square *own_piece_square, const Square *threat_square)
 {
   // Requirements:
   // King_square, own_piece_square and threat_square is on the
@@ -922,7 +920,7 @@ void Board::fix_bound_piece_diagonal(const Square* king_square, Square* own_piec
 
   // For pawns there might be the possibility to take the
   // threatening piece and stay on the same diagonal
-  for (Square* temp_square = own_piece_square->first_move(); temp_square != 0; temp_square = own_piece_square->next_move())
+  for (Square *temp_square = own_piece_square->first_move(); temp_square != 0; temp_square = own_piece_square->next_move())
   {
     switch (pt)
     {
@@ -955,9 +953,9 @@ void Board::fix_bound_piece_diagonal(const Square* king_square, Square* own_piec
   }
 }
 
-void Board::fix_pawn_tp(int file, int rank, Piece* p, Square* s)
+void Board::fix_pawn_tp(int file, int rank, Piece *p, Square *s)
 {
-  Square* temp_square = _file[file][rank];
+  Square *temp_square = _file[file][rank];
   if (temp_square->get_piece())
   {
     if (temp_square->get_piece()->is(p->get_color()))
@@ -974,7 +972,7 @@ void Board::fix_pawn_tp(int file, int rank, Piece* p, Square* s)
   }
 }
 
-void Board::fix_en_passant(Square* s, Square* possible_ep_square)
+void Board::fix_en_passant(Square *s, Square *possible_ep_square)
 {
   if (_en_passant_square == possible_ep_square)
   {
@@ -1018,8 +1016,8 @@ int Board::max(int i, int j)
 
 void Board::check_put_a_pawn_on_square(int file, int rank, col col_to_move)
 {
-  Square* from_square;
-  Piece* piece;
+  Square *from_square;
+  Piece *piece;
   switch (col_to_move)
   {
     case col::white:
@@ -1067,8 +1065,8 @@ void Board::check_put_a_pawn_on_square(int file, int rank, col col_to_move)
         // Is there a piece and is it a black pawn?
         if (piece && piece->is(col_to_move, piecetype::Pawn))
         {
-            // Check that the pawn isn't pinned
-            if (from_square->in_movelist(_file[file][rank]))
+          // Check that the pawn isn't pinned
+          if (from_square->in_movelist(_file[file][rank]))
           {
             unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
             _possible_moves.into(m.get());
@@ -1100,7 +1098,7 @@ void Board::check_put_a_pawn_on_square(int file, int rank, col col_to_move)
 void Board::calculate_moves_K_not_threatened(col col_to_move)
 {
   // The king is not threatened. All remaining moves are allowed.
-  Square* s;
+  Square *s;
   unique_ptr<Move> m;
   for (int i = a; i <= h; i++)
   {
@@ -1126,7 +1124,7 @@ void Board::calculate_moves_K_not_threatened(col col_to_move)
 void Board::check_put_a_piece_on_square(int i, int j, col col_to_move)
 {
   unique_ptr<Move> m;
-  Square* temp_square = _file[i][j]->first_threat();
+  Square *temp_square = _file[i][j]->first_threat();
   while (temp_square)
   {
     // Check that the piece isn't pinned
@@ -1145,7 +1143,7 @@ void Board::check_put_a_piece_on_square(int i, int j, col col_to_move)
   }
 }
 
-void Board::check_bishop_or_queen(Square* threat_square, Square* kings_square, col col_to_move)
+void Board::check_bishop_or_queen(Square *threat_square, Square *kings_square, col col_to_move)
 {
   if (threat_square->same_diagonal(kings_square))
   {
@@ -1190,7 +1188,7 @@ void Board::check_bishop_or_queen(Square* threat_square, Square* kings_square, c
   }
 }
 
-void Board::check_rook_or_queen(Square* threat_square, Square* kings_square, col col_to_move)
+void Board::check_rook_or_queen(Square *threat_square, Square *kings_square, col col_to_move)
 {
   if (threat_square->same_rank(kings_square))
   {
@@ -1217,7 +1215,7 @@ void Board::check_rook_or_queen(Square* threat_square, Square* kings_square, col
   }
 }
 
-void Board::check_if_threat_can_be_taken_en_passant(col col_to_move, Square* threat_square)
+void Board::check_if_threat_can_be_taken_en_passant(col col_to_move, Square *threat_square)
 {
   unique_ptr<Move> m;
   int rank_increment = (col_to_move == col::white) ? 1 : -1;
@@ -1232,7 +1230,7 @@ void Board::check_if_threat_can_be_taken_en_passant(col col_to_move, Square* thr
       int file = thr_file - 1;
       if (allowed(file, thr_rank))
       {
-        Square* s = _file[file][thr_rank];
+        Square *s = _file[file][thr_rank];
         if (s->contains(col_to_move, piecetype::Pawn))
         {
           // Check that the pawn isn't pinned
@@ -1246,7 +1244,7 @@ void Board::check_if_threat_can_be_taken_en_passant(col col_to_move, Square* thr
       file = thr_file + 1;
       if (allowed(file, thr_rank))
       {
-        Square* s = _file[file][thr_rank];
+        Square *s = _file[file][thr_rank];
         if (s->contains(col_to_move, piecetype::Pawn))
         {
           if (s->in_movelist(_en_passant_square))
@@ -1266,8 +1264,8 @@ void Board::calculate_moves(col col_to_move)
   col other_col = col_to_move == col::white ? col::black : col::white;
   _possible_moves.clear();
 
-  Square* temp_square;
-  Square* kings_square = _king_square[static_cast<int>(col_to_move)];
+  Square *temp_square;
+  Square *kings_square = _king_square[static_cast<int>(col_to_move)];
   // is the King threatened?
   if (kings_square->count_threats(other_col))
   {
@@ -1284,8 +1282,8 @@ void Board::calculate_moves(col col_to_move)
       temp_square = kings_square->next_move();
     }
 
-    Piece* threat_piece = 0;
-    Square* threat_square = 0;
+    Piece *threat_piece = 0;
+    Square *threat_square = 0;
 
     // Is the king threatened only once? (not double check)
     if (kings_square->count_threats(other_col) == 1)
@@ -1301,7 +1299,7 @@ void Board::calculate_moves(col col_to_move)
       // The piece that checks the king maybe can be taken.
       // If it is the king that can take it, that was covered
       // when the king's moves were calculated
-      Square* tmp_square = threat_square->first_threat();
+      Square *tmp_square = threat_square->first_threat();
       while (tmp_square)
       {
         if (tmp_square != kings_square)
@@ -1370,7 +1368,7 @@ void Board::calculate_moves(col col_to_move)
 // What about _list_index in into as first? increment?
 
 // Duplicate "promotion moves" for all possible promotions (Q,R,B,N)
-  Move* mo = _possible_moves.first();
+  Move *mo = _possible_moves.first();
   while (mo)
   {
     if (mo->get_promotion() && mo->get_promotion_piece_type() == piecetype::Undefined)
@@ -1389,7 +1387,7 @@ void Board::calculate_moves(col col_to_move)
 //  cout << "calculate_moves_nsecs = " << timediff << endl;
 }
 
-void Board::fix_promotion_move(Move* m)
+void Board::fix_promotion_move(Move *m)
 {
   unique_ptr<Move> um(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_take(), m->get_target_piece_type(), false, true, piecetype::Queen, false));
   _possible_moves.into(um.get());
@@ -1402,21 +1400,21 @@ void Board::fix_promotion_move(Move* m)
 }
 
 // First make a move, then init the board and possible moves for other_col
-int Board::make_move(int i, int& move_no, col col_to_move)
+int Board::make_move(int i, int &move_no, col col_to_move)
 {
   col other_col = col_to_move == col::white ? col::black : col::white;
-  Move* m = _possible_moves[i];
+  Move *m = _possible_moves[i];
   //write(cout, cmd_line_diagram, col::white);
   if (m)
   {
     Position from = m->get_from();
     Position to = m->get_to();
-    Square* from_square = _file[from.get_file()][from.get_rank()];
-    Square* to_square = _file[to.get_file()][to.get_rank()];
+    Square *from_square = _file[from.get_file()][from.get_rank()];
+    Square *to_square = _file[to.get_file()][to.get_rank()];
     if (from_square->get_piece())
     {
       // MAKE THE MOVE
-      Piece* p = from_square->release_piece();
+      Piece *p = from_square->release_piece();
       if (to_square->get_piece())
       {
         m->set_take(true);
@@ -1488,7 +1486,7 @@ int Board::make_move(int i, int& move_no, col col_to_move)
         case piecetype::Pawn:
           if (m->get_promotion())
           {
-            Piece* newpiece = new Piece(m->get_promotion_piece_type(), p->get_color());
+            Piece *newpiece = new Piece(m->get_promotion_piece_type(), p->get_color());
             // Attention! here we delete p
             to_square->contain_piece(newpiece);
           }
@@ -1538,7 +1536,7 @@ int Board::make_move(int i, int& move_no, col col_to_move)
   return -1;
 }
 
-int Board::make_move(playertype player, int& move_no, col col_to_move)
+int Board::make_move(playertype player, int &move_no, col col_to_move)
 {
   unique_ptr<Move> m;
   if (player != playertype::human)
@@ -1636,14 +1634,14 @@ int Board::make_move(playertype player, int& move_no, col col_to_move)
     if (i < (int) strlen(st))
       continue;
     //this->write(cout, debug);
-    Square* from_square = _file[from.get_file()][from.get_rank()];
-    Piece* p = from_square->get_piece();
+    Square *from_square = _file[from.get_file()][from.get_rank()];
+    Piece *p = from_square->get_piece();
     if (!p)
       continue;
 
     // Check take
-    Square* to_square = _file[to.get_file()][to.get_rank()];
-    Piece* p2 = to_square->get_piece();
+    Square *to_square = _file[to.get_file()][to.get_rank()];
+    Piece *p2 = to_square->get_piece();
     if (!p2)
     {
       if (take == true)
@@ -1725,10 +1723,10 @@ float Board::evaluate_position(col col_to_move, outputtype ot, int level) const
   return sum;
 }
 
-void Board::count_material(float& sum, float weight, outputtype ot) const
+void Board::count_material(float &sum, float weight, outputtype ot) const
 {
   float counter = 0.0;
-  Piece* p;
+  Piece *p;
   for (int i = 1; i <= 8; i++)
   {
     for (int j = a; j <= h; j++)
@@ -1782,7 +1780,7 @@ void Board::count_material(float& sum, float weight, outputtype ot) const
   sum += counter * weight;
 }
 
-void Board::count_center_control(float& sum, float weight, outputtype ot) const
+void Board::count_center_control(float &sum, float weight, outputtype ot) const
 {
   int counter = 0;
   counter += _file[d][4]->count_controls();
@@ -1794,7 +1792,7 @@ void Board::count_center_control(float& sum, float weight, outputtype ot) const
   sum += counter * weight;
 }
 
-void Board::count_pawns_in_centre(float& sum, float weight, outputtype ot) const
+void Board::count_pawns_in_centre(float &sum, float weight, outputtype ot) const
 {
   int counter = 0;
   if (_file[d][4]->contains_piece(col::white, piecetype::Pawn))
@@ -1814,7 +1812,7 @@ void Board::count_pawns_in_centre(float& sum, float weight, outputtype ot) const
   if (_file[e][5]->contains_piece(col::black, piecetype::Pawn))
     counter--;
   if (ot == outputtype::debug)
-    cout << "Pawns in centre " << counter * weight << endl;
+    cout << "Pawns in center " << counter * weight << endl;
   sum += counter * weight;
 }
 
@@ -1824,7 +1822,7 @@ void Board::count_pawns_in_centre(float& sum, float weight, outputtype ot) const
 //  sum += weight * _possible_moves.cardinal();
 //}
 
-void Board::count_development(float& sum, float weight, outputtype ot) const
+void Board::count_development(float &sum, float weight, outputtype ot) const
 {
   int counter = 0;
   if (!_file[a][1]->contains_piece(col::white, piecetype::Rook))
@@ -1862,7 +1860,7 @@ void Board::count_development(float& sum, float weight, outputtype ot) const
   sum += counter * weight;
 }
 
-void Board::count_castling(float& sum, float weight, outputtype ot) const
+void Board::count_castling(float &sum, float weight, outputtype ot) const
 {
   int counter = 0;
   if (_castling_state.has_castled(col::white))
@@ -1882,18 +1880,18 @@ bool Board::is_end_node() const
     return false;
 }
 
-float Board::max(int level, int move_no, float alpha, float beta, int& best_move_index, const int& max_search_level, bool use_pruning) const
+float Board::max(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level, bool use_pruning) const
 {
   float max_value = -101.0; // Must be lower than lowest evaluation
   int dummy_index;
   best_move_index = -1;
   level++;
-//  cout << "level = " << level << endl;
-//  bool last_move_was_take_or_check = _last_move.get_take() || _last_move.get_check();
-//  if (is_end_node() || (level >= max_search_level && !last_move_was_take_or_check))
-//  {
-//    return evaluate_position(col::white, outputtype::silent, level);
-//  }
+  //cout << "level = " << level << ":" << _last_move << endl;
+  //  bool last_move_was_take_or_check = _last_move.get_take() || _last_move.get_check();
+  //  if (is_end_node() || (level >= max_search_level && !last_move_was_take_or_check) || level == max_search_level + 1)
+  //  {
+  //    return evaluate_position(col::white, outputtype::silent, level);
+  //  }
   if (is_end_node() || level >= max_search_level)
   {
     return evaluate_position(col::white, outputtype::silent, level);
@@ -1937,18 +1935,19 @@ float Board::max(int level, int move_no, float alpha, float beta, int& best_move
   }
 }
 
-float Board::min(int level, int move_no, float alpha, float beta, int& best_move_index, const int& max_search_level, bool use_pruning) const
+float Board::min(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level, bool use_pruning) const
 {
   float min_value = 101.0; // Must be higher than highest evaluation
   int dummy_index;
 
   best_move_index = -1;
   level++;
-//  bool last_move_was_take_or_check = _last_move.get_take() || _last_move.get_check();
-//  if (is_end_node() || (level >= max_search_level && !last_move_was_take_or_check))
-//  {
-//    return evaluate_position(col::black, outputtype::silent, level);
-//  }
+  //cout << "level = " << level << ":" << _last_move << endl;
+  //  bool last_move_was_take_or_check = _last_move.get_take() || _last_move.get_check();
+  //  if (is_end_node() || (level >= max_search_level && !last_move_was_take_or_check) || level == max_search_level + 1)
+  //  {
+  //    return evaluate_position(col::black, outputtype::silent, level);
+  //  }
   if (is_end_node() || level >= max_search_level)
   {
     return evaluate_position(col::black, outputtype::silent, level);
