@@ -11,7 +11,7 @@ It has beaten me a small number of times,
 
 It requires another program to run it, a UCI-speaking chess GUI.
 There are some of them easily downloded from the web, SCID or Jerry-chess GUI,
-for instance. You can of coarse connect them to much better chess-engines
+for instance. You can of course connect them to much better chess-engines
 than this one, The free Stockfish is a good one. (comes with Ubuntu to install
 with "sudo apt install stockfish".) The gui and the engine simply communicates
 through stdin and stdout.
