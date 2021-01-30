@@ -93,7 +93,7 @@ col white_or_black()
 }
 
 // Method for the cmdline-interface
-int play_on_cmd_line()
+void play_on_cmd_line()
 {
   while (true)
   {
@@ -109,7 +109,7 @@ int play_on_cmd_line()
         game.init();
         game.start();
         if (back_to_main_menu() != 0)
-          return -1;
+          return;
         continue;
       }
       case 2:
@@ -140,7 +140,6 @@ int play_on_cmd_line()
                 __LINE__);
     }
   }
-  return 0;
 }
 
 // This Method e.g. splits up commands from the GUI into tokens (words)
@@ -186,7 +185,7 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Shared_os
   vector<string> tokens = split(command, ' ');
   if (tokens[0] == "uci")
   {
-    output_buffer.put("id name C2 pre release");
+    output_buffer.put("id name C2 experimental");
     output_buffer.put("id author Torsten Torell");
     // Tell GUI which parameters are configurable.
     pair<const string, Config_param> pair;
@@ -269,7 +268,7 @@ void read_input(Circular_fifo* input_buffer, Shared_ostream* logfile)
       (*logfile) << "input: " << command << "\n";
     if (command == "quit")
       break;
-    this_thread::sleep_for(milliseconds(20));
+    this_thread::sleep_for(milliseconds(10));
   }
   //cout << "input_thread: quit" << endl;
   this_thread::yield();
@@ -283,13 +282,13 @@ void write_output(Circular_fifo* output_buffer, Shared_ostream* logfile)
     command = (*output_buffer).get();
     if (!command.empty())
     {
+      if (command == "quit_thread")
+        break;
       if (logfile_is_open)
         (*logfile) << "output: " << command << "\n";
-      if (command == "quit")
-        break;
       cout << command << endl;
     }
-    this_thread::sleep_for(milliseconds(20));
+    this_thread::sleep_for(milliseconds(10));
   }
   this_thread::yield();
 }
@@ -298,9 +297,33 @@ void write_output(Circular_fifo* output_buffer, Shared_ostream* logfile)
 
 using namespace C2_chess;
 
-int main()
+void close_threads(thread& input_thread, thread& output_thread)
+{
+  //  Stop threads and wait for them to finish.
+  input_thread_running = false;
+  input_thread.join();
+  output_thread_running = false;
+  output_thread.join();
+}
+
+void print_help_txt()
+{
+  cout << endl <<
+      "Usage: C2 [-cmd | -help]" << endl << endl <<
+      "Options:" << endl <<
+      "--------" << endl <<
+      "-help     : Prints this text." << endl <<
+      "-cmd      : Starts a game in primitive cmd-line mode." << endl <<
+      ""
+      "C2 Without arguments will start the chess-engine" << endl << endl;
+}
+
+
+
+int main(int argc, char* argv[])
 {
 
+  cout << "C2 experimental chess-engine" << endl;
   //ofstream testlog("testlog.txt");
   //C2_unit_test test;
   //test.main_test(cout);
@@ -309,6 +332,22 @@ int main()
   //string diff = GetStdoutFromCommand("diff testlog.txt testref.txt");
   //if (!diff.empty())
   // cout << "### UNIT TEST FAILED! :" << endl << diff << endl;
+
+  //for (int i = 0; i < argc; ++i)
+  //    cout << argv[i] << "\n";
+
+  if (argc > 1 && strcmp(argv[1], "-cmd") == 0)
+  {
+    play_on_cmd_line();
+    return 0;
+  }
+
+  // Allow --help as well as -help
+  if (argc > 1 && regexp_match(argv[1], "-{1,2}help"))
+  {
+    print_help_txt();
+    return 0;
+  }
 
   ofstream ofs("command_log.txt");
   if (!ofs.is_open())
@@ -331,13 +370,11 @@ int main()
     {
       if (command == "quit")
       {
-        output_buffer.put("quit"); // closes output_thread
         break;
       }
       if (command == "cmd")
       {
-        input_thread_running = false;
-        output_thread_running = false;
+        close_threads(input_thread, output_thread);
         play_on_cmd_line();
         break;
       }
@@ -356,9 +393,7 @@ int main()
     }
     this_thread::sleep_for(milliseconds(20));
   }
-  input_thread_running = false;
-  output_thread_running = false;
-  this_thread::sleep_for(milliseconds(40));
+  close_threads(input_thread, output_thread);
   ofs.close();
   return 0;
 }
