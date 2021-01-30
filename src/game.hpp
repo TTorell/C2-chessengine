@@ -9,6 +9,7 @@
 #include "pgn_info.hpp"
 #include "Config_param.hpp"
 
+using namespace std;
 namespace C2_chess
 {
 
@@ -37,7 +38,7 @@ class Game {
     void clear_chessboard();
     void setup_pieces();
     void start();
-    Move engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open, map<string, Config_param>& config_params);
+    Move engine_go(Shared_ostream& logfile, atomic<bool>& logfile_is_open, map<string, Config_param>& config_params);
     void save() const;
     col get_col_to_move() const;
     void set_col_to_move(col c);

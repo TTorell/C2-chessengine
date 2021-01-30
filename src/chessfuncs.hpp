@@ -12,6 +12,10 @@
 
 #include <iostream>
 #include <regex>
+#include <vector>
+#include "shared_ostream.hpp"
+
+
 
 namespace C2_chess
 {
@@ -22,10 +26,11 @@ using std::ostream;
 using std::string;
 
 void require(bool b, string file, string method, int line);
-void require_m(bool b, string file, string method, int line, const Move& m);
-ostream& print_backtrace(ostream& os);
+void require_m(bool b, string file, string method, int line, const Move &m);
+ostream& print_backtrace(ostream &os);
 string GetStdoutFromCommand(string cmd);
-bool regexp_match(const string& line, const string& regexp_string);
-}
+bool regexp_match(const string &line, const string &regexp_string);
+void log_time_diff(uint64_t nsec_stop, uint64_t nsec_start, Shared_ostream& logfile, int search_level, const Move& best_move, float score);
 
-#endif /* CHESSFUNCS_HPP_ */
+} // namespace
+#endif //CHESSFUNCS_HPP_

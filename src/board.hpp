@@ -46,6 +46,7 @@ class Board {
     Board& operator=(const Board&);
     Board& operator[](int) const;
     void put_piece(Piece* const p, int file, int rank);
+    Move get_possible_move(int index) const;
     Move get_last_move() const
     {
       return _last_move;

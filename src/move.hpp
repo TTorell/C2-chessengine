@@ -159,7 +159,7 @@ class Move
     {
       _stalemate = m;
     }
-    string bestmove_engine_style();
+    string bestmove_engine_style() const;
     friend ostream& operator<<(ostream& os, const Move& m);
 };
 }

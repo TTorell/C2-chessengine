@@ -104,9 +104,8 @@ void Player::set_type(playertype t)
 //  return mate1;
 //}
 
-int Player::make_a_move(int &move_no, float &score, bool &playing, const int &max_search_level, bool use_pruning)
+int Player::make_a_move(int &move_no, float &score, const int &max_search_level, bool use_pruning)
 {
-  playing = true;
   if (_type == playertype::human)
   {
     return _chessboard.make_move(playertype::human, move_no, _colour);
@@ -121,7 +120,6 @@ int Player::make_a_move(int &move_no, float &score, bool &playing, const int &ma
       if (best_move_index == -1 && score == -100.0)
       {
         cout << "White was check mated." << endl; // TODO
-        playing = false;
         return 0;
       }
     }
@@ -131,7 +129,6 @@ int Player::make_a_move(int &move_no, float &score, bool &playing, const int &ma
       if (best_move_index == -1 && score == 100.0)
       {
         cout << "Black was check mated." << endl; // TODO
-        playing = false;
         return 0;
       }
     }
@@ -139,11 +136,13 @@ int Player::make_a_move(int &move_no, float &score, bool &playing, const int &ma
   }
 }
 
-int Player::find_best_move_index(int &move_no, float &score, bool &playing, const int &max_search_level, bool use_pruning)
+int Player::find_best_move_index(int &move_no, float &score, const int &max_search_level, bool use_pruning)
 {
-  playing = true;
-  if (_type == playertype::human)
-    return -1;
+  // TODO: The playertype should of course have been set correctly
+  // for a computer vs. computer game.
+  // It can be two computers playing so I skipped the following:
+  // if (_type == playertype::human)
+  //   return -1;
 
   // _type == computer
   int best_move_index;
@@ -154,17 +153,15 @@ int Player::find_best_move_index(int &move_no, float &score, bool &playing, cons
     if (best_move_index == -1 && score == -100.0)
     {
       cout << "White was check mated." << endl; // TODO
-      playing = false;
       return 0;
     }
   }
-  else
+  else // _color == col::black
   {
     score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
     if (best_move_index == -1 && score == 100.0)
     {
       cout << "Black was check mated." << endl; // TODO
-      playing = false;
       return 0;
     }
   }

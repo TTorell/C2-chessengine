@@ -247,7 +247,7 @@ Move& Move::operator=(const Move& m)
   return *this;
 }
 
-string Move::bestmove_engine_style()
+string Move::bestmove_engine_style() const
 {
   stringstream ss;
   ss << "bestmove " << _from << _to;

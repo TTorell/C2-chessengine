@@ -1,5 +1,6 @@
 #include <memory>
 #include <sstream>
+#include <atomic>
 #include "board.hpp"
 #include "square.hpp"
 #include "piece.hpp"
@@ -10,6 +11,8 @@
 extern "C" {
 #include <string.h>
 }
+
+std::atomic<bool> stop_thinking(false);
 
 namespace
 {
@@ -127,6 +130,11 @@ void Board::setup_pieces()
 void Board::put_piece(Piece *const p, int file, int rank)
 {
   _file[file][rank]->contain_piece(p);
+}
+
+Move Board::get_possible_move(int index) const
+{
+  return *_possible_moves[index];
 }
 
 bool Board::read_piece_type(piecetype &pt, char ch) const
@@ -1892,6 +1900,9 @@ float Board::max(int level, int move_no, float alpha, float beta, int &best_move
   //  {
   //    return evaluate_position(col::white, outputtype::silent, level);
   //  }
+
+  // is_end_node() checks for such things as mate or stalemate which may happen
+  // before max_search_level has been reach
   if (is_end_node() || level >= max_search_level)
   {
     return evaluate_position(col::white, outputtype::silent, level);
@@ -1948,6 +1959,9 @@ float Board::min(int level, int move_no, float alpha, float beta, int &best_move
   //  {
   //    return evaluate_position(col::black, outputtype::silent, level);
   //  }
+
+  // is_end_node() checks for such things as mate or stalemate which may happen
+  // before max_search_level has been reach
   if (is_end_node() || level >= max_search_level)
   {
     return evaluate_position(col::black, outputtype::silent, level);
@@ -1956,7 +1970,7 @@ float Board::min(int level, int move_no, float alpha, float beta, int &best_move
   {
     for (int i = 0; i < _possible_moves.cardinal(); i++)
     {
-      // save current bord in list
+      // save current board in list
       level_boards[level] = *this;
       //if (level_boards[level].init(col::black) != 0)
       //{

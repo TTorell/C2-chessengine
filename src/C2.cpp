@@ -160,8 +160,9 @@ vector<string> split(const string &s, char delim)
 // Set default values for the few config parameters
 void init_config_params(map<string, Config_param>& config_params)
 {
-  config_params.insert(make_pair("use_pruning", *(new Config_param("use_pruning", "true", "check", "true"))));
   config_params.insert(make_pair("max_search_level", *(new Config_param("max_search_level", "7", "spin", "7", "1", "8"))));
+  config_params.insert(make_pair("use_pruning", *(new Config_param("use_pruning", "true", "check", "true"))));
+  config_params.insert(make_pair("use_incremental_search", *(new Config_param("use_incremental_search", "true", "check", "true"))));
 }
 
 // Global booleans which can be set to false to stop input and output threads
@@ -391,7 +392,7 @@ int main(int argc, char* argv[])
       if (command == "quit")
         break;
     }
-    this_thread::sleep_for(milliseconds(20));
+    this_thread::sleep_for(milliseconds(10));
   }
   close_threads(input_thread, output_thread);
   ofs.close();

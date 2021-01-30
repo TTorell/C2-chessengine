@@ -6,6 +6,8 @@
 #include "chessfuncs.hpp"
 #include "Config_param.hpp"
 
+using namespace std;
+
 namespace
 {
 C2_chess::CurrentTime current_time;
@@ -14,17 +16,9 @@ C2_chess::CurrentTime current_time;
 namespace C2_chess
 {
 
-using std::stringstream;
-
 Game::Game() :
-    _is_first_position(true),
-    _move_log(),
-    _chessboard(),
-    _player1(playertype::human, col::white, _chessboard),
-    _player2(playertype::computer, col::black, _chessboard),
-    _moveno(1),
-    _col_to_move(col::white),
-    _score(0)
+    _is_first_position(true), _move_log(), _chessboard(), _player1(playertype::human, col::white, _chessboard), _player2(playertype::computer, col::black, _chessboard), _moveno(1),
+    _col_to_move(col::white), _score(0)
 {
   _player[static_cast<int>(col::white)] = &_player1;
   _player[static_cast<int>(col::black)] = &_player2;
@@ -34,28 +28,16 @@ Game::Game() :
 }
 
 Game::Game(col color) :
-    _is_first_position(true),
-    _move_log(),
-    _chessboard(),
-    _player1(playertype::human, color, _chessboard),
-    _player2(playertype::computer, color == col::white ? col::black : col:: white, _chessboard),
-    _moveno(1),
-    _col_to_move(col::white),
-    _score(0)
+    _is_first_position(true), _move_log(), _chessboard(), _player1(playertype::human, color, _chessboard),
+    _player2(playertype::computer, color == col::white ? col::black : col::white, _chessboard), _moveno(1), _col_to_move(col::white), _score(0)
 {
   _player[static_cast<int>(color)] = &_player1;
   _player[static_cast<int>(color == col::white ? col::black : col::white)] = &_player2;
 }
 
 Game::Game(col color, playertype pt1, playertype pt2) :
-    _is_first_position(true),
-    _move_log(),
-    _chessboard(),
-    _player1(pt1, color, _chessboard),
-    _player2(pt2, color == col::white ? col::black : col::white, _chessboard),
-    _moveno(1),
-    _col_to_move(col::white),
-    _score(0)
+    _is_first_position(true), _move_log(), _chessboard(), _player1(pt1, color, _chessboard), _player2(pt2, color == col::white ? col::black : col::white, _chessboard), _moveno(1),
+    _col_to_move(col::white), _score(0)
 {
   _player[static_cast<int>(color)] = &_player1;
   _player[static_cast<int>(color == col::white ? col::black : col::white)] = &_player2;
@@ -101,7 +83,7 @@ void Game::set_castling_state(const Castling_state &cs)
   _chessboard.set_castling_state(cs);
 }
 
-void Game::put_piece(Piece* const p, int file, int rank)
+void Game::put_piece(Piece *const p, int file, int rank)
 {
   _chessboard.put_piece(p, file, rank);
 }
@@ -126,13 +108,14 @@ void Game::set_moveno(int moveno)
   }
 }
 
-ostream& Game::write_chessboard(ostream& os, outputtype ot, col from_perspective) const
+ostream& Game::write_chessboard(ostream &os, outputtype ot, col from_perspective) const
 {
   _chessboard.write(os, ot, from_perspective);
   return os;
 }
 
-ostream& Game::write_diagram(ostream& os) const
+ostream& Game::write_diagram(ostream &os) const
+
 {
   if (_player[static_cast<int>(col::white)]->get_type() == playertype::human)
     _chessboard.write(os, outputtype::cmd_line_diagram, col::white) << endl;
@@ -144,7 +127,7 @@ ostream& Game::write_diagram(ostream& os) const
   return os;
 }
 
-Shared_ostream& Game::write_diagram(Shared_ostream& os) const
+Shared_ostream& Game::write_diagram(Shared_ostream &os) const
 {
   stringstream ss;
   write_diagram(ss);
@@ -162,10 +145,10 @@ void Game::start()
   bool playing = true;
   while (playing)
   {
-    write_diagram(cout);
+    write_diagram (cout);
 //    write_chessboard(cout, debug, white);
     uint64_t nsec_start = current_time.nanoseconds();
-    if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, playing, max_search_level, use_pruning) != 0)
+    if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, max_search_level, use_pruning) != 0)
     {
       cout << "Stopped playing" << endl;
       playing = false;
@@ -208,10 +191,11 @@ void Game::start()
   }
 }
 
-Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open, map<string, Config_param>& config_params)
+Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, map<string, Config_param> &config_params)
 {
   int max_search_level;
   bool use_pruning;
+  bool use_incremental_search;
   auto it = config_params.find("max_search_level");
   if (it != config_params.end())
     max_search_level = atol(it->second.get_value().c_str());
@@ -222,27 +206,65 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
     use_pruning = it->second.get_value() == "true";
   else
     use_pruning = true;
-  bool playing = true;
-  uint64_t nsec_start = current_time.nanoseconds();
-  if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, playing, max_search_level, use_pruning) != 0)
+  it = config_params.find("use_incremental_search");
+  if (it != config_params.end())
+    use_incremental_search = it->second.get_value() == "true";
+  else
+    use_incremental_search = true;
+  if (use_incremental_search)
   {
+    int best_move_index = -1;
+    for (int i = 2; i <= max_search_level; i++)
+    {
+      uint64_t nsec_start = current_time.nanoseconds();
+      {
+        int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning);
+        if (move_index == -1)
+        {
+          // This happens when max_search_level has been set to 1.
+          // (Or possibly when something else has gone wrong.)
+          // My min() or max() will just evaluate the current position
+          // then and wont be able to choose best move.
+          // So, searching with level 1 is completely pointless.
+          if (logfile_is_open)
+            logfile << "Error: find_best_move() returned -1." << "\n";
+          // We can't choose. Just set it to the first move.
+          move_index = 0;
+        }
+        best_move_index = move_index;
+      }
+      uint64_t nsec_stop = current_time.nanoseconds();
+      if (logfile_is_open)
+        log_time_diff(nsec_stop, nsec_start, logfile, i, _chessboard.get_possible_move(best_move_index), _score);
+    }
+    _chessboard.make_move(best_move_index, _moveno, _col_to_move);
+  }
+  else // Not incremental search, start directly at max_search_level
+  {
+    int best_move_index = -1;
+    uint64_t nsec_start = current_time.nanoseconds();
+    int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, max_search_level, use_pruning);
+    if (move_index == -1)
+    {
+      // This happens when max_search_level has been set to 1.
+      // (Or possibly when something else has gone wrong.)
+      // My min() or max() will just evaluate the current position
+      // then and wont be able to choose best move.
+      // So, searching with level 1 is completely pointless.
+      if (logfile_is_open)
+        logfile << "Error: find_best_move() returned -1." << "\n";
+      // We can't choose. Just set it to the first move.
+      move_index = 0;
+    }
+    best_move_index = move_index;
+    uint64_t nsec_stop = current_time.nanoseconds();
     if (logfile_is_open)
-      logfile << "Error: Stopped playing" << "\n";
+      log_time_diff(nsec_stop, nsec_start, logfile, max_search_level, _chessboard.get_possible_move(best_move_index), _score);
+    _chessboard.make_move(best_move_index, _moveno, _col_to_move);
   }
-  uint64_t nsec_stop = current_time.nanoseconds();
-  uint64_t timediff = (nsec_stop - nsec_start);
-  if (logfile_is_open)
-  {
-    // Log the time it took;
-    // logfile is a Shared_ostrem. You can't "<<" a floatvalue to it.
-    // converting value to string:
-    ostringstream ss;
-    ss << timediff/1.0e6;
-    string value(ss.str());
-    logfile << "time spent by C2 search on level " << max_search_level << " = " <<
-        value << " milliseconds" << "\n";
-  }
-  _col_to_move = _col_to_move == col::white? col::black : col::white;
+
+  // We have made a move, change color to evaluate from opponents view.
+  _col_to_move = _col_to_move == col::white ? col::black : col::white;
   float evaluation = _chessboard.evaluate_position(_col_to_move, outputtype::silent, 0);
   if (evaluation == eval_max || evaluation == eval_min)
   {
@@ -270,10 +292,9 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
       logfile << "1/2 - 1/2 draw by stalemate" << "\n";
     }
   }
-  else
+  else // Normal move
   {
-    if (logfile_is_open)
-      logfile << _chessboard.evaluate_position(_col_to_move, outputtype::silent, 0) << "\n" << "\n";
+    // Updating the "fifty-moves-for-draw" counter.
     Move last_move = _chessboard.get_last_move();
     // Updating the "fifty-moves" counter
     if (last_move.get_take() || last_move.get_piece_type() == piecetype::Pawn)
@@ -290,4 +311,4 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
   }
   return _chessboard.get_last_move();
 }
-}
+} // namespace
