@@ -6,7 +6,6 @@
 #include "chessfuncs.hpp"
 #include "Config_param.hpp"
 
-# This is branch 2
 namespace
 {
 C2_chess::CurrentTime current_time;
@@ -220,12 +219,12 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
     max_search_level = 7; // default
   it = config_params.find("use_pruning");
   if (it != config_params.end())
-    use_pruning = it->second.get_value() == it->second.get_value();
+    use_pruning = it->second.get_value() == "true";
   else
     use_pruning = true;
   bool playing = true;
   uint64_t nsec_start = current_time.nanoseconds();
-  if (_player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, playing, max_search_level, use_pruning) != 0)
+  if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, playing, max_search_level, use_pruning) != 0)
   {
     if (logfile_is_open)
       logfile << "Error: Stopped playing" << "\n";
@@ -243,6 +242,7 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
     logfile << "time spent by C2 search on level " << max_search_level << " = " <<
         value << " milliseconds" << "\n";
   }
+  _col_to_move = _col_to_move == col::white? col::black : col::white;
   float evaluation = _chessboard.evaluate_position(_col_to_move, outputtype::silent, 0);
   if (evaluation == eval_max || evaluation == eval_min)
   {
