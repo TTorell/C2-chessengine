@@ -6,6 +6,7 @@
 #include "chessfuncs.hpp"
 #include "Config_param.hpp"
 
+# This is branch 2
 namespace
 {
 C2_chess::CurrentTime current_time;
@@ -211,7 +212,7 @@ void Game::start()
 Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open, map<string, Config_param>& config_params)
 {
   int max_search_level;
-  bool use_pruning = true;
+  bool use_pruning;
   auto it = config_params.find("max_search_level");
   if (it != config_params.end())
     max_search_level = atol(it->second.get_value().c_str());
@@ -219,12 +220,12 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
     max_search_level = 7; // default
   it = config_params.find("use_pruning");
   if (it != config_params.end())
-    use_pruning = it->second.get_value() == "true";
+    use_pruning = it->second.get_value() == it->second.get_value();
   else
     use_pruning = true;
   bool playing = true;
   uint64_t nsec_start = current_time.nanoseconds();
-  if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, playing, max_search_level, use_pruning) != 0)
+  if (_player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, playing, max_search_level, use_pruning) != 0)
   {
     if (logfile_is_open)
       logfile << "Error: Stopped playing" << "\n";
@@ -232,10 +233,16 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
   uint64_t nsec_stop = current_time.nanoseconds();
   uint64_t timediff = (nsec_stop - nsec_start);
   if (logfile_is_open)
-    logfile << "time spent by C2 = " << (float)timediff << " milliseconds" << "\n";
-  // We have made move and the board and possible_moves has been calculated for the other player,
-  // (inside_make_a_move() so we must evaluate the position from his point of view.
-  _col_to_move = _col_to_move == col::white? col::black : col::white;
+  {
+    // Log the time it took;
+    // logfile is a Shared_ostrem. You can't "<<" a floatvalue to it.
+    // converting value to string:
+    ostringstream ss;
+    ss << timediff/1.0e6;
+    string value(ss.str());
+    logfile << "time spent by C2 search on level " << max_search_level << " = " <<
+        value << " milliseconds" << "\n";
+  }
   float evaluation = _chessboard.evaluate_position(_col_to_move, outputtype::silent, 0);
   if (evaluation == eval_max || evaluation == eval_min)
   {
@@ -268,6 +275,7 @@ Move Game::engine_go(Shared_ostream& logfile, std::atomic<bool>& logfile_is_open
     if (logfile_is_open)
       logfile << _chessboard.evaluate_position(_col_to_move, outputtype::silent, 0) << "\n" << "\n";
     Move last_move = _chessboard.get_last_move();
+    // Updating the "fifty-moves" counter
     if (last_move.get_take() || last_move.get_piece_type() == piecetype::Pawn)
       _half_move_counter = 0;
     else

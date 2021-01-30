@@ -19,9 +19,8 @@ std::mt19937 eng(rd()); // seed the generator engine
 namespace C2_chess
 {
 
-
-Player::Player(playertype p, col color, Board& bo) : _chessboard(bo),
-    _type(p), _colour(color), _other_col(color == col::white ? col::black : col::white)
+Player::Player(playertype p, col color, Board &bo) :
+    _chessboard(bo), _type(p), _colour(color), _other_col(color == col::white ? col::black : col::white)
 {
   //cout << "Player construcor1" << endl;
 }
@@ -105,8 +104,7 @@ void Player::set_type(playertype t)
 //  return mate1;
 //}
 
-
-int Player::make_a_move(int& move_no, float& score, bool& playing, const int& max_search_level ,bool use_pruning)
+int Player::make_a_move(int &move_no, float &score, bool &playing, const int &max_search_level, bool use_pruning)
 {
   playing = true;
   if (_type == playertype::human)
@@ -119,7 +117,7 @@ int Player::make_a_move(int& move_no, float& score, bool& playing, const int& ma
     float alpha = -100, beta = 100;
     if (_colour == col::white)
     {
-      score = _chessboard.max(0,  move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
+      score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
       if (best_move_index == -1 && score == -100.0)
       {
         cout << "White was check mated." << endl; // TODO
@@ -129,7 +127,7 @@ int Player::make_a_move(int& move_no, float& score, bool& playing, const int& ma
     }
     else
     {
-      score = _chessboard.min(0,  move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
+      score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
       if (best_move_index == -1 && score == 100.0)
       {
         cout << "Black was check mated." << endl; // TODO
@@ -140,6 +138,37 @@ int Player::make_a_move(int& move_no, float& score, bool& playing, const int& ma
     return _chessboard.make_move(best_move_index, move_no, _colour);
   }
 }
-}
 
+int Player::find_best_move_index(int &move_no, float &score, bool &playing, const int &max_search_level, bool use_pruning)
+{
+  playing = true;
+  if (_type == playertype::human)
+    return -1;
+
+  // _type == computer
+  int best_move_index;
+  float alpha = -100, beta = 100;
+  if (_colour == col::white)
+  {
+    score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
+    if (best_move_index == -1 && score == -100.0)
+    {
+      cout << "White was check mated." << endl; // TODO
+      playing = false;
+      return 0;
+    }
+  }
+  else
+  {
+    score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
+    if (best_move_index == -1 && score == 100.0)
+    {
+      cout << "Black was check mated." << endl; // TODO
+      playing = false;
+      return 0;
+    }
+  }
+  return best_move_index;
+}
+}
 
