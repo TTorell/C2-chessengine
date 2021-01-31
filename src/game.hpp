@@ -36,6 +36,7 @@ class Game {
     ~Game();
     void init();
     void clear_chessboard();
+    void clear_movelog();
     void setup_pieces();
     void start();
     Move engine_go(Shared_ostream& logfile, atomic<bool>& logfile_is_open, map<string, Config_param>& config_params);

@@ -1544,6 +1544,7 @@ int Board::make_move(int i, int &move_no, col col_to_move)
   return -1;
 }
 
+// This method is only for the cmd-line interface
 int Board::make_move(playertype player, int &move_no, col col_to_move)
 {
   unique_ptr<Move> m;

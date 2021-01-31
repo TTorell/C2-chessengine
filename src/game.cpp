@@ -58,6 +58,11 @@ void Game::clear_chessboard()
   _chessboard.clear();
 }
 
+void Game::clear_movelog()
+{
+  _move_log.clear();
+}
+
 void Game::setup_pieces()
 {
   _chessboard.setup_pieces();
