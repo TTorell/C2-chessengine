@@ -152,7 +152,7 @@ int Player::find_best_move_index(int &move_no, float &score, const int &max_sear
     score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
     if (best_move_index == -1 && score == -100.0)
     {
-      cout << "White was check mated." << endl; // TODO
+      // logfile << "White was check mated." << "\n"; // TODO
       return 0;
     }
   }
@@ -161,7 +161,7 @@ int Player::find_best_move_index(int &move_no, float &score, const int &max_sear
     score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
     if (best_move_index == -1 && score == 100.0)
     {
-      cout << "Black was check mated." << endl; // TODO
+      // logfile << "Black was check mated." << "\n"; // TODO
       return 0;
     }
   }

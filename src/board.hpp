@@ -22,7 +22,6 @@ class Board {
     Castling_state _castling_state;
     Square* _king_square[2];
     Square* _en_passant_square = 0;
-
   public:
     static Board level_boards[];  // declaration, incomplete type
     Board();
@@ -75,6 +74,10 @@ class Board {
     {
       return _possible_moves.cardinal();
     }
+
+    void start_timer_thread(const string& max_search_time);
+    bool has_time_left();
+    void set_time_left(bool value);
 
     float max(int level, int move_no, float alpha, float beta, int& best_move_index, const int& search_level, bool prune) const;
     float min(int level, int move_no, float alpha, float beta, int& best_move_index, const int& search_level, bool prune) const;

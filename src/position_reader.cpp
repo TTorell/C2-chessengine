@@ -210,12 +210,21 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
   if (col_to_move == "w")
   {
     _game.set_col_to_move(col::white);
-    _game.set_col_to_start(col::white);
+    // TODO: The following should probably only be done at the start
+    // of a game.
+    // Not important, because the move_log is only to be used in
+    // in command line mode and in log files. The engine is never told
+    // about the other players move. it only gets the positions in the
+    // FEN-format. The move log could work if the computer plays itself in
+    // so called "play out position" mode, but then It would be important
+    // to only do the following at game start. Never mind.
+    _game.set_move_log_col_to_start(col::white);
   }
   else if (col_to_move == "b")
   {
     _game.set_col_to_move(col::black);
-    _game.set_col_to_start(col::black);
+    // TODO: Should probably only be done at the start of a game
+    _game.set_move_log_col_to_start(col::black);
   }
   else
   {

@@ -1,5 +1,6 @@
 #include <memory>
 #include <sstream>
+#include <chrono>
 #include <atomic>
 #include "board.hpp"
 #include "square.hpp"
@@ -12,11 +13,10 @@ extern "C" {
 #include <string.h>
 }
 
-std::atomic<bool> stop_thinking(false);
 
 namespace
 {
-//C2_chess::CurrentTime current_time;
+C2_chess::CurrentTime current_time;
 }
 
 namespace C2_chess
@@ -24,6 +24,9 @@ namespace C2_chess
 
 using std::unique_ptr;
 using std::stringstream;
+using namespace std::chrono;
+
+std::atomic<bool> time_left(false);
 
 Board Board::level_boards[15]; // definition, complete type
 
@@ -1889,6 +1892,43 @@ bool Board::is_end_node() const
     return false;
 }
 
+// This method will run in the timer_thread.
+static void start_timer(const string& max_search_time)
+{
+  double time = stod(max_search_time);
+  time_left = true;
+  while (time_left)
+  {
+    uint64_t nsec_start = current_time.nanoseconds();
+    this_thread::sleep_for(milliseconds(10));
+    uint64_t nsec_stop = current_time.nanoseconds();
+    uint64_t timediff = nsec_stop - nsec_start;
+    time -= (double)timediff/1e6;
+    if (time <= 0.0)
+    {
+      time_left = false;
+      break;
+    }
+    cout << time << endl;
+  }
+}
+
+void Board::start_timer_thread(const string& max_search_time)
+{
+  thread timer_thread(start_timer, max_search_time);
+  timer_thread.detach();
+}
+
+bool Board::has_time_left()
+{
+  return time_left;
+}
+
+void Board::set_time_left(bool value)
+{
+  time_left = value;
+}
+
 float Board::max(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level, bool use_pruning) const
 {
   float max_value = -101.0; // Must be lower than lowest evaluation
@@ -1942,6 +1982,11 @@ float Board::max(int level, int move_no, float alpha, float beta, int &best_move
         }
       }
       //level_boards[level].clear();
+      if (!time_left)
+      {
+        best_move_index = -1;
+        return 0.0;
+      }
     }
     return max_value;
   }
@@ -2001,6 +2046,11 @@ float Board::min(int level, int move_no, float alpha, float beta, int &best_move
         }
       }
       //level_boards[level].clear();
+      if (!time_left)
+      {
+        best_move_index = -1;
+        return 0.0;
+      }
     }
     return min_value;
   }
