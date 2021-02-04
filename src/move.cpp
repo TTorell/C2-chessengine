@@ -192,7 +192,7 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
         break;
       }
       default:
-        require_m(1 == 2,
+        require_m(false,
         __FILE__,
                   __func__,
                   __LINE__,
@@ -251,6 +251,30 @@ string Move::bestmove_engine_style() const
 {
   stringstream ss;
   ss << "bestmove " << _from << _to;
+  if (_promotion)
+  {
+    switch(_promotion_piece_type)
+    {
+      case piecetype::Queen:
+        ss << "q";
+        break;
+      case piecetype::Rook:
+        ss << "r";
+        break;
+      case piecetype::Knight:
+        ss << "n";
+        break;
+      case piecetype::Bishop:
+        ss << "b" << endl;
+        break;
+      default:
+        require_m(false,
+        __FILE__,
+                  __func__,
+                  __LINE__,
+                  *this);
+    }
+  }
   return ss.str();
 }
 
