@@ -39,9 +39,10 @@ class Game {
     void clear_move_log();
     void setup_pieces();
     void start();
-    Move engine_go(Shared_ostream& logfile, atomic<bool>& logfile_is_open, map<string, Config_param>& config_params, const string& max_search_time);
+    Move engine_go(Shared_ostream& logfile, atomic<bool>& logfile_is_open, const Config_params& config_params, const string& max_search_time);
     void start_timer_thread(const string& max_search_time);
     bool has_time_left();
+    void set_time_left(bool value);
     void save() const;
     col get_col_to_move() const;
     void set_col_to_move(col c);

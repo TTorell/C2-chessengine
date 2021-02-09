@@ -28,7 +28,7 @@ using namespace std::chrono;
 
 std::atomic<bool> time_left(false);
 
-Board Board::level_boards[15]; // definition, complete type
+Board Board::level_boards[38]; // definition, complete type
 
 Board::Board() :
     _last_move(), _possible_moves(), _castling_state(), _en_passant_square(0)
@@ -182,7 +182,7 @@ ostream& Board::write(ostream &os, outputtype wt, col from_perspective) const
         for (int rankindex = 1; rankindex <= 8; rankindex++)
           _file[fileindex][rankindex]->write_describing(os);
       os << endl << "*** Possible moves ***" << endl;
-      for (int i = 0; i < _possible_moves.cardinal(); i++)
+      for (int i = 0; i < _possible_moves.size(); i++)
         os << *_possible_moves[i] << endl;
       os << endl;
       this->write(os, outputtype::cmd_line_diagram, col::white) << endl;
@@ -1709,7 +1709,7 @@ int Board::make_move(playertype player, int &move_no, col col_to_move)
 
 float Board::evaluate_position(col col_to_move, outputtype ot, int level) const
 {
-  if (_possible_moves.cardinal() == 0)
+  if (_possible_moves.size() == 0)
   {
     if (_king_square[static_cast<int>(col_to_move)]->count_threats() > 0)
     {
@@ -1831,7 +1831,7 @@ void Board::count_pawns_in_centre(float &sum, float weight, outputtype ot) const
 //void Board::count_possible_moves(float& sum, float weight, col col_to_move) const
 //{
 //  weight = (col_to_move == col::white) ? weight : -weight;
-//  sum += weight * _possible_moves.cardinal();
+//  sum += weight * _possible_moves.size();
 //}
 
 void Board::count_development(float &sum, float weight, outputtype ot) const
@@ -1843,8 +1843,8 @@ void Board::count_development(float &sum, float weight, outputtype ot) const
     counter++;
   if (!_file[c][1]->contains_piece(col::white, piecetype::Bishop))
     counter++;
-  if (!_file[d][1]->contains_piece(col::white, piecetype::Queen))
-    counter++;
+  // if (!_file[d][1]->contains_piece(col::white, piecetype::Queen))
+  //  counter++;
   // forget the king
   if (!_file[f][1]->contains_piece(col::white, piecetype::Bishop))
     counter++;
@@ -1859,8 +1859,8 @@ void Board::count_development(float &sum, float weight, outputtype ot) const
     counter--;
   if (!_file[c][8]->contains_piece(col::black, piecetype::Bishop))
     counter--;
-  if (!_file[d][8]->contains_piece(col::black, piecetype::Queen))
-    counter--;
+  // if (!_file[d][8]->contains_piece(col::black, piecetype::Queen))
+  //  counter--;
   if (!_file[f][8]->contains_piece(col::black, piecetype::Bishop))
     counter--;
   if (!_file[g][8]->contains_piece(col::black, piecetype::Knight))
@@ -1886,10 +1886,9 @@ void Board::count_castling(float &sum, float weight, outputtype ot) const
 
 bool Board::is_end_node() const
 {
-  if (_possible_moves.cardinal() == 0)
+  if (_possible_moves.size() == 0)
     return true;
-  else
-    return false;
+  return false;
 }
 
 // This method will run in the timer_thread.
@@ -1929,39 +1928,36 @@ void Board::set_time_left(bool value)
   time_left = value;
 }
 
-float Board::max(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level, bool use_pruning) const
+
+// This method is for testing such functionality as turning of pruning and
+// continuing the search until no more captures area available."
+float Board::max_for_testing(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level, bool use_pruning, bool search_until_no_captures) const
 {
   float max_value = -101.0; // Must be lower than lowest evaluation
   int dummy_index;
   best_move_index = -1;
   level++;
-  //cout << "level = " << level << ":" << _last_move << endl;
-  //  bool last_move_was_take_or_check = _last_move.get_take() || _last_move.get_check();
-  //  if (is_end_node() || (level >= max_search_level && !last_move_was_take_or_check) || level == max_search_level + 1)
-  //  {
-  //    return evaluate_position(col::white, outputtype::silent, level);
-  //  }
-
-  // is_end_node() checks for such things as mate or stalemate which may happen
-  // before max_search_level has been reach
-  if (is_end_node() || level >= max_search_level)
+//  cout << "level = " << level << ":" << _last_move << endl;
+  if (is_end_node() || (level >= max_search_level && !_last_move.get_take()))
   {
-    return evaluate_position(col::white, outputtype::silent, level);
+    return evaluate_position(col::black, outputtype::silent, level);
   }
   else
   {
-    for (int i = 0; i < _possible_moves.cardinal(); i++)
+    bool takes = false;
+    for (int i = 0; i < _possible_moves.size(); i++)
     {
+      // Continue after max_search_level, but only if the move is a capture.
+      if (search_until_no_captures)
+      {
+          if (level >= max_search_level && !_possible_moves[i]->get_take())
+            continue;
+          else
+            takes = true;
+      }
       Board::level_boards[level] = *this;
-      //if (level_boards[level].init(col::white) != 0)
-      //{
-      //  cout << "Error in " __FILE__ << ":" << __LINE__ << endl;
-      //  return -100.0;
-      //}
-      //level_boards[level].calculate_moves(col::white);
       level_boards[level].make_move(i, move_no, col::white);
-
-      float tmp_value = level_boards[level].min(level, move_no, alpha, beta, dummy_index, max_search_level, use_pruning);
+      float tmp_value = level_boards[level].min_for_testing(level, move_no, alpha, beta, dummy_index, max_search_level, use_pruning, search_until_no_captures);
       if (tmp_value > max_value)
       {
         max_value = tmp_value;
@@ -1988,44 +1984,46 @@ float Board::max(int level, int move_no, float alpha, float beta, int &best_move
         return 0.0;
       }
     }
+    if (search_until_no_captures)
+    {
+      if (!takes) // There were no captures in the possible move lisst
+        return evaluate_position(col::black, outputtype::silent, level);
+    }
     return max_value;
   }
 }
 
-float Board::min(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level, bool use_pruning) const
+// This method is for testing such functionality as turning of pruning and
+// continue searching until no more "takes" area available."
+float Board::min_for_testing(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level, bool use_pruning, bool search_until_no_captures) const
 {
   float min_value = 101.0; // Must be higher than highest evaluation
   int dummy_index;
 
   best_move_index = -1;
   level++;
-  //cout << "level = " << level << ":" << _last_move << endl;
-  //  bool last_move_was_take_or_check = _last_move.get_take() || _last_move.get_check();
-  //  if (is_end_node() || (level >= max_search_level && !last_move_was_take_or_check) || level == max_search_level + 1)
-  //  {
-  //    return evaluate_position(col::black, outputtype::silent, level);
-  //  }
-
-  // is_end_node() checks for such things as mate or stalemate which may happen
-  // before max_search_level has been reach
-  if (is_end_node() || level >= max_search_level)
+  //  cout << "level = " << level << ":" << _last_move << endl;
+  if (is_end_node() || (level >= max_search_level && !_last_move.get_take()))
   {
     return evaluate_position(col::black, outputtype::silent, level);
   }
   else
   {
-    for (int i = 0; i < _possible_moves.cardinal(); i++)
+    bool takes = false;
+    for (int i = 0; i < _possible_moves.size(); i++)
     {
+      // Continue after max_search_level, but only if the move is a capture.
+      if (search_until_no_captures)
+      {
+        if (level >= max_search_level && !_possible_moves[i]->get_take())
+          continue;
+        else
+          takes = true;
+      }
       // save current board in list
       level_boards[level] = *this;
-      //if (level_boards[level].init(col::black) != 0)
-      //{
-      //  cout << "Error in " << __FILE__ << ":" << __LINE__ << endl;
-      //  return -100.0;
-      //}
-      //level_boards[level].calculate_moves(col::black);
       level_boards[level].make_move(i, move_no, col::black);
-      float tmp_value = level_boards[level].max(level, move_no, alpha, beta, dummy_index, max_search_level, use_pruning);
+      float tmp_value = level_boards[level].max_for_testing(level, move_no, alpha, beta, dummy_index, max_search_level, use_pruning, search_until_no_captures);
       if (tmp_value < min_value)
       {
         min_value = tmp_value;
@@ -2052,8 +2050,111 @@ float Board::min(int level, int move_no, float alpha, float beta, int &best_move
         return 0.0;
       }
     }
+    if (search_until_no_captures)
+    {
+      if (!takes)
+        return evaluate_position(col::black, outputtype::silent, level);
+    }
     return min_value;
   }
 }
+
+float Board::max(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level) const
+{
+  float max_value = -101.0; // Must be lower than lowest evaluation
+  int dummy_index; // best_move_index is only an output parameter,
+                   // it doesn't matter what you put in.
+  best_move_index = -1;
+  level++;
+
+  // If there are no possible moves, the evaluation will check for such things as
+  // mate or stalemate which may happen before max_search_level has been reached.
+  if (level >= max_search_level || _possible_moves.size() == 0)
+  {
+    return evaluate_position(col::black, outputtype::silent, level);
+  }
+  else
+  {
+    // Collect the best value from all possible moves
+    for (int i = 0; i < _possible_moves.size(); i++)
+    {
+      // Copy current board into the preallocated board for this level.
+      Board::level_boards[level] = *this;
+      // Make the selected move on the "level-board" and ask min() to evaluate it further.
+      level_boards[level].make_move(i, move_no, col::white);
+      float tmp_value = level_boards[level].min(level, move_no, alpha, beta, dummy_index, max_search_level);
+      // Save the value if it is the "best", so far, from max() point of view.
+      if (tmp_value > max_value)
+      {
+        max_value = tmp_value;
+        best_move_index = i;
+      }
+      // Pruning:
+      if (tmp_value >= beta)
+      {
+        // Look no further. Skip the rest of the branches.
+        // They wont produce a better result.
+        return max_value;
+      }
+      if (tmp_value > alpha)
+      {
+        // Update alpha value for min();
+        alpha = tmp_value;
+      }
+      // Somewhere we have to check if time is up, to interrupt the search.
+      // Why not do it here?
+      if (!time_left)
+      {
+        best_move_index = -1;
+        return 0.0;
+      }
+    }
+    // Return the best value among the possible moves.
+    return max_value;
+  }
 }
+
+// min() is naturally very similar to max, but occasionally reversed,
+// so I've not supplied any comments on this function. See max().
+float Board::min(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level) const
+{
+  float min_value = 101.0;
+  int dummy_index;
+  best_move_index = -1;
+  level++;
+  if (level >= max_search_level || _possible_moves.size() == 0)
+  {
+    return evaluate_position(col::black, outputtype::silent, level);
+  }
+  else
+  {
+    for (int i = 0; i < _possible_moves.size(); i++)
+    {
+      level_boards[level] = *this;
+      level_boards[level].make_move(i, move_no, col::black);
+      float tmp_value = level_boards[level].max(level, move_no, alpha, beta, dummy_index, max_search_level);
+      if (tmp_value < min_value)
+      {
+        min_value = tmp_value;
+        best_move_index = i;
+      }
+      if (tmp_value <= alpha)
+      {
+        return min_value;
+      }
+      if (tmp_value < beta)
+      {
+        beta = tmp_value;
+      }
+      if (!time_left)
+      {
+        best_move_index = -1;
+        return 0.0;
+      }
+    }
+    return min_value;
+  }
+}
+
+} // namespace C2_chess
 

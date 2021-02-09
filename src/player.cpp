@@ -104,7 +104,7 @@ void Player::set_type(playertype t)
 //  return mate1;
 //}
 
-int Player::make_a_move(int &move_no, float &score, const int &max_search_level, bool use_pruning)
+int Player::make_a_move(int &move_no, float &score, const int &max_search_level)
 {
   if (_type == playertype::human)
   {
@@ -116,7 +116,7 @@ int Player::make_a_move(int &move_no, float &score, const int &max_search_level,
     float alpha = -100, beta = 100;
     if (_colour == col::white)
     {
-      score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
+      score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level);
       if (best_move_index == -1 && score == -100.0)
       {
         cout << "White was check mated." << endl; // TODO
@@ -125,7 +125,7 @@ int Player::make_a_move(int &move_no, float &score, const int &max_search_level,
     }
     else
     {
-      score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
+      score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level);
       if (best_move_index == -1 && score == 100.0)
       {
         cout << "Black was check mated." << endl; // TODO
@@ -136,7 +136,7 @@ int Player::make_a_move(int &move_no, float &score, const int &max_search_level,
   }
 }
 
-int Player::find_best_move_index(int &move_no, float &score, const int &max_search_level, bool use_pruning)
+int Player::find_best_move_index(int &move_no, float &score, const int &max_search_level, bool use_pruning, bool search_until_no_captures)
 {
   // TODO: The playertype should of course have been set correctly
   // for a computer vs. computer game.
@@ -149,7 +149,10 @@ int Player::find_best_move_index(int &move_no, float &score, const int &max_sear
   float alpha = -100, beta = 100;
   if (_colour == col::white)
   {
-    score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
+    if (use_pruning && !search_until_no_captures)
+      score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level);
+    else
+      score = _chessboard.max_for_testing(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning, search_until_no_captures);
     if (best_move_index == -1 && score == -100.0)
     {
       // logfile << "White was check mated." << "\n"; // TODO
@@ -158,7 +161,10 @@ int Player::find_best_move_index(int &move_no, float &score, const int &max_sear
   }
   else // _color == col::black
   {
-    score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning);
+    if (use_pruning && !search_until_no_captures)
+      score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level);
+    else
+      score = _chessboard.min_for_testing(0, move_no, alpha, beta, best_move_index, max_search_level, use_pruning, search_until_no_captures);
     if (best_move_index == -1 && score == 100.0)
     {
       // logfile << "Black was check mated." << "\n"; // TODO

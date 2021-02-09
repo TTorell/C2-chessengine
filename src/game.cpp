@@ -5,8 +5,11 @@
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 #include "Config_param.hpp"
+#include <thread>
+#include <chrono>
 
 using namespace std;
+using namespace std::chrono;
 
 namespace
 {
@@ -146,15 +149,14 @@ void Game::start()
 {
   cout << endl << "Game started" << endl;
   _chessboard.set_time_left(true);
-  const int max_search_level = 7;
-  const bool use_pruning = true;
+  const int max_search_level = 6;
   bool playing = true;
   while (playing)
   {
     write_diagram (cout);
 //    write_chessboard(cout, debug, white);
     uint64_t nsec_start = current_time.nanoseconds();
-    if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, max_search_level, use_pruning) != 0)
+    if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, max_search_level) != 0)
     {
       cout << "Stopped playing" << endl;
       playing = false;
@@ -197,28 +199,27 @@ void Game::start()
   }
 }
 
-Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, map<string, Config_param> &config_params, const string& max_search_time)
+Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, const Config_params& config_params, const string& max_search_time)
 {
-  int max_search_level;
-  bool use_pruning;
-  bool use_incremental_search;
+  // These values are just default values
+  int max_search_level = 7;
+  bool use_incremental_search = true;
+  bool use_pruning = true;
+  bool search_until_no_captures = false;
 
   // Read some configuration parameters
-  auto it = config_params.find("max_search_level");
-  if (it != config_params.end())
-    max_search_level = atol(it->second.get_value().c_str());
-  else
-    max_search_level = 7; // default
-  it = config_params.find("use_pruning");
-  if (it != config_params.end())
-    use_pruning = it->second.get_value() == "true";
-  else
-    use_pruning = true;
-  it = config_params.find("use_incremental_search");
-  if (it != config_params.end())
-    use_incremental_search = it->second.get_value() == "true";
-  else
-    use_incremental_search = true;
+  string s = config_params.get_config_param("max_search_level", logfile, logfile_is_open);
+  if (!s.empty())
+    max_search_level = atoi(s.c_str());
+  s = config_params.get_config_param("use_incremental_search", logfile, logfile_is_open);
+  if (!s.empty())
+    use_incremental_search = (s == "true");
+  s = config_params.get_config_param("use_pruning", logfile, logfile_is_open);
+  if (!s.empty())
+    use_pruning = (s == "true");
+  s = config_params.get_config_param("search_until_no_captures", logfile, logfile_is_open);
+  if (!s.empty())
+    search_until_no_captures = (s == "true");
 
   // Search for best move
   if (use_incremental_search)
@@ -227,38 +228,53 @@ Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, map
     // as possible. When searching incrementally we consider
     // max_search_time.
     if (!max_search_time.empty())
+    {
       _chessboard.start_timer_thread(max_search_time);
-
+      this_thread::sleep_for(microseconds(100));
+    }
+    else
+      _chessboard.set_time_left(true);
     int best_move_index = -1;
     for (int i = 2; i <= max_search_level; i++)
     {
       uint64_t nsec_start = current_time.nanoseconds();
+
+      //bool test = (use_pruning == false || search_until_no_captures == true);
+      int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning, search_until_no_captures);
+      // Has the searh on this level been aborted by time limit?
+      if (move_index == -1)
       {
-        int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning);
-        // Has the searh on this level been aborted by time limit?
-        if (move_index == -1)
+        // This happens when max_search_level has been set to 1
+        // or when the search has been interrupted by the time limit.
+        // (Or possibly when something else has gone wrong.)
+        // My min() or max() will just evaluate the current position
+        // then and wont be able to choose best move.
+        // So, searching with level 1 is completely pointless.
+        if (has_time_left())
         {
-          // This happens when max_search_level has been set to 1
-          // or when the search has been interrupted by the time limit.
-          // (Or possibly when something else has gone wrong.)
-          // My min() or max() will just evaluate the current position
-          // then and wont be able to choose best move.
-          // So, searching with level 1 is completely pointless.
-          if (has_time_left())
+          if (logfile_is_open)
+            logfile << "Error: find_best_move() returned -1." << "\n";
+          // We can't choose. Just set it to the first move.
+          // (TODO: Choose randomly maybe.)
+          if (best_move_index == -1)
+            best_move_index = 0;
+        }
+        else
+        {
+          // Time is out.
+          if (i == 2)
           {
-            if (logfile_is_open)
-              logfile << "Error: find_best_move() returned -1." << "\n";
-            // We can't choose. Just set it to the first move.
-            move_index = 0;
-          }
-          else
-          {
-            // Time is out.
-            break;
+            // The search has been interrupted on lowest level.
+            // No best move has been found at all, so just choose
+            // the first move (TODO: Choose randomly maybe.)
+            logfile << "interrupted on level 2" << "\n";
+            best_move_index = 0;
           }
         }
-        best_move_index = move_index;
+        break;
       }
+      best_move_index = move_index;
+
       uint64_t nsec_stop = current_time.nanoseconds();
       if (logfile_is_open)
         log_time_diff(nsec_stop, nsec_start, logfile, i, _chessboard.get_possible_move(best_move_index), _score);
@@ -276,7 +292,7 @@ Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, map
     _chessboard.set_time_left(true);
     int best_move_index = -1;
     uint64_t nsec_start = current_time.nanoseconds();
-    int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, max_search_level, use_pruning);
+    int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, max_search_level, use_pruning, search_until_no_captures);
     if (move_index == -1)
     {
       // This happens when max_search_level has been set to 1.
@@ -300,7 +316,7 @@ Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, map
     _move_log.into_as_last(new Move(_chessboard.get_last_move()));
   }
 
-  // We have made a move, change color to evaluate from opponents view.
+  // We have made a move. Change color to evaluate from opponents view.
   _col_to_move = (_col_to_move == col::white) ? col::black : col::white;
   float evaluation = _chessboard.evaluate_position(_col_to_move, outputtype::silent, 0);
   if (evaluation == eval_max || evaluation == eval_min)
@@ -355,6 +371,11 @@ void Game::start_timer_thread(const string& max_search_time)
 bool Game::has_time_left()
 {
   return _chessboard.has_time_left();
+}
+
+void Game::set_time_left(bool value)
+{
+  _chessboard.set_time_left(value);
 }
 
 } // namespace C2_chess

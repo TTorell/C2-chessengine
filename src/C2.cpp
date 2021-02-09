@@ -177,14 +177,6 @@ string parse_go_command(const vector<string>& command_tokens, const string &var_
   return token;
 }
 
-// Set default values for the few config parameters
-void init_config_params(map<string, Config_param>& config_params)
-{
-  config_params.insert(make_pair("max_search_level", *(new Config_param("max_search_level", "7", "spin", "7", "1", "8"))));
-  config_params.insert(make_pair("use_pruning", *(new Config_param("use_pruning", "true", "check", "true"))));
-  config_params.insert(make_pair("use_incremental_search", *(new Config_param("use_incremental_search", "true", "check", "true"))));
-}
-
 // Global booleans which can be set to false to stop input and output threads
 // and to tell if the engine succeeded to open the command_log.txt file, where
 // it e.g. saves all input and output commands it receives and sends during a
@@ -201,7 +193,7 @@ std::atomic<bool> logfile_is_open(true);
 std::atomic<bool> xtime_left(false);
 
 // Method for parsing input-commands from a chess-GUI (some commands are taken care of already in ḿain().
-int parse_command(const string& command, Circular_fifo& output_buffer, Shared_ostream& logfile, Game& game, map<string, Config_param>& config_params, vector<string>& returned_tokens)
+int parse_command(const string& command, Circular_fifo& output_buffer, Shared_ostream& logfile, Game& game, Config_params& config_params, vector<string>& returned_tokens)
 {
   // We know at this point that the command string isn't empty
   vector<string> tokens = split(command, ' ');
@@ -209,12 +201,11 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Shared_os
   {
     output_buffer.put("id name C2 experimental");
     output_buffer.put("id author Torsten Torell");
+
     // Tell GUI which parameters are configurable.
-    pair<const string, Config_param> pair;
-    pair.second.get_command_for_gui();
-    for (auto it : config_params)
+    for (auto it : config_params.get_map())
     {
-      output_buffer.put(it.second.get_command_for_gui());
+      output_buffer.put(it.second.get_UCI_string_for_gui());
     }
     output_buffer.put("uciok");
   }
@@ -248,9 +239,7 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Shared_os
     }
     if (!(name.empty() || value.empty()))
     {
-      auto search = config_params.find(name);
-      if (search != config_params.end())
-        search->second.set_value(value);
+      config_params.set_config_param(name, value);
     }
   }
   if (tokens[0] == "position")
@@ -284,20 +273,31 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Shared_os
 }
 
 // This method will run in the input_thread.
-void read_input(Circular_fifo *input_buffer, Shared_ostream *logfile)
+void read_input(Circular_fifo *input_buffer, Shared_ostream *logfile, Game* game)
 {
   while (input_thread_running)
   {
     string command;
     getline(cin, command);
-    (*input_buffer).put(command);
+    input_buffer->put(command);
     if (logfile_is_open)
       (*logfile) << "input: " << command << "\n";
+    if (command == "stop")
+    {
+      // Interrupt the probably searching main thread.
+      game->set_time_left(false);
+    }
     if (command == "quit")
+    {
+      // Interrupt the possibly searching main thread.
+      // Note that the quit command was also put in the
+      // input buffer, for the main thread to read when
+      // it has finished searching.
+      game->set_time_left(false);
       break;
-    this_thread::sleep_for(milliseconds(10));
+    }
+    this_thread::sleep_for(milliseconds(3));
   }
-  //cout << "input_thread: quit" << endl;
   this_thread::yield();
 }
 
@@ -317,7 +317,7 @@ void write_output(Circular_fifo *output_buffer, Shared_ostream *logfile)
         (*logfile) << "output: " << command << "\n";
       cout << command << endl;
     }
-    this_thread::sleep_for(milliseconds(10));
+    this_thread::sleep_for(milliseconds(3));
   }
   this_thread::yield();
 }
@@ -393,6 +393,8 @@ int main(int argc, char* argv[])
     logfile_is_open = false;
   Shared_ostream logfile(ofs);
 
+  Game game;
+
   // The engine needs to store commands from the GUI until it's
   // ready to read them.
   Circular_fifo input_buffer;
@@ -404,18 +406,16 @@ int main(int argc, char* argv[])
   // Thread which receives input commands and puts them in the
   // ipput_buffer, While the main engine process is "thinking"
   // about other things.
-  thread input_thread(read_input, &input_buffer, &logfile);
+  thread input_thread(read_input, &input_buffer, &logfile, &game);
 
   // Thread which buffers output commands from the engine.
   thread output_thread(write_output, &output_buffer, &logfile);
 
   // Configuration parameters for the engine, which the GUI can manipulate
-  // are stored in this map.
-  map<string, Config_param> config_params;
-  init_config_params(config_params);
+  // are stored in this class.
+  Config_params config_params;
 
   // Create an instance of the Game class.
-  Game game;
 
   string command;
 

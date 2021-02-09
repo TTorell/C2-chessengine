@@ -43,7 +43,7 @@ Movelist& Movelist::operator=(const Movelist& ml)
   return *this;
 }
 
-int Movelist::cardinal() const
+int Movelist::size() const
 {
   return (int) _list.size();
 }
