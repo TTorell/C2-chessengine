@@ -268,4 +268,4 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
   _game.set_moveno(move_number);
   return 0;
 }
-}
+} // End namespace 
