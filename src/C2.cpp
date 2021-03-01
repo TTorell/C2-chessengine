@@ -296,7 +296,6 @@ void read_input(Circular_fifo *input_buffer, Shared_ostream *logfile, Game* game
       game->set_time_left(false);
       break;
     }
-    this_thread::sleep_for(milliseconds(3));
   }
   this_thread::yield();
 }

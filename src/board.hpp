@@ -84,6 +84,9 @@ class Board {
     float max_for_testing(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level, bool use_pruning, bool search_until_no_captures) const;
     float min_for_testing(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level, bool use_pruning, bool search_until_no_captures) const;
 
+    void set_time_diff_sum(uint64_t value);
+    uint64_t get_time_diff_sum();
+
   private:
     bool read_piece_type(piecetype& pt, char c) const;
     bool en_passant(Piece*, Square*) const;

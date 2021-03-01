@@ -17,6 +17,7 @@ extern "C" {
 namespace
 {
 C2_chess::CurrentTime current_time;
+uint64_t time_diff_sum = 0;
 }
 
 namespace C2_chess
@@ -1278,7 +1279,7 @@ void Board::calculate_moves(col col_to_move)
   Square *temp_square;
   Square *kings_square = _king_square[static_cast<int>(col_to_move)];
   // is the King threatened?
-  if (kings_square->count_threats(other_col))
+  if (kings_square->count_threats(other_col)) //TODO: speed up
   {
     //cout << "king threatened" << endl;
     // All King moves to unthreatened squares are allowed. (Except moves to squares
@@ -1723,6 +1724,8 @@ float Board::evaluate_position(col col_to_move, outputtype ot, int level) const
       return 0.0;
     }
   }
+  uint64_t nsec_start = current_time.nanoseconds();
+
   // Start with a very small number in sum, just so we don't return 0.0 in an
   // equal position. 0.0 is reserved for stalemate.
   float sum = epsilon;
@@ -1732,6 +1735,7 @@ float Board::evaluate_position(col col_to_move, outputtype ot, int level) const
   count_development(sum, 0.05F, ot);
   count_pawns_in_centre(sum, 0.03F, ot);
   count_castling(sum, 0.10F, ot);
+  time_diff_sum += current_time.nanoseconds() - nsec_start;
   return sum;
 }
 
@@ -1908,7 +1912,6 @@ static void start_timer(const string& max_search_time)
       time_left = false;
       break;
     }
-    cout << time << endl;
   }
 }
 
@@ -2154,6 +2157,16 @@ float Board::min(int level, int move_no, float alpha, float beta, int &best_move
     }
     return min_value;
   }
+}
+
+void Board::set_time_diff_sum(uint64_t value)
+{
+  time_diff_sum = value;
+}
+
+uint64_t Board::get_time_diff_sum()
+{
+  return time_diff_sum;
 }
 
 } // namespace C2_chess

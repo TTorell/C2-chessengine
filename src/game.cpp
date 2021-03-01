@@ -207,6 +207,8 @@ Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, con
   bool use_pruning = true;
   bool search_until_no_captures = false;
 
+  _chessboard.set_time_diff_sum(0);
+
   // Read some configuration parameters
   string s = config_params.get_config_param("max_search_level", logfile, logfile_is_open);
   if (!s.empty())
@@ -359,6 +361,7 @@ Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, con
       logfile << ss.str();
     }
   }
+  logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
   return _chessboard.get_last_move();
 }
 
