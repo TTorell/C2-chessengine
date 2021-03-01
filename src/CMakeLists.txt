@@ -7,6 +7,8 @@ foreach (_variableName ${_variableNames})
     message(STATUS "${_variableName}=${${_variableName}}")
 endforeach()
 
+set( CMAKE_VERBOSE_MAKEFILE on )
+
 # set the project name
 project(C2 VERSION 1.0)
 

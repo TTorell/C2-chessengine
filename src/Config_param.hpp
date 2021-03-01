@@ -27,7 +27,7 @@ class Config_param
   public:
     Config_param()
     {
-    }
+    };
 
     Config_param(const string& id, const string& value, const string& type, const string& default_value, const string& min = "", const string& max = "") :
         _name(id),
@@ -37,27 +37,78 @@ class Config_param
         _min(min),
         _max(max)
     {
-    }
+    };
+
+    Config_param(const Config_param& param) :
+        _name(param._name),
+        _value(param._value),
+        _type(param._type),
+        _default_value(param._default_value),
+        _min(param._min),
+        _max(param._max)
+    {
+    };
 
     void set_value(const string& s)
     {
       _value = s;
-    }
+    };
 
-    string& get_value()
+    string get_value() const
     {
       return _value;
-    }
+    };
 
-    string get_command_for_gui()
+    string get_UCI_string_for_gui() const
     {
       string cmd = "option name " + _name + " type " + _type + " default " + _default_value;
       if (_type == "spin")
         cmd += " min " + _min + " max " + _max;
       return cmd;
+    };
+};
+
+
+class Config_params
+{
+  protected:
+    map<string, Config_param> _config_params;
+
+  public:
+    Config_params()
+    {
+      _config_params.insert(make_pair("max_search_level", *(new Config_param("max_search_level", "7", "spin", "7", "2", "8"))));
+      _config_params.insert(make_pair("use_pruning", *(new Config_param("use_pruning", "true", "check", "true"))));
+      _config_params.insert(make_pair("use_incremental_search", *(new Config_param("use_incremental_search", "true", "check", "true"))));
+      _config_params.insert(make_pair("search_until_no_captures", *(new Config_param("search_until_no_captures", "false", "check", "false"))));
+    };
+
+    map<string, Config_param> get_map() const
+    {
+      return _config_params;
     }
 
+    void set_config_param(const string& name, const string& value)
+    {
+      auto search = _config_params.find(name);
+      if (search != _config_params.end())
+        search->second.set_value(value);
+    };
+
+    string get_config_param(const string& name, Shared_ostream &logfile, atomic<bool> &logfile_is_open) const
+    {
+      auto it = _config_params.find(name);
+      if (it != _config_params.end())
+        return it->second.get_value();
+      else
+      {
+        if (logfile_is_open)
+          logfile << "Couldn't find config parameter " << name << "\n";
+        return "";
+      }
+    };
 };
-}
+
+} // namespace C2_chess
 
 #endif /* CONFIG_PARAM_HPP_ */

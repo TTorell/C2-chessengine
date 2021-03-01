@@ -5,8 +5,11 @@
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 #include "Config_param.hpp"
+#include <thread>
+#include <chrono>
 
 using namespace std;
+using namespace std::chrono;
 
 namespace
 {
@@ -58,6 +61,11 @@ void Game::clear_chessboard()
   _chessboard.clear();
 }
 
+void Game::clear_move_log()
+{
+  _move_log.clear();
+}
+
 void Game::setup_pieces()
 {
   _chessboard.setup_pieces();
@@ -73,7 +81,7 @@ void Game::set_col_to_move(col color)
   _col_to_move = color;
 }
 
-void Game::set_col_to_start(col color)
+void Game::set_move_log_col_to_start(col color)
 {
   _move_log.set_col_to_start(color);
 }
@@ -140,15 +148,15 @@ Shared_ostream& Game::write_diagram(Shared_ostream &os) const
 void Game::start()
 {
   cout << endl << "Game started" << endl;
-  const int max_search_level = 7;
-  const bool use_pruning = true;
+  _chessboard.set_time_left(true);
+  const int max_search_level = 6;
   bool playing = true;
   while (playing)
   {
     write_diagram (cout);
 //    write_chessboard(cout, debug, white);
     uint64_t nsec_start = current_time.nanoseconds();
-    if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, max_search_level, use_pruning) != 0)
+    if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, max_search_level) != 0)
     {
       cout << "Stopped playing" << endl;
       playing = false;
@@ -191,59 +199,102 @@ void Game::start()
   }
 }
 
-Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, map<string, Config_param> &config_params)
+Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, const Config_params& config_params, const string& max_search_time)
 {
-  int max_search_level;
-  bool use_pruning;
-  bool use_incremental_search;
-  auto it = config_params.find("max_search_level");
-  if (it != config_params.end())
-    max_search_level = atol(it->second.get_value().c_str());
-  else
-    max_search_level = 7; // default
-  it = config_params.find("use_pruning");
-  if (it != config_params.end())
-    use_pruning = it->second.get_value() == "true";
-  else
-    use_pruning = true;
-  it = config_params.find("use_incremental_search");
-  if (it != config_params.end())
-    use_incremental_search = it->second.get_value() == "true";
-  else
-    use_incremental_search = true;
+  // These values are just default values
+  int max_search_level = 7;
+  bool use_incremental_search = true;
+  bool use_pruning = true;
+  bool search_until_no_captures = false;
+
+  _chessboard.set_time_diff_sum(0);
+
+  // Read some configuration parameters
+  string s = config_params.get_config_param("max_search_level", logfile, logfile_is_open);
+  if (!s.empty())
+    max_search_level = atoi(s.c_str());
+  s = config_params.get_config_param("use_incremental_search", logfile, logfile_is_open);
+  if (!s.empty())
+    use_incremental_search = (s == "true");
+  s = config_params.get_config_param("use_pruning", logfile, logfile_is_open);
+  if (!s.empty())
+    use_pruning = (s == "true");
+  s = config_params.get_config_param("search_until_no_captures", logfile, logfile_is_open);
+  if (!s.empty())
+    search_until_no_captures = (s == "true");
+
+  // Search for best move
   if (use_incremental_search)
   {
+    // Incremental search, to have a best-move available as quickly
+    // as possible. When searching incrementally we consider
+    // max_search_time.
+    if (!max_search_time.empty())
+    {
+      _chessboard.start_timer_thread(max_search_time);
+      this_thread::sleep_for(microseconds(100));
+    }
+    else
+      _chessboard.set_time_left(true);
     int best_move_index = -1;
     for (int i = 2; i <= max_search_level; i++)
     {
       uint64_t nsec_start = current_time.nanoseconds();
+
+      //bool test = (use_pruning == false || search_until_no_captures == true);
+      int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning, search_until_no_captures);
+      // Has the searh on this level been aborted by time limit?
+      if (move_index == -1)
       {
-        int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning);
-        if (move_index == -1)
+        // This happens when max_search_level has been set to 1
+        // or when the search has been interrupted by the time limit.
+        // (Or possibly when something else has gone wrong.)
+        // My min() or max() will just evaluate the current position
+        // then and wont be able to choose best move.
+        // So, searching with level 1 is completely pointless.
+        if (has_time_left())
         {
-          // This happens when max_search_level has been set to 1.
-          // (Or possibly when something else has gone wrong.)
-          // My min() or max() will just evaluate the current position
-          // then and wont be able to choose best move.
-          // So, searching with level 1 is completely pointless.
           if (logfile_is_open)
             logfile << "Error: find_best_move() returned -1." << "\n";
           // We can't choose. Just set it to the first move.
-          move_index = 0;
+          // (TODO: Choose randomly maybe.)
+          if (best_move_index == -1)
+            best_move_index = 0;
         }
-        best_move_index = move_index;
+        else
+        {
+          // Time is out.
+          if (i == 2)
+          {
+            // The search has been interrupted on lowest level.
+            // No best move has been found at all, so just choose
+            // the first move (TODO: Choose randomly maybe.)
+            logfile << "interrupted on level 2" << "\n";
+            best_move_index = 0;
+          }
+        }
+        break;
       }
+      best_move_index = move_index;
+
       uint64_t nsec_stop = current_time.nanoseconds();
       if (logfile_is_open)
         log_time_diff(nsec_stop, nsec_start, logfile, i, _chessboard.get_possible_move(best_move_index), _score);
     }
     _chessboard.make_move(best_move_index, _moveno, _col_to_move);
+    // The _move_log only makes sense if playing from the command line,
+    // Or when the engine plays against itself ("play out position").
+    // In the normal case the engine only knows its own moves.
+    _move_log.into_as_last(new Move(_chessboard.get_last_move()));
   }
-  else // Not incremental search, start directly at max_search_level
+  else
   {
+    // Not incremental search, start searching directly at max_search
+    // level and stop when finished. Ignore max_search_time.
+    _chessboard.set_time_left(true);
     int best_move_index = -1;
     uint64_t nsec_start = current_time.nanoseconds();
-    int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, max_search_level, use_pruning);
+    int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, max_search_level, use_pruning, search_until_no_captures);
     if (move_index == -1)
     {
       // This happens when max_search_level has been set to 1.
@@ -261,19 +312,22 @@ Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, map
     if (logfile_is_open)
       log_time_diff(nsec_stop, nsec_start, logfile, max_search_level, _chessboard.get_possible_move(best_move_index), _score);
     _chessboard.make_move(best_move_index, _moveno, _col_to_move);
+    // The _move_log only makes sense if playing from the command line,
+    // Or when the engine plays against itself ("play out position").
+    // In the normal case the engine only knows its own moves.
+    _move_log.into_as_last(new Move(_chessboard.get_last_move()));
   }
 
-  // We have made a move, change color to evaluate from opponents view.
-  _col_to_move = _col_to_move == col::white ? col::black : col::white;
+  // We have made a move. Change color to evaluate from opponents view.
+  _col_to_move = (_col_to_move == col::white) ? col::black : col::white;
   float evaluation = _chessboard.evaluate_position(_col_to_move, outputtype::silent, 0);
   if (evaluation == eval_max || evaluation == eval_min)
   {
     _chessboard.set_mate(true);
-    _move_log.into_as_last(new Move(_chessboard.get_last_move()));
     if (logfile_is_open)
     {
       stringstream ss;
-      ss << _move_log << endl;
+      // ss << _move_log << endl;
       logfile << ss.str();
       write_diagram(logfile);
       logfile << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
@@ -282,11 +336,10 @@ Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, map
   else if (evaluation == 0.0 && _chessboard.no_of_moves() == 0)
   {
     _chessboard.set_stalemate(true);
-    _move_log.into_as_last(new Move(_chessboard.get_last_move()));
     if (logfile_is_open)
     {
       stringstream ss;
-      ss << _move_log << endl;
+      // ss << _move_log << endl;
       logfile << ss.str();
       write_diagram(logfile);
       logfile << "1/2 - 1/2 draw by stalemate" << "\n";
@@ -301,14 +354,31 @@ Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, map
       _half_move_counter = 0;
     else
       _half_move_counter++;
-    _move_log.into_as_last(new Move(_chessboard.get_last_move()));
     if (logfile_is_open)
     {
       stringstream ss;
-      ss << _move_log << endl;
+      // ss << _move_log << endl;
       logfile << ss.str();
     }
   }
+  logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
   return _chessboard.get_last_move();
 }
-} // namespace
+
+void Game::start_timer_thread(const string& max_search_time)
+{
+
+  _chessboard.start_timer_thread(max_search_time);
+}
+
+bool Game::has_time_left()
+{
+  return _chessboard.has_time_left();
+}
+
+void Game::set_time_left(bool value)
+{
+  _chessboard.set_time_left(value);
+}
+
+} // namespace C2_chess

@@ -34,7 +34,7 @@ class Movelist
     void into_as_first(Move* const newmove);
     void into_as_last(Move* const newmove);
     void out(Move* const rubbish);
-    int cardinal() const;
+    int size() const;
     bool empty() const;
     bool in_list(Move* m,int* index) const;
     void clear();

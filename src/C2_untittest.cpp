@@ -17,16 +17,16 @@ int C2_unit_test::main_test(ostream& os)
   os << "###########################" << endl << endl;
   os << "... default constructor ..." << endl;
   Movelist movelist;
-  os << "nof_elements = " << movelist.cardinal() << endl;
+  os << "nof_elements = " << movelist.size() << endl;
 
-  os << ".. into, cardinal, operator[] .." << endl;
+  os << ".. into, size, operator[] .." << endl;
   Position from(e, 2);
   Position to(e, 4);
   Move* move1 = new Move(from, to);
   Move* move2 = new Move(from, to);
   movelist.into(move1);
   movelist.into(move2);
-  for (int i = 0; i < movelist.cardinal(); i++)
+  for (int i = 0; i < movelist.size(); i++)
   {
     os << *movelist[i] << endl;
   }
@@ -43,7 +43,7 @@ int C2_unit_test::main_test(ostream& os)
 
   os << "... copy constructor ..." << endl;
   Movelist movelist3(movelist2);
-  for (int i = 0; i < movelist3.cardinal(); i++)
+  for (int i = 0; i < movelist3.size(); i++)
   {
     os << *movelist3[i] << endl;
   }
@@ -70,7 +70,7 @@ int C2_unit_test::main_test(ostream& os)
   Position to3(f, 3);
   Move* move5 = new Move(from3, to3);
   movelist2.into_as_last(move5);
-  for (int i = 0; i < movelist2.cardinal(); i++)
+  for (int i = 0; i < movelist2.size(); i++)
   {
     os << *movelist2[i] << endl;
   }
