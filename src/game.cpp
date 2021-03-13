@@ -144,16 +144,29 @@ Shared_ostream& Game::write_diagram(Shared_ostream &os) const
   return os;
 }
 
+void Game::init_board_hash_tag()
+{
+  _chessboard.init_board_hash_tag(_col_to_move);
+}
+
 // This method is for the cmd-line interface only
 void Game::start()
 {
   cout << endl << "Game started" << endl;
+  // Init the hash tag for the initial board-position toparse_FEN_string
+  // use in the Zobrist hash table.
+  // (also called transposition table)
+  init_board_hash_tag();
+  // Tell the engine that there are no time limits.
+  // The time it takes is defined by the max_searh_level
   _chessboard.set_time_left(true);
-  const int max_search_level = 6;
+  const int max_search_level = 7;
   bool playing = true;
   while (playing)
   {
-    write_diagram (cout);
+    write_chessboard(cout, outputtype::cmd_line_diagram, _col_to_move);
+    // write_diagram (cout);
+    cout << "Hashtag: " << _chessboard.get_hash_tag() << endl;
 //    write_chessboard(cout, debug, white);
     uint64_t nsec_start = current_time.nanoseconds();
     if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, max_search_level) != 0)
@@ -240,6 +253,7 @@ Move Game::engine_go(Shared_ostream &logfile, atomic<bool> &logfile_is_open, con
     for (int i = 2; i <= max_search_level; i++)
     {
       uint64_t nsec_start = current_time.nanoseconds();
+      _chessboard.clear_hash();
 
       //bool test = (use_pruning == false || search_until_no_captures == true);
       int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning, search_until_no_captures);

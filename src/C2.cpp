@@ -11,6 +11,7 @@
 #include "chessfuncs.hpp"
 #include "chesstypes.hpp"
 #include "Config_param.hpp"
+#include "zobrist_hash.hpp"
 
 using namespace std;
 using namespace std::chrono;
@@ -29,6 +30,7 @@ int write_menue_get_choice(ostream& os)
   os << "1. Play a game against C2." << endl;
   os << "2. Load a position from a .pgn-file" << endl;
   os << "   and start playing from there." << endl;
+  os << "3. Play both sides." << endl;
   os << "" << endl;
 
   while (true)
@@ -45,6 +47,8 @@ int write_menue_get_choice(ostream& os)
         return 1;
       case '2':
         return 2;
+      case '3':
+        return 3;
       default:
         os << "Sorry, try again." << endl;
         continue;
@@ -134,11 +138,20 @@ void play_on_cmd_line()
           exit(0);
         continue;
       }
+      case 3:
+      {
+        Game game(col::white, playertype::human, playertype::human);
+        game.setup_pieces();
+        game.init();
+        game.start();
+        if (back_to_main_menu() != 0)
+          return;
+        continue;
+      }
       default:
-        require(false,
-        __FILE__,
-                __FUNCTION__,
-                __LINE__);
+        cout << "Sorry, 1, 2 or 3 was the options" << endl << endl;
+        this_thread::sleep_for(seconds(3));
+        continue;
     }
   }
 }
@@ -391,6 +404,8 @@ int main(int argc, char* argv[])
   if (!ofs.is_open())
     logfile_is_open = false;
   Shared_ostream logfile(ofs);
+
+  Zobrist_hash zh;
 
   Game game;
 

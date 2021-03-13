@@ -16,7 +16,7 @@ class Castling_state {
     bool _b_queenside_OK;
     bool _w_has_castled;
     bool _b_has_castled;
-
+    friend class Board;
   public:
     Castling_state() :
         _w_kingside_OK(true), _b_kingside_OK(true), _w_queenside_OK(true), _b_queenside_OK(true), _w_has_castled(false), _b_has_castled(false)
@@ -83,7 +83,18 @@ class Castling_state {
 
     void set_has_castled(col color)
     {
-      color == col::white ? _w_has_castled = true : _b_has_castled = true;
+      if (color == col::white)
+      {
+        _w_has_castled = true;
+        _w_kingside_OK = false;
+        _w_queenside_OK = false;
+      }
+      else
+      {
+        _b_has_castled = true;
+        _b_kingside_OK = false;
+        _b_queenside_OK = false;
+      }
     }
 
     friend ostream& operator<<(ostream& os, const Castling_state& p);

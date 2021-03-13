@@ -29,6 +29,7 @@ FEN_reader::~FEN_reader()
 }
 
 int read_position(const string& inputfile);
+
 istream& FEN_reader::read_position(istream& is)
 {
   return is;
@@ -266,6 +267,8 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
   int move_number;
   is >> move_number;
   _game.set_moveno(move_number);
+
+  _game.init_board_hash_tag();
   return 0;
 }
 } // End namespace 

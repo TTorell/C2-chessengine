@@ -7,10 +7,10 @@
 #include "file.hpp"
 #include "rank.hpp"
 #include "circular_fifo.hpp"
+#include "zobrist_hash.hpp"
 
 namespace C2_chess
 {
-
 class Piece;
 
 class Board {
@@ -22,6 +22,8 @@ class Board {
     Castling_state _castling_state;
     Square* _king_square[2];
     Square* _en_passant_square = 0;
+    unsigned long _hash_tag;
+    static Zobrist_hash hash_table;
   public:
     static Board level_boards[];  // declaration, incomplete type
     Board();
@@ -74,6 +76,10 @@ class Board {
     {
       return _possible_moves.size();
     }
+    unsigned long get_hash_tag()
+    {
+      return _hash_tag;
+    }
 
     void start_timer_thread(const string& max_search_time);
     bool has_time_left();
@@ -86,7 +92,8 @@ class Board {
 
     void set_time_diff_sum(uint64_t value);
     uint64_t get_time_diff_sum();
-
+    void init_board_hash_tag(col col_to_move);
+    void clear_hash();
   private:
     bool read_piece_type(piecetype& pt, char c) const;
     bool en_passant(Piece*, Square*) const;
@@ -95,7 +102,8 @@ class Board {
     void fix_pawn_tp(int, int, Piece*, Square*);
     void fix_en_passant(Square* s, Square* possible_ep_square);
     void fix_threat_prot(int, int, Piece*, Square*);
-    bool allowed(int, int);
+    bool allowed_index(int fileindex, int rankindex);
+    bool allowed_fileindex(int fileindex);
     void fix_bound_piece_file(Square* own_piece_square, const Square* threat_square);
     void fix_bound_piece_rank(Square* own_piece_square, const Square* threat_square);
     void fix_bound_piece_diagonal(const Square* king_square, Square* own_piece_square, const Square* threat_square);
@@ -113,6 +121,15 @@ class Board {
     void check_rook_or_queen(Square* threat_square, Square* kings_square, col col_to_move);
     void check_bishop_or_queen(Square* threat_square, Square* kings_square, col col_to_move);
     void check_if_threat_can_be_taken_en_passant(col col_to_move, Square* threat_square);
+    void update_hash_tag_remove_en_passant_file();
+    void update_hash_tag_en_passant_file(int fileindex);
+    void update_hash_tag_change_color_to_move();
+    void update_hash_tag_remove_castling_rights(col color);
+    void update_hash_tag_remove_kingside_castling_rights(col color);
+    void update_hash_tag_remove_queenside_castling_rights(col color);
+    void update_hash_tag(const Square* square);
+    void update_hash_tag(int fileindex, int rankindex, col color, piecetype type);
+    friend class Zobrist_hash;
 };
 }
 #endif

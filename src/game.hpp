@@ -38,6 +38,7 @@ class Game {
     void clear_chessboard();
     void clear_move_log();
     void setup_pieces();
+    void init_board_hash_tag();
     void start();
     Move engine_go(Shared_ostream& logfile, atomic<bool>& logfile_is_open, const Config_params& config_params, const string& max_search_time);
     void start_timer_thread(const string& max_search_time);
