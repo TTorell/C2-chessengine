@@ -16,19 +16,18 @@ than this one, The free Stockfish is a good one. (comes with Ubuntu to install
 with "sudo apt install stockfish".) The gui and the engine simply communicates
 through stdin and stdout.
 
-I've tried C2 e.g.connected to the SCID-chessprogram on Ubuntu 20.04.
-(Just configure a new analysis-engine in SCID pointing out the executable file.
-If you configure SCID to start the engine from a working directory
-where you have write-permissions, it will log all commands and responses
-from/to the GUI in a file named command_log.txt)
-It plays, but doesn't yet work as a true analysis-engine. The number
-of possible commands, from a chess-GUI, which it responds to is limited.
+I've tried C2 mostly connected to Jerry on Ubuntu 20.04.
+(Just configure a new analysis-engine in Jerry (or SCID or whatever chess-GUI
+you choose) pointing out the executable C2 file.)
+If the engine is started from a working directory where you have write-permissions,
+it will log all commands and responses from/to the GUI in a file named command_log.txt
+It plays, but I haven't implemented the analysis-commands yet.
 
 There is also a rudimentary, to say the least, command-line interface. Which I
-have used for testing some times. (Just run the executable from the commandline,
-there will be no output or prompt, but enter "cmd" from the keyboard to try that.
-The input move syntax is simply e2e4 g1f3 etc but it accepts for instance Ng1-f3
-as well. Use a terminal with black text on a white background.
+have used for testing some times. Just run the executable from the commandline,
+with the "-cmd"-option. The input move syntax is simply e2e4 g1f3 etc but it accepts
+for instance Ng1-f3 as well. Use a terminal with black text on a white background,
+otherwise the white pieces will be black.
 Starting from a position given in a .pgn-file requires you to copy the file 
 ChooseFile.class into the GUI:s configurable working-directory from where it
 starts C2, and to have java installed.)
@@ -73,6 +72,7 @@ in the judgement.
 which can be tweaked up or down a little to change the evaluation of positions
 and thereby also affect the behaviour of the program.)
 
+If the GUI supplies a time-limit with the "go
 It "thinks" until it's ready (on my rather old lap-top computer, normally under
 20 sekunds with search-level set to 7, faster as the position gets more simple,
 naturally.) and ignores the time-limits it recieves together with the "go"-command
