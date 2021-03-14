@@ -1491,7 +1491,7 @@ int Board::make_move(int i, int &move_no, col col_to_move)
 {
   col other_col = col_to_move == col::white ? col::black : col::white;
   Move *m = _possible_moves[i];
-  //write(cout, cmd_line_diagram, col:S:white);
+  //write(cout, cmd_line_diagram, col::white);
   if (m)
   {
     Position from = m->get_from();

@@ -153,7 +153,7 @@ void Game::init_board_hash_tag()
 void Game::start()
 {
   cout << endl << "Game started" << endl;
-  // Init the hash tag for the initial board-position toparse_FEN_string
+  // Init the hash tag for the initial board-position to
   // use in the Zobrist hash table.
   // (also called transposition table)
   init_board_hash_tag();
