@@ -72,13 +72,35 @@ in the judgement.
 which can be tweaked up or down a little to change the evaluation of positions
 and thereby also affect the behaviour of the program.)
 
-If the GUI supplies a time-limit with the "go
-It "thinks" until it's ready (on my rather old lap-top computer, normally under
-20 sekunds with search-level set to 7, faster as the position gets more simple,
-naturally.) and ignores the time-limits it recieves together with the "go"-command
-from the GUI. It always comes up with the same move in a given position.
-(No random beaviour). It cannot yet "ponder" when the opponent is thinking.
-It just waits for next input-command.
+If incremental_search is configured to true it will do an incremental searh for 
+the best move, starting at level 2 and up to max_search_level. So it will have
+a "best move" early to send back. If the GUI supplies a time-limit with the 
+"go movetime <timelimit>"-command it will naturally stop when the timelimit has 
+been reached and discard the last unfinished search.
+
+If incremental_search is false it "thinks" until it's ready (on my rather old
+lap-top computer, normally under 20 sekunds with search-level set to 7, faster
+as the position gets more simple, naturally.) and ignores the time-limits it 
+recieves together with the "go"-command from the GUI.
+
+It always comes up with the same move in a given position and a given timelimit.
+(No random beaviour or book moves yet). It cannot yet "ponder" when the opponent
+ is thinking. It just waits for next input-command.
+
+Zobrist hashing
+---------------
+Evaluated positions will be stored in a transposition table and retrieved during
+the searh to speed it up. To generate "unique" hashtags for the positions I use
+a Zobrits algorithm and the hash-element are stored ina C++ unsorted_map.
+In each hash element I store {best_move, evaluation, searchlevel}.
+A retrieved hash-element reference will not be used if it has a higher level
+than the position which asked for it. (lower level means closer to the search-root
+and should be a better evaluation. In this case the contents of the retrived 
+hash-element reference will be overwritten when we have the new evaluation.
+If the position asked for is not present in the cash we will also get a refernce
+to a hash-element, but a new, default allocated one connected to the hashtag,
+to fill with the new evaluation we make. So there is only one access to the
+hash table. There's no need for an insert method.
 
 What's wrong with it?:
 ------------------------
@@ -87,7 +109,7 @@ fast will probably require serious redesign. I think it copies too much data and
 claculates too much when traversing the "search-tree" going to a lower node.
 (copying the current board position, making the move, calculating all possible moves
 in the new position from scratch.) The board-representation is also way too clumsy
-compared to stockfish bitboards.
+compared to bitboards.
 
 You can stop reading here.
 
@@ -96,6 +118,17 @@ improvements and a thought about the algorithm.
 No more useful info abot how to build or use the program.
 
 -----------------------------------------------------------------
+
+Next step may be to implement sorting of the possible moves in a position
+after search of a lower level, so the pruning will work more efficiently
+in the search on next level. (idea stolen from stockfish).
+
+The evaluation of material is done by scanning the board adding or
+subtracting each piece-value. This could be done at the start and saved 
+only in the initial board and then adjusted when a piece gets captured
+or in the case of pawn-promotion. I measured the total time spent in
+these evaluations for a whole search. It took some milliseconds, depressing.
+
  
 I have thoughts about improving the evaluation of a position by making the
 weights depend on the current move number or simply turning off some of
@@ -108,7 +141,7 @@ categories which could "grow" in importance as the game proceeds and
 consider passed pawns, isolated pawns, two bishops, pawn majorities
 and others).
 
-The problem with adding to much logic in the evaluation is that the 
+The problem with adding too much logic in the evaluation is that the 
 evaluation itself takes time and evaluation happens once in all the 
 "outermost leaves of the search tree". So, turning off is good but adding
 more will come with a cost.
@@ -130,7 +163,7 @@ time considering 20 seconds per move) could result in the optimal setting
 of the weights, if the process converges towards a result at all.
 
 Adding AI to select moves would be intresting, but I don't have a clear
-picture of how to do it yet.
+picture of how to do it yet. NNUE seems interesting.
 
 A thing about the Min/Max-algorithm I have thought about:
 All evaluations are done in the leaves of the search-three and
@@ -149,14 +182,16 @@ play decent chess?
 
 I made an experiment to continue the search down the "search-tree", just and
 only if the last move at max-level was a "take" or check, until we reached a node 
-were the last move wasn't a take or a check, and at that point evaluate and
+where the last move wasn't a take or a check, and at that point evaluate and
 return. It worked for some seconds until we reached level 20 in some long
 move-series with only checks and takes, so that doesn't seem to be a feasible
 way to solve this problem. At least not for my slow chess-engine.
 (I had only pre-allocated 20 boards, one for each search level so the program
-crashed at level 21.) On the other hand, skiping checking for checks, there are
+crashed at level 21.) On the other hand, skipping checking for checks, there are
 only 32 pieces to be taken, and two of them are Kings. So a move-series with only
-takes can for sure never be longer than 30 moves. Maybe Stockfish can handle that.
+takes can for sure never be longer than 30 moves. But U guess we would miss other
+important moves then, some mean checks and checkmates maybe. Must check if
+other chess-engines have solved this problem.
 
 
 
