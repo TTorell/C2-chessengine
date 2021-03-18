@@ -115,6 +115,7 @@ int Player::make_a_move(int &move_no, float &score, const int &max_search_level)
     int best_move_index;
     float alpha = -100, beta = 100;
     _chessboard.clear_hash();
+    _chessboard.init_material_evaluation();
     if (_colour == col::white)
     {
       score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level);
@@ -146,6 +147,7 @@ int Player::find_best_move_index(int &move_no, float &score, const int &max_sear
   //   return -1;
 
   _chessboard.clear_hash();
+  _chessboard.init_material_evaluation();
 
   // _type == computer
   int best_move_index;

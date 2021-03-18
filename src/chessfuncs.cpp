@@ -136,4 +136,28 @@ void log_time_diff(uint64_t nsec_stop, uint64_t nsec_start, Shared_ostream &logf
   logfile << "time spent by C2 on search level " << search_level << " " << value << " " << best_move.bestmove_engine_style() << " score = " << score_value << "\n";
 }
 
+string iso_8859_1_to_utf8(const string &str)
+{
+  string str_out;
+  for (uint8_t ch : str)
+  {
+    if (ch < 0x80)
+    {
+      str_out.push_back(ch);
+    }
+    else
+    {
+      str_out.push_back(0xc0 | ch >> 6);
+      str_out.push_back(0x80 | (ch & 0x3f));
+    }
+  }
+  return str_out;
+}
+
+string iso_8859_1_to_utf8(const char *c_string)
+{
+  string str_out(c_string);
+  return iso_8859_1_to_utf8(str_out);
+}
+
 } // namespace

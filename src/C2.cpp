@@ -98,7 +98,9 @@ col white_or_black()
 }
 
 // Method for the cmdline-interface
-void play_on_cmd_line()
+void play_on_cmd_line(Shared_ostream& logfile,
+                      atomic<bool>& logfile_is_open,
+                      Config_params& config_params)
 {
   while (true)
   {
@@ -106,10 +108,9 @@ void play_on_cmd_line()
     switch (choice)
     {
       case 1:
-
       {
         col color = white_or_black();
-        Game game(color);
+        Game game(color, logfile, logfile_is_open, config_params);
         game.setup_pieces();
         game.init();
         game.start();
@@ -122,7 +123,7 @@ void play_on_cmd_line()
         string input;
 
         col human_color = white_or_black();
-        Game game(human_color);
+        Game game(human_color, logfile, logfile_is_open, config_params);
         FEN_reader fr(game);
         Position_reader& pr = fr;
         string filename = GetStdoutFromCommand("cmd java -classpath \".\" ChooseFile");
@@ -140,7 +141,12 @@ void play_on_cmd_line()
       }
       case 3:
       {
-        Game game(col::white, playertype::human, playertype::human);
+        Game game(col::white,
+                  playertype::human,
+                  playertype::human,
+                  logfile,
+                  logfile_is_open,
+                  config_params);
         game.setup_pieces();
         game.init();
         game.start();
@@ -375,26 +381,6 @@ int main(int argc, char* argv[])
   //for (int i = 0; i < argc; ++i)
   //    cout << argv[i] << "\n";
 
-  // If you start the engine with the -cmd argument from
-  // the bash terminal (or just start it without any commands
-  // and enter "cmd" from the keyboard to the running engine)
-  // you can play against it in text-mode. (A very primitive
-  // and rudimentary chess-board will be shown for each move,
-  // but at least we can check if it seems to work without
-  // having a chess GUI)
-  if (argc > 1 && strcmp(argv[1], "-cmd") == 0)
-  {
-    play_on_cmd_line();
-    return 0;
-  }
-
-  // Allow --help as well as -help
-  if (argc > 1 && regexp_match(argv[1], "-{1,2}help"))
-  {
-    print_help_txt();
-    return 0;
-  }
-
   // The engine can log all communication with GUI, and
   // other stuff to the command_log.txt file.
   // This requires that the engine has been started by
@@ -405,9 +391,30 @@ int main(int argc, char* argv[])
     logfile_is_open = false;
   Shared_ostream logfile(ofs);
 
-  Zobrist_hash zh;
+  // Configuration parameters for the engine, which the GUI can manipulate
+  // are stored in this class.
+  Config_params config_params;
 
-  Game game;
+
+  // If you start the engine with the -cmd argument from
+  // the bash terminal (or just start it without any commands
+  // and enter "cmd" from the keyboard to the running engine)
+  // you can play against it in text-mode. (A very primitive
+  // and rudimentary chess-board will be shown for each move,
+  // but at least we can check if it seems to work without
+  // having a chess GUI)
+  if (argc > 1 && strcmp(argv[1], "-cmd") == 0)
+  {
+    play_on_cmd_line(logfile, logfile_is_open, config_params);
+    return 0;
+  }
+
+  // Allow --help as well as -help
+  if (argc > 1 && regexp_match(argv[1], "-{1,2}help"))
+  {
+    print_help_txt();
+    return 0;
+  }
 
   // The engine needs to store commands from the GUI until it's
   // ready to read them.
@@ -417,6 +424,9 @@ int main(int argc, char* argv[])
   // ( symmetry above all)
   Circular_fifo output_buffer;
 
+  // Create an instance of the Game class.
+  Game game(logfile, logfile_is_open, config_params);
+
   // Thread which receives input commands and puts them in the
   // ipput_buffer, While the main engine process is "thinking"
   // about other things.
@@ -424,12 +434,6 @@ int main(int argc, char* argv[])
 
   // Thread which buffers output commands from the engine.
   thread output_thread(write_output, &output_buffer, &logfile);
-
-  // Configuration parameters for the engine, which the GUI can manipulate
-  // are stored in this class.
-  Config_params config_params;
-
-  // Create an instance of the Game class.
 
   string command;
 
@@ -447,7 +451,7 @@ int main(int argc, char* argv[])
       if (command == "cmd")
       {
         close_threads(input_thread, output_thread);
-        play_on_cmd_line();
+        play_on_cmd_line(logfile, logfile_is_open, config_params);
         break;
       }
       if (command == "ucinewgame")

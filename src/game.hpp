@@ -23,22 +23,34 @@ class Game {
     Player _player2;
     Player* _player[2];
     int _moveno = 0;
-
     col _col_to_move;
     float _score = 0.0;
     int _half_move_counter = 0;
     PGN_info _pgn_info;
-
+    Shared_ostream& _logfile;
+    atomic<bool>& _logfile_is_open;
+    Config_params& _config_params;
   public:
-    Game();
-    Game(col c);
-    Game(col c, playertype pt1, playertype pt2);
+    Game(Shared_ostream& logfile,
+         atomic<bool>& logfile_is_open,
+         Config_params& config_params);
+    Game(col c,
+         Shared_ostream& logfile,
+         atomic<bool>& logfile_is_open,
+         Config_params& config_params);
+    Game(col c,
+         playertype pt1,
+         playertype pt2,
+         Shared_ostream& logfile,
+         atomic<bool>& logfile_is_open,
+         Config_params& config_params);
     ~Game();
     void init();
     void clear_chessboard();
     void clear_move_log();
     void setup_pieces();
     void init_board_hash_tag();
+    void actions_after_a_move(uint64_t timediff, bool cmd_line);
     void start();
     Move engine_go(Shared_ostream& logfile, atomic<bool>& logfile_is_open, const Config_params& config_params, const string& max_search_time);
     void start_timer_thread(const string& max_search_time);
@@ -46,6 +58,7 @@ class Game {
     void set_time_left(bool value);
     void save() const;
     col get_col_to_move() const;
+    playertype get_playertype(const col& color) const;
     void set_col_to_move(col c);
     void set_move_log_col_to_start(col c);
     void set_castling_state(const Castling_state &cs);

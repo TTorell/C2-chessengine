@@ -9,11 +9,6 @@
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 
-extern "C" {
-#include <string.h>
-}
-
-
 namespace
 {
 C2_chess::CurrentTime current_time;
@@ -33,7 +28,8 @@ Board Board::level_boards[38];
 Zobrist_hash Board::hash_table;
 
 Board::Board() :
-    _last_move(), _possible_moves(), _castling_state(), _en_passant_square(0), _hash_tag(0)
+    _last_move(), _possible_moves(), _castling_state(), _en_passant_square(0), _hash_tag(0),
+    _material_evaluation(0)
 {
   for (int file = a; file <= h; file++)
   {
@@ -104,6 +100,7 @@ Board& Board::operator=(const Board &from)
     }
   }
   _hash_tag = from._hash_tag;
+  _material_evaluation = from._material_evaluation;
   return *this;
 }
 
@@ -193,47 +190,43 @@ ostream& Board::write(ostream &os, outputtype wt, col from_perspective) const
     case outputtype::cmd_line_diagram:
       if (from_perspective == col::white)
       {
-        os << "###################" << endl;
+        os << "\n";
         for (int i = 8; i >= 1; i--)
         {
-          os << "#";
           for (int j = a; j <= h; j++)
           {
-            os << "|";
+            os << iso_8859_1_to_utf8("|");
             Piece *p = _file[j][i]->get_piece();
             if (p)
               p->write_diagram_style(os);
             else
-              os << "-";
+              os << ("\u25a1");
           }
-          os << "|#" << " " << i << endl;
+          os << iso_8859_1_to_utf8("|") << iso_8859_1_to_utf8(to_string(i)) << endl;
         }
-        os << "###################" << endl;
-        os << "  a b c d e f g h " << endl;
+        os << iso_8859_1_to_utf8(" a b c d e f g h ") << endl;
       }
       else // From blacks point of view
       {
-        os << "###################" << endl;
+        os << "\n";
         for (int i = 1; i <= 8; i++)
         {
-          os << "#";
           for (int j = h; j >= a; j--)
           {
-            os << "|";
+            os << iso_8859_1_to_utf8("|");
             Piece *p = _file[j][i]->get_piece();
             if (p)
               p->write_diagram_style(os);
             else
-              os << "-";
+              os << ("\u25a1");
           }
-          os << "|#" << " " << i << endl;
+          os << iso_8859_1_to_utf8("|") << iso_8859_1_to_utf8(to_string(i)) << endl;
         }
-        os << "###################" << endl;
-        os << "  h g f e d c b a " << endl;
+        os << iso_8859_1_to_utf8(" h g f e d c b a ") << endl;
       }
       break;
     default:
-      os << "Sorry: Output type not implemented yet." << endl;
+      os << iso_8859_1_to_utf8("Sorry: Output type not implemented yet.") << endl;
   }
   return os;
 }
@@ -1506,6 +1499,7 @@ int Board::make_move(int i, int &move_no, col col_to_move)
       if (to_square->get_piece())
       {
         update_hash_tag(to_square);
+        update_material_evaluation_capture(other_col, to_square->get_piece()->get_type());
         m->set_take(true);
       }
       to_square->contain_piece(p);
@@ -1598,7 +1592,6 @@ int Board::make_move(int i, int &move_no, col col_to_move)
           }
           break;
 
-
           // PAWN PROMOTION AND EN PASSANT
         case piecetype::Pawn:
         {
@@ -1609,9 +1602,11 @@ int Board::make_move(int i, int &move_no, col col_to_move)
             Piece *newpiece = new Piece(m->get_promotion_piece_type(), p->get_color());
             // take away the temporary pawn from promotion square
             update_hash_tag(to_square);
+            update_material_evaluation_capture(col_to_move, piecetype::Pawn);
             // Attention! here we delete p
             to_square->contain_piece(newpiece);
             update_hash_tag(to_square);
+            update_material_evaluation_promotion(col_to_move, m->get_promotion_piece_type());
           }
           else if (to_square == _en_passant_square)
           {
@@ -1619,11 +1614,13 @@ int Board::make_move(int i, int &move_no, col col_to_move)
             if (col_to_move == col::white)
             {
               update_hash_tag(tf, tr - 1, col::black, piecetype::Pawn);
+              update_material_evaluation_capture(col::black, piecetype::Pawn);
               _file[tf][tr - 1]->remove_piece();
             }
             else
             {
               update_hash_tag(tf, tr + 1, col::white, piecetype::Pawn);
+              update_material_evaluation_capture(col::white, piecetype::Pawn);
               _file[tf][tr + 1]->remove_piece();
             }
           }
@@ -1865,7 +1862,8 @@ float Board::evaluate_position(col col_to_move, outputtype ot, int level) const
   // Start with a very small number in sum, just so we don't return 0.0 in an
   // equal position. 0.0 is reserved for stalemate.
   float sum = epsilon;
-  count_material(sum, 0.95F, ot);
+  sum += _material_evaluation;
+  //count_material(sum, 0.95F, ot);
   count_center_control(sum, 0.02F, ot);
   //count_possible_moves(sum, 0.01F, col_to_move); // of doubtful value.
   count_development(sum, 0.05F, ot);
@@ -1875,62 +1873,6 @@ float Board::evaluate_position(col col_to_move, outputtype ot, int level) const
   return sum;
 }
 
-void Board::count_material(float &sum, float weight, outputtype ot) const
-{
-  float counter = 0.0;
-  Piece *p;
-  for (int i = 1; i <= 8; i++)
-  {
-    for (int j = a; j <= h; j++)
-    {
-      p = _file[j][i]->get_piece();
-      if (p)
-      {
-        switch (p->get_type())
-        {
-          case piecetype::Pawn:
-            if (p->get_color() == col::black)
-              counter -= 1;
-            else
-              counter += 1;
-            break;
-          case piecetype::Rook:
-            if (p->get_color() == col::black)
-              counter -= 5;
-            else
-              counter += 5;
-            break;
-          case piecetype::Knight:
-            if (p->get_color() == col::black)
-              counter -= 3;
-            else
-              counter += 3;
-            break;
-          case piecetype::Bishop:
-            if (p->get_color() == col::black)
-              counter -= 3;
-            else
-              counter += 3;
-            break;
-          case piecetype::Queen:
-            if (p->get_color() == col::black)
-              counter -= 9;
-            else
-              counter += 9;
-            break;
-
-          case piecetype::King:
-            break;
-          default:
-            cerr << "Error: Undefined Piece Type: " << static_cast<int>(p->get_type()) << endl;
-        }
-      }
-    }
-  }
-  if (ot == outputtype::debug)
-    cout << endl << "Material " << counter * weight << endl;
-  sum += counter * weight;
-}
 
 void Board::count_center_control(float &sum, float weight, outputtype ot) const
 {
@@ -2381,6 +2323,136 @@ void Board::init_board_hash_tag(col col_to_move)
 void Board::clear_hash()
 {
   hash_table.clear();
+}
+
+void Board::init_material_evaluation()
+{
+  const float weight = 0.95F;
+  float counter = 0.0;
+  Piece *p;
+  for (int i = 1; i <= 8; i++)
+  {
+    for (int j = a; j <= h; j++)
+    {
+      p = _file[j][i]->get_piece();
+      if (p)
+      {
+        switch (p->get_type())
+        {
+          case piecetype::Pawn:
+            if (p->get_color() == col::black)
+              counter -= 1;
+            else
+              counter += 1;
+            break;
+          case piecetype::Rook:
+            if (p->get_color() == col::black)
+              counter -= 5;
+            else
+              counter += 5;
+            break;
+          case piecetype::Knight:
+          case piecetype::Bishop:
+            if (p->get_color() == col::black)
+              counter -= 3;
+            else
+              counter += 3;
+            break;
+          case piecetype::Queen:
+            if (p->get_color() == col::black)
+              counter -= 9;
+            else
+              counter += 9;
+            break;
+
+          case piecetype::King:
+            break;
+          default:
+            cerr << "Error: Undefined Piece Type: " << static_cast<int>(p->get_type()) << endl;
+        }
+      }
+    }
+  }
+  _material_evaluation = counter * weight;
+}
+
+void Board::update_material_evaluation_capture(const col& color, const piecetype& type)
+{
+  const float weight = 0.95F;
+  switch (type)
+  {
+    case piecetype::Pawn:
+      if (color == col::black)
+        _material_evaluation += weight;
+      else
+        _material_evaluation -= weight;
+      break;
+    case piecetype::Rook:
+      if (color == col::black)
+        _material_evaluation += 5*weight;
+      else
+        _material_evaluation -= 5*weight;
+      break;
+    case piecetype::Knight:
+    case piecetype::Bishop:
+      if (color == col::black)
+        _material_evaluation += 3*weight;
+      else
+        _material_evaluation -= 3*weight;
+      break;
+    case piecetype::Queen:
+      if (color == col::black)
+        _material_evaluation += 9*weight;
+      else
+        _material_evaluation -= 9*weight;
+      break;
+    case piecetype::King:
+      break;
+    default:
+      cerr << "Error: Undefined Piece Type: " << static_cast<int>(type) << endl;
+  }
+}
+
+void Board::update_material_evaluation_promotion(const col& color, const piecetype& type)
+{
+  const float weight = 0.95F;
+  switch (type)
+  {
+    case piecetype::Pawn:
+      if (color == col::black)
+        _material_evaluation -= weight;
+      else
+        _material_evaluation += weight;
+      break;
+    case piecetype::Rook:
+      if (color == col::black)
+        _material_evaluation -= 5*weight;
+      else
+        _material_evaluation += 5*weight;
+      break;
+    case piecetype::Knight:
+    case piecetype::Bishop:
+      if (color == col::black)
+        _material_evaluation -= 3*weight;
+      else
+        _material_evaluation += 3*weight;
+      break;
+    case piecetype::Queen:
+      if (color == col::black)
+        _material_evaluation -= 9*weight;
+      else
+        _material_evaluation += 9*weight;
+      break;
+    case piecetype::King:
+      break;
+    default:
+      cerr << "Error: Undefined Piece Type: " << static_cast<int>(type) << endl;
+  }
+}
+
+float Board::get_material_evaluation()
+{
+  return _material_evaluation;
 }
 
 } // namespace C2_chess

@@ -31,6 +31,8 @@ ostream& print_backtrace(ostream &os);
 string GetStdoutFromCommand(string cmd);
 bool regexp_match(const string &line, const string &regexp_string);
 void log_time_diff(uint64_t nsec_stop, uint64_t nsec_start, Shared_ostream& logfile, int search_level, const Move& best_move, float score);
+string iso_8859_1_to_utf8(const string& str);
+string iso_8859_1_to_utf8(const char *c_string);
 
 } // namespace
 #endif //CHESSFUNCS_HPP_

@@ -67,7 +67,7 @@ class Zobrist_hash
 
     // find(hash_tag) returns a reference to the hash_element
     // matching the hash_tag. If no such element can be found
-    // it returns a refernce to a new empty (default allocated)
+    // it returns a reference to a new empty (default allocated)
     // hash_element connected to the hash_tag.
     // So it can be used for both searching and inserting.
     hash_element& find(unsigned long hash_tag)

@@ -24,6 +24,7 @@ class Board {
     Square* _en_passant_square = 0;
     unsigned long _hash_tag;
     static Zobrist_hash hash_table;
+    float _material_evaluation;
   public:
     static Board level_boards[];  // declaration, incomplete type
     Board();
@@ -94,6 +95,8 @@ class Board {
     uint64_t get_time_diff_sum();
     void init_board_hash_tag(col col_to_move);
     void clear_hash();
+    void init_material_evaluation();
+    float get_material_evaluation();
   private:
     bool read_piece_type(piecetype& pt, char c) const;
     bool en_passant(Piece*, Square*) const;
@@ -109,7 +112,6 @@ class Board {
     void fix_bound_piece_diagonal(const Square* king_square, Square* own_piece_square, const Square* threat_square);
     int min(int, int);
     int max(int, int);
-    void count_material(float& sum, float weight, outputtype ot) const;
     void count_center_control(float& sum, float weight, outputtype ot) const;
     void count_pawns_in_centre(float& sum, float weight, outputtype ot) const;
     //void count_possible_moves(float& sum, float weight, col _col_to_move) const;
@@ -129,6 +131,8 @@ class Board {
     void update_hash_tag_remove_queenside_castling_rights(col color);
     void update_hash_tag(const Square* square);
     void update_hash_tag(int fileindex, int rankindex, col color, piecetype type);
+    void update_material_evaluation_capture(const col& color, const piecetype& type);
+    void update_material_evaluation_promotion(const col& color, const piecetype& type);
     friend class Zobrist_hash;
 };
 }
