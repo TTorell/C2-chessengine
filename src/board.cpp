@@ -23,7 +23,6 @@ using std::stringstream;
 using namespace std::chrono;
 
 std::atomic<bool> time_left(false);
-
 Board Board::level_boards[38];
 Zobrist_hash Board::hash_table;
 
@@ -698,7 +697,7 @@ int Board::init(col col_to_move)
             fix_bound_piece_file(own_piece_square, _file[tf][tr]);
         break; // Even if it's not a Queen or Rook
       }
-      else // p is of col_to_move
+      else // p is of col_to_moveiso_8859_1_to_utf8(
       {
         if (own_piece_square) // Two own pieces between King and Threat
           break;
@@ -2144,7 +2143,7 @@ float Board::max(int level, int move_no, float alpha, float beta, int &best_move
 {
   float max_value = -101.0; // Must be lower than lowest evaluation
   int dummy_index; // best_move_index is only an output parameter,
-                   // it doesn't matter what you put in.
+                   // from min(). It doesn't matter what you put in.
   best_move_index = -1;
   level++;
 

@@ -121,21 +121,6 @@ bool regexp_match(const string &line, const string &regexp_string)
   return (regex_match(line, m, r));
 }
 
-void log_time_diff(uint64_t nsec_stop, uint64_t nsec_start, Shared_ostream &logfile, int search_level, const Move& best_move, float score)
-{
-  uint64_t timediff = (nsec_stop - nsec_start);
-  // Log the time it took;
-  // TODO: logfile is a Shared_ostrem. You can't "<<" a float-value to it.
-  // converting values to string:
-  ostringstream ss;
-  ss << timediff / 1.0e6;
-  string value(ss.str());
-  ostringstream ss2;
-  ss2 << score;
-  string score_value(ss2.str());
-  logfile << "time spent by C2 on search level " << search_level << " " << value << " " << best_move.bestmove_engine_style() << " score = " << score_value << "\n";
-}
-
 string iso_8859_1_to_utf8(const string &str)
 {
   string str_out;

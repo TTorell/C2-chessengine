@@ -9,7 +9,7 @@
 #define CONFIG_PARAM_HPP_
 
 #include <string>
-
+#include "shared_ostream.hpp"
 using std::string;
 
 namespace C2_chess
@@ -81,7 +81,7 @@ class Config_params
       _config_params.insert(make_pair("use_pruning", *(new Config_param("use_pruning", "true", "check", "true"))));
       _config_params.insert(make_pair("use_incremental_search", *(new Config_param("use_incremental_search", "true", "check", "true"))));
       _config_params.insert(make_pair("search_until_no_captures", *(new Config_param("search_until_no_captures", "false", "check", "false"))));
-    };
+    }
 
     map<string, Config_param> get_map() const
     {
@@ -93,20 +93,28 @@ class Config_params
       auto search = _config_params.find(name);
       if (search != _config_params.end())
         search->second.set_value(value);
-    };
+    }
 
-    string get_config_param(const string& name, Shared_ostream &logfile, atomic<bool> &logfile_is_open) const
+    string get_config_param(const string& name) const
     {
       auto it = _config_params.find(name);
       if (it != _config_params.end())
         return it->second.get_value();
       else
       {
-        if (logfile_is_open)
-          logfile << "Couldn't find config parameter " << name << "\n";
         return "";
       }
-    };
+    }
+
+    string get_params_string() const
+    {
+      string s = "";
+      for (const pair<const string, Config_param>& param:_config_params)
+      {
+        s += param.first + ": " + param.second.get_value() + "\n";
+      }
+      return s;
+    }
 };
 
 } // namespace C2_chess

@@ -10,8 +10,8 @@
 #include "C2_unittest.hpp"
 #include "chessfuncs.hpp"
 #include "chesstypes.hpp"
-#include "Config_param.hpp"
-#include "zobrist_hash.hpp"
+#include "config_param.hpp"
+
 
 using namespace std;
 using namespace std::chrono;
@@ -98,9 +98,7 @@ col white_or_black()
 }
 
 // Method for the cmdline-interface
-void play_on_cmd_line(Shared_ostream& logfile,
-                      atomic<bool>& logfile_is_open,
-                      Config_params& config_params)
+void play_on_cmd_line(Config_params& config_params)
 {
   while (true)
   {
@@ -110,7 +108,7 @@ void play_on_cmd_line(Shared_ostream& logfile,
       case 1:
       {
         col color = white_or_black();
-        Game game(color, logfile, logfile_is_open, config_params);
+        Game game(color, config_params);
         game.setup_pieces();
         game.init();
         game.start();
@@ -123,7 +121,7 @@ void play_on_cmd_line(Shared_ostream& logfile,
         string input;
 
         col human_color = white_or_black();
-        Game game(human_color, logfile, logfile_is_open, config_params);
+        Game game(human_color, config_params);
         FEN_reader fr(game);
         Position_reader& pr = fr;
         string filename = GetStdoutFromCommand("cmd java -classpath \".\" ChooseFile");
@@ -144,8 +142,6 @@ void play_on_cmd_line(Shared_ostream& logfile,
         Game game(col::white,
                   playertype::human,
                   playertype::human,
-                  logfile,
-                  logfile_is_open,
                   config_params);
         game.setup_pieces();
         game.init();
@@ -202,17 +198,14 @@ string parse_go_command(const vector<string>& command_tokens, const string &var_
 // game or (in the future) also during an analysis task.
 // If the chess-GUI has been set to start the C2-engine from a working
 // directory which is write-protected for the user who starts it, then C2 will
-// fail to open that logfile. I'm not sure if it matters, but I have tried to
-// protect against writing to a file that never was opened, throughout the code.
-// (The engine seemed to work fine even before I did this. -- easy to test if I
-// wish to do so.)
+// fail to open that logfile.
+
 std::atomic<bool> input_thread_running(true);
 std::atomic<bool> output_thread_running(true);
-std::atomic<bool> logfile_is_open(true);
 std::atomic<bool> xtime_left(false);
 
 // Method for parsing input-commands from a chess-GUI (some commands are taken care of already in ḿain().
-int parse_command(const string& command, Circular_fifo& output_buffer, Shared_ostream& logfile, Game& game, Config_params& config_params, vector<string>& returned_tokens)
+int parse_command(const string& command, Circular_fifo& output_buffer, Game& game, Config_params& config_params, vector<string>& returned_tokens)
 {
   // We know at this point that the command string isn't empty
   vector<string> tokens = split(command, ' ');
@@ -274,10 +267,7 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Shared_os
     // the board accordingly.
     reader.parse_FEN_string(fen_string);
     // print the position to the logfile
-    if (logfile_is_open)
-    {
-      game.write_diagram(logfile) << "\n";
-    }
+    game.log_diagram() << "\n";
   }
   // To implement go I think I needed some variables not available here,
   // So I took care of it in main instead.
@@ -292,14 +282,14 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Shared_os
 }
 
 // This method will run in the input_thread.
-void read_input(Circular_fifo *input_buffer, Shared_ostream *logfile, Game* game)
+void read_input(Circular_fifo *input_buffer, Game* game)
 {
+  Shared_ostream* logfile = Shared_ostream::get_instance();
   while (input_thread_running)
   {
     string command;
     getline(cin, command);
     input_buffer->put(command);
-    if (logfile_is_open)
       (*logfile) << "input: " << command << "\n";
     if (command == "stop")
     {
@@ -321,8 +311,9 @@ void read_input(Circular_fifo *input_buffer, Shared_ostream *logfile, Game* game
 
 
 // This method will run in the output_thread.
-void write_output(Circular_fifo *output_buffer, Shared_ostream *logfile)
+void write_output(Circular_fifo *output_buffer)
 {
+  Shared_ostream* logfile = Shared_ostream::get_instance();
   string command;
   while (output_thread_running)
   {
@@ -331,8 +322,7 @@ void write_output(Circular_fifo *output_buffer, Shared_ostream *logfile)
     {
       if (command == "quit_thread")
         break;
-      if (logfile_is_open)
-        (*logfile) << "output: " << command << "\n";
+      (*logfile) << "output: " << command << "\n";
       cout << command << endl;
     }
     this_thread::sleep_for(milliseconds(3));
@@ -387,9 +377,7 @@ int main(int argc, char* argv[])
   // the GUI from a directory where it has write-permisson.
   // And that's of course where you can find the logfile.
   ofstream ofs("command_log.txt");
-  if (!ofs.is_open())
-    logfile_is_open = false;
-  Shared_ostream logfile(ofs);
+  Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
 
   // Configuration parameters for the engine, which the GUI can manipulate
   // are stored in this class.
@@ -405,7 +393,7 @@ int main(int argc, char* argv[])
   // having a chess GUI)
   if (argc > 1 && strcmp(argv[1], "-cmd") == 0)
   {
-    play_on_cmd_line(logfile, logfile_is_open, config_params);
+    play_on_cmd_line(config_params);
     return 0;
   }
 
@@ -425,15 +413,15 @@ int main(int argc, char* argv[])
   Circular_fifo output_buffer;
 
   // Create an instance of the Game class.
-  Game game(logfile, logfile_is_open, config_params);
+  Game game(config_params);
 
   // Thread which receives input commands and puts them in the
   // ipput_buffer, While the main engine process is "thinking"
   // about other things.
-  thread input_thread(read_input, &input_buffer, &logfile, &game);
+  thread input_thread(read_input, &input_buffer, &game);
 
   // Thread which buffers output commands from the engine.
-  thread output_thread(write_output, &output_buffer, &logfile);
+  thread output_thread(write_output, &output_buffer);
 
   string command;
 
@@ -451,7 +439,7 @@ int main(int argc, char* argv[])
       if (command == "cmd")
       {
         close_threads(input_thread, output_thread);
-        play_on_cmd_line(logfile, logfile_is_open, config_params);
+        play_on_cmd_line(config_params);
         break;
       }
       if (command == "ucinewgame")
@@ -461,13 +449,15 @@ int main(int argc, char* argv[])
         // close the logfile and start a new one, but for now everything
         // is logged until the GUI closes the engine down by a quit command.
         game.clear_move_log();
-        continue;
+        logfile << "New game started\n";
+        logfile.write_config_params(config_params);
+       continue;
       }
 
       // Other commands, "uci", "position" etc, are sent to the parse_command() function and most
       // of them are also taken care of there
       vector < string > command_tokens; // will contain tokens from the following parsing.
-      int rc = parse_command(command, output_buffer, logfile, game, config_params, command_tokens);
+      int rc = parse_command(command, output_buffer, game, config_params, command_tokens);
       if (rc == 1) // This means go ...
       {
         // Init the main chess board with preserved position
@@ -486,7 +476,7 @@ int main(int argc, char* argv[])
         }
 
         // Find the best move
-        Move bestmove = game.engine_go(logfile, logfile_is_open, config_params, max_search_time);
+        Move bestmove = game.engine_go(config_params, max_search_time);
         output_buffer.put(bestmove.bestmove_engine_style());
       }
     }

@@ -29,9 +29,9 @@ set(SOURCE_FILES
     ${PROJECT_SOURCE_DIR}/player.cpp
     ${PROJECT_SOURCE_DIR}/position.cpp
     ${PROJECT_SOURCE_DIR}/position_reader.cpp
+    ${PROJECT_SOURCE_DIR}/shared_ostream.cpp
     ${PROJECT_SOURCE_DIR}/square.cpp
     ${PROJECT_SOURCE_DIR}/squarelist.cpp
-    ${PROJECT_SOURCE_DIR}/zobrist_hash.hpp
 )
 
 if(NOT CMAKE_BUILD_TYPE)

@@ -7,13 +7,13 @@
 #include "board.hpp"
 #include "movelist.hpp"
 #include "pgn_info.hpp"
-#include "Config_param.hpp"
 
 using namespace std;
 namespace C2_chess
 {
-
+class Config_params;
 class Castling_state;
+
 class Game {
   protected:
     bool _is_first_position;
@@ -27,22 +27,14 @@ class Game {
     float _score = 0.0;
     int _half_move_counter = 0;
     PGN_info _pgn_info;
-    Shared_ostream& _logfile;
-    atomic<bool>& _logfile_is_open;
     Config_params& _config_params;
   public:
-    Game(Shared_ostream& logfile,
-         atomic<bool>& logfile_is_open,
-         Config_params& config_params);
+    Game(Config_params& config_params);
     Game(col c,
-         Shared_ostream& logfile,
-         atomic<bool>& logfile_is_open,
          Config_params& config_params);
     Game(col c,
          playertype pt1,
          playertype pt2,
-         Shared_ostream& logfile,
-         atomic<bool>& logfile_is_open,
          Config_params& config_params);
     ~Game();
     void init();
@@ -52,7 +44,7 @@ class Game {
     void init_board_hash_tag();
     void actions_after_a_move(uint64_t timediff, bool cmd_line);
     void start();
-    Move engine_go(Shared_ostream& logfile, atomic<bool>& logfile_is_open, const Config_params& config_params, const string& max_search_time);
+    Move engine_go(const Config_params& config_params, const string& max_search_time);
     void start_timer_thread(const string& max_search_time);
     bool has_time_left();
     void set_time_left(bool value);
@@ -68,7 +60,7 @@ class Game {
     void set_moveno(int moveno);
     ostream& write_chessboard(ostream& os, outputtype ot, col from_perspective) const;
     ostream& write_diagram(ostream& os) const;
-    Shared_ostream& write_diagram(Shared_ostream& os) const;
+    Shared_ostream& log_diagram() const;
 };
 }
 #endif
