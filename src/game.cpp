@@ -22,7 +22,7 @@ namespace C2_chess
 
 Game::Game(Config_params& config_params):
     _is_first_position(true), _move_log(), _chessboard(), _player1(playertype::human, col::white, _chessboard), _player2(playertype::computer, col::black, _chessboard), _moveno(1),
-    _col_to_move(col::white), _score(0), _config_params(config_params)
+    _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
 {
   _player[static_cast<int>(col::white)] = &_player1;
   _player[static_cast<int>(col::black)] = &_player2;
@@ -34,7 +34,7 @@ Game::Game(Config_params& config_params):
 Game::Game(col color, Config_params& config_params):
     _is_first_position(true), _move_log(), _chessboard(), _player1(playertype::human, color, _chessboard),
     _player2(playertype::computer, color == col::white ? col::black : col::white, _chessboard), _moveno(1),
-    _col_to_move(col::white), _score(0), _config_params(config_params)
+    _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
 {
   _player[static_cast<int>(color)] = &_player1;
   _player[static_cast<int>(color == col::white ? col::black : col::white)] = &_player2;
@@ -45,7 +45,7 @@ Game::Game(col color,
            playertype pt2,
            Config_params& config_params):
     _is_first_position(true), _move_log(), _chessboard(), _player1(pt1, color, _chessboard), _player2(pt2, color == col::white ? col::black : col::white, _chessboard), _moveno(1),
-    _col_to_move(col::white), _score(0), _config_params(config_params)
+    _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
 {
   _player[static_cast<int>(color)] = &_player1;
   _player[static_cast<int>(color == col::white ? col::black : col::white)] = &_player2;
@@ -139,14 +139,13 @@ ostream& Game::write_diagram(ostream &os) const
   return os;
 }
 
-Shared_ostream& Game::log_diagram() const
+Shared_ostream& Game::write_diagram(Shared_ostream& sos) const
 {
   stringstream ss;
   write_diagram(ss);
   ss.flush();
-  Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  logfile.write_UTF8_string(ss.str());
-  return logfile;
+  sos.write_UTF8_string(ss.str());
+  return sos;
 }
 
 void Game::init_board_hash_tag()
@@ -154,26 +153,16 @@ void Game::init_board_hash_tag()
   _chessboard.init_board_hash_tag(_col_to_move);
 }
 
-void Game::actions_after_a_move(uint64_t timediff, bool cmd_line)
+void Game::actions_after_a_move()
 {
-  // We have made a move.
-  // Update the movelog of the game.
-  _move_log.into_as_last(new Move(_chessboard.get_last_move()));
-  if (cmd_line)
-  {
-    cout << "time spent = " << timediff << " ns" << endl;
-    cout << _move_log << endl;
-    write_diagram(cout);
-  }
-  double diff = timediff /1000000.0;
-  stringstream ss;
-  ss << diff;
-//    logfile << "time spent: " << ss.str() << " ms" << "\n";
-//    ss.flush();
-//    ss << _move_log << endl;
-//    logfile << ss.str();
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  log_diagram();
+
+  // We have made a move.
+  cmdline << _move_log << "\n";
+  logfile << _move_log << "\n";
+  write_diagram(cmdline);
+  write_diagram(logfile);
 
   // Change color to evaluate from opponents view.
   _col_to_move = (_col_to_move == col::white) ? col::black : col::white;
@@ -182,21 +171,18 @@ void Game::actions_after_a_move(uint64_t timediff, bool cmd_line)
   if (evaluation == eval_max || evaluation == eval_min)
   {
     _chessboard.set_mate(true);
-    if (cmd_line)
-      cout << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << endl << endl;
+    cmdline << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n" << "\n";
     logfile << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
   }
   else if (evaluation == 0 && _chessboard.no_of_moves() == 0)
   {
     _chessboard.set_stalemate(true);
-    if (cmd_line)
-      cout << "1/2 - 1/2 draw by stalemate" << endl;
+    cmdline << "1/2 - 1/2 draw by stalemate" << "\n";
     logfile << "1/2 - 1/2 draw by stalemate" << "\n";
   }
   else // Normal position
   {
-    if (cmd_line)
-      cout << "current postion evaluation: " << evaluation << endl << endl;
+    cmdline << "current postion evaluation: " << evaluation << "\n\n";
     logfile << "current postion evaluation: " << evaluation << "\n\n";
     // Update half-move coubter for the 50-moves-rule.
     Move last_move = _chessboard.get_last_move();
@@ -206,21 +192,23 @@ void Game::actions_after_a_move(uint64_t timediff, bool cmd_line)
       _half_move_counter++;
     if (_half_move_counter > 50)
     {
-      if (cmd_line)
-        cout << "1/2 - 1/2 draw by the fifty-move rule" << endl;
+      cmdline << "1/2 - 1/2 draw by the fifty-move rule" << "\n";
       logfile << "1/2 - 1/2 draw by the fifty-move rule" << "\n";
     }
   }
+  // cmdline <<"Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
+  // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
 }
-
 
 // This method is for the cmd-line interface only
 void Game::start()
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
   logfile << "\nGame started\n";
   logfile.write_config_params(_config_params);
-  cout << endl << "Game started" << endl;
+  cmdline << "\n" << "Game started" << "\n";
   // Init the hash tag for the initial board-position to
   // use in the Zobrist hash table.
   // (also called transposition table)
@@ -229,33 +217,39 @@ void Game::start()
   // The time it takes is defined by the max_searh_level
   _chessboard.set_time_left(true);
   const int max_search_level = 7;
-  bool playing = true;
-  while (playing)
+  _playing = true;
+  while (_playing)
   {
     uint64_t nsec_start = current_time.nanoseconds();
     if (get_playertype(_col_to_move) == playertype::human)
     {
-      write_chessboard(cout, outputtype::cmd_line_diagram, _col_to_move);
-      cout << "Hashtag: " << _chessboard.get_hash_tag() << endl;
-      cout << "Material evaluation: " << _chessboard.get_material_evaluation() << endl;
+      write_diagram(cmdline);
+      cmdline << "Hashtag: " << _chessboard.get_hash_tag() << "\n";
+      cmdline << "Material evaluation: " << _chessboard.get_material_evaluation() << "\n";
       if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, max_search_level) != 0)
       {
-        cout << "Stopped playing" << endl;
-        playing = false;
+        cmdline << "Stopped playing" << "\n";
+        _playing = false;
       }
-      uint64_t timediff = current_time.nanoseconds() - nsec_start;
-      actions_after_a_move(timediff, true);
+      // Update the movelog of the game.
+      _move_log.into_as_last(new Move(_chessboard.get_last_move()));
+      actions_after_a_move();
     }
     else
     {
       // computer
       engine_go(_config_params, "20000");
     }
+    uint64_t timediff = current_time.nanoseconds() - nsec_start;
+    cmdline << "time spent thinking: " << timediff/1.0e9 << " seconds" << "\n";
+    logfile << "time spent thinking: " << timediff/1.0e9 << " seconds" << "\n";
   }
 }
 
 Move Game::engine_go(const Config_params& config_params, const string& max_search_time)
 {
+  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+
   // These values are just default values
   int max_search_level = 7;
   bool use_incremental_search = true;
@@ -277,8 +271,6 @@ Move Game::engine_go(const Config_params& config_params, const string& max_searc
   s = config_params.get_config_param("search_until_no_captures");
   if (!s.empty())
     search_until_no_captures = (s == "true");
-
-  Shared_ostream& logfile = *(Shared_ostream::get_instance());
 
   // Search for best move
   if (use_incremental_search)
@@ -366,46 +358,9 @@ Move Game::engine_go(const Config_params& config_params, const string& max_searc
     uint64_t nsec_stop = current_time.nanoseconds();
     logfile.log_time_diff(nsec_stop, nsec_start, max_search_level, _chessboard.get_possible_move(best_move_index), _score);
     _chessboard.make_move(best_move_index, _moveno, _col_to_move);
-    // The _move_log only makes sense if playing from the command line,
-    // Or when the engine plays against itself ("play out position").
-    // In the normal case the engine only knows its own moves.
     _move_log.into_as_last(new Move(_chessboard.get_last_move()));
   }
-
-  // We have made a move.
-  // cout << _move_log << endl;
-  stringstream ss;
-  ss << _move_log << endl;
-  logfile << ss.str();
-  log_diagram();
-  
-  // Change color to evaluate from opponents view.
-  _col_to_move = (_col_to_move == col::white) ? col::black : col::white;
-  float evaluation = _chessboard.evaluate_position(_col_to_move, outputtype::silent, 0);
-  if (evaluation == eval_max || evaluation == eval_min)
-  {
-    _chessboard.set_mate(true);
-    cout << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << endl;
-    logfile << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
-  }
-  else if (evaluation == 0.0 && _chessboard.no_of_moves() == 0)
-  {
-    _chessboard.set_stalemate(true);
-    cout << "1/2 - 1/2 draw by stalemate" << endl;
-    logfile << "1/2 - 1/2 draw by stalemate" << "\n";
-  }
-  else // Normal move
-  {
-    logfile << "current position evaluation: " << evaluation << "\n\n";
-    Move last_move = _chessboard.get_last_move();
-    // Updating the "fifty-moves-for-draw" counter.    
-    if (last_move.get_take() || last_move.get_piece_type() == piecetype::Pawn)
-      _half_move_counter = 0;
-    else
-      _half_move_counter++;
-  }
-  // cout <<"Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << endl;
-  // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
+  actions_after_a_move();
   return _chessboard.get_last_move();
 }
 

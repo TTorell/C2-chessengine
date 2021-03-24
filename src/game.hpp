@@ -1,8 +1,6 @@
 #ifndef _GAME
 #define _GAME
 
-#include <map>
-#include <atomic>
 #include "player.hpp"
 #include "board.hpp"
 #include "movelist.hpp"
@@ -28,6 +26,7 @@ class Game {
     int _half_move_counter = 0;
     PGN_info _pgn_info;
     Config_params& _config_params;
+    bool _playing;
   public:
     Game(Config_params& config_params);
     Game(col c,
@@ -42,7 +41,7 @@ class Game {
     void clear_move_log();
     void setup_pieces();
     void init_board_hash_tag();
-    void actions_after_a_move(uint64_t timediff, bool cmd_line);
+    void actions_after_a_move();
     void start();
     Move engine_go(const Config_params& config_params, const string& max_search_time);
     void start_timer_thread(const string& max_search_time);
@@ -60,8 +59,8 @@ class Game {
     void set_moveno(int moveno);
     ostream& write_chessboard(ostream& os, outputtype ot, col from_perspective) const;
     ostream& write_diagram(ostream& os) const;
-    Shared_ostream& log_diagram() const;
+    Shared_ostream& write_diagram(Shared_ostream& sos) const;
 };
-}
+} // namespace C2_chess
 #endif
 

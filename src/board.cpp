@@ -2011,7 +2011,7 @@ void Board::set_time_left(bool value)
 
 // This method is for testing such functionality as turning of pruning or
 // continuing the search until no more captures area available."
-float Board::max_for_testing(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level, bool use_pruning, bool search_until_no_captures) const
+float Board::max_for_testing(int level, int move_no, float alpha, float beta, int &best_move_index, const int max_search_level, bool use_pruning, bool search_until_no_captures) const
 {
   float max_value = -101.0; // Must be lower than lowest evaluation
   int dummy_index;
@@ -2075,7 +2075,7 @@ float Board::max_for_testing(int level, int move_no, float alpha, float beta, in
 
 // This method is for testing such functionality as turning of pruning or
 // continue searching until no more captures area available."
-float Board::min_for_testing(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level, bool use_pruning, bool search_until_no_captures) const
+float Board::min_for_testing(int level, int move_no, float alpha, float beta, int &best_move_index, const int max_search_level, bool use_pruning, bool search_until_no_captures) const
 {
   float min_value = 101.0; // Must be higher than highest evaluation
   int dummy_index;
@@ -2139,7 +2139,7 @@ float Board::min_for_testing(int level, int move_no, float alpha, float beta, in
   }
 }
 
-float Board::max(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level) const
+float Board::max(int level, int move_no, float alpha, float beta, int &best_move_index, const int max_search_level) const
 {
   float max_value = -101.0; // Must be lower than lowest evaluation
   int dummy_index; // best_move_index is only an output parameter,
@@ -2219,7 +2219,7 @@ float Board::max(int level, int move_no, float alpha, float beta, int &best_move
 
 // min() is naturally very similar to max, but occasionally reversed,
 // so I've not supplied any comments on this function. See max().
-float Board::min(int level, int move_no, float alpha, float beta, int &best_move_index, const int &max_search_level) const
+float Board::min(int level, int move_no, float alpha, float beta, int &best_move_index, const int max_search_level) const
 {
   float min_value = 101.0;
   int dummy_index;

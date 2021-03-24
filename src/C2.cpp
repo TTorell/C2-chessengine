@@ -20,22 +20,24 @@ namespace C2_chess
 {
 
 // Method for the cmdline-interface
-int write_menue_get_choice(ostream& os)
+int write_menue_get_choice()
 {
-  os << endl;
-  os << "----------------------------" << endl;
-  os << "Welcome to C2 Chess Program." << endl;
-  os << "" << endl;
-  os << "Menue:" << endl;
-  os << "1. Play a game against C2." << endl;
-  os << "2. Load a position from a .pgn-file" << endl;
-  os << "   and start playing from there." << endl;
-  os << "3. Play both sides." << endl;
-  os << "" << endl;
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
+  cmdline << "\n";
+  cmdline << "----------------------------" << "\n";
+  cmdline << "Welcome to C2 Chess Program." << "\n";
+  cmdline << "" << "\n";
+  cmdline << "Menue:" << "\n";
+  cmdline << "1. Play a game against C2." << "\n";
+  cmdline << "2. Load a position from a .pgn-file" << "\n";
+  cmdline << "   and start playing from there." << "\n";
+  cmdline << "3. Play both sides." << "\n";
+  cmdline << "" << "\n";
 
   while (true)
   {
-    os << "Pick a choice [1]: ";
+    cmdline << "Pick a choice [1]: ";
 
     string answer;
     cin >> answer;
@@ -50,7 +52,7 @@ int write_menue_get_choice(ostream& os)
       case '3':
         return 3;
       default:
-        os << "Sorry, try again." << endl;
+        cmdline << "Sorry, try again." << "\n";
         continue;
     }
   }
@@ -59,14 +61,16 @@ int write_menue_get_choice(ostream& os)
 // Method for the cmdline-interface
 int back_to_main_menu()
 {
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
   string input;
-  cout << endl << "Back to main menu? [y/n]:";
+  cmdline << "\n" << "Back to main menu? [y/n]:";
   cin >> input;
   if (input == "y")
     return 0;
   else
   {
-    cout << "Exiting C2" << endl;
+    cmdline << "Exiting C2" << "\n";
     return -1;
   }
 }
@@ -74,11 +78,13 @@ int back_to_main_menu()
 // Method for the cmdline-interface
 col white_or_black()
 {
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
   char st[100];
   bool try_again = true;
   while (try_again)
   {
-    cout << "Which color would you like to play ? [w/b]: ";
+    cmdline << "Which color would you like to play ? [w/b]: ";
     cin >> st;
     if (st[0] == 'w')
     {
@@ -92,7 +98,7 @@ col white_or_black()
 
     }
     else
-      cout << "Enter w or b" << endl;
+      cmdline << "Enter w or b" << "\n";
   }
   return col::white;
 }
@@ -100,9 +106,11 @@ col white_or_black()
 // Method for the cmdline-interface
 void play_on_cmd_line(Config_params& config_params)
 {
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
   while (true)
   {
-    int choice = write_menue_get_choice(cout);
+    int choice = write_menue_get_choice();
     switch (choice)
     {
       case 1:
@@ -128,7 +136,7 @@ void play_on_cmd_line(Config_params& config_params)
         int status = pr.read_position(filename);
         if (status != 0)
         {
-          cout << "Sorry, Couldn't read position from " << filename << endl;
+          cmdline << "Sorry, Couldn't read position from " << filename << "\n";
           continue;
         }
         game.init();
@@ -151,7 +159,7 @@ void play_on_cmd_line(Config_params& config_params)
         continue;
       }
       default:
-        cout << "Sorry, 1, 2 or 3 was the options" << endl << endl;
+        cmdline << "Sorry, 1, 2 or 3 was the options" << "\n" << "\n";
         this_thread::sleep_for(seconds(3));
         continue;
     }
@@ -207,6 +215,8 @@ std::atomic<bool> xtime_left(false);
 // Method for parsing input-commands from a chess-GUI (some commands are taken care of already in ḿain().
 int parse_command(const string& command, Circular_fifo& output_buffer, Game& game, Config_params& config_params, vector<string>& returned_tokens)
 {
+  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+
   // We know at this point that the command string isn't empty
   vector<string> tokens = split(command, ' ');
   if (tokens[0] == "uci")
@@ -267,7 +277,7 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Game& gam
     // the board accordingly.
     reader.parse_FEN_string(fen_string);
     // print the position to the logfile
-    game.log_diagram() << "\n";
+    game.write_diagram(logfile) << "\n";
   }
   // To implement go I think I needed some variables not available here,
   // So I took care of it in main instead.
@@ -309,7 +319,6 @@ void read_input(Circular_fifo *input_buffer, Game* game)
   this_thread::yield();
 }
 
-
 // This method will run in the output_thread.
 void write_output(Circular_fifo *output_buffer)
 {
@@ -342,14 +351,16 @@ void close_threads(thread& input_thread, thread& output_thread)
 
 void print_help_txt()
 {
-  cout << endl <<
-      "Usage: C2 [-cmd | -help]" << endl << endl <<
-      "Options:" << endl <<
-      "--------" << endl <<
-      "-help     : Prints this text." << endl <<
-      "-cmd      : Starts a game in primitive cmd-line mode." << endl <<
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
+  cmdline << "\n" <<
+      "Usage: C2 [-cmd | -help]" << "\n" << "\n" <<
+      "Options:" << "\n" <<
+      "--------" << "\n" <<
+      "-help     : Prints this text." << "\n" <<
+      "-cmd      : Starts a game in primitive cmd-line mode." << "\n" <<
       ""
-      "C2 Without arguments will start the chess-engine" << endl << endl;
+      "C2 Without arguments will start the chess-engine" << "\n" << "\n";
 }
 
 } // End of namespace C2_chess
@@ -379,8 +390,11 @@ int main(int argc, char* argv[])
   ofstream ofs("command_log.txt");
   Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
 
+  // Open a shared_ostream for the cmdline-interface:
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
   // Configuration parameters for the engine, which the GUI can manipulate
-  // are stored in this class.
+  // are stored in this class. Here they'll receive default values.
   Config_params config_params;
 
 
@@ -396,6 +410,12 @@ int main(int argc, char* argv[])
     play_on_cmd_line(config_params);
     return 0;
   }
+
+  // Apparently it's not a cmd-line game the user wants,
+  // to begin with at least. There's another way of entering
+  // command-line mode by sending "cmd" to the running chess-
+  // engine.
+  cmdline.close(); // Will only set an _is_open bool to false.
 
   // Allow --help as well as -help
   if (argc > 1 && regexp_match(argv[1], "-{1,2}help"))
@@ -439,6 +459,9 @@ int main(int argc, char* argv[])
       if (command == "cmd")
       {
         close_threads(input_thread, output_thread);
+        // Tell the cmdline instance to be ready for
+        // writing to cout.
+        cmdline.open();
         play_on_cmd_line(config_params);
         break;
       }
