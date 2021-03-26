@@ -71,12 +71,12 @@ Board& Board::operator=(const Board &from)
   _castling_state = from._castling_state;
   // Taking care of the pointer variables.
   // These must obviously point into their own Board-object.
-  int tmp_file = from._king_square[static_cast<int>(col::white)]->get_position().get_file();
-  int tmp_rank = from._king_square[static_cast<int>(col::white)]->get_position().get_rank();
-  _king_square[static_cast<int>(col::white)] = _file[tmp_file][tmp_rank];
-  tmp_file = from._king_square[static_cast<int>(col::black)]->get_position().get_file();
-  tmp_rank = from._king_square[static_cast<int>(col::black)]->get_position().get_rank();
-  _king_square[static_cast<int>(col::black)] = _file[tmp_file][tmp_rank];
+  int tmp_file = from._king_square[index(col::white)]->get_position().get_file();
+  int tmp_rank = from._king_square[index(col::white)]->get_position().get_rank();
+  _king_square[index(col::white)] = _file[tmp_file][tmp_rank];
+  tmp_file = from._king_square[index(col::black)]->get_position().get_file();
+  tmp_rank = from._king_square[index(col::black)]->get_position().get_rank();
+  _king_square[index(col::black)] = _file[tmp_file][tmp_rank];
   if (from._en_passant_square)
   {
     tmp_file = from._en_passant_square->get_position().get_file();
@@ -189,7 +189,7 @@ ostream& Board::write(ostream &os, outputtype wt, col from_perspective) const
     case outputtype::cmd_line_diagram:
       if (from_perspective == col::white)
       {
-        os << "\n";
+        //os << "\n";
         for (int i = 8; i >= 1; i--)
         {
           for (int j = a; j <= h; j++)
@@ -207,7 +207,7 @@ ostream& Board::write(ostream &os, outputtype wt, col from_perspective) const
       }
       else // From blacks point of view
       {
-        os << "\n";
+        //os << "\n";
         for (int i = 1; i <= 8; i++)
         {
           for (int j = h; j >= a; j--)
@@ -260,14 +260,14 @@ void Board::init_castling(col this_col)
   col other_col = this_col == col::white ? col::black : col::white;
   int one_or_eight = (this_col == col::white ? 1 : 8);
 
-  if (_king_square[static_cast<int>(this_col)]->count_threats(other_col) == 0)
+  if (_king_square[index(this_col)]->count_threats(other_col) == 0)
   {
     // The king is not in check
     if (_castling_state.is_kingside_castling_OK(this_col))
     {
       // Double-check that the king and rook are in the correct squares.
       // We can't always trust the castling status, e.g. if read from pgn-file.
-      if (_king_square[static_cast<int>(this_col)] == _file[e][one_or_eight] && _file[h][one_or_eight]->contains(this_col, piecetype::Rook))
+      if (_king_square[index(this_col)] == _file[e][one_or_eight] && _file[h][one_or_eight]->contains(this_col, piecetype::Rook))
       {
         // Castling short? Check that the squares between the
         // King and the rook are free and that the squares
@@ -275,13 +275,13 @@ void Board::init_castling(col this_col)
         if (!(_file[f][one_or_eight]->get_piece() || _file[g][one_or_eight]->get_piece()))
         {
           if (!(_file[f][one_or_eight]->count_threats(other_col) || _file[g][one_or_eight]->count_threats(other_col)))
-            _king_square[static_cast<int>(this_col)]->into_move(_file[g][one_or_eight]);
+            _king_square[index(this_col)]->into_move(_file[g][one_or_eight]);
         }
       }
     }
     if (_castling_state.is_queenside_castling_OK(this_col))
     {
-      if (_king_square[static_cast<int>(this_col)] == _file[e][one_or_eight] && _file[a][one_or_eight]->contains(this_col, piecetype::Rook))
+      if (_king_square[index(this_col)] == _file[e][one_or_eight] && _file[a][one_or_eight]->contains(this_col, piecetype::Rook))
       {
         // Castling long? Check that the squares between the
         // King and the rook are free and that the squares
@@ -289,7 +289,7 @@ void Board::init_castling(col this_col)
         if (!(_file[b][one_or_eight]->get_piece() || _file[c][one_or_eight]->get_piece() || _file[d][one_or_eight]->get_piece()))
         {
           if (!(_file[c][one_or_eight]->count_threats(other_col) || _file[d][one_or_eight]->count_threats(other_col)))
-            _king_square[static_cast<int>(this_col)]->into_move(_file[c][one_or_eight]);
+            _king_square[index(this_col)]->into_move(_file[c][one_or_eight]);
         }
       }
     }
@@ -391,7 +391,7 @@ int Board::init(col col_to_move)
         {
           case piecetype::King:
           {
-            _king_square[static_cast<int>(p->get_color())] = s;
+            _king_square[index(p->get_color())] = s;
             if (allowed_index(file + 1, rank))
               fix_threat_prot(file + 1, rank, p, s);
             if (allowed_index(file + 1, rank + 1))
@@ -500,13 +500,14 @@ int Board::init(col col_to_move)
   } // end for file index
   if (!pieces_found)
   {
-    cout << "Error: No pieces on the board!" << endl;
+    Shared_ostream& logfile = *(Shared_ostream::get_instance());
+    logfile << "Error: No pieces on the board!" << "\n";
     return -1;
   }
   //  uint64_t nsec_stop = current_time.nanoseconds();
   //  int timediff = nsec_stop - nsec_start;
-  //  cout << "init_nsecs = " << timediff << endl;
-  Square *king_square = _king_square[static_cast<int>(col_to_move)];
+  //  logfile << "init_nsecs = " << timediff << "\n";
+  Square *king_square = _king_square[index(col_to_move)];
   int king_file_index = king_square->get_fileindex();
   int king_rank_index = king_square->get_rankindex();
   tf = king_file_index;
@@ -712,84 +713,84 @@ int Board::init(col col_to_move)
   // a piece if it's protected by another one of the opponents pieces.
   // Such moves will be removed from the move-list of the king_square
   Square *temp_square;
-  for (temp_square = _king_square[static_cast<int>(col_to_move)]->first_move(); temp_square != 0; temp_square = _king_square[static_cast<int>(col_to_move)]->next_move())
+  for (temp_square = _king_square[index(col_to_move)]->first_move(); temp_square != 0; temp_square = _king_square[index(col_to_move)]->next_move())
   {
     if (temp_square->get_piece())
     {
       if (temp_square->get_piece()->get_color() == other_col)
         if (temp_square->count_protections())
         {
-          _king_square[static_cast<int>(col_to_move)]->out_move(temp_square);
+          _king_square[index(col_to_move)]->out_move(temp_square);
         }
     }
     else if (temp_square->count_threats(other_col))
     {
-      _king_square[static_cast<int>(col_to_move)]->out_move(temp_square);
+      _king_square[index(col_to_move)]->out_move(temp_square);
     }
   }
 
   // fix the square(s) to which the King "can move", but will be threatened if
   // the King moves. (X-ray threat through the King)
-  temp_square = _king_square[static_cast<int>(col_to_move)]->first_threat();
+  temp_square = _king_square[index(col_to_move)]->first_threat();
   while (temp_square)
   {
-    int kf = _king_square[static_cast<int>(col_to_move)]->get_fileindex();
-    int kr = _king_square[static_cast<int>(col_to_move)]->get_rankindex();
+    int kf = _king_square[index(col_to_move)]->get_fileindex();
+    int kr = _king_square[index(col_to_move)]->get_rankindex();
     int to_f = temp_square->get_fileindex();
     int to_r = temp_square->get_rankindex();
 
-    if (temp_square->same_rank(_king_square[static_cast<int>(col_to_move)]))
+    if (temp_square->same_rank(_king_square[index(col_to_move)]))
     {
       if (to_f == min(to_f, kf))
         if (allowed_index(kf + 1, kr))
         {
-          _king_square[static_cast<int>(col_to_move)]->out_move(_file[kf + 1][kr]);
+          _king_square[index(col_to_move)]->out_move(_file[kf + 1][kr]);
         }
       if (to_f == max(to_f, kf))
         if (allowed_index(kf - 1, kr))
         {
-          _king_square[static_cast<int>(col_to_move)]->out_move(_file[kf - 1][kr]);
+          _king_square[index(col_to_move)]->out_move(_file[kf - 1][kr]);
         }
     }
-    else if (temp_square->same_file(_king_square[static_cast<int>(col_to_move)]))
+    else if (temp_square->same_file(_king_square[index(col_to_move)]))
     {
       if (to_r == min(to_r, kr))
       {
         if (allowed_index(kf, kr + 1))
         {
-          _king_square[static_cast<int>(col_to_move)]->out_move(_file[kf][kr + 1]);
+          _king_square[index(col_to_move)]->out_move(_file[kf][kr + 1]);
         }
       }
       if (to_r == max(to_r, kr))
         if (allowed_index(kf, kr - 1))
         {
-          _king_square[static_cast<int>(col_to_move)]->out_move(_file[kf][kr - 1]);
+          _king_square[index(col_to_move)]->out_move(_file[kf][kr - 1]);
         }
     }
-    else if (temp_square->same_diagonal(_king_square[static_cast<int>(col_to_move)]))
+    else if (temp_square->same_diagonal(_king_square[index(col_to_move)]))
     {
       if (to_r == min(to_r, kr) && to_f == min(to_f, kf))
         if (allowed_index(kf + 1, kr + 1))
         {
-          _king_square[static_cast<int>(col_to_move)]->out_move(_file[kf + 1][kr + 1]);
+          _king_square[index(col_to_move)]->out_move(_file[kf + 1][kr + 1]);
         }
       if (to_r == min(to_r, kr) && to_f == max(to_f, kf))
         if (allowed_index(kf - 1, kr + 1))
         {
-          _king_square[static_cast<int>(col_to_move)]->out_move(_file[kf - 1][kr + 1]);
+          _king_square[index(col_to_move)]->out_move(_file[kf - 1][kr + 1]);
         }
       if (to_r == max(to_r, kr) && to_f == min(to_f, kf))
         if (allowed_index(kf + 1, kr - 1))
         {
-          _king_square[static_cast<int>(col_to_move)]->out_move(_file[kf + 1][kr - 1]);
+          _king_square[index(col_to_move)]->out_move(_file[kf + 1][kr - 1]);
         }
       if (to_r == max(to_r, kr) && to_f == max(to_f, kf))
         if (allowed_index(kf - 1, kr - 1))
         {
-          _king_square[static_cast<int>(col_to_move)]->out_move(_file[kf - 1][kr - 1]);
+          _king_square[index(col_to_move)]->out_move(_file[kf - 1][kr - 1]);
         }
     }
-    temp_square = _king_square[static_cast<int>(col_to_move)]->next_threat();
+    temp_square = _king_square[index(col_to_move)]->next_threat();
   }
 
   // What about Castling ?
@@ -823,7 +824,7 @@ void Board::fix_threat_prot(int file, int rank, Piece *p, Square *s)
 
 void Board::fix_bound_piece_file(Square *own_piece_square, const Square *threat_square)
 {
-  // Requirements:
+  // Requirements:cout
   // King_square, own_piece_square and threat_square is on the
   // same file. The "own_King" is placed on King_square
   // On own_piece_square there is a piece of the same colour as the king
@@ -858,7 +859,7 @@ void Board::fix_bound_piece_file(Square *own_piece_square, const Square *threat_
         }
         break;
       default:
-        cerr << "strange kind of own piece in fix_bound_piece_file " << static_cast<int>(pt) << endl;
+        cerr << "strange kind of own piece in fix_bound_piece_file " << index(pt) << endl;
     }
   }
 }
@@ -1271,7 +1272,7 @@ void Board::calculate_moves(col col_to_move)
   _possible_moves.clear();
 
   Square *temp_square;
-  Square *kings_square = _king_square[static_cast<int>(col_to_move)];
+  Square *kings_square = _king_square[index(col_to_move)];
   // is the King threatened?
   if (kings_square->count_threats(other_col)) //TODO: speed up
   {
@@ -1470,12 +1471,12 @@ void Board::update_hash_tag_remove_queenside_castling_rights(col color)
 void Board::update_hash_tag(const Square* square)
 {
   Piece* p = square->get_piece();
-  _hash_tag ^= hash_table._random_table[square->get_fileindex()][square->get_rankindex()][static_cast<int>(p->get_color())][static_cast<int>(p->get_type())];
+  _hash_tag ^= hash_table._random_table[square->get_fileindex()][square->get_rankindex()][index(p->get_color())][index(p->get_type())];
 }
 
 void Board::update_hash_tag(int fileindex, int rankindex, col color, piecetype type)
 {
-  _hash_tag ^= hash_table._random_table[fileindex][rankindex][static_cast<int>(color)][static_cast<int>(type)];
+  _hash_tag ^= hash_table._random_table[fileindex][rankindex][index(color)][index(type)];
 }
 
 // First make a move, then init the board and possible moves for other_col
@@ -1483,7 +1484,6 @@ int Board::make_move(int i, int &move_no, col col_to_move)
 {
   col other_col = col_to_move == col::white ? col::black : col::white;
   Move *m = _possible_moves[i];
-  //write(cout, cmd_line_diagram, col::white);
   if (m)
   {
     Position from = m->get_from();
@@ -1515,7 +1515,7 @@ int Board::make_move(int i, int &move_no, col col_to_move)
       {
         // CASTLING
         case piecetype::King:
-          _king_square[static_cast<int>(col_to_move)] = to_square;
+          _king_square[index(col_to_move)] = to_square;
           update_hash_tag_remove_castling_rights(col_to_move);
           _castling_state.king_moved(col_to_move);
           if (col_to_move == col::black)
@@ -1669,7 +1669,7 @@ int Board::make_move(int i, int &move_no, col col_to_move)
       clear(false);      // Clear board but don't remove pieces
       update_hash_tag_change_color_to_move();
       init(other_col);
-      if (_king_square[static_cast<int>(other_col)]->count_threats(col_to_move))
+      if (_king_square[index(other_col)]->count_threats(col_to_move))
         _last_move.set_check(true);
 
       calculate_moves(other_col);
@@ -1680,171 +1680,14 @@ int Board::make_move(int i, int &move_no, col col_to_move)
   return -1;
 }
 
-// This method is only for the cmd-line interface
-int Board::make_move(playertype player, int &move_no, col col_to_move)
-{
-  unique_ptr<Move> m;
-  if (player != playertype::human)
-  {
-    cout << "Error: Using wrong make_move() method for computer." << endl;
-    return -1;
-  }
-  //this->write("testfile.doc");
-  //   cerr<<"*** Reading the latest move ***\n";
-  Position from;
-  Position to;
-  char st[100];
-  bool first = true;
-  while (true)
-  {
-    //cout << "inside while" << endl;
-    if (!first)
-      cout << "The Move you entered is impossible!" << endl << endl;
-    first = false;
-    cout << "Your move: ";
-    cin >> st;
-    bool from_file_read = false;
-    bool from_rank_read = false;
-    bool to_file_read = false;
-    bool to_rank_read = false;
-    bool ep_checked = false;
-    bool en_passant = false;
-    bool check = false;
-    bool take = false;
-    piecetype pt = piecetype::Pawn;
-    bool promotion = false;
-    piecetype promotion_pt = piecetype::Pawn;
-    piecetype target_pt = piecetype::Pawn;
-    int i;
-    for (i = 0; i < (int) strlen(st); i++)
-    {
-      if (!from_file_read)
-      {
-        if (from.set_file(st[i]))
-          from_file_read = true;
-        else if (!read_piece_type(pt, st[i]))
-          break;
-        continue;
-      };
-      if (!from_rank_read)
-      {
-        if (from.set_rank(st[i]))
-          from_rank_read = true;
-        else
-          break;
-        continue;
-      }
-      if (!to_file_read)
-      {
-        if (to.set_file(st[i]))
-          to_file_read = true;
-        else if (st[i] != '-' && st[i] != 'x')
-          break;
-        else if (st[i] == 'x')
-          take = true;
-        continue;
-      }
-      if (!to_rank_read)
-      {
-        if (to.set_rank(st[i]))
-          to_rank_read = true;
-        else
-          break;
-        continue;
-      }
-      if (!ep_checked)
-      {
-        if (st[i] == 'e')
-          en_passant = true;
-        else if (read_piece_type(promotion_pt, st[i]))
-        {
-
-        }
-        else if (st[i] == '+')
-          check = true;
-        else
-          break;
-        ep_checked = true;
-        continue;
-      }
-      if (en_passant)
-        if (st[i] == '.' || st[i] == 'p')
-          continue;
-      if (!check)
-      {
-        if (st[i] == '+')
-          check = true;
-      }
-    } // end of for loop
-    if (i < (int) strlen(st))
-      continue;
-    //this->write(cout, debug);
-    Square *from_square = _file[from.get_file()][from.get_rank()];
-    Piece *p = from_square->get_piece();
-    if (!p)
-      continue;
-
-    // Check take
-    Square *to_square = _file[to.get_file()][to.get_rank()];
-    Piece *p2 = to_square->get_piece();
-    if (!p2)
-    {
-      if (take == true)
-        continue;
-    }
-    else if (p2->get_color() == p->get_color())
-      continue;
-    else
-    {
-      take = true;
-      target_pt = p2->get_type();
-    }
-    // Check piece_type
-    if (pt != piecetype::Pawn)
-      if (p->get_type() != pt)
-        continue;
-    pt = p->get_type();
-    // Check promotion
-    if (promotion) //It is supposed to be a promotion
-    {
-      if (col_to_move == col::white)
-      {
-        if (from.get_rank() != 7)
-          continue;
-        else if (_file[from.get_file()][from.get_rank()]->get_piece()->get_type() != piecetype::Pawn)
-          continue;
-      }
-      else //col_to_move==col::black
-      {
-        if (from.get_rank() != 2)
-          continue;
-        else if (_file[from.get_file()][from.get_rank()]->get_piece()->get_type() != piecetype::Pawn)
-          continue;
-      }
-    }
-    if (pt == piecetype::Pawn)
-    {
-      if (_en_passant_square)
-        if (_en_passant_square->get_position() == to)
-          en_passant = true;
-    }
-    m.reset(new Move(from, to, pt, take, target_pt, en_passant, promotion, promotion_pt, check));
-    // find index of move
-    int move_index;
-    if (!_possible_moves.in_list(m.get(), &move_index))
-    {
-      continue;
-    }
-    //  Move is OK,make it
-    return make_move(move_index, move_no, col_to_move);
-  } // while not read
-}
 
 float Board::evaluate_position(col col_to_move, outputtype ot, int level) const
 {
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
   if (_possible_moves.size() == 0)
   {
-    if (_king_square[static_cast<int>(col_to_move)]->count_threats() > 0)
+    if (_king_square[index(col_to_move)]->count_threats() > 0)
     {
       // This is checkmate, we want to evaluate the quickest way to mate higher
       // so we add/subtract level.
@@ -1862,6 +1705,8 @@ float Board::evaluate_position(col col_to_move, outputtype ot, int level) const
   // equal position. 0.0 is reserved for stalemate.
   float sum = epsilon;
   sum += _material_evaluation;
+  if (ot == outputtype::debug)
+    cmdline << "Material evaluation: " << _material_evaluation << "\n";
   //count_material(sum, 0.95F, ot);
   count_center_control(sum, 0.02F, ot);
   //count_possible_moves(sum, 0.01F, col_to_move); // of doubtful value.
@@ -1875,18 +1720,22 @@ float Board::evaluate_position(col col_to_move, outputtype ot, int level) const
 
 void Board::count_center_control(float &sum, float weight, outputtype ot) const
 {
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
   int counter = 0;
   counter += _file[d][4]->count_controls();
   counter += _file[d][5]->count_controls();
   counter += _file[e][4]->count_controls();
   counter += _file[e][5]->count_controls();
   if (ot == outputtype::debug)
-    cout << "Center control " << counter * weight << endl;
+    cmdline << "Center control " << counter * weight << "\n";
   sum += counter * weight;
 }
 
 void Board::count_pawns_in_centre(float &sum, float weight, outputtype ot) const
 {
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
   int counter = 0;
   if (_file[d][4]->contains_piece(col::white, piecetype::Pawn))
     counter++;
@@ -1905,7 +1754,7 @@ void Board::count_pawns_in_centre(float &sum, float weight, outputtype ot) const
   if (_file[e][5]->contains_piece(col::black, piecetype::Pawn))
     counter--;
   if (ot == outputtype::debug)
-    cout << "Pawns in center " << counter * weight << endl;
+    cmdline << "Pawns in center " << counter * weight << "\n";
   sum += counter * weight;
 }
 
@@ -1917,6 +1766,8 @@ void Board::count_pawns_in_centre(float &sum, float weight, outputtype ot) const
 
 void Board::count_development(float &sum, float weight, outputtype ot) const
 {
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
   int counter = 0;
   if (!_file[a][1]->contains_piece(col::white, piecetype::Rook))
     counter++;
@@ -1949,19 +1800,20 @@ void Board::count_development(float &sum, float weight, outputtype ot) const
   if (!_file[h][8]->contains_piece(col::black, piecetype::Rook))
     counter--;
   if (ot == outputtype::debug)
-    cout << "Development " << counter * weight << endl;
+    cmdline << "Development " << counter * weight << "\n";
   sum += counter * weight;
 }
 
 void Board::count_castling(float &sum, float weight, outputtype ot) const
 {
-  int counter = 0;
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+ int counter = 0;
   if (_castling_state.has_castled(col::white))
     counter++;
   if (_castling_state.has_castled(col::black))
     counter--;
   if (ot == outputtype::debug)
-    cout << "Castling " << counter * weight << endl;
+    cmdline << "Castling " << counter * weight << "\n";
   sum += counter * weight;
 }
 
@@ -1975,6 +1827,9 @@ bool Board::is_end_node() const
 // This method will run in the timer_thread.
 static void start_timer(const string& max_search_time)
 {
+  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  logfile << "Timer Thread Started." << "\n";
+
   double time = stod(max_search_time);
   time_left = true;
   while (time_left)
@@ -1990,11 +1845,14 @@ static void start_timer(const string& max_search_time)
       break;
     }
   }
+  logfile << "Timer Thread Stopped." << "\n";
 }
 
 void Board::start_timer_thread(const string& max_search_time)
 {
+  Shared_ostream& logfile = *(Shared_ostream::get_instance());
   thread timer_thread(start_timer, max_search_time);
+  logfile << "Timer Thread Started: " << max_search_time << "\n";
   timer_thread.detach();
 }
 
@@ -2017,7 +1875,7 @@ float Board::max_for_testing(int level, int move_no, float alpha, float beta, in
   int dummy_index;
   best_move_index = -1;
   level++;
-//  cout << "level = " << level << ":" << _last_move << endl;
+//  cmdline << "level = " << level << ":" << _last_move << "\n";
   if (is_end_node() || (level >= max_search_level && !_last_move.get_take()))
   {
     return evaluate_position(col::black, outputtype::silent, level);
@@ -2047,9 +1905,6 @@ float Board::max_for_testing(int level, int move_no, float alpha, float beta, in
       {
         if (tmp_value >= beta)
         {
-          //clean up and prune
-          //cout << "pruning in max" << endl;
-          //level_boards[level].clear();
           return max_value;          // same as tmp_value
         }
         if (tmp_value > alpha)
@@ -2082,7 +1937,7 @@ float Board::min_for_testing(int level, int move_no, float alpha, float beta, in
 
   best_move_index = -1;
   level++;
-  //  cout << "level = " << level << ":" << _last_move << endl;
+  //  cmdline << "level = " << level << ":" << _last_move << "\n";
   if (is_end_node() || (level >= max_search_level && !_last_move.get_take()))
   {
     return evaluate_position(col::black, outputtype::silent, level);
@@ -2113,9 +1968,6 @@ float Board::min_for_testing(int level, int move_no, float alpha, float beta, in
       {
         if (tmp_value <= alpha)
         {
-          //clean up and prune
-          //cout << "pruning in min" << endl;
-          //level_boards[level].clear();
           return min_value;
         }
         if (tmp_value < beta)
@@ -2297,7 +2149,7 @@ void Board::init_board_hash_tag(col col_to_move)
       {
         col c = p->get_color();
         piecetype type = p->get_type();
-        _hash_tag ^= hash_table._random_table[file][rank][static_cast<int>(c)][static_cast<int>(type)];
+        _hash_tag ^= hash_table._random_table[file][rank][index(c)][index(type)];
       }
     }
   }
@@ -2367,7 +2219,7 @@ void Board::init_material_evaluation()
           case piecetype::King:
             break;
           default:
-            cerr << "Error: Undefined Piece Type: " << static_cast<int>(p->get_type()) << endl;
+            cerr << "Error: Undefined Piece Type: " << index(p->get_type()) << endl;
         }
       }
     }
@@ -2408,7 +2260,7 @@ void Board::update_material_evaluation_capture(const col& color, const piecetype
     case piecetype::King:
       break;
     default:
-      cerr << "Error: Undefined Piece Type: " << static_cast<int>(type) << endl;
+      cerr << "Error: Undefined Piece Type: " << index(type) << endl;
   }
 }
 
@@ -2445,7 +2297,7 @@ void Board::update_material_evaluation_promotion(const col& color, const piecety
     case piecetype::King:
       break;
     default:
-      cerr << "Error: Undefined Piece Type: " << static_cast<int>(type) << endl;
+      cerr << "Error: Undefined Piece Type: " << index(type) << endl;
   }
 }
 

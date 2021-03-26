@@ -25,7 +25,7 @@ class Player {
     void set_colour(col tc);
     playertype get_type();
     void set_type(playertype t);
-    int find_best_move_index(int &move_no, float &score, const int &max_search_level, bool use_pruning, bool search_until_no_captures);
+    int find_best_move_index(int &move_no, float &score, const int max_search_level, bool use_pruning, bool search_until_no_captures);
 };
 }
 #endif

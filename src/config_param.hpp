@@ -9,7 +9,7 @@
 #define CONFIG_PARAM_HPP_
 
 #include <string>
-#include "shared_ostream.hpp"
+//#include "shared_ostream.hpp"
 using std::string;
 
 namespace C2_chess

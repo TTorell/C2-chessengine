@@ -60,6 +60,7 @@ class Game {
     ostream& write_chessboard(ostream& os, outputtype ot, col from_perspective) const;
     ostream& write_diagram(ostream& os) const;
     Shared_ostream& write_diagram(Shared_ostream& sos) const;
+    void play_on_cmd_line(Config_params& config_params);
 };
 } // namespace C2_chess
 #endif

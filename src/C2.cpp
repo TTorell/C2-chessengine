@@ -1,16 +1,20 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 #include <thread>
 #include <chrono>
 #include <vector>
 #include <atomic>
-#include "game.hpp"
-#include "position_reader.hpp"
 #include "C2_unittest.hpp"
 #include "chessfuncs.hpp"
 #include "chesstypes.hpp"
 #include "config_param.hpp"
+#include "game.hpp"
+#include "position_reader.hpp"
+
+
+
 
 
 using namespace std;
@@ -19,151 +23,14 @@ using namespace std::chrono;
 namespace C2_chess
 {
 
-// Method for the cmdline-interface
-int write_menue_get_choice()
+
+string get_logfile_name()
 {
-  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
-
-  cmdline << "\n";
-  cmdline << "----------------------------" << "\n";
-  cmdline << "Welcome to C2 Chess Program." << "\n";
-  cmdline << "" << "\n";
-  cmdline << "Menue:" << "\n";
-  cmdline << "1. Play a game against C2." << "\n";
-  cmdline << "2. Load a position from a .pgn-file" << "\n";
-  cmdline << "   and start playing from there." << "\n";
-  cmdline << "3. Play both sides." << "\n";
-  cmdline << "" << "\n";
-
-  while (true)
-  {
-    cmdline << "Pick a choice [1]: ";
-
-    string answer;
-    cin >> answer;
-    if (answer.size() == 0)
-      return 1;
-    switch (answer[0])
-    {
-      case '1':
-        return 1;
-      case '2':
-        return 2;
-      case '3':
-        return 3;
-      default:
-        cmdline << "Sorry, try again." << "\n";
-        continue;
-    }
-  }
-}
-
-// Method for the cmdline-interface
-int back_to_main_menu()
-{
-  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
-
-  string input;
-  cmdline << "\n" << "Back to main menu? [y/n]:";
-  cin >> input;
-  if (input == "y")
-    return 0;
-  else
-  {
-    cmdline << "Exiting C2" << "\n";
-    return -1;
-  }
-}
-
-// Method for the cmdline-interface
-col white_or_black()
-{
-  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
-
-  char st[100];
-  bool try_again = true;
-  while (try_again)
-  {
-    cmdline << "Which color would you like to play ? [w/b]: ";
-    cin >> st;
-    if (st[0] == 'w')
-    {
-      return col::white;
-      try_again = false;
-    }
-    else if (st[0] == 'b')
-    {
-      return col::black;
-      try_again = false;
-
-    }
-    else
-      cmdline << "Enter w or b" << "\n";
-  }
-  return col::white;
-}
-
-// Method for the cmdline-interface
-void play_on_cmd_line(Config_params& config_params)
-{
-  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
-
-  while (true)
-  {
-    int choice = write_menue_get_choice();
-    switch (choice)
-    {
-      case 1:
-      {
-        col color = white_or_black();
-        Game game(color, config_params);
-        game.setup_pieces();
-        game.init();
-        game.start();
-        if (back_to_main_menu() != 0)
-          return;
-        continue;
-      }
-      case 2:
-      {
-        string input;
-
-        col human_color = white_or_black();
-        Game game(human_color, config_params);
-        FEN_reader fr(game);
-        Position_reader& pr = fr;
-        string filename = GetStdoutFromCommand("cmd java -classpath \".\" ChooseFile");
-        int status = pr.read_position(filename);
-        if (status != 0)
-        {
-          cmdline << "Sorry, Couldn't read position from " << filename << "\n";
-          continue;
-        }
-        game.init();
-        game.start();
-        if (back_to_main_menu() != 0)
-          exit(0);
-        continue;
-      }
-      case 3:
-      {
-        Game game(col::white,
-                  playertype::human,
-                  playertype::human,
-                  config_params);
-        game.setup_pieces();
-        game.init();
-        game.start();
-        if (back_to_main_menu() != 0)
-          return;
-        continue;
-      }
-      default:
-        cmdline << "Sorry, 1, 2 or 3 was the options" << "\n" << "\n";
-        this_thread::sleep_for(seconds(3));
-        continue;
-    }
-  }
+  auto time = std::time(nullptr);
+  stringstream ss;
+  ss << "C2_log_" << put_time(localtime(&time), "%F-%T") << ".txt"; // ISO 8601 format.
+  cout << ss.str() << endl;
+  return ss.str();
 }
 
 // This Method e.g. splits up commands from the GUI into tokens (words)
@@ -223,7 +90,7 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Game& gam
   {
     output_buffer.put("id name C2 experimental");
     output_buffer.put("id author Torsten Torell");
-
+#include <iomanip>
     // Tell GUI which parameters are configurable.
     for (auto it : config_params.get_map())
     {
@@ -387,7 +254,7 @@ int main(int argc, char* argv[])
   // This requires that the engine has been started by
   // the GUI from a directory where it has write-permisson.
   // And that's of course where you can find the logfile.
-  ofstream ofs("command_log.txt");
+  ofstream ofs(get_logfile_name());
   Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
 
   // Open a shared_ostream for the cmdline-interface:

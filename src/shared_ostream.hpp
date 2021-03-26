@@ -30,7 +30,7 @@ namespace C2_chess
 // It's written as a "multiple singleton"-pattern.
 // You can receive one instance for writing to an
 // ostream of your choice and one instance designated
-// to writing on cout (stdout).
+// for writing on cout (stdout).
 //
 // In the first case, to specify the ostream and get
 // a pointer to an instance of this class, you must
@@ -66,24 +66,20 @@ namespace C2_chess
 // as long as any code is using the Shared_ostrem instance.
 // or we must use the close() method when the ostream dies.
 // TODO: Maybe something to check dynamically in the class.
-// instead of checking _is_open. Didn,t think of that.
+// instead of checking _is_open. Didn,t think of that,
+// but all ostreams doesn't have an is_open() method.
 
 class Shared_ostream {
   private:
     static Shared_ostream* p_instance_;
     static Shared_ostream* p_cout_instance_;
-    // Mutexes for static functions
-    static mutex mutex_;
-    static mutex cout_mutex_;
-    // Mutex for non-static member functions
-    mutex _mu;
     ostream& _os;
     bool _is_open;
 
     Shared_ostream();
 
-    Shared_ostream(ostream& ost, bool is_open) :
-        _os(ost),
+    Shared_ostream(ostream& os, bool is_open) :
+        _os(os),
         _is_open(is_open)
     {
     }
@@ -93,15 +89,47 @@ class Shared_ostream {
     }
 
   public:
+    static mutex static_mutex;
+
     // Singletons should not be cloneable or assignable
     void operator=(const Shared_ostream&) = delete;
     Shared_ostream(Shared_ostream& other) = delete;
 
-    static Shared_ostream* get_instance(ostream& os, bool is_open);
+    // Create and/or return a pointer to the singleton-instance of the Shared_ostream.
+    static Shared_ostream* get_instance(ostream& os, bool is_open)
+    {
+      // lock the execution of this method, so no other thread can call this method
+      // simultaneously, then make sure again that the variable is null and then
+      // call the constructor.
+      lock_guard < mutex > lock(static_mutex);
+      if (p_instance_ == nullptr)
+      {
+        p_instance_ = new Shared_ostream(os, is_open);
+      }
+      return p_instance_;
+    }
 
-    static Shared_ostream* get_instance();
+    // This method may not be called until get_instance(ostream& os, bool is_open)
+    // has been called at least once to create the singleton *p_instance.
+    static Shared_ostream* get_instance()
+    {
+      lock_guard<mutex> lock(static_mutex);
+      return p_instance_;
+    }
 
-    static Shared_ostream* get_cout_instance();
+    // Create and/or return a pointer to the singleton-instance of the cout-Shared_ostream.
+    static Shared_ostream* get_cout_instance()
+    {
+      // lock the execution of this method, so no other thread can call this method
+      // simultaneously, then make sure again that the variable is null and then
+      // call the constructor.
+      lock_guard<mutex> lock(static_mutex);
+      if (p_cout_instance_ == nullptr)
+      {
+        p_cout_instance_ = new Shared_ostream(cout, true);
+      }
+      return p_cout_instance_;
+    }
 
     void close()
     {
@@ -115,7 +143,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(const string& s)
     {
-      lock_guard < mutex > locker(_mu);
+      lock_guard < mutex > locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(s) << flush;
       return *this;
@@ -123,7 +151,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(int i)
     {
-      lock_guard < mutex > locker(_mu);
+      lock_guard < mutex > locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(to_string(i)) << flush;
       return *this;
@@ -131,7 +159,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(float f)
     {
-      lock_guard < mutex > locker(_mu);
+      lock_guard < mutex > locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(to_string(f)) << flush;
       return *this;
@@ -139,7 +167,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(double d)
     {
-      lock_guard < mutex > locker(_mu);
+      lock_guard < mutex > locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(to_string(d)) << flush;
       return *this;
@@ -147,7 +175,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(long l)
     {
-      lock_guard < mutex > locker(_mu);
+      lock_guard < mutex > locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(to_string(l)) << flush;
       return *this;
@@ -155,12 +183,11 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(unsigned long ul)
     {
-      lock_guard < mutex > locker(_mu);
+      lock_guard < mutex > locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(to_string(ul)) << flush;
       return *this;
     }
-
 
 //    Tried to make it work with the endl-function which returns an ostream&
 //    It works when calling endl with an argument
@@ -168,7 +195,7 @@ class Shared_ostream {
 //    Shared_ostream& operator<<(ostream& os)
 //    {
 //      os << "\n";
-//      lock_guard < mutex > locker(_mu);
+//      lock_guard < mutex > locker(static_mutex);
 //      if (_is_open)
 //        _os << endl << flush;
 //      return *this;
@@ -176,11 +203,11 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(const Movelog& ml)
     {
-      lock_guard < mutex > locker(_mu);
+      lock_guard < mutex > locker(static_mutex);
       if (_is_open)
       {
         stringstream ss;
-        ss << ml << endl;
+        ss << ml;
         _os << iso_8859_1_to_utf8(ss.str()) << flush;
       }
       return *this;
@@ -190,25 +217,33 @@ class Shared_ostream {
                        uint64_t nsec_start,
                        int search_level,
                        const Move& best_move,
-                       float score);
+                       float score)
+    {
+      lock_guard < mutex > locker(static_mutex);
+      uint64_t timediff = (nsec_stop - nsec_start);
+      // Log the time it took;
+      string s = "time spent by C2 on search level " + to_string(search_level) + " " + to_string(timediff/1.0e6) +
+          " " + best_move.bestmove_engine_style() + " score = " + to_string(score);
+      _os << iso_8859_1_to_utf8(s) << "\n";
+    }
 
     // Method for a string which is already UTF-8 coded.
     void write_UTF8_string(string s)
     {
-      lock_guard < mutex > locker(_mu);
+      lock_guard < mutex > locker(static_mutex);
       if (_is_open)
         _os << s << flush;
     }
 
     void write_config_params(const Config_params& params)
     {
-      lock_guard < mutex > locker(_mu);
+      lock_guard < mutex > locker(static_mutex);
       if (_is_open)
       {
-        _os << endl << iso_8859_1_to_utf8("Configuration paramaers:") << endl;
+        _os << endl << iso_8859_1_to_utf8("Configuration parameters:") << endl;
         _os << iso_8859_1_to_utf8(params.get_params_string()) << endl;
       }
     }
 };
-} // namespace
+} // namespace C2_chess
 #endif

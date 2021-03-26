@@ -24,8 +24,8 @@ Game::Game(Config_params& config_params):
     _is_first_position(true), _move_log(), _chessboard(), _player1(playertype::human, col::white, _chessboard), _player2(playertype::computer, col::black, _chessboard), _moveno(1),
     _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
 {
-  _player[static_cast<int>(col::white)] = &_player1;
-  _player[static_cast<int>(col::black)] = &_player2;
+  _player[index(col::white)] = &_player1;
+  _player[index(col::black)] = &_player2;
   _chessboard.setup_pieces();
   _chessboard.init(_col_to_move);
   _chessboard.calculate_moves(_col_to_move);
@@ -36,8 +36,8 @@ Game::Game(col color, Config_params& config_params):
     _player2(playertype::computer, color == col::white ? col::black : col::white, _chessboard), _moveno(1),
     _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
 {
-  _player[static_cast<int>(color)] = &_player1;
-  _player[static_cast<int>(color == col::white ? col::black : col::white)] = &_player2;
+  _player[index(color)] = &_player1;
+  _player[index(color == col::white ? col::black : col::white)] = &_player2;
 }
 
 Game::Game(col color,
@@ -47,8 +47,8 @@ Game::Game(col color,
     _is_first_position(true), _move_log(), _chessboard(), _player1(pt1, color, _chessboard), _player2(pt2, color == col::white ? col::black : col::white, _chessboard), _moveno(1),
     _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
 {
-  _player[static_cast<int>(color)] = &_player1;
-  _player[static_cast<int>(color == col::white ? col::black : col::white)] = &_player2;
+  _player[index(color)] = &_player1;
+  _player[index(color == col::white ? col::black : col::white)] = &_player2;
 }
 
 Game::~Game()
@@ -129,9 +129,9 @@ ostream& Game::write_chessboard(ostream &os, outputtype ot, col from_perspective
 
 ostream& Game::write_diagram(ostream &os) const
 {
-  if (_player[static_cast<int>(col::white)]->get_type() == playertype::human)
+  if (_player[index(col::white)]->get_type() == playertype::human)
     _chessboard.write(os, outputtype::cmd_line_diagram, col::white) << endl;
-  else if (_player[static_cast<int>(col::black)]->get_type() == playertype::human)
+  else if (_player[index(col::black)]->get_type() == playertype::human)
     _chessboard.write(os, outputtype::cmd_line_diagram, col::black) << endl;
   else
     // The computer is playing itself
@@ -173,17 +173,19 @@ void Game::actions_after_a_move()
     _chessboard.set_mate(true);
     cmdline << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n" << "\n";
     logfile << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
+    _playing = false;
   }
   else if (evaluation == 0 && _chessboard.no_of_moves() == 0)
   {
     _chessboard.set_stalemate(true);
     cmdline << "1/2 - 1/2 draw by stalemate" << "\n";
     logfile << "1/2 - 1/2 draw by stalemate" << "\n";
+    _playing = false;
   }
   else // Normal position
   {
-    cmdline << "current postion evaluation: " << evaluation << "\n\n";
-    logfile << "current postion evaluation: " << evaluation << "\n\n";
+    cmdline << "current postion evaluation: " << evaluation << "\n";
+    logfile << "current postion evaluation: " << evaluation << "\n";
     // Update half-move coubter for the 50-moves-rule.
     Move last_move = _chessboard.get_last_move();
     if (last_move.get_take() || last_move.get_piece_type() == piecetype::Pawn)
@@ -194,56 +196,11 @@ void Game::actions_after_a_move()
     {
       cmdline << "1/2 - 1/2 draw by the fifty-move rule" << "\n";
       logfile << "1/2 - 1/2 draw by the fifty-move rule" << "\n";
+      _playing = false;
     }
   }
   // cmdline <<"Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
   // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
-}
-
-// This method is for the cmd-line interface only
-void Game::start()
-{
-  Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
-
-  logfile << "\nGame started\n";
-  logfile.write_config_params(_config_params);
-  cmdline << "\n" << "Game started" << "\n";
-  // Init the hash tag for the initial board-position to
-  // use in the Zobrist hash table.
-  // (also called transposition table)
-  init_board_hash_tag();
-  // Tell the engine that there are no time limits.
-  // The time it takes is defined by the max_searh_level
-  _chessboard.set_time_left(true);
-  const int max_search_level = 7;
-  _playing = true;
-  while (_playing)
-  {
-    uint64_t nsec_start = current_time.nanoseconds();
-    if (get_playertype(_col_to_move) == playertype::human)
-    {
-      write_diagram(cmdline);
-      cmdline << "Hashtag: " << _chessboard.get_hash_tag() << "\n";
-      cmdline << "Material evaluation: " << _chessboard.get_material_evaluation() << "\n";
-      if (_player[static_cast<int>(_col_to_move)]->make_a_move(_moveno, _score, max_search_level) != 0)
-      {
-        cmdline << "Stopped playing" << "\n";
-        _playing = false;
-      }
-      // Update the movelog of the game.
-      _move_log.into_as_last(new Move(_chessboard.get_last_move()));
-      actions_after_a_move();
-    }
-    else
-    {
-      // computer
-      engine_go(_config_params, "20000");
-    }
-    uint64_t timediff = current_time.nanoseconds() - nsec_start;
-    cmdline << "time spent thinking: " << timediff/1.0e9 << " seconds" << "\n";
-    logfile << "time spent thinking: " << timediff/1.0e9 << " seconds" << "\n";
-  }
 }
 
 Move Game::engine_go(const Config_params& config_params, const string& max_search_time)
@@ -289,10 +246,9 @@ Move Game::engine_go(const Config_params& config_params, const string& max_searc
     for (int i = 2; i <= max_search_level; i++)
     {
       uint64_t nsec_start = current_time.nanoseconds();
-      _chessboard.clear_hash();
 
       //bool test = (use_pruning == false || search_until_no_captures == true);
-      int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning, search_until_no_captures);
+      int move_index = _player[index(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning, search_until_no_captures);
       // Has the search on this level been aborted by time limit?
       if (move_index == -1)
       {
@@ -313,19 +269,20 @@ Move Game::engine_go(const Config_params& config_params, const string& max_searc
         else
         {
           // Time is out.
+          logfile << "Time is out!\n";
           if (i == 2)
           {
             // The search has been interrupted on lowest level.
             // No best move has been found at all, so just choose
             // the first move (TODO: Choose randomly maybe.)
-            logfile << "interrupted on level 2" << "\n";
+            logfile << i << "interrupted on level 2" << "\n";
             best_move_index = 0;
           }
         }
         break;
       }
       best_move_index = move_index;
-
+      _chessboard.clear_hash();
       uint64_t nsec_stop = current_time.nanoseconds();
       logfile.log_time_diff(nsec_stop, nsec_start, i, _chessboard.get_possible_move(best_move_index), _score);
     }
@@ -342,7 +299,7 @@ Move Game::engine_go(const Config_params& config_params, const string& max_searc
     _chessboard.set_time_left(true);
     int best_move_index = -1;
     uint64_t nsec_start = current_time.nanoseconds();
-    int move_index = _player[static_cast<int>(_col_to_move)]->find_best_move_index(_moveno, _score, max_search_level, use_pruning, search_until_no_captures);
+    int move_index = _player[index(_col_to_move)]->find_best_move_index(_moveno, _score, max_search_level, use_pruning, search_until_no_captures);
     if (move_index == -1)
     {
       // This happens when max_search_level has been set to 1.
@@ -360,6 +317,10 @@ Move Game::engine_go(const Config_params& config_params, const string& max_searc
     _chessboard.make_move(best_move_index, _moveno, _col_to_move);
     _move_log.into_as_last(new Move(_chessboard.get_last_move()));
   }
+
+  // Stop possibly running timer by setting time_left to false.
+  _chessboard.set_time_left(false);
+
   actions_after_a_move();
   return _chessboard.get_last_move();
 }
@@ -381,7 +342,7 @@ void Game::set_time_left(bool value)
 
 playertype Game::get_playertype(const col& color) const
 {
-  return _player[static_cast<int>(color)]->get_type();
+  return _player[index(color)]->get_type();
 }
 
 } // namespace C2_chess

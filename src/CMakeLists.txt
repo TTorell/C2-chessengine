@@ -32,6 +32,7 @@ set(SOURCE_FILES
     ${PROJECT_SOURCE_DIR}/shared_ostream.cpp
     ${PROJECT_SOURCE_DIR}/square.cpp
     ${PROJECT_SOURCE_DIR}/squarelist.cpp
+    ${PROJECT_SOURCE_DIR}/cmd_line.cpp
 )
 
 if(NOT CMAKE_BUILD_TYPE)

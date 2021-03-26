@@ -138,7 +138,7 @@ int Player::make_a_move(int &move_no, float &score, const int &max_search_level)
   }
 }
 
-int Player::find_best_move_index(int &move_no, float& score, const int &max_search_level, bool use_pruning, bool search_until_no_captures)
+int Player::find_best_move_index(int &move_no, float& score, const int max_search_level, bool use_pruning, bool search_until_no_captures)
 {
   // TODO: The playertype should of course have been set correctly
   // for a computer vs. computer game.
