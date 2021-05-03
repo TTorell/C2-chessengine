@@ -122,9 +122,9 @@ int C2_unit_test::main_test(ostream& os)
     }
     m = movelist2.next();
   }
-  os << movelist.in_list(m_to_find, &index_to_find) << endl;
+  os << movelist.in_list(*m_to_find, index_to_find) << endl;
   os << index_to_find << endl;
-  os << movelist.in_list(move1, &index_to_find) << endl;
+  os << movelist.in_list(*move1, index_to_find) << endl;
   os << index_to_find << endl;
 
   os << "###########################" << endl;

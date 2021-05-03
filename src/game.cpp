@@ -188,7 +188,7 @@ void Game::actions_after_a_move()
     logfile << "current postion evaluation: " << evaluation << "\n";
     // Update half-move coubter for the 50-moves-rule.
     Move last_move = _chessboard.get_last_move();
-    if (last_move.get_take() || last_move.get_piece_type() == piecetype::Pawn)
+    if (last_move.get_capture() || last_move.get_piece_type() == piecetype::Pawn)
       _half_move_counter = 0;
     else
       _half_move_counter++;
@@ -287,9 +287,6 @@ Move Game::engine_go(const Config_params& config_params, const string& max_searc
       logfile.log_time_diff(nsec_stop, nsec_start, i, _chessboard.get_possible_move(best_move_index), _score);
     }
     _chessboard.make_move(best_move_index, _moveno, _col_to_move);
-    // The _move_log only makes sense if playing from the command line,
-    // Or when the engine plays against itself ("play out position").
-    // In the normal case the engine only knows its own moves.
     _move_log.into_as_last(new Move(_chessboard.get_last_move()));
   }
   else
@@ -343,6 +340,53 @@ void Game::set_time_left(bool value)
 playertype Game::get_playertype(const col& color) const
 {
   return _player[index(color)]->get_type();
+}
+
+void Game::start_new_game(col col_to_move, int half_move_counter, int moveno)
+{
+  clear_move_log();
+  _col_to_move = col_to_move;
+  _half_move_counter = half_move_counter;  clear_move_log();
+  clear_move_log();
+  set_moveno(moveno);
+  set_move_log_col_to_start(col_to_move);
+  init();
+  init_board_hash_tag();
+  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  logfile << "\nNew Game started\n";
+  logfile << "----------------\n";
+  logfile << "moveno = " << moveno << "\n";
+  logfile.write_config_params(_config_params);
+  write_diagram(logfile) << "\n";
+}
+
+void Game::figure_out_last_move(const Board& new_position, col col_to_move, int half_move_counter, int moveno)
+{
+  // new_position.write(cout, outputtype::cmd_line_diagram, col_to_move);
+  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  Move m;
+  if (_chessboard.figure_out_last_move(new_position,m))
+  {
+    logfile << "Could not figure out last move, must be a new game." << "\n";
+    _chessboard = new_position;
+//    write_diagram(cout);
+    start_new_game(col_to_move, half_move_counter, moveno);
+  }
+  else // OK move could be found out
+  {
+    logfile << "Opponents move was " << m << "\n";
+    logfile << _chessboard.get_possible_moves() << "\n";
+    int moveindex = _chessboard.get_move_index(m);
+    if (moveindex == -1)
+    {
+      logfile << "Coldn't find index of " << m << "\n";
+      start_new_game(col_to_move, half_move_counter, moveno);
+      return;
+    }
+    _chessboard.make_move(moveindex, _moveno, _col_to_move);
+    _move_log.into_as_last(new Move(_chessboard.get_last_move()));
+    actions_after_a_move();
+  }
 }
 
 } // namespace C2_chess

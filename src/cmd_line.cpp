@@ -170,9 +170,9 @@ void Game::start()
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
 
-  logfile << "\nGame started\n\n";
+  logfile << "\nNew Game started\n\n";
   logfile.write_config_params(_config_params);
-  cmdline << "\n" << "Game started" << "\n";
+  cmdline << "\n" << "New Game started" << "\n";
   // Init the hash tag for the initial board-position to
   // use in the Zobrist hash transposition-table.
   init_board_hash_tag();
@@ -361,7 +361,7 @@ int Board::make_move(playertype player, int &move_no, col col_to_move)
     m.reset(new Move(from, to, pt, take, target_pt, en_passant, promotion, promotion_pt, check));
     // find index of move
     int move_index;
-    if (!_possible_moves.in_list(m.get(), &move_index))
+    if (!_possible_moves.in_list(m.get(), move_index))
     {
       continue;
     }
@@ -369,4 +369,126 @@ int Board::make_move(playertype player, int &move_no, col col_to_move)
     return make_move(move_index, move_no, col_to_move);
   } // while not read
 }
+
+ostream& Board::write_cmdline_style(ostream &os, outputtype wt, col from_perspective) const
+{
+  switch (wt)
+  {
+    case outputtype::debug:
+      os << "The latest move was: ";
+      os << _last_move << endl;
+      os << "Castling state is: " << _castling_state << endl;
+      os << "En passant square is: " << _en_passant_square << endl;
+      for (int fileindex = a; fileindex <= h; fileindex++)
+        for (int rankindex = 1; rankindex <= 8; rankindex++)
+          _file[fileindex][rankindex]->write_describing(os);
+      os << endl << "*** Possible moves ***" << endl;
+      for (int i = 0; i < _possible_moves.size(); i++)
+        os << *_possible_moves[i] << endl;
+      os << endl;
+      this->write(os, outputtype::cmd_line_diagram, col::white) << endl;
+      break;
+    case outputtype::cmd_line_diagram:
+      if (from_perspective == col::white)
+      {
+        os << "###################" << endl;
+        for (int i = 8; i >= 1; i--)
+        {
+          os << "#";
+          for (int j = a; j <= h; j++)
+          {
+            os << "|";
+            Piece *p = _file[j][i]->get_piece();
+            if (p)
+              p->write_diagram_style(os);
+            else
+              os << "-";
+          }
+          os << "|#" << " " << i << endl;
+        }
+        os << "###################" << endl;
+        os << "  a b c d e f g h " << endl;
+      }
+      else // From blacks point of view
+      {
+        os << "###################" << endl;
+        for (int i = 1; i <= 8; i++)
+        {
+          os << "#";
+          for (int j = h; j >= a; j--)
+          {
+            os << "|";
+            Piece *p = _file[j][i]->get_piece();
+            if (p)
+              p->write_diagram_style(os);
+            else
+              os << "-";
+          }
+          os << "|#" << " " << i << endl;
+        }
+        os << "###################" << endl;
+        os << "  h g f e d c b a " << endl;
+      }
+      break;
+    default:
+      os << "Sorry: Output type not implemented yet." << endl;
+  }
+  return os;
+}
+
+//bool Player::mate_in(const int& n, const Board& board, int k, int& make_move_no)
+//{
+//  cout << "Player::mate_in " << n << " k = " << k << "col_to_move = " << _colour << endl;
+//  bool mate1 = false;
+//  int i = 0;
+//  //cerr<<"board noofmoves"<<board.no_of_moves()<<endl;
+//  while ((i < board.no_of_moves()) && (!mate1))
+//  {
+//    int x = 3; // just a dummy in this case
+//    _b[k] = board;
+//    //if (k==0)
+//    //cout << "i=" << i << " k=" << k << endl;
+//    _b[k].make_move(i++, x, _colour, true);
+//    if ((_b[k].no_of_moves()))
+//    {
+//      //      cerr<<"bk no of moves "<<b[k].no_of_moves()<<endl;
+//      if (n > 1) //(k<(n-1))
+//      {
+//        bool mate2 = true;
+//        int j = 0;
+//        Board tempboard;
+//        while ((j < _b[k].no_of_moves()) && (mate2))
+//        {
+//          tempboard = _b[k];
+//          tempboard.make_move(j++, x, _other_col, true);
+//          if (!mate_in(n - 1, tempboard, k + 1, make_move_no))
+//            mate2 = false;
+//        }
+//        if (mate2)
+//          mate1 = true;
+//      }
+//    }
+//    else
+//    {
+//      if (_b[k].get_last_move().get_check())
+//      {
+//        mate1 = true;
+//        // cerr<<"OK*********"<<endl;
+//      }
+//      //         else
+//      //            cout << "stalemate" << endl;
+//    }
+//    //if (!mate1)
+//    //   b[k].clear();
+//  }
+//  //cerr<<"mate_in END "<<n<<endl;
+//  if (mate1 && (k == 0))
+//  {
+//    make_move_no = --i;
+//    //cerr<<"the move was number"<< i << endl;
+//  }
+//  return mate1;
+//}
+
+
 } // namespace C2_CHESS

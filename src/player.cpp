@@ -50,60 +50,6 @@ void Player::set_type(playertype t)
   _type = t;
 }
 
-//bool Player::mate_in(const int& n, const Board& board, int k, int& make_move_no)
-//{
-//  cout << "Player::mate_in " << n << " k = " << k << "col_to_move = " << _colour << endl;
-//  bool mate1 = false;
-//  int i = 0;
-//  //cerr<<"board noofmoves"<<board.no_of_moves()<<endl;
-//  while ((i < board.no_of_moves()) && (!mate1))
-//  {
-//    int x = 3; // just a dummy in this case
-//    _b[k] = board;
-//    //if (k==0)
-//    //cout << "i=" << i << " k=" << k << endl;
-//    _b[k].make_move(i++, x, _colour, true);
-//    if ((_b[k].no_of_moves()))
-//    {
-//      //      cerr<<"bk no of moves "<<b[k].no_of_moves()<<endl;
-//      if (n > 1) //(k<(n-1))
-//      {
-//        bool mate2 = true;
-//        int j = 0;
-//        Board tempboard;
-//        while ((j < _b[k].no_of_moves()) && (mate2))
-//        {
-//          tempboard = _b[k];
-//          tempboard.make_move(j++, x, _other_col, true);
-//          if (!mate_in(n - 1, tempboard, k + 1, make_move_no))
-//            mate2 = false;
-//        }
-//        if (mate2)
-//          mate1 = true;
-//      }
-//    }
-//    else
-//    {
-//      if (_b[k].get_last_move().get_check())
-//      {
-//        mate1 = true;
-//        // cerr<<"OK*********"<<endl;
-//      }
-//      //         else
-//      //            cout << "stalemate" << endl;
-//    }
-//    //if (!mate1)
-//    //   b[k].clear();
-//  }
-//  //cerr<<"mate_in END "<<n<<endl;
-//  if (mate1 && (k == 0))
-//  {
-//    make_move_no = --i;
-//    //cerr<<"the move was number"<< i << endl;
-//  }
-//  return mate1;
-//}
-
 int Player::make_a_move(int &move_no, float &score, const int &max_search_level)
 {
   if (_type == playertype::human)

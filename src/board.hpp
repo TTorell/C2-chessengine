@@ -38,7 +38,7 @@ class Board {
     int init(col col_to_move);
     float evaluate_position(col col_to_move, outputtype ot, int level) const;
     ostream& write(ostream& os, outputtype wt, col from_perspective) const;
-    Shared_ostream& write(Shared_ostream& os, outputtype wt, col from_perspective) const;
+    ostream& write_cmdline_style(ostream &os, outputtype wt, col from_perspective) const;
     ostream& write_possible_moves(ostream& os);
     void read_position(ifstream& positionfile, col& col_to_move);
     void calculate_moves(col col_to_move);
@@ -49,6 +49,7 @@ class Board {
     Board& operator[](int) const;
     void put_piece(Piece* const p, int file, int rank);
     Move get_possible_move(int index) const;
+    Movelist get_possible_moves() const;
     Move get_last_move() const
     {
       return _last_move;
@@ -97,6 +98,8 @@ class Board {
     void clear_hash();
     void init_material_evaluation();
     float get_material_evaluation();
+    int figure_out_last_move(const Board& new_position, Move& m);
+    int get_move_index(const Move& m) const;
   private:
     bool read_piece_type(piecetype& pt, char c) const;
     bool en_passant(Piece*, Square*) const;
@@ -122,7 +125,7 @@ class Board {
     void check_put_a_pawn_on_square(int file, int rank, col col_to_move);
     void check_rook_or_queen(Square* threat_square, Square* kings_square, col col_to_move);
     void check_bishop_or_queen(Square* threat_square, Square* kings_square, col col_to_move);
-    void check_if_threat_can_be_taken_en_passant(col col_to_move, Square* threat_square);
+    void check_if_threat_can_be_captured_en_passant(col col_to_move, Square* threat_square);
     void update_hash_tag_remove_en_passant_file();
     void update_hash_tag_en_passant_file(int fileindex);
     void update_hash_tag_change_color_to_move();

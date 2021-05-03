@@ -36,7 +36,7 @@ class Movelist
     void out(Move* const rubbish);
     int size() const;
     bool empty() const;
-    bool in_list(Move* m,int* index) const;
+    bool in_list(const Move& m,int& index) const;
     void clear();
     Move* operator[](int) const;
     virtual ostream& write(ostream& os) const;
@@ -73,11 +73,7 @@ class Movelog: public Movelist
       _col_to_start = color;
     }
 
-    void set_first_moveno(int moveno)
-    {
-      _first_moveno = moveno;
-    }
-
+    void set_first_moveno(int moveno);
     virtual ostream& write(ostream& os) const;
 };
 }

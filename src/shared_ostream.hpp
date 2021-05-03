@@ -8,12 +8,12 @@
 #include "movelist.hpp"
 #include "chessfuncs.hpp"
 #include "config_param.hpp"
+#include "pgn_info.hpp"
 
 using namespace std;
 
 namespace C2_chess
 {
-
 // I got tired of sending in the log-file as an
 // argument to every function which needed it.
 // and I didn't want to make it a global variable.
@@ -201,13 +201,49 @@ class Shared_ostream {
 //      return *this;
 //    }
 
+    Shared_ostream& operator<<(const Movelist& ml)
+    {
+      lock_guard < mutex > locker(static_mutex);
+      if (_is_open)
+      {
+        stringstream ss;
+        ml.write(ss);
+        _os << iso_8859_1_to_utf8(ss.str()) << flush;
+      }
+      return *this;
+    }
+
     Shared_ostream& operator<<(const Movelog& ml)
     {
       lock_guard < mutex > locker(static_mutex);
       if (_is_open)
       {
         stringstream ss;
-        ss << ml;
+        ml.write(ss);
+        _os << iso_8859_1_to_utf8(ss.str()) << flush;
+      }
+      return *this;
+    }
+
+    Shared_ostream& operator<<(const PGN_info& PGN_info)
+    {
+      lock_guard < mutex > locker(static_mutex);
+      if (_is_open)
+      {
+        stringstream ss;
+        ss << PGN_info;
+        _os << iso_8859_1_to_utf8(ss.str()) << flush;
+      }
+      return *this;
+    }
+
+    Shared_ostream& operator<<(const Move& m)
+    {
+      lock_guard < mutex > locker(static_mutex);
+      if (_is_open)
+      {
+        stringstream ss;
+        ss << m;
         _os << iso_8859_1_to_utf8(ss.str()) << flush;
       }
       return *this;

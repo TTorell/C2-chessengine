@@ -1,5 +1,5 @@
 /*
- * chesstypes.cpp
+ * chessfuncs.cpp
  *
  *  Created on: 15 feb. 2019
  *      Author: Torsten
@@ -7,6 +7,7 @@
  *  Contains some useful functions
  */
 #include <iostream>
+#include <iomanip>
 #include <regex>
 #include "move.hpp"
 #include <cstdlib>
@@ -33,6 +34,32 @@ using std::cerr;
 using std::string;
 using std::regex;
 using std::smatch;
+
+col other_color(col& c)
+{
+  return (c == col::white) ? col::black : col::white;
+}
+
+col& operator++(col& c)
+{
+  return c = (c == col::white) ? col::black : col::white;
+}
+
+col col_from_string(const string& s)
+{
+  if (s == "w")
+    return col::white;
+  else
+    return col::black;
+}
+
+string get_logfile_name()
+{
+  auto time = std::time(nullptr);
+  stringstream ss;
+  ss << "C2_log_" << put_time(localtime(&time), "%F-%T") << ".txt"; // ISO 8601 format.
+  return ss.str();
+}
 
 #ifdef linux
 ostream& print_backtrace(ostream& os)

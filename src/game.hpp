@@ -61,6 +61,8 @@ class Game {
     ostream& write_diagram(ostream& os) const;
     Shared_ostream& write_diagram(Shared_ostream& sos) const;
     void play_on_cmd_line(Config_params& config_params);
+    void figure_out_last_move(const Board& new_position, col col_to_move, int half_move_counter, int moveno);
+    void start_new_game(col col_to_move, int half_move_counter, int move_no);
 };
 } // namespace C2_chess
 #endif

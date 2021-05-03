@@ -15,7 +15,7 @@ class Move
     Position _from;
     Position _to;
     piecetype _piece_type;
-    bool _take;
+    bool _capture;
     piecetype _target_piece_type;
     bool _en_passant;
     bool _promotion;
@@ -30,7 +30,7 @@ class Move
     Move(const Square* from,
          const Square* to,
          piecetype piece_type = piecetype::Pawn,
-         bool take = false,
+         bool capture = false,
          piecetype target_pt = piecetype::Pawn,
          bool ep = false,
          bool promotion = false,
@@ -42,7 +42,7 @@ class Move
     Move(const Position& from,
          const Position& to,
          piecetype piece_type = piecetype::Pawn,
-         bool take = false,
+         bool capture = false,
          piecetype target_pt = piecetype::Pawn,
          bool ep = false,
          bool promotion = false,
@@ -83,9 +83,9 @@ class Move
     {
       return _piece_type;
     }
-    bool get_take() const
+    bool get_capture() const
     {
-      return _take;
+      return _capture;
     }
     piecetype get_target_piece_type() const
     {
@@ -123,13 +123,13 @@ class Move
     {
       _to = p;
     }
-    void set_piece_type(piecetype pt)
+    void set_piecetype(piecetype pt)
     {
       _piece_type = pt;
     }
-    void set_take(bool t)
+    void set_capture(bool t)
     {
-      _take = t;
+      _capture = t;
     }
     void set_target_piece_type(piecetype pt)
     {

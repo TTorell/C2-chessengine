@@ -5,7 +5,7 @@
 #include "movelist.hpp"
 #include "move.hpp"
 #include "chessfuncs.hpp"
-
+#include "shared_ostream.hpp"
 namespace C2_chess
 {
 
@@ -71,7 +71,7 @@ Move* Movelist::next() const
 
 void Movelist::into(Move* const newmove)
 {
-  if (newmove->get_take())
+  if (newmove->get_capture())
     _list.push_front(new Move(newmove));
   else
     _list.push_back(new Move(newmove));
@@ -123,14 +123,14 @@ void Movelist::clear()
   _listindex = 0;
 }
 
-bool Movelist::in_list(Move* m, int* index) const
+bool Movelist::in_list(const Move& m, int& index) const
 {
-  for (*index = 0; *index < (int) _list.size(); (*index)++)
+  for (index = 0; index < (int)_list.size(); index++)
   {
-    if (*_list[*index] == m)
+    if (*_list[index] == m)
       return true;
   }
-  *index = -1;
+  index = -1;
   return false;
 }
 
@@ -149,6 +149,13 @@ Move* Movelist::operator[](int i) const
       cout << *(Move*) (it) << endl;
     exit(0);
   }
+}
+
+void Movelog::set_first_moveno(int moveno)
+{
+  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  logfile << "Setting first_moveno to " << moveno << "\n";
+  _first_moveno = moveno;
 }
 
 ostream & Movelist::write(ostream & os) const

@@ -9,14 +9,14 @@ namespace C2_chess
 {
 
     Move::Move() :
-        _from(f, 6), _to(g, 8), _piece_type(piecetype::Knight), _take(false), _target_piece_type(piecetype::Pawn), _en_passant(false), _promotion(false), _promotion_piece_type(piecetype::Undefined), _check(false),
+        _from(f, 6), _to(g, 8), _piece_type(piecetype::Knight), _capture(false), _target_piece_type(piecetype::Pawn), _en_passant(false), _promotion(false), _promotion_piece_type(piecetype::Undefined), _check(false),
     _mate(false), _stalemate(false)
 {
 }
 
-Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecetype target_pt, bool ep, bool promotion, piecetype promotion_pt, bool check, bool mate,
+Move::Move(const Square* from, const Square* to, piecetype pt, bool capture, piecetype target_pt, bool ep, bool promotion, piecetype promotion_pt, bool check, bool mate,
            bool stalemate) :
-    _from(from->get_position()), _to(to->get_position()), _piece_type(pt), _take(take), _target_piece_type(target_pt), _en_passant(ep), _promotion(promotion),
+    _from(from->get_position()), _to(to->get_position()), _piece_type(pt), _capture(capture), _target_piece_type(target_pt), _en_passant(ep), _promotion(promotion),
     _promotion_piece_type(promotion_pt), _check(check), _mate(mate), _stalemate(stalemate)
 {
   Piece* p = from->get_piece();
@@ -34,7 +34,7 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
               __func__,
               __LINE__,
               *this);
-    _take = true;
+    _capture = true;
     _target_piece_type = p2->get_type();
     _en_passant = false;
     if (_piece_type == piecetype::Pawn)
@@ -67,7 +67,7 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
                     __func__,
                     __LINE__,
                     *this);
-          _take = false;
+          _capture = false;
           _promotion = false;
           _promotion_piece_type = piecetype::Undefined;
         }
@@ -82,11 +82,11 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
             _promotion = true;
           if (file_diff == 0)
           {
-            _take = false;
+            _capture = false;
             _en_passant = false;
             _target_piece_type = piecetype::Pawn;
           }
-          else //rank_diff==1 and file_diff==1 and not a take
+          else //rank_diff==1 and file_diff==1 and not a capture
           {
             require_m(p->get_color() == col::white ? _from.get_rank() == 5 : _from.get_rank() == 4,
             __FILE__,
@@ -94,7 +94,7 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
                       __LINE__,
                       *this);
             _en_passant = true;
-            _take = true;
+            _capture = true;
             _target_piece_type = piecetype::Pawn;
             _promotion = false;
           }
@@ -201,9 +201,9 @@ Move::Move(const Square* from, const Square* to, piecetype pt, bool take, piecet
   }
 }
 
-Move::Move(const Position& from, const Position& to, piecetype pt, bool take, piecetype target_pt, bool ep, bool promotion, piecetype promotion_pt, bool is_check, bool is_mate,
+Move::Move(const Position& from, const Position& to, piecetype pt, bool capture, piecetype target_pt, bool ep, bool promotion, piecetype promotion_pt, bool is_check, bool is_mate,
            bool is_stalemate) :
-    _from(from), _to(to), _piece_type(pt), _take(take), _target_piece_type(target_pt), _en_passant(ep), _promotion(promotion), _promotion_piece_type(promotion_pt),
+    _from(from), _to(to), _piece_type(pt), _capture(capture), _target_piece_type(target_pt), _en_passant(ep), _promotion(promotion), _promotion_piece_type(promotion_pt),
     _check(is_check), _mate(is_mate), _stalemate(is_stalemate)
 {
   //int file_diff=abs(_to.get_file()-_from.get_file());
@@ -211,13 +211,13 @@ Move::Move(const Position& from, const Position& to, piecetype pt, bool take, pi
 }
 
 Move::Move(const Move& m) :
-    _from(m._from), _to(m._to), _piece_type(m._piece_type), _take(m._take), _target_piece_type(m._target_piece_type), _en_passant(m._en_passant), _promotion(m._promotion),
+    _from(m._from), _to(m._to), _piece_type(m._piece_type), _capture(m._capture), _target_piece_type(m._target_piece_type), _en_passant(m._en_passant), _promotion(m._promotion),
     _promotion_piece_type(m._promotion_piece_type), _check(m._check), _mate(m._mate), _stalemate(m._stalemate)
 {
 }
 
 Move::Move(Move* const m) :
-    _from((*m)._from), _to((*m)._to), _piece_type((*m)._piece_type), _take((*m)._take), _target_piece_type((*m)._target_piece_type), _en_passant((*m)._en_passant),
+    _from((*m)._from), _to((*m)._to), _piece_type((*m)._piece_type), _capture((*m)._capture), _target_piece_type((*m)._target_piece_type), _en_passant((*m)._en_passant),
     _promotion((*m)._promotion), _promotion_piece_type((*m)._promotion_piece_type), _check((*m)._check), _mate((*m)._mate), _stalemate((*m)._stalemate)
 {
 }
@@ -236,7 +236,7 @@ Move& Move::operator=(const Move& m)
   _from = m._from;
   _to = m._to;
   _piece_type = m._piece_type;
-  _take = m._take;
+  _capture = m._capture;
   _target_piece_type = m._target_piece_type;
   _en_passant = m._en_passant;
   _promotion = m._promotion;
@@ -311,7 +311,7 @@ ostream& operator<<(ostream& os, const Move& m)
       break;
   }
   os << m._from;
-  if (m._take)
+  if (m._capture)
     os << "x";
   else
     os << "-";

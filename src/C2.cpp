@@ -13,25 +13,11 @@
 #include "game.hpp"
 #include "position_reader.hpp"
 
-
-
-
-
 using namespace std;
 using namespace std::chrono;
 
 namespace C2_chess
 {
-
-
-string get_logfile_name()
-{
-  auto time = std::time(nullptr);
-  stringstream ss;
-  ss << "C2_log_" << put_time(localtime(&time), "%F-%T") << ".txt"; // ISO 8601 format.
-  cout << ss.str() << endl;
-  return ss.str();
-}
 
 // This Method e.g. splits up commands from the GUI into tokens (words)
 vector<string> split(const string &s, char delim)
@@ -82,7 +68,7 @@ std::atomic<bool> xtime_left(false);
 // Method for parsing input-commands from a chess-GUI (some commands are taken care of already in ḿain().
 int parse_command(const string& command, Circular_fifo& output_buffer, Game& game, Config_params& config_params, vector<string>& returned_tokens)
 {
-  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  //Shared_ostream& logfile = *(Shared_ostream::get_instance());
 
   // We know at this point that the command string isn't empty
   vector<string> tokens = split(command, ' ');
@@ -136,15 +122,13 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Game& gam
     FEN_reader reader(game);
     // Discard the first 13 characters, "position fen ", from the command.
     string fen_string = command.substr(13, command.size() - 12);
-    // Remove possible pieces and information from the main chessboard.
-    game.clear_chessboard();
     // The information about the new requested position comes in
     // Forsyth–Edwards Notation.
     // Read the FEN-coded position from the GUI command and set up
     // the board accordingly.
     reader.parse_FEN_string(fen_string);
     // print the position to the logfile
-    game.write_diagram(logfile) << "\n";
+    // game.write_diagram(logfile) << "\n";
   }
   // To implement go I think I needed some variables not available here,
   // So I took care of it in main instead.
@@ -277,7 +261,6 @@ int main(int argc, char* argv[])
     play_on_cmd_line(config_params);
     return 0;
   }
-
   // Apparently it's not a cmd-line game the user wants,
   // to begin with at least. There's another way of entering
   // command-line mode by sending "cmd" to the running chess-
@@ -338,9 +321,9 @@ int main(int argc, char* argv[])
         // to clean up before starting a new game. Maybe we could
         // close the logfile and start a new one, but for now everything
         // is logged until the GUI closes the engine down by a quit command.
-        game.clear_move_log();
-        logfile << "New game started\n";
-        logfile.write_config_params(config_params);
+//        game.clear_move_log();
+//        logfile << "New game started\n";
+//        logfile.write_config_params(config_params);
        continue;
       }
 
@@ -352,7 +335,7 @@ int main(int argc, char* argv[])
       {
         // Init the main chess board with preserved position
         // and calculate all possible moves.
-        game.init();
+//        game.init();
 
         // logfile << "go command_tokens:" << "\n";
         // for (string token:command_tokens)

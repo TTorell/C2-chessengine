@@ -132,11 +132,18 @@ void Board::setup_pieces()
 void Board::put_piece(Piece *const p, int file, int rank)
 {
   _file[file][rank]->contain_piece(p);
+  if (p->get_type() == piecetype::King)
+    _king_square[index(p->get_color())] = _file[file][rank];
 }
 
 Move Board::get_possible_move(int index) const
 {
   return *_possible_moves[index];
+}
+
+Movelist Board::get_possible_moves() const
+{
+  return _possible_moves;
 }
 
 bool Board::read_piece_type(piecetype &pt, char ch) const
@@ -230,14 +237,6 @@ ostream& Board::write(ostream &os, outputtype wt, col from_perspective) const
   return os;
 }
 
-Shared_ostream& Board::write(Shared_ostream &os, outputtype wt, col from_perspective) const
-{
-  stringstream ss;
-  write(ss, wt, from_perspective);
-  os << ss.str();
-  return os;
-}
-
 ostream& Board::write_possible_moves(ostream &os)
 {
   os << _possible_moves << endl;
@@ -257,7 +256,7 @@ void Board::clear(bool remove_pieces)
 
 void Board::init_castling(col this_col)
 {
-  col other_col = this_col == col::white ? col::black : col::white;
+  col other_col = other_color(this_col);
   int one_or_eight = (this_col == col::white ? 1 : 8);
 
   if (_king_square[index(this_col)]->count_threats(other_col) == 0)
@@ -373,7 +372,7 @@ int Board::init(col col_to_move)
   // Attention! no clear is made here.
   //  uint64_t nsec_start = current_time.nanoseconds();
   bool pieces_found = false;
-  col other_col = col_to_move == col::white ? col::black : col::white;
+  col other_col = other_color(col_to_move);
   int tf;
   int tr;
   bool stop;
@@ -507,6 +506,10 @@ int Board::init(col col_to_move)
   //  uint64_t nsec_stop = current_time.nanoseconds();
   //  int timediff = nsec_stop - nsec_start;
   //  logfile << "init_nsecs = " << timediff << "\n";
+
+  // Look for pinned pieces by stepping from the king
+  // out in all directions and examining possible
+  // pieces..
   Square *king_square = _king_square[index(col_to_move)];
   int king_file_index = king_square->get_fileindex();
   int king_rank_index = king_square->get_rankindex();
@@ -520,17 +523,19 @@ int Board::init(col col_to_move)
     {
       if (p->is(other_col))
       {
+        // Looking for Bishop or queen on the diagonal.
+        // If a pawn is checking the king there can't
+        // be anything between the king and the pawn.
         if (p->is(piecetype::Bishop) || p->is(piecetype::Queen))
-        {
-          if (own_piece_square)
+          if (own_piece_square) // OK, found a pinned piece.
             fix_bound_piece_diagonal(king_square, own_piece_square, _file[tf][tr]);
-          break; // Even if it's not a Bishop or a queen
-        }
+          // We could detect check here with an else case, If we find any need for it.
+        break; // Stop if opponents piece is of another type than Queen or Bishop.
       }
       else //p is of col_to_move
       {
         if (own_piece_square) // Two own pieces between King and Threat
-          break;
+          break; // None of them can be pinned.
         own_piece_square = _file[tf][tr]; // Remember own piece square and continue
       }
     }
@@ -547,11 +552,9 @@ int Board::init(col col_to_move)
       if (p->is(other_col))
       {
         if (p->is(piecetype::Bishop) || p->is(piecetype::Queen))
-        {
           if (own_piece_square)
             fix_bound_piece_diagonal(king_square, own_piece_square, _file[tf][tr]);
-          break; // Even if it's not a Bishop or a Queen
-        }
+        break;
       }
       else //p is of col_to_move
       {
@@ -574,11 +577,9 @@ int Board::init(col col_to_move)
       if (p->is(other_col))
       {
         if (p->is(piecetype::Bishop) || p->is(piecetype::Queen))
-        {
           if (own_piece_square)
             fix_bound_piece_diagonal(king_square, own_piece_square, _file[tf][tr]);
-          break; // Even if it's not a Bishop or a Queen
-        }
+        break;
       }
       else //p is of col_to_move
       {
@@ -600,11 +601,9 @@ int Board::init(col col_to_move)
       if (p->is(other_col))
       {
         if (p->is(piecetype::Bishop) || p->is(piecetype::Queen))
-        {
           if (own_piece_square)
             fix_bound_piece_diagonal(king_square, own_piece_square, _file[tf][tr]);
-          break; // Even if it's not a Bishop or a Queen
-        }
+        break;
       }
       else //p is of col_to_move
       {
@@ -709,7 +708,7 @@ int Board::init(col col_to_move)
 
   // Fix the Kings forbidden moves
   // Moves to an empty square that's threatened by any of the opponents
-  // pieces are not allowed, and it's not allowed for the king to take
+  // pieces are not allowed, and it's not allowed for the king to capture
   // a piece if it's protected by another one of the opponents pieces.
   // Such moves will be removed from the move-list of the king_square
   Square *temp_square;
@@ -841,7 +840,7 @@ void Board::fix_bound_piece_file(Square *own_piece_square, const Square *threat_
   // all moves make the piece step out of the file.
   // For Rooks and Queens there are some moves which leaves
   // the piece on the original file.
-  // For pawns all moves except "takes" will be allowed.
+  // For pawns all moves except "captures" will be allowed.
   for (Square *temp_square = own_piece_square->first_move(); temp_square != 0; temp_square = own_piece_square->next_move())
   {
     switch (pt)
@@ -923,9 +922,8 @@ void Board::fix_bound_piece_diagonal(const Square *king_square, Square *own_piec
   // For Rooks and Nights no moves are allowed, because
   // all moves make the piece step out of the diagonal.
   // For Bishops and Queen there are some moves which leaves
-  // the piece on the original diagonal.      case Knight:
-
-  // For pawns there might be the possibility to take the
+  // the piece on the original diagonal.
+  // For pawns there might be the possibility to capture the
   // threatening piece and stay on the same diagonal
   for (Square *temp_square = own_piece_square->first_move(); temp_square != 0; temp_square = own_piece_square->next_move())
   {
@@ -1222,7 +1220,7 @@ void Board::check_rook_or_queen(Square *threat_square, Square *kings_square, col
   }
 }
 
-void Board::check_if_threat_can_be_taken_en_passant(col col_to_move, Square *threat_square)
+void Board::check_if_threat_can_be_captured_en_passant(col col_to_move, Square *threat_square)
 {
   unique_ptr<Move> m;
   int rank_increment = (col_to_move == col::white) ? 1 : -1;
@@ -1268,7 +1266,7 @@ void Board::check_if_threat_can_be_taken_en_passant(col col_to_move, Square *thr
 void Board::calculate_moves(col col_to_move)
 {
 //  uint64_t nsec_start = current_time.nanoseconds();
-  col other_col = col_to_move == col::white ? col::black : col::white;
+  col other_col = other_color(col_to_move);
   _possible_moves.clear();
 
   Square *temp_square;
@@ -1303,8 +1301,8 @@ void Board::calculate_moves(col col_to_move)
         cerr << "no-piece error in check_moves()\n";
       }
 
-      // The piece that checks the king maybe can be taken.
-      // If it is the king that can take it, that was covered
+      // The piece that checks the king maybe can be captured.
+      // If it is the king that can capture it, that was covered
       // when the king's moves were calculated
       Square *tmp_square = threat_square->first_threat();
       while (tmp_square)
@@ -1323,7 +1321,7 @@ void Board::calculate_moves(col col_to_move)
         tmp_square = threat_square->next_threat();
       }
 
-      // Maybe the threatening piece is a pawn and can be taken en passant.
+      // Maybe the threatening piece is a pawn and can be captured en passant.
       if (_en_passant_square)
       {
         switch (col_to_move)
@@ -1331,13 +1329,13 @@ void Board::calculate_moves(col col_to_move)
           case col::white:
             if (kings_square->get_rankindex() == 4 && threat_piece->is(piecetype::Pawn)) // we know it's black
             {
-              check_if_threat_can_be_taken_en_passant(col_to_move, threat_square);
+              check_if_threat_can_be_captured_en_passant(col_to_move, threat_square);
             }
             break;
           case col::black:
             if (kings_square->get_rankindex() == 5 && threat_piece->is(piecetype::Pawn)) // we know it's col::white
             {
-              check_if_threat_can_be_taken_en_passant(col_to_move, threat_square);
+              check_if_threat_can_be_captured_en_passant(col_to_move, threat_square);
             }
             break;
           default:
@@ -1371,7 +1369,7 @@ void Board::calculate_moves(col col_to_move)
     calculate_moves_K_not_threatened(col_to_move);
   }
 
-// ATTENTION! WIll THIS WORK? into_as_first if promotion is a take.
+// ATTENTION! WIll THIS WORK? into_as_first if promotion is a capture.
 // What about _list_index in into as first? increment?
 
 // Duplicate "promotion moves" for all possible promotions (Q,R,B,N)
@@ -1396,13 +1394,13 @@ void Board::calculate_moves(col col_to_move)
 
 void Board::fix_promotion_move(Move *m)
 {
-  unique_ptr<Move> um(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_take(), m->get_target_piece_type(), false, true, piecetype::Queen, false));
+  unique_ptr<Move> um(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_capture(), m->get_target_piece_type(), false, true, piecetype::Queen, false));
   _possible_moves.into(um.get());
-  um.reset(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_take(), m->get_target_piece_type(), false, true, piecetype::Rook, false));
+  um.reset(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_capture(), m->get_target_piece_type(), false, true, piecetype::Rook, false));
   _possible_moves.into(um.get());
-  um.reset(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_take(), m->get_target_piece_type(), false, true, piecetype::Bishop, false));
+  um.reset(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_capture(), m->get_target_piece_type(), false, true, piecetype::Bishop, false));
   _possible_moves.into(um.get());
-  um.reset(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_take(), m->get_target_piece_type(), false, true, piecetype::Knight, false));
+  um.reset(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_capture(), m->get_target_piece_type(), false, true, piecetype::Knight, false));
   _possible_moves.into(um.get());
 }
 
@@ -1482,7 +1480,7 @@ void Board::update_hash_tag(int fileindex, int rankindex, col color, piecetype t
 // First make a move, then init the board and possible moves for other_col
 int Board::make_move(int i, int &move_no, col col_to_move)
 {
-  col other_col = col_to_move == col::white ? col::black : col::white;
+  col other_col = other_color(col_to_move);
   Move *m = _possible_moves[i];
   if (m)
   {
@@ -1499,7 +1497,7 @@ int Board::make_move(int i, int &move_no, col col_to_move)
       {
         update_hash_tag(to_square);
         update_material_evaluation_capture(other_col, to_square->get_piece()->get_type());
-        m->set_take(true);
+        m->set_capture(true);
       }
       to_square->contain_piece(p);
       update_hash_tag(to_square);
@@ -1876,22 +1874,22 @@ float Board::max_for_testing(int level, int move_no, float alpha, float beta, in
   best_move_index = -1;
   level++;
 //  cmdline << "level = " << level << ":" << _last_move << "\n";
-  if (is_end_node() || (level >= max_search_level && !_last_move.get_take()))
+  if (is_end_node() || (level >= max_search_level && !_last_move.get_capture()))
   {
     return evaluate_position(col::black, outputtype::silent, level);
   }
   else
   {
-    bool takes = false;
+    bool captures = false;
     for (int i = 0; i < _possible_moves.size(); i++)
     {
       // Continue after max_search_level, but only if the move is a capture.
       if (search_until_no_captures)
       {
-          if (level >= max_search_level && !_possible_moves[i]->get_take())
+          if (level >= max_search_level && !_possible_moves[i]->get_capture())
             continue;
           else
-            takes = true;
+            captures = true;
       }
       Board::level_boards[level] = *this;
       level_boards[level].make_move(i, move_no, col::white);
@@ -1921,7 +1919,7 @@ float Board::max_for_testing(int level, int move_no, float alpha, float beta, in
     }
     if (search_until_no_captures)
     {
-      if (!takes) // There were no captures in the possible move lisst
+      if (!captures) // There were no captures in the possible move lisst
         return evaluate_position(col::black, outputtype::silent, level);
     }
     return max_value;
@@ -1938,22 +1936,22 @@ float Board::min_for_testing(int level, int move_no, float alpha, float beta, in
   best_move_index = -1;
   level++;
   //  cmdline << "level = " << level << ":" << _last_move << "\n";
-  if (is_end_node() || (level >= max_search_level && !_last_move.get_take()))
+  if (is_end_node() || (level >= max_search_level && !_last_move.get_capture()))
   {
     return evaluate_position(col::black, outputtype::silent, level);
   }
   else
   {
-    bool takes = false;
+    bool captures = false;
     for (int i = 0; i < _possible_moves.size(); i++)
     {
       // Continue after max_search_level, but only if the move is a capture.
       if (search_until_no_captures)
       {
-        if (level >= max_search_level && !_possible_moves[i]->get_take())
+        if (level >= max_search_level && !_possible_moves[i]->get_capture())
           continue;
         else
-          takes = true;
+          captures = true;
       }
       // save current board in list
       level_boards[level] = *this;
@@ -1984,7 +1982,7 @@ float Board::min_for_testing(int level, int move_no, float alpha, float beta, in
     }
     if (search_until_no_captures)
     {
-      if (!takes)
+      if (!captures)
         return evaluate_position(col::black, outputtype::silent, level);
     }
     return min_value;
@@ -2304,6 +2302,65 @@ void Board::update_material_evaluation_promotion(const col& color, const piecety
 float Board::get_material_evaluation()
 {
   return _material_evaluation;
+}
+
+int Board::figure_out_last_move(const Board& new_position, Move& m)
+{
+  // TODO: 0-0, 0-0-0 and e.p
+  Piece *old_p, *new_p;
+  bool from_has_been_set = false;
+  bool to_has_been_set = false;
+  for (int i = a; i <= h; i++)
+  {
+    for (int j = 1; j <= 8; j++)
+    {
+      // cout << _file[i][j]->get_position() << endl;
+      old_p = _file[i][j]->get_piece();
+      new_p = new_position._file[i][j]->get_piece();
+      if (!old_p)
+      {
+        if (!new_p) // both squares empty
+          continue;
+        if (to_has_been_set)
+          return -1;
+        m.set_to(new_position._file[i][j]->get_position());
+        m.set_piecetype(new_p->get_type());
+        to_has_been_set = true;
+        continue;
+      }
+      // Here we know that old_p contains a piece
+      if (!new_p) // Empty square which wasn't empty before
+      {
+        // Empty square which wasn't empty before
+        if (from_has_been_set)
+          return -1;
+        m.set_from(new_position._file[i][j]->get_position());
+        from_has_been_set = true;
+        continue;
+      }
+      // Here we know that both pointers contain a piece
+      if (*old_p == *new_p) // same color and piecetype
+        continue;
+      // This must be a capture
+      if (to_has_been_set)
+        return -1;
+      m.set_to(new_position._file[i][j]->get_position());
+      m.set_piecetype(new_p->get_type());
+      to_has_been_set = true;
+      m.set_capture(true);
+      continue;
+    }
+  }
+  if (!from_has_been_set || !to_has_been_set)
+    return -1;
+  return 0;
+}
+
+int Board::get_move_index(const Move& m) const
+{
+  int index;
+  _possible_moves.in_list(m, index);
+  return index;
 }
 
 } // namespace C2_chess

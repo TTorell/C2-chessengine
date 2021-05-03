@@ -35,10 +35,12 @@ enum class piecetype {
   Pawn,
   Undefined
 };
+
 enum class col {
   white = 0,
   black = 1
 };
+
 enum class playertype {
   computer,
   human
