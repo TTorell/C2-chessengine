@@ -17,7 +17,7 @@
 #include "shared_ostream.hpp"
 #include "chesstypes.hpp"
 
-#ifdef linux
+#ifdef __linux
 extern "C"
 {
 #include <sys/wait.h>
@@ -61,7 +61,7 @@ string get_logfile_name()
   return ss.str();
 }
 
-#ifdef linux
+#ifdef __linux
 ostream& print_backtrace(ostream& os)
 {
     char pid_buf[30];
@@ -89,7 +89,7 @@ void require(bool bo, string file, string method, int line)
   if (!bo)
   {
     cerr << "Requirement error in " << file << ":" << method << " at line " << line << endl;
-#ifdef linux
+#ifdef __linux
     print_backtrace(cerr) << endl;
 #endif // linux
 
@@ -103,7 +103,7 @@ void require_m(bool bo, string file, string method, int line, const Move &m)
   {
     cerr << "Move:: requirement error in " << file << ":" << method << " at line " << line << endl;
     cerr << "Move = " << m << endl << endl;
-#ifdef linux
+#ifdef __linux
     print_backtrace(cerr) << endl;
 #endif // linux
 
@@ -113,7 +113,7 @@ void require_m(bool bo, string file, string method, int line, const Move &m)
 
 // Run a command and return it's output as a string
 
-#ifdef linux
+#ifdef __linux
 #define open_pipe popen
 #define close_pipe pclose
 #else

@@ -1,19 +1,12 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.20)
 
-# To have a look at the CMake variables:
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
-
-set( CMAKE_VERBOSE_MAKEFILE on )
+set( CMAKE_VERBOSE_MAKEFILE ON )
 
 # set the project name
 project(C2 VERSION 1.0)
 
 # specify the C++ standard
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(SOURCE_FILES
@@ -84,4 +77,10 @@ target_include_directories(C2 PUBLIC
                            "${PROJECT_BINARY_DIR}"
                            )
 
+# To have a look at the CMake variables:
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
 

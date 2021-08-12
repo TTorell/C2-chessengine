@@ -76,7 +76,6 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Game& gam
   {
     output_buffer.put("id name C2 experimental");
     output_buffer.put("id author Torsten Torell");
-#include <iomanip>
     // Tell GUI which parameters are configurable.
     for (auto it : config_params.get_map())
     {

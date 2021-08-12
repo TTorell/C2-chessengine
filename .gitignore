@@ -1,6 +1,7 @@
 *.[ao]
 .cproject
 .project
+src/.project
 .settings
 .tracecompass/
 .vs
