@@ -12,10 +12,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(SOURCE_FILES
     ${PROJECT_SOURCE_DIR}/chessfuncs.cpp
     ${PROJECT_SOURCE_DIR}/board.cpp
-    ${PROJECT_SOURCE_DIR}/C2_untittest.cpp
     ${PROJECT_SOURCE_DIR}/castling_state.cpp
     ${PROJECT_SOURCE_DIR}/game.cpp
-    ${PROJECT_SOURCE_DIR}/mate_in.cpp
     ${PROJECT_SOURCE_DIR}/move.cpp
     ${PROJECT_SOURCE_DIR}/movelist.cpp
     ${PROJECT_SOURCE_DIR}/piece.cpp

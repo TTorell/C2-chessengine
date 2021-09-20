@@ -7,8 +7,6 @@
 namespace C2_chess
 {
 
-using std::ostream;
-
 class Piece {
   protected:
     piecetype _type;
@@ -70,9 +68,9 @@ class Piece {
     {
       _color = color;
     }
-    ostream& write_describing(ostream& os) const;
-    ostream& write_diagram_style(ostream& os) const;
-    friend ostream& operator<<(ostream& os, const Piece& m);
+    std::ostream& write_describing(std::ostream& os) const;
+    std::ostream& write_diagram_style(std::ostream& os) const;
+    friend std::ostream& operator<<(std::ostream& os, const Piece& m);
 };
 }
 #endif

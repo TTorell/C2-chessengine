@@ -1,3 +1,4 @@
+#include <cstring>
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 #include "piece.hpp"
@@ -6,9 +7,6 @@
 #include "game.hpp"
 #include "current_time.hpp"
 #include "position_reader.hpp"
-
-using namespace std;
-using namespace std::chrono;
 
 namespace
 {
@@ -37,8 +35,8 @@ static int write_menue_get_choice()
   {
     cmdline << "Pick a choice [1]: ";
 
-    string answer;
-    cin >> answer;
+    std::string answer;
+    std::cin >> answer;
     if (answer.size() == 0)
       return 1;
     switch (answer[0])
@@ -61,9 +59,9 @@ static int back_to_main_menu()
 {
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
 
-  string input;
+  std::string input;
   cmdline << "\n" << "Back to main menu? [y/n]:";
-  cin >> input;
+  std::cin >> input;
   if (input == "y")
     return 0;
   else
@@ -83,7 +81,7 @@ static col white_or_black()
   while (try_again)
   {
     cmdline << "Which color would you like to play ? [w/b]: ";
-    cin >> st;
+    std::cin >> st;
     if (st[0] == 'w')
     {
       return col::white;
@@ -124,13 +122,13 @@ void play_on_cmd_line(Config_params& config_params)
       }
       case 2:
       {
-        string input;
+        std::string input;
 
         col human_color = white_or_black();
         Game game(human_color, config_params);
         FEN_reader fr(game);
         Position_reader& pr = fr;
-        string filename = GetStdoutFromCommand("cmd java -classpath \".\" ChooseFile");
+        std::string filename = get_stdout_from_cmd("cmd java -classpath \".\" ChooseFile");
         int status = pr.read_position(filename);
         if (status != 0)
         {
@@ -158,7 +156,7 @@ void play_on_cmd_line(Config_params& config_params)
       }
       default:
         cmdline << "Sorry, 1, 2 or 3 was the options" << "\n" << "\n";
-        this_thread::sleep_for(seconds(3));
+        std::this_thread::sleep_for(std::chrono::seconds(3));
         continue;
     }
   }
@@ -214,7 +212,7 @@ int Board::make_move(playertype player, int &move_no, col col_to_move)
 {
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
 
-  unique_ptr<Move> m;
+  std::unique_ptr<Move> m;
   if (player != playertype::human)
   {
     Shared_ostream& logfile = *(Shared_ostream::get_instance());
@@ -233,10 +231,10 @@ int Board::make_move(playertype player, int &move_no, col col_to_move)
       cmdline << "The Move you entered is impossible!" << "\n\n";
     first = false;
     cmdline << "Your move: ";
-    cin >> st;
+    std::cin >> st;
     bool from_file_read = false;
     bool from_rank_read = false;
-    bool to_file_read = false;using namespace std;
+    bool to_file_read = false;
     bool to_rank_read = false;
     bool ep_checked = false;
     bool en_passant = false;
@@ -370,28 +368,28 @@ int Board::make_move(playertype player, int &move_no, col col_to_move)
   } // while not read
 }
 
-ostream& Board::write_cmdline_style(ostream &os, outputtype wt, col from_perspective) const
+std::ostream& Board::write_cmdline_style(std::ostream &os, outputtype wt, col from_perspective) const
 {
   switch (wt)
   {
     case outputtype::debug:
       os << "The latest move was: ";
-      os << _last_move << endl;
-      os << "Castling state is: " << _castling_state << endl;
-      os << "En passant square is: " << _en_passant_square << endl;
+      os << _last_move << std::endl;
+      os << "Castling state is: " << _castling_state << std::endl;
+      os << "En passant square is: " << _en_passant_square << std::endl;
       for (int fileindex = a; fileindex <= h; fileindex++)
         for (int rankindex = 1; rankindex <= 8; rankindex++)
           _file[fileindex][rankindex]->write_describing(os);
-      os << endl << "*** Possible moves ***" << endl;
+      os << std::endl << "*** Possible moves ***" << std::endl;
       for (int i = 0; i < _possible_moves.size(); i++)
-        os << *_possible_moves[i] << endl;
-      os << endl;
-      this->write(os, outputtype::cmd_line_diagram, col::white) << endl;
+        os << *_possible_moves[i] << std::endl;
+      os << std::endl;
+      this->write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
       break;
     case outputtype::cmd_line_diagram:
       if (from_perspective == col::white)
       {
-        os << "###################" << endl;
+        os << "###################" << std::endl;
         for (int i = 8; i >= 1; i--)
         {
           os << "#";
@@ -404,14 +402,14 @@ ostream& Board::write_cmdline_style(ostream &os, outputtype wt, col from_perspec
             else
               os << "-";
           }
-          os << "|#" << " " << i << endl;
+          os << "|#" << " " << i << std::endl;
         }
-        os << "###################" << endl;
-        os << "  a b c d e f g h " << endl;
+        os << "###################" << std::endl;
+        os << "  a b c d e f g h " << std::endl;
       }
       else // From blacks point of view
       {
-        os << "###################" << endl;
+        os << "###################" << std::endl;
         for (int i = 1; i <= 8; i++)
         {
           os << "#";
@@ -424,34 +422,34 @@ ostream& Board::write_cmdline_style(ostream &os, outputtype wt, col from_perspec
             else
               os << "-";
           }
-          os << "|#" << " " << i << endl;
+          os << "|#" << " " << i << std::endl;
         }
-        os << "###################" << endl;
-        os << "  h g f e d c b a " << endl;
+        os << "###################" << std::endl;
+        os << "  h g f e d c b a " << std::endl;
       }
       break;
     default:
-      os << "Sorry: Output type not implemented yet." << endl;
+      os << "Sorry: Output type not implemented yet." << std::endl;
   }
   return os;
 }
 
 //bool Player::mate_in(const int& n, const Board& board, int k, int& make_move_no)
 //{
-//  cout << "Player::mate_in " << n << " k = " << k << "col_to_move = " << _colour << endl;
+//  cout << "Player::mate_in " << n << " k = " << k << "col_to_move = " << _colour << std::endl;
 //  bool mate1 = false;
 //  int i = 0;
-//  //cerr<<"board noofmoves"<<board.no_of_moves()<<endl;
+//  //cerr<<"board noofmoves"<<board.no_of_moves()<<std::endl;
 //  while ((i < board.no_of_moves()) && (!mate1))
 //  {
 //    int x = 3; // just a dummy in this case
 //    _b[k] = board;
 //    //if (k==0)
-//    //cout << "i=" << i << " k=" << k << endl;
+//    //cout << "i=" << i << " k=" << k << std::endl;
 //    _b[k].make_move(i++, x, _colour, true);
 //    if ((_b[k].no_of_moves()))
 //    {
-//      //      cerr<<"bk no of moves "<<b[k].no_of_moves()<<endl;
+//      //      cerr<<"bk no of moves "<<b[k].no_of_moves()<<std::endl;
 //      if (n > 1) //(k<(n-1))
 //      {
 //        bool mate2 = true;
@@ -473,19 +471,19 @@ ostream& Board::write_cmdline_style(ostream &os, outputtype wt, col from_perspec
 //      if (_b[k].get_last_move().get_check())
 //      {
 //        mate1 = true;
-//        // cerr<<"OK*********"<<endl;
+//        // cerr<<"OK*********"<<std::endl;
 //      }
 //      //         else
-//      //            cout << "stalemate" << endl;
+//      //            cout << "stalemate" << std::endl;
 //    }
 //    //if (!mate1)
 //    //   b[k].clear();
 //  }
-//  //cerr<<"mate_in END "<<n<<endl;
+//  //cerr<<"mate_in END "<<n<<std::endl;
 //  if (mate1 && (k == 0))
 //  {
 //    make_move_no = --i;
-//    //cerr<<"the move was number"<< i << endl;
+//    //cerr<<"the move was number"<< i << std::endl;
 //  }
 //  return mate1;
 //}

@@ -5,9 +5,6 @@
 namespace C2_chess
 {
 
-using std::cerr;
-using std::endl;
-
 Position::Position() :
     _file(a), _rank(1)
 {
@@ -81,7 +78,7 @@ bool Position::same_rank(const Position& p) const
   return _rank==p._rank;
 }
 
-ostream& operator<<(ostream& os, const Position& p)
+std::ostream& operator<<(std::ostream& os, const Position& p)
 {
   switch (p._file)
   {
@@ -110,7 +107,7 @@ ostream& operator<<(ostream& os, const Position& p)
       os << 'h';
       break;
     default:
-      cerr << "Illegal filename in Position::operator<<" << endl;
+      std::cerr << "Illegal filename in Position::operator<<" << std::endl;
       require(false, __FILE__, __func__, __LINE__);
   }
   os << p._rank;

@@ -8,8 +8,6 @@ namespace C2_chess
 
 class Square;
 
-using std::ostream;
-
 class Position {
   protected:
     int _file;
@@ -32,7 +30,7 @@ class Position {
     bool same_file(const Position& p) const;
     bool same_rank(const Position& p) const;
     bool same_diagonal(const Position& p) const;
-    friend ostream& operator<<(ostream& os, const Position& p);
+    friend std::ostream& operator<<(std::ostream& os, const Position& p);
 };
 }
 #endif

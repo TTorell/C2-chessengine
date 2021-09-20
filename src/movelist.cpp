@@ -89,7 +89,7 @@ void Movelist::into_as_first(Move* const newmove)
 
 void Movelist::out(Move* const rubbish)
 {
-  for (deque<Move*>::iterator it = _list.begin(); it != _list.end(); it++)
+  for (std::deque<Move*>::iterator it = _list.begin(); it != _list.end(); it++)
   {
     if (*it == rubbish)
     {
@@ -140,13 +140,13 @@ Move* Movelist::operator[](int i) const
     return _list[i];
   else
   {
-    cout << "index " << i << " out of bounds error in Movelist[], size = " << _list.size() << endl;
-#ifdef linux
-    print_backtrace(cerr) << endl;
-#endif // linux
+    std::cout << "index " << i << " out of bounds error in Movelist[], size = " << _list.size() << std::endl;
+#ifdef __linux__
+    print_backtrace(std::cerr) << std::endl;
+#endif // __linux__
 
     for (auto it : _list)
-      cout << *(Move*) (it) << endl;
+      std::cout << *(Move*) (it) << std::endl;
     exit(0);
   }
 }
@@ -158,39 +158,39 @@ void Movelog::set_first_moveno(int moveno)
   _first_moveno = moveno;
 }
 
-ostream & Movelist::write(ostream & os) const
+std::ostream & Movelist::write(std::ostream & os) const
 {
   for (auto it : _list)
   {
-    os << *it << endl;
+    os << *it << std::endl;
   }
   return os;
 }
 
-ostream & Movelog::write(ostream & os) const
+std::ostream & Movelog::write(std::ostream & os) const
 {
   int moveno = _first_moveno;
   int increment = 0;
   for (int i = 0; i < (int) _list.size(); i++)
   {
-    ostringstream move;
+    std::ostringstream move;
     move << *_list[i];
     if (i == 0 && _col_to_start == col::black)
     {
-      os << moveno++ << "." << left << setw(9) << "  ...  " << move.str() << endl;
+      os << moveno++ << "." << std::left << std::setw(9) << "  ...  " << move.str() << std::endl;
       increment = 1;
       continue;
     }
 
     if ((i + increment) % 2 == 0)
     {
-      os << moveno++ << "." << left << setw(9) << move.str();
+      os << moveno++ << "." << std::left << std::setw(9) << move.str();
       if (i == (int) (_list.size() - 1))      // last move
-        os << endl;
+        os << std::endl;
     }
     else
     {
-      os << move.str() << endl;
+      os << move.str() << std::endl;
     }
   }
   return os;

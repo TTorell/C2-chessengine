@@ -12,8 +12,6 @@
 #include <iostream>
 #include "shared_ostream.hpp"
 
-using namespace std;
-
 static const int list_size = 256;
 
 namespace C2_chess
@@ -21,8 +19,8 @@ namespace C2_chess
 
 class Circular_fifo {
   protected:
-    mutex _mu;
-    string _list[list_size];
+    std::mutex _mu;
+    std::string _list[list_size];
     unsigned long _put_index;
     unsigned long _get_index;
 
@@ -36,9 +34,9 @@ class Circular_fifo {
     {
     }
 
-    void put(const string& s)
+    void put(const std::string& s)
     {
-      lock_guard<mutex> locker(_mu); // unlocks when it goes out of scope
+      std::lock_guard<std::mutex> locker(_mu); // unlocks when it goes out of scope
       if (_put_index - _get_index < list_size)
       {
         _list[_put_index % list_size] = s;
@@ -46,10 +44,10 @@ class Circular_fifo {
       }
     }
 
-    string get()
+    std::string get()
     {
-      string s;
-      lock_guard<mutex> locker(_mu);
+      std::string s;
+      std::lock_guard<std::mutex> locker(_mu);
       if (_get_index < _put_index)
       {
         s = _list[_get_index % list_size];

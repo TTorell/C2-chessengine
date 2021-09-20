@@ -1,0 +1,9 @@
+Engine started
+input: uci
+output: id name C2 experimental
+output: id author Torsten Torell
+output: option name max_search_level type spin default 7 min 2 max 8
+output: option name search_until_no_captures type check default false
+output: option name use_incremental_search type check default true
+output: option name use_pruning type check default true
+output: uciok

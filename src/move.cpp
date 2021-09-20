@@ -1,9 +1,9 @@
+#include <sstream>
 #include "move.hpp"
 #include "square.hpp"
 #include "piece.hpp"
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
-#include <sstream>
 
 namespace C2_chess
 {
@@ -247,9 +247,9 @@ Move& Move::operator=(const Move& m)
   return *this;
 }
 
-string Move::bestmove_engine_style() const
+std::string Move::bestmove_engine_style() const
 {
-  stringstream ss;
+  std::stringstream ss;
   ss << "bestmove " << _from << _to;
   if (_promotion)
   {
@@ -265,7 +265,7 @@ string Move::bestmove_engine_style() const
         ss << "n";
         break;
       case piecetype::Bishop:
-        ss << "b" << endl;
+        ss << "b" << std::endl;
         break;
       default:
         require_m(false,
@@ -278,7 +278,7 @@ string Move::bestmove_engine_style() const
   return ss.str();
 }
 
-ostream& operator<<(ostream& os, const Move& m)
+std::ostream& operator<<(std::ostream& os, const Move& m)
 {
   switch (m._piece_type)
   {

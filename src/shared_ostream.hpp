@@ -10,8 +10,6 @@
 #include "config_param.hpp"
 #include "pgn_info.hpp"
 
-using namespace std;
-
 namespace C2_chess
 {
 // I got tired of sending in the log-file as an
@@ -73,12 +71,12 @@ class Shared_ostream {
   private:
     static Shared_ostream* p_instance_;
     static Shared_ostream* p_cout_instance_;
-    ostream& _os;
+    std::ostream& _os;
     bool _is_open;
 
     Shared_ostream();
 
-    Shared_ostream(ostream& os, bool is_open) :
+    Shared_ostream(std::ostream& os, bool is_open) :
         _os(os),
         _is_open(is_open)
     {
@@ -89,19 +87,19 @@ class Shared_ostream {
     }
 
   public:
-    static mutex static_mutex;
+    static std::mutex static_mutex;
 
     // Singletons should not be cloneable or assignable
     void operator=(const Shared_ostream&) = delete;
     Shared_ostream(Shared_ostream& other) = delete;
 
     // Create and/or return a pointer to the singleton-instance of the Shared_ostream.
-    static Shared_ostream* get_instance(ostream& os, bool is_open)
+    static Shared_ostream* get_instance(std::ostream& os, bool is_open)
     {
       // lock the execution of this method, so no other thread can call this method
       // simultaneously, then make sure again that the variable is null and then
       // call the constructor.
-      lock_guard < mutex > lock(static_mutex);
+      std::lock_guard < std::mutex > lock(static_mutex);
       if (p_instance_ == nullptr)
       {
         p_instance_ = new Shared_ostream(os, is_open);
@@ -113,7 +111,7 @@ class Shared_ostream {
     // has been called at least once to create the singleton *p_instance.
     static Shared_ostream* get_instance()
     {
-      lock_guard<mutex> lock(static_mutex);
+      std::lock_guard<std::mutex> lock(static_mutex);
       return p_instance_;
     }
 
@@ -123,10 +121,10 @@ class Shared_ostream {
       // lock the execution of this method, so no other thread can call this method
       // simultaneously, then make sure again that the variable is null and then
       // call the constructor.
-      lock_guard<mutex> lock(static_mutex);
+      std::lock_guard<std::mutex> lock(static_mutex);
       if (p_cout_instance_ == nullptr)
       {
-        p_cout_instance_ = new Shared_ostream(cout, true);
+        p_cout_instance_ = new Shared_ostream(std::cout, true);
       }
       return p_cout_instance_;
     }
@@ -141,51 +139,51 @@ class Shared_ostream {
       _is_open = true;
     }
 
-    Shared_ostream& operator<<(const string& s)
+    Shared_ostream& operator<<(const std::string& s)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
-        _os << iso_8859_1_to_utf8(s) << flush;
+        _os << iso_8859_1_to_utf8(s) << std::flush;
       return *this;
     }
 
     Shared_ostream& operator<<(int i)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
-        _os << iso_8859_1_to_utf8(to_string(i)) << flush;
+        _os << iso_8859_1_to_utf8(std::to_string(i)) << std::flush;
       return *this;
     }
 
     Shared_ostream& operator<<(float f)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
-        _os << iso_8859_1_to_utf8(to_string(f)) << flush;
+        _os << iso_8859_1_to_utf8(std::to_string(f)) << std::flush;
       return *this;
     }
 
     Shared_ostream& operator<<(double d)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
-        _os << iso_8859_1_to_utf8(to_string(d)) << flush;
+        _os << iso_8859_1_to_utf8(std::to_string(d)) << std::flush;
       return *this;
     }
 
     Shared_ostream& operator<<(long l)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
-        _os << iso_8859_1_to_utf8(to_string(l)) << flush;
+        _os << iso_8859_1_to_utf8(std::to_string(l)) << std::flush;
       return *this;
     }
 
     Shared_ostream& operator<<(unsigned long ul)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
-        _os << iso_8859_1_to_utf8(to_string(ul)) << flush;
+        _os << iso_8859_1_to_utf8(std::to_string(ul)) << std::flush;
       return *this;
     }
 
@@ -195,56 +193,56 @@ class Shared_ostream {
 //    Shared_ostream& operator<<(ostream& os)
 //    {
 //      os << "\n";
-//      lock_guard < mutex > locker(static_mutex);
+//      std::lock_guard < std::mutex > locker(static_mutex);
 //      if (_is_open)
-//        _os << endl << flush;
+//        _os << endl << std::flush;
 //      return *this;
 //    }
 
     Shared_ostream& operator<<(const Movelist& ml)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
       {
-        stringstream ss;
+        std::stringstream ss;
         ml.write(ss);
-        _os << iso_8859_1_to_utf8(ss.str()) << flush;
+        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
       return *this;
     }
 
     Shared_ostream& operator<<(const Movelog& ml)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
       {
-        stringstream ss;
+        std::stringstream ss;
         ml.write(ss);
-        _os << iso_8859_1_to_utf8(ss.str()) << flush;
+        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
       return *this;
     }
 
     Shared_ostream& operator<<(const PGN_info& PGN_info)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
       {
-        stringstream ss;
+        std::stringstream ss;
         ss << PGN_info;
-        _os << iso_8859_1_to_utf8(ss.str()) << flush;
+        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
       return *this;
     }
 
     Shared_ostream& operator<<(const Move& m)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
       {
-        stringstream ss;
+        std::stringstream ss;
         ss << m;
-        _os << iso_8859_1_to_utf8(ss.str()) << flush;
+        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
       return *this;
     }
@@ -255,29 +253,29 @@ class Shared_ostream {
                        const Move& best_move,
                        float score)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       uint64_t timediff = (nsec_stop - nsec_start);
       // Log the time it took;
-      string s = "time spent by C2 on search level " + to_string(search_level) + " " + to_string(timediff/1.0e6) +
-          " " + best_move.bestmove_engine_style() + " score = " + to_string(score);
+      std::string s = "time spent by C2 on search level " + std::to_string(search_level) + " " + std::to_string(timediff/1.0e6) +
+          " " + best_move.bestmove_engine_style() + " score = " + std::to_string(score);
       _os << iso_8859_1_to_utf8(s) << "\n";
     }
 
     // Method for a string which is already UTF-8 coded.
-    void write_UTF8_string(string s)
+    void write_UTF8_string(std::string s)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
-        _os << s << flush;
+        _os << s << std::flush;
     }
 
     void write_config_params(const Config_params& params)
     {
-      lock_guard < mutex > locker(static_mutex);
+      std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
       {
-        _os << endl << iso_8859_1_to_utf8("Configuration parameters:") << endl;
-        _os << iso_8859_1_to_utf8(params.get_params_string()) << endl;
+        _os << std::endl << iso_8859_1_to_utf8("Configuration parameters:") << std::endl;
+        _os << iso_8859_1_to_utf8(params.get_params_string()) << std::endl;
       }
     }
 };

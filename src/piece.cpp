@@ -5,13 +5,7 @@
 namespace C2_chess
 {
 
-using std::endl;
-using std::cerr;
-using std::string;
-
-
-
-ostream& Piece::write_describing(ostream& os) const
+std::ostream& Piece::write_describing(std::ostream& os) const
 {
 	if (_color==col::black)
 		os << "black ";
@@ -31,12 +25,12 @@ ostream& Piece::write_describing(ostream& os) const
 						 break;
 		case piecetype::Pawn: os << "Pawn";
 					  break;
-		default: cerr << "Undefined piece type in Piece::write_describing" << endl;
+		default: std::cerr << "Undefined piece type in Piece::write_describing" << std::endl;
 	}
 	return os;
 }
 
-ostream& Piece::write_diagram_style(ostream& os) const
+std::ostream& Piece::write_diagram_style(std::ostream& os) const
 {
     switch (_type)
     {
@@ -58,12 +52,12 @@ ostream& Piece::write_diagram_style(ostream& os) const
       case piecetype::Pawn:
         os << ((_color== col::white) ? ("\u2659"): ("\u265F"));
         break;
-      default: cerr << ("Undefined piece type in Piece::write_diagram_style") << endl;
+      default: std::cerr << ("Undefined piece type in Piece::write_diagram_style") << std::endl;
     }
     return os;
 }
 
-ostream& operator<<(ostream& os, const Piece& p)
+std::ostream& operator<<(std::ostream& os, const Piece& p)
 {
 	switch (p._type)
 	{

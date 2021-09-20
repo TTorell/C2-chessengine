@@ -1,15 +1,12 @@
 #ifndef _RANK
 #define _RANK
 
-#include <iostream>
 #include "chessfuncs.hpp" // only for require()
 
 namespace C2_chess
 {
 
 class Square;
-
-using std::ostream;
 
 class Rank {
   protected:

@@ -6,8 +6,6 @@
 namespace C2_chess
 {
 
-using std::ostream;
-using std::istream;
 class Castling_state {
   protected:
     bool _w_kingside_OK;
@@ -97,8 +95,8 @@ class Castling_state {
       }
     }
 
-    friend ostream& operator<<(ostream& os, const Castling_state& p);
-    friend istream& operator>>(istream& is, Castling_state& cm);
+    friend std::ostream& operator<<(std::ostream& os, const Castling_state& p);
+    friend std::istream& operator>>(std::istream& is, Castling_state& cm);
 };
 }
 #endif

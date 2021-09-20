@@ -4,8 +4,6 @@
 #include "position.hpp"
 #include "chesstypes.hpp"
 
-using namespace std;
-
 namespace C2_chess
 {
 
@@ -159,8 +157,8 @@ class Move
     {
       _stalemate = m;
     }
-    string bestmove_engine_style() const;
-    friend ostream& operator<<(ostream& os, const Move& m);
+    std::string bestmove_engine_style() const;
+    friend std::ostream& operator<<(std::ostream& os, const Move& m);
 };
 }
 #endif

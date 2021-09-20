@@ -16,8 +16,6 @@
 namespace C2_chess
 {
 
-using namespace std;
-
 struct hash_element
 {
   int best_move_index;
@@ -37,9 +35,9 @@ class Zobrist_hash
 
     void init_random_numbers()
     {
-      random_device rd;
-      mt19937 mt(rd());
-      uniform_real_distribution<double> dist(0, pow(2,64));
+      std::random_device rd;
+      std::mt19937 mt(rd());
+      std::uniform_real_distribution<double> dist(0, pow(2,64));
       for (int file = a; file <= h; file++)
         for (int rank = 1; rank <= 8; rank++)
           for (int col = static_cast<int>(col::white); col <= static_cast<int>(col::black); col++)

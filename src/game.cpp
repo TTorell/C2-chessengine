@@ -1,3 +1,4 @@
+#include <iostream>
 #include <sstream>
 #include <map>
 #include <thread>
@@ -8,9 +9,6 @@
 #include "chessfuncs.hpp"
 #include "config_param.hpp"
 #include "shared_ostream.hpp"
-
-using namespace std;
-using namespace std::chrono;
 
 namespace
 {
@@ -121,27 +119,27 @@ void Game::set_moveno(int moveno)
   }
 }
 
-ostream& Game::write_chessboard(ostream &os, outputtype ot, col from_perspective) const
+std::ostream& Game::write_chessboard(std::ostream &os, outputtype ot, col from_perspective) const
 {
   _chessboard.write(os, ot, from_perspective);
   return os;
 }
 
-ostream& Game::write_diagram(ostream &os) const
+std::ostream& Game::write_diagram(std::ostream &os) const
 {
-  if (_player[index(col::white)]->get_type() == playertype::human)
-    _chessboard.write(os, outputtype::cmd_line_diagram, col::white) << endl;
-  else if (_player[index(col::black)]->get_type() == playertype::human)
-    _chessboard.write(os, outputtype::cmd_line_diagram, col::black) << endl;
+  if (_player[index(col::white)]->type() == playertype::human)
+    _chessboard.write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
+  else if (_player[index(col::black)]->type() == playertype::human)
+    _chessboard.write(os, outputtype::cmd_line_diagram, col::black) << std::endl;
   else
     // The computer is playing itself
-    _chessboard.write(os, outputtype::cmd_line_diagram, col::white) << endl;
+    _chessboard.write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
   return os;
 }
 
 Shared_ostream& Game::write_diagram(Shared_ostream& sos) const
 {
-  stringstream ss;
+  std::stringstream ss;
   write_diagram(ss);
   ss.flush();
   sos.write_UTF8_string(ss.str());
@@ -203,7 +201,7 @@ void Game::actions_after_a_move()
   // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
 }
 
-Move Game::engine_go(const Config_params& config_params, const string& max_search_time)
+Move Game::engine_go(const Config_params& config_params, const std::string& max_search_time)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
 
@@ -216,7 +214,7 @@ Move Game::engine_go(const Config_params& config_params, const string& max_searc
   _chessboard.set_time_diff_sum(0);
 
   // Read some configuration parameters
-  string s = config_params.get_config_param("max_search_level");
+  std::string s = config_params.get_config_param("max_search_level");
   if (!s.empty())
     max_search_level = atoi(s.c_str());
   s = config_params.get_config_param("use_incremental_search");
@@ -238,7 +236,7 @@ Move Game::engine_go(const Config_params& config_params, const string& max_searc
     if (!max_search_time.empty())
     {
       _chessboard.start_timer_thread(max_search_time);
-      this_thread::sleep_for(microseconds(100));
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
     else
       _chessboard.set_time_left(true);
@@ -322,7 +320,7 @@ Move Game::engine_go(const Config_params& config_params, const string& max_searc
   return _chessboard.get_last_move();
 }
 
-void Game::start_timer_thread(const string& max_search_time)
+void Game::start_timer_thread(const std::string& max_search_time)
 {
   _chessboard.start_timer_thread(max_search_time);
 }
@@ -339,7 +337,7 @@ void Game::set_time_left(bool value)
 
 playertype Game::get_playertype(const col& color) const
 {
-  return _player[index(color)]->get_type();
+  return _player[index(color)]->type();
 }
 
 void Game::start_new_game(col col_to_move, int half_move_counter, int moveno)

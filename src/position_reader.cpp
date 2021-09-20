@@ -11,9 +11,6 @@
 namespace C2_chess
 {
 
-  using std::istringstream;
-  using std::regex;
-
 Position_reader::Position_reader(Game& game) :
     _game(game)
 {
@@ -28,33 +25,33 @@ FEN_reader::~FEN_reader()
 {
 }
 
-int read_position(const string& inputfile);
+int read_position(const std::string& inputfile);
 
-istream& FEN_reader::read_position(istream& is)
+std::istream& FEN_reader::read_position(std::istream& is)
 {
   return is;
 }
 
-const string FEN_reader::get_infotext(const string& line)
+const std::string FEN_reader::get_infotext(const std::string& line)
 {
-  istringstream pgn_line(line);
-  string rubbish, info;
-  getline(pgn_line, rubbish, '"');
-  getline(pgn_line, info, '"');
+  std::istringstream pgn_line(line);
+  std::string rubbish, info;
+  std::getline(pgn_line, rubbish, '"');
+  std::getline(pgn_line, info, '"');
   return info;
 }
 
-int FEN_reader::read_position(const string& inputfile)
+int FEN_reader::read_position(const std::string& inputfile)
 {
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
 
   _game.clear_chessboard();
-  ifstream is(inputfile);
-  string regex_string = "^[[]FEN.*";
-  string rubbish;
+  std::ifstream is(inputfile);
+  std::string regex_string = "^[[]FEN.*";
+  std::string rubbish;
   PGN_info pgn_info;
   bool FEN_found = false;
-  for (string line; getline(is, line);)
+  for (std::string line; std::getline(is, line);)
   {
     if (regexp_match(line, "^[[]Event.*"))
     {
@@ -96,10 +93,10 @@ int FEN_reader::read_position(const string& inputfile)
     {
       FEN_found = true;
       cmdline << "\n" << "Position: " << line << "\n";
-      istringstream fen_line(line);
-      string fen_string;
-      getline(fen_line, rubbish, '"');
-      getline(fen_line, fen_string, '"');
+      std::istringstream fen_line(line);
+      std::string fen_string;
+      std::getline(fen_line, rubbish, '"');
+      std::getline(fen_line, fen_string, '"');
       int status = parse_FEN_string(fen_string);
       if (status != 0)
       {
@@ -115,10 +112,10 @@ int FEN_reader::read_position(const string& inputfile)
   return 0;
 }
 
-int FEN_reader::parse_FEN_string(const string& FEN_string) const
+int FEN_reader::parse_FEN_string(const std::string& FEN_string) const
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  cout << FEN_string << endl;
+  std::cout << FEN_string << std::endl;
   int rank = 8;
   int file = a;
   char ch = '0';
@@ -206,11 +203,11 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
   } // end of for-loop
 
   // Read the trailing information
-  istringstream is(FEN_string);
-  string str;
+  std::istringstream is(FEN_string);
+  std::string str;
   //skip until trailing info
-  getline(is, str, ' ');
-  string col_to_move;
+  std::getline(is, str, ' ');
+  std::string col_to_move;
   is >> col_to_move;
   // cout <<"col_to_move = " << col_to_move << endl;
   if (col_to_move != "w" and col_to_move != "b")
@@ -222,7 +219,7 @@ int FEN_reader::parse_FEN_string(const string& FEN_string) const
   is >> cs;
   // cout << "cs = " << cs << endl;
   chessboard.set_castling_state(cs);
-  string eps; // en passant string;
+  std::string eps; // en passant string;
   is >> eps;
   // cout << "eps = " << eps << endl;
   if (eps.size() > 2)

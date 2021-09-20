@@ -22,30 +22,30 @@ namespace C2_chess
 Player::Player(playertype p, col color, Board &bo) :
     _chessboard(bo), _type(p), _colour(color), _other_col(color == col::white ? col::black : col::white)
 {
-  //cout << "Player construcor1" << endl;
+  //cout << "Player construcor1" << std::endl;
 }
 
 Player::~Player()
 {
 }
 
-col Player::get_colour()
+col Player::color() const
 {
   return _colour;
 }
 
-void Player::set_colour(col tc)
+void Player::color(col tc)
 {
   _colour = tc;
   _other_col = tc == col::white ? col::black : col::white;
 }
 
-playertype Player::get_type()
+playertype Player::type() const
 {
   return _type;
 }
 
-void Player::set_type(playertype t)
+void Player::type(playertype t)
 {
   _type = t;
 }
@@ -67,7 +67,7 @@ int Player::make_a_move(int &move_no, float &score, const int &max_search_level)
       score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level);
       if (best_move_index == -1 && score == -100.0)
       {
-        cout << "White was check mated." << endl; // TODO
+        std::cout << "White was check mated." << std::endl; // TODO
         return 0;
       }
     }
@@ -76,7 +76,7 @@ int Player::make_a_move(int &move_no, float &score, const int &max_search_level)
       score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level);
       if (best_move_index == -1 && score == 100.0)
       {
-        cout << "Black was check mated." << endl; // TODO
+        std::cout << "Black was check mated." << std::endl; // TODO
         return 0;
       }
     }

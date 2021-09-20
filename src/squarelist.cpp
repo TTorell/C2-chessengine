@@ -1,8 +1,6 @@
 #include "squarelist.hpp"
 #include "chessfuncs.hpp"
 
-using namespace std;
-
 namespace C2_chess
 {
 
@@ -43,8 +41,8 @@ void Squarelist::into(Square* const newsquare)
     _list[_no_of_elements++] = (Square*) newsquare;
   else
   {
-    cerr << "squarelist full" << endl;
-    cerr << _no_of_elements << " " << SQUARELISTMAX << endl;
+    std::cerr << "squarelist full" << std::endl;
+    std::cerr << _no_of_elements << " " << SQUARELISTMAX << std::endl;
 //    for (int i = 0; i < _no_of_elements; i++)
 //      _list[i]->write_name(cerr);
     require(false, __FILE__, __func__, __LINE__);
@@ -109,7 +107,7 @@ Square* Squarelist::operator[](int i) const
     return (Square*) _list[i];
   else
   {
-    cerr << "index out of bound error in Squarelist[]" << endl;
+    std::cerr << "index out of bound error in Squarelist[]" << std::endl;
     return NULL;
   }
 }

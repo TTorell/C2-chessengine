@@ -6,7 +6,6 @@
 #include "movelist.hpp"
 #include "pgn_info.hpp"
 
-using namespace std;
 namespace C2_chess
 {
 class Config_params;
@@ -43,8 +42,8 @@ class Game {
     void init_board_hash_tag();
     void actions_after_a_move();
     void start();
-    Move engine_go(const Config_params& config_params, const string& max_search_time);
-    void start_timer_thread(const string& max_search_time);
+    Move engine_go(const Config_params& config_params, const std::string& max_search_time);
+    void start_timer_thread(const std::string& max_search_time);
     bool has_time_left();
     void set_time_left(bool value);
     void save() const;
@@ -57,8 +56,8 @@ class Game {
     void set_en_passant_square(int file, int rank);
     void set_half_move_counter(int half_move_counter);
     void set_moveno(int moveno);
-    ostream& write_chessboard(ostream& os, outputtype ot, col from_perspective) const;
-    ostream& write_diagram(ostream& os) const;
+    std::ostream& write_chessboard(std::ostream& os, outputtype ot, col from_perspective) const;
+    std::ostream& write_diagram(std::ostream& os) const;
     Shared_ostream& write_diagram(Shared_ostream& sos) const;
     void play_on_cmd_line(Config_params& config_params);
     void figure_out_last_move(const Board& new_position, col col_to_move, int half_move_counter, int moveno);

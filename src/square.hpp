@@ -228,12 +228,12 @@ class Square {
     {
       return _position;
     }
-    ostream& write_threats(ostream& os) const;
-    ostream& write_protections(ostream& os) const;
-    ostream& write_moves(ostream& os) const;
-    ostream& write_describing(ostream& os) const;
-    ostream& write_name(ostream& os) const;
-    ostream& write_move_style(ostream& os) const;
+    std::ostream& write_threats(std::ostream& os) const;
+    std::ostream& write_protections(std::ostream& os) const;
+    std::ostream& write_moves(std::ostream& os) const;
+    std::ostream& write_describing(std::ostream& os) const;
+    std::ostream& write_name(std::ostream& os) const;
+    std::ostream& write_move_style(std::ostream& os) const;
 };
 }
 #endif

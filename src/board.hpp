@@ -37,12 +37,12 @@ class Board {
     void init_rook_or_queen(int file, int rank, Square* s, Piece* p);
     int init(col col_to_move);
     float evaluate_position(col col_to_move, outputtype ot, int level) const;
-    ostream& write(ostream& os, outputtype wt, col from_perspective) const;
-    ostream& write_cmdline_style(ostream &os, outputtype wt, col from_perspective) const;
-    ostream& write_possible_moves(ostream& os);
-    void read_position(ifstream& positionfile, col& col_to_move);
+    std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;
+    std::ostream& write_cmdline_style(std::ostream &os, outputtype wt, col from_perspective) const;
+    std::ostream& write_possible_moves(std::ostream& os);
+    void read_position(std::ifstream& positionfile, col& col_to_move);
     void calculate_moves(col col_to_move);
-    istream& operator>>(istream&);
+    std::istream& operator>>(std::istream&);
     int make_move(int, int&, col col_to_move);
     int make_move(playertype, int&, col col_to_move);
     Board& operator=(const Board&);
@@ -83,7 +83,7 @@ class Board {
       return _hash_tag;
     }
 
-    void start_timer_thread(const string& max_search_time);
+    void start_timer_thread(const std::string& max_search_time);
     bool has_time_left();
     void set_time_left(bool value);
 

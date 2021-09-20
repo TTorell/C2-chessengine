@@ -10,35 +10,61 @@
 #ifndef CHESSFUNCS_HPP_
 #define CHESSFUNCS_HPP_
 
+#include <filesystem>
 #include <iostream>
-#include <regex>
+#include <sstream>
 #include <vector>
+#include <string>
+//#include <utility>
+#include <bitset>
 #include "chesstypes.hpp"
-//#include "config_param.hpp"
 
-
+namespace fs = std::filesystem;
 
 namespace C2_chess
 {
 
+template<typename T>
+std::string to_binary(const T& x)
+{
+  std::stringstream ss;
+  ss << std::bitset<sizeof(T) * 8>(x);
+  return ss.str();
+}
+
 class Move;
 class Config_params;
 
-using std::ostream;
-using std::string;
-
 col& operator++(col& c);
 col other_color(col& c);
-col col_from_string(const string& s);
-string get_logfile_name();
-void require(bool b, string file, string method, int line);
-void require_m(bool b, string file, string method, int line, const Move &m);
-ostream& print_backtrace(ostream &os);
-string GetStdoutFromCommand(string cmd);
-bool regexp_match(const string &line, const string &regexp_string);
-string iso_8859_1_to_utf8(const string& str);
-string iso_8859_1_to_utf8(const char *c_string);
+col col_from_string(const std::string& s);
+std::string get_logfile_name();
+void require(bool b, std::string file, std::string method, int line);
+void require_m(bool b, std::string file, std::string method, int line, const Move &m);
+std::ostream& print_backtrace(std::ostream &os);
+std::string get_stdout_from_cmd(std::string cmd);
+std::pair<std::string, int> exec(const char* cmd);
+bool check_execution_dir(const std::string& preferred_exec_dir);
+bool regexp_match(const std::string &line, const std::string &regexp_string);
+bool regexp_grep(const std::string &line, const std::string &regexp_string);
+bool regexp_grep(const std::string& line, const std::string& regexp_string, std::vector<std::string>& matches);
+std::string rexexp_sed(const std::string& line, const std::string& regexp_string, const std::string& replacement_string);
+std::vector<std::string> split(const std::string& s, char delim);
+std::vector<std::string> split(const std::string& input, std::string& delimiter);
+std::string cut(const std::string& s, char delim, int field_number);
+std::string iso_8859_1_to_utf8(const std::string& str);
+std::string iso_8859_1_to_utf8(const char *c_string);
 void play_on_cmd_line(Config_params& config_params);
+void print_filetype(std::ostream& os, fs::file_status& s);
+void print_filepermissions(fs::perms p);
+bool is_regular_read_OK(const fs::path& filepath);
+bool is_regular_write_OK(const fs::path& filepath);
+bool has_duplicates(const std::vector<std::string>& vector, const std::string& move_kind);
+bool compare_move_lists(const std::vector<std::string>& out_vector, const std::vector<std::string>& ref_vector);
+bool all_in_a_exist_in_b(const std::vector<std::string>& a, const std::vector<std::string>& b, bool order_out_ref);
+std::string to_binary_board(uint64_t in);
+bool question_to_user(const std::string& question, std::string regexp_correct_answer);
+std::string user_input(const std::string& message);
 
-} // namespace
+} // End namespace C2_chess
 #endif //CHESSFUNCS_HPP_

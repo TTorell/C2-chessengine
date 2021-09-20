@@ -8,9 +8,6 @@
 namespace C2_chess
 {
 
-using std::ostream;
-using std::deque;
-
 class Move;
 class Square;
 
@@ -21,7 +18,7 @@ class Movelist
     {
       _LISTMAX = 1000
     };
-    deque<Move*> _list;
+    std::deque<Move*> _list;
     int _listindex;
   public:
     Movelist();
@@ -39,8 +36,8 @@ class Movelist
     bool in_list(const Move& m,int& index) const;
     void clear();
     Move* operator[](int) const;
-    virtual ostream& write(ostream& os) const;
-    friend ostream& operator<<(ostream& os, const Movelist& ml)
+    virtual std::ostream& write(std::ostream& os) const;
+    friend std::ostream& operator<<(std::ostream& os, const Movelist& ml)
     {
       ml.write(os);
       return os;
@@ -74,7 +71,7 @@ class Movelog: public Movelist
     }
 
     void set_first_moveno(int moveno);
-    virtual ostream& write(ostream& os) const;
+    virtual std::ostream& write(std::ostream& os) const;
 };
 }
 #endif

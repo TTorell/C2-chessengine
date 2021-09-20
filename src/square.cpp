@@ -3,8 +3,6 @@
 namespace C2_chess
 {
 
-using std::endl;
-
 //Square::Square(const Square& s) :
 //    _position(s._position),
 //    _moves(),
@@ -32,19 +30,19 @@ using std::endl;
 //  return *this;
 //}
 
-ostream& Square::write_describing(ostream& os) const
+std::ostream& Square::write_describing(std::ostream& os) const
 {
-  os << endl;
+  os << std::endl;
   if (_piece)
     os << *_piece;
-  os << _position << endl;
+  os << _position << std::endl;
   write_protections(os);
   write_threats(os);
   write_moves(os);
   return os;
 }
 
-ostream& Square::write_name(ostream& os) const
+std::ostream& Square::write_name(std::ostream& os) const
 {
   if (_piece)
     os << *_piece;
@@ -52,15 +50,15 @@ ostream& Square::write_name(ostream& os) const
   return os;
 }
 
-ostream& Square::write_move_style(ostream& os) const
+std::ostream& Square::write_move_style(std::ostream& os) const
 {
   os << _position;
   return os;
 }
 
-ostream& Square::write_threats(ostream& os) const
+std::ostream& Square::write_threats(std::ostream& os) const
 {
-  os << "--- Threatened by: ---" << endl;
+  os << "--- Threatened by: ---" << std::endl;
   Square* temp = _threats.first();
   while (temp)
   {
@@ -70,7 +68,7 @@ ostream& Square::write_threats(ostream& os) const
   return os;
 }
 
-ostream& Square::write_protections(ostream& os) const
+std::ostream& Square::write_protections(std::ostream& os) const
 {
   os << "--- protected by: ---\n";
   Square* temp = _protections.first();
@@ -82,7 +80,7 @@ ostream& Square::write_protections(ostream& os) const
   return os;
 }
 
-ostream& Square::write_moves(ostream& os) const
+std::ostream& Square::write_moves(std::ostream& os) const
 {
   os << "--- can move to: ---\n";
   Square* temp = _moves.first();

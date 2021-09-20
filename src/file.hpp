@@ -32,15 +32,11 @@ class File {
         }
       }
     }
-//    char get_filename()
-//    {
-//      return _name;
-//    }
-    void set_name(char name)
+    void name(char name)
     {
       _name = name;
     }
-    int get_fileindex()
+    int fileindex()
     {
       return ((int) _name - 97);
     }

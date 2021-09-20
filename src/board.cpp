@@ -18,10 +18,6 @@ uint64_t time_diff_sum = 0;
 namespace C2_chess
 {
 
-using std::unique_ptr;
-using std::stringstream;
-using namespace std::chrono;
-
 std::atomic<bool> time_left(false);
 Board Board::level_boards[38];
 Zobrist_hash Board::hash_table;
@@ -32,7 +28,7 @@ Board::Board() :
 {
   for (int file = a; file <= h; file++)
   {
-    _file[a].set_name('a' + (char) file);
+    _file[a].name('a' + (char) file);
     for (int rank = 1; rank <= 8; rank++)
     {
       _file[file][rank] = new Square(file, rank);
@@ -175,23 +171,23 @@ bool Board::read_piece_type(piecetype &pt, char ch) const
   return true;
 }
 
-ostream& Board::write(ostream &os, outputtype wt, col from_perspective) const
+std::ostream& Board::write(std::ostream &os, outputtype wt, col from_perspective) const
 {
   switch (wt)
   {
     case outputtype::debug:
       os << "The latest move was: ";
-      os << _last_move << endl;
-      os << "Castling state is: " << _castling_state << endl;
-      os << "En passant square is: " << _en_passant_square << endl;
+      os << _last_move << std::endl;
+      os << "Castling state is: " << _castling_state << std::endl;
+      os << "En passant square is: " << _en_passant_square << std::endl;
       for (int fileindex = a; fileindex <= h; fileindex++)
         for (int rankindex = 1; rankindex <= 8; rankindex++)
           _file[fileindex][rankindex]->write_describing(os);
-      os << endl << "*** Possible moves ***" << endl;
+      os << std::endl << "*** Possible moves ***" << std::endl;
       for (int i = 0; i < _possible_moves.size(); i++)
-        os << *_possible_moves[i] << endl;
-      os << endl;
-      this->write(os, outputtype::cmd_line_diagram, col::white) << endl;
+        os << *_possible_moves[i] << std::endl;
+      os << std::endl;
+      this->write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
       break;
     case outputtype::cmd_line_diagram:
       if (from_perspective == col::white)
@@ -208,9 +204,9 @@ ostream& Board::write(ostream &os, outputtype wt, col from_perspective) const
             else
               os << ("\u25a1");
           }
-          os << iso_8859_1_to_utf8("|") << iso_8859_1_to_utf8(to_string(i)) << endl;
+          os << iso_8859_1_to_utf8("|") << iso_8859_1_to_utf8(std::to_string(i)) << std::endl;
         }
-        os << iso_8859_1_to_utf8(" a b c d e f g h ") << endl;
+        os << iso_8859_1_to_utf8(" a b c d e f g h ") << std::endl;
       }
       else // From blacks point of view
       {
@@ -226,20 +222,20 @@ ostream& Board::write(ostream &os, outputtype wt, col from_perspective) const
             else
               os << ("\u25a1");
           }
-          os << iso_8859_1_to_utf8("|") << iso_8859_1_to_utf8(to_string(i)) << endl;
+          os << iso_8859_1_to_utf8("|") << iso_8859_1_to_utf8(std::to_string(i)) << std::endl;
         }
-        os << iso_8859_1_to_utf8(" h g f e d c b a ") << endl;
+        os << iso_8859_1_to_utf8(" h g f e d c b a ") << std::endl;
       }
       break;
     default:
-      os << iso_8859_1_to_utf8("Sorry: Output type not implemented yet.") << endl;
+      os << iso_8859_1_to_utf8("Sorry: Output type not implemented yet.") << std::endl;
   }
   return os;
 }
 
-ostream& Board::write_possible_moves(ostream &os)
+std::ostream& Board::write_possible_moves(std::ostream &os)
 {
-  os << _possible_moves << endl;
+  os << _possible_moves << std::endl;
   return os;
 }
 
@@ -491,7 +487,7 @@ int Board::init(col col_to_move)
             }
             break;
           default:
-            cout << "Error: Undefined piecetype in Board::init()" << endl;
+            std::cout << "Error: Undefined piecetype in Board::init()" << std::endl;
             return -1;
         } //end switch
       } // end if (p)
@@ -797,7 +793,7 @@ int Board::init(col col_to_move)
   // The following may not be necessary, because it probably affects nothing.
   // It's col_to_moves time to calculate possible moves.
   //init_castling(other_col);
-  // cout << "End init" << endl;
+  // std::cout << "End init" << std::endl;
   return 0;
 }
 
@@ -823,7 +819,7 @@ void Board::fix_threat_prot(int file, int rank, Piece *p, Square *s)
 
 void Board::fix_bound_piece_file(Square *own_piece_square, const Square *threat_square)
 {
-  // Requirements:cout
+  // Requirements:
   // King_square, own_piece_square and threat_square is on the
   // same file. The "own_King" is placed on King_square
   // On own_piece_square there is a piece of the same colour as the king
@@ -858,7 +854,7 @@ void Board::fix_bound_piece_file(Square *own_piece_square, const Square *threat_
         }
         break;
       default:
-        cerr << "strange kind of own piece in fix_bound_piece_file " << index(pt) << endl;
+        std::cerr << "strange kind of own piece in fix_bound_piece_file " << index(pt) << std::endl;
     }
   }
 }
@@ -899,7 +895,7 @@ void Board::fix_bound_piece_rank(Square *own_piece_square, const Square *threat_
         }
         break;
       default:
-        cerr << "strange kind of own piece in fix_bound_piece_rank" << endl;
+        std::cerr << "strange kind of own piece in fix_bound_piece_rank" << std::endl;
     }
   }
 }
@@ -953,7 +949,7 @@ void Board::fix_bound_piece_diagonal(const Square *king_square, Square *own_piec
         own_piece_square->clear_moves();
         break;
       default:
-        cerr << "strange kind of own piece in fix_bound_piece_diagonal" << endl;
+        std::cerr << "strange kind of own piece in fix_bound_piece_diagonal" << std::endl;
     }
   }
 }
@@ -1037,7 +1033,7 @@ void Board::check_put_a_pawn_on_square(int file, int rank, col col_to_move)
           // Check that the pawn isn't pinned
           if (from_square->in_movelist(_file[file][rank]))
           {
-            unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
+            std::unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
             _possible_moves.into(m.get());
             return;
           }
@@ -1054,7 +1050,7 @@ void Board::check_put_a_pawn_on_square(int file, int rank, col col_to_move)
         {
           if (from_square->in_movelist(_file[file][rank]))
           {
-            unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
+            std::unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
             _possible_moves.into(m.get());
             return;
           }
@@ -1073,7 +1069,7 @@ void Board::check_put_a_pawn_on_square(int file, int rank, col col_to_move)
           // Check that the pawn isn't pinned
           if (from_square->in_movelist(_file[file][rank]))
           {
-            unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
+            std::unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
             _possible_moves.into(m.get());
             return;
           }
@@ -1090,7 +1086,7 @@ void Board::check_put_a_pawn_on_square(int file, int rank, col col_to_move)
           // Check that the pawn isn't pinned
           if (from_square->in_movelist(_file[file][rank]))
           {
-            unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
+            std::unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
             _possible_moves.into(m.get());
             return;
           }
@@ -1104,7 +1100,7 @@ void Board::calculate_moves_K_not_threatened(col col_to_move)
 {
   // The king is not threatened. All remaining moves are allowed.
   Square *s;
-  unique_ptr<Move> m;
+  std::unique_ptr<Move> m;
   for (int i = a; i <= h; i++)
   {
     for (int j = 1; j <= 8; j++)
@@ -1128,7 +1124,7 @@ void Board::calculate_moves_K_not_threatened(col col_to_move)
 
 void Board::check_put_a_piece_on_square(int i, int j, col col_to_move)
 {
-  unique_ptr<Move> m;
+  std::unique_ptr<Move> m;
   Square *temp_square = _file[i][j]->first_threat();
   while (temp_square)
   {
@@ -1152,12 +1148,12 @@ void Board::check_bishop_or_queen(Square *threat_square, Square *kings_square, c
 {
   if (threat_square->same_diagonal(kings_square))
   {
-    //cout << "same_diagonal" << endl;
+    //std::cout << "same_diagonal" << std::endl;
     int tf = threat_square->get_fileindex();
     int tr = threat_square->get_rankindex();
     int kf = kings_square->get_fileindex();
     int kr = kings_square->get_rankindex();
-    //cout << "tf=" << tf << "tr=" << tr << "kf=" << kf << "kr=" << kr << endl;
+    //std::cout << "tf=" << tf << "tr=" << tr << "kf=" << kf << "kr=" << kr << std::endl;
     if (tf == min(tf, kf) && tr == min(tr, kr))
     {
       for (int i = tf + 1, j = tr + 1; i < kf; i++, j++)
@@ -1222,7 +1218,7 @@ void Board::check_rook_or_queen(Square *threat_square, Square *kings_square, col
 
 void Board::check_if_threat_can_be_captured_en_passant(col col_to_move, Square *threat_square)
 {
-  unique_ptr<Move> m;
+  std::unique_ptr<Move> m;
   int rank_increment = (col_to_move == col::white) ? 1 : -1;
   int ep_file = _en_passant_square->get_fileindex();
   int ep_rank = _en_passant_square->get_rankindex();
@@ -1241,7 +1237,7 @@ void Board::check_if_threat_can_be_captured_en_passant(col col_to_move, Square *
           // Check that the pawn isn't pinned
           if (s->in_movelist(_en_passant_square))
           {
-            unique_ptr<Move> move(new Move(_file[file][thr_rank], _en_passant_square));
+            std::unique_ptr<Move> move(new Move(_file[file][thr_rank], _en_passant_square));
             _possible_moves.into_as_first(move.get());
           }
         }
@@ -1274,11 +1270,11 @@ void Board::calculate_moves(col col_to_move)
   // is the King threatened?
   if (kings_square->count_threats(other_col)) //TODO: speed up
   {
-    //cout << "king threatened" << endl;
+    //std::cout << "king threatened" << std::endl;
     // All King moves to unthreatened squares are allowed. (Except moves to squares
     // which will be threatened if the King moves(X-ray threatened through the King)
     // and they will be removed from the lists later
-    unique_ptr<Move> m;
+    std::unique_ptr<Move> m;
     temp_square = kings_square->first_move();
     while (temp_square)
     {
@@ -1293,12 +1289,12 @@ void Board::calculate_moves(col col_to_move)
     // Is the king threatened only once? (not double check)
     if (kings_square->count_threats(other_col) == 1)
     {
-      //cout << "King is threatened once" << endl;
+      //std::cout << "King is threatened once" << std::endl;
       threat_square = kings_square->first_threat();
       threat_piece = threat_square->get_piece();
       if (threat_piece == 0)
       {
-        cerr << "no-piece error in check_moves()\n";
+        std::cerr << "no-piece error in check_moves()\n";
       }
 
       // The piece that checks the king maybe can be captured.
@@ -1313,7 +1309,7 @@ void Board::calculate_moves(col col_to_move)
           // in which case it would not be allowed to move.
           if (tmp_square->in_movelist(threat_square))
           {
-            unique_ptr<Move> move;
+            std::unique_ptr<Move> move;
             move.reset(new Move(tmp_square, threat_square));
             _possible_moves.into(move.get());
           }
@@ -1339,7 +1335,7 @@ void Board::calculate_moves(col col_to_move)
             }
             break;
           default:
-            cerr << "Error: unknown color" << endl;
+            std::cerr << "Error: unknown color" << std::endl;
             break;
         }
       }
@@ -1389,12 +1385,12 @@ void Board::calculate_moves(col col_to_move)
   }
 //  uint64_t nsec_stop = current_time.nanoseconds();
 //  int timediff = nsec_stop - nsec_start;
-//  cout << "calculate_moves_nsecs = " << timediff << endl;
+//  std::cout << "calculate_moves_nsecs = " << timediff << std::endl;
 }
 
 void Board::fix_promotion_move(Move *m)
 {
-  unique_ptr<Move> um(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_capture(), m->get_target_piece_type(), false, true, piecetype::Queen, false));
+  std::unique_ptr<Move> um(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_capture(), m->get_target_piece_type(), false, true, piecetype::Queen, false));
   _possible_moves.into(um.get());
   um.reset(new Move(m->get_from(), m->get_to(), m->get_piece_type(), m->get_capture(), m->get_target_piece_type(), false, true, piecetype::Rook, false));
   _possible_moves.into(um.get());
@@ -1674,7 +1670,7 @@ int Board::make_move(int i, int &move_no, col col_to_move)
       return 0;
     }
   }
-  cerr << "make_move error" << endl;
+  std::cerr << "make_move error" << std::endl;
   return -1;
 }
 
@@ -1823,7 +1819,7 @@ bool Board::is_end_node() const
 }
 
 // This method will run in the timer_thread.
-static void start_timer(const string& max_search_time)
+static void start_timer(const std::string& max_search_time)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   logfile << "Timer Thread Started." << "\n";
@@ -1833,7 +1829,7 @@ static void start_timer(const string& max_search_time)
   while (time_left)
   {
     uint64_t nsec_start = current_time.nanoseconds();
-    this_thread::sleep_for(milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     uint64_t nsec_stop = current_time.nanoseconds();
     uint64_t timediff = nsec_stop - nsec_start;
     time -= (double)timediff/1e6;
@@ -1846,10 +1842,10 @@ static void start_timer(const string& max_search_time)
   logfile << "Timer Thread Stopped." << "\n";
 }
 
-void Board::start_timer_thread(const string& max_search_time)
+void Board::start_timer_thread(const std::string& max_search_time)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  thread timer_thread(start_timer, max_search_time);
+  std::thread timer_thread(start_timer, max_search_time);
   logfile << "Timer Thread Started: " << max_search_time << "\n";
   timer_thread.detach();
 }
@@ -2217,7 +2213,7 @@ void Board::init_material_evaluation()
           case piecetype::King:
             break;
           default:
-            cerr << "Error: Undefined Piece Type: " << index(p->get_type()) << endl;
+            std::cerr << "Error: Undefined Piece Type: " << index(p->get_type()) << std::endl;
         }
       }
     }
@@ -2258,7 +2254,7 @@ void Board::update_material_evaluation_capture(const col& color, const piecetype
     case piecetype::King:
       break;
     default:
-      cerr << "Error: Undefined Piece Type: " << index(type) << endl;
+      std::cerr << "Error: Undefined Piece Type: " << index(type) << std::endl;
   }
 }
 
@@ -2295,7 +2291,7 @@ void Board::update_material_evaluation_promotion(const col& color, const piecety
     case piecetype::King:
       break;
     default:
-      cerr << "Error: Undefined Piece Type: " << index(type) << endl;
+      std::cerr << "Error: Undefined Piece Type: " << index(type) << std::endl;
   }
 }
 
@@ -2314,7 +2310,7 @@ int Board::figure_out_last_move(const Board& new_position, Move& m)
   {
     for (int j = 1; j <= 8; j++)
     {
-      // cout << _file[i][j]->get_position() << endl;
+      // std::cout << _file[i][j]->get_position() << std::endl;
       old_p = _file[i][j]->get_piece();
       new_p = new_position._file[i][j]->get_piece();
       if (!old_p)

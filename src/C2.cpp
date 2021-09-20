@@ -6,41 +6,23 @@
 #include <chrono>
 #include <vector>
 #include <atomic>
-#include "C2_unittest.hpp"
+#include <cstring>
 #include "chessfuncs.hpp"
 #include "chesstypes.hpp"
 #include "config_param.hpp"
 #include "game.hpp"
 #include "position_reader.hpp"
 
-using namespace std;
-using namespace std::chrono;
-
 namespace C2_chess
 {
 
-// This Method e.g. splits up commands from the GUI into tokens (words)
-vector<string> split(const string &s, char delim)
-{
-  vector<string> result;
-  stringstream ss(s);
-  string item;
-
-  while (getline(ss, item, delim))
-  {
-    result.push_back(item);
-  }
-
-  return result;
-}
-
 // This method finds the token in the go-command following var_name.
 // Returns an empty string if not foeund.
-string parse_go_command(const vector<string>& command_tokens, const string &var_name)
+std::string parse_go_command(const std::vector<std::string>& command_tokens, const std::string &var_name)
 {
   bool found = false;
-  string token = "";
-  for (const string& t : command_tokens)
+  std::string token = "";
+  for (const std::string& t : command_tokens)
   {
     if (found)
     {
@@ -66,12 +48,16 @@ std::atomic<bool> output_thread_running(true);
 std::atomic<bool> xtime_left(false);
 
 // Method for parsing input-commands from a chess-GUI (some commands are taken care of already in ḿain().
-int parse_command(const string& command, Circular_fifo& output_buffer, Game& game, Config_params& config_params, vector<string>& returned_tokens)
+int parse_command(const std::string& command,
+                  Circular_fifo& output_buffer,
+                  Game& game,
+                  Config_params& config_params,
+                  std::vector<std::string>& returned_tokens)
 {
   //Shared_ostream& logfile = *(Shared_ostream::get_instance());
 
   // We know at this point that the command string isn't empty
-  vector<string> tokens = split(command, ' ');
+  std::vector<std::string> tokens = split(command, ' ');
   if (tokens[0] == "uci")
   {
     output_buffer.put("id name C2 experimental");
@@ -91,7 +77,7 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Game& gam
   if (tokens[0] == "setoption")
   {
     // All my config-parameters have names which are only one token long.
-    string name = "", value = "";
+    std::string name = "", value = "";
     bool read_name = false;
     bool read_value = false;
     for (auto token : tokens)
@@ -120,7 +106,7 @@ int parse_command(const string& command, Circular_fifo& output_buffer, Game& gam
   {
     FEN_reader reader(game);
     // Discard the first 13 characters, "position fen ", from the command.
-    string fen_string = command.substr(13, command.size() - 12);
+    std::string fen_string = command.substr(13, command.size() - 12);
     // The information about the new requested position comes in
     // Forsyth–Edwards Notation.
     // Read the FEN-coded position from the GUI command and set up
@@ -147,8 +133,8 @@ void read_input(Circular_fifo *input_buffer, Game* game)
   Shared_ostream* logfile = Shared_ostream::get_instance();
   while (input_thread_running)
   {
-    string command;
-    getline(cin, command);
+    std::string command;
+    getline(std::cin, command);
     input_buffer->put(command);
       (*logfile) << "input: " << command << "\n";
     if (command == "stop")
@@ -166,14 +152,14 @@ void read_input(Circular_fifo *input_buffer, Game* game)
       break;
     }
   }
-  this_thread::yield();
+  std::this_thread::yield();
 }
 
 // This method will run in the output_thread.
 void write_output(Circular_fifo *output_buffer)
 {
   Shared_ostream* logfile = Shared_ostream::get_instance();
-  string command;
+  std::string command;
   while (output_thread_running)
   {
     command = (*output_buffer).get();
@@ -182,15 +168,15 @@ void write_output(Circular_fifo *output_buffer)
       if (command == "quit_thread")
         break;
       (*logfile) << "output: " << command << "\n";
-      cout << command << endl;
+      std::cout << command << std::endl;
     }
-    this_thread::sleep_for(milliseconds(3));
+    std::this_thread::sleep_for(std::chrono::milliseconds(3));
   }
-  this_thread::yield();
+  std::this_thread::yield();
 }
 
 
-void close_threads(thread& input_thread, thread& output_thread)
+void close_threads(std::thread& input_thread, std::thread& output_thread)
 {
   //  Stop threads and wait for them to finish.
   input_thread_running = false;
@@ -219,25 +205,17 @@ using namespace C2_chess;
 
 int main(int argc, char* argv[])
 {
-  cout << "C2 experimental chess-engine" << endl;
-  //ofstream testlog("testlog.txt");
-  //C2_unit_test test;
-  //test.main_test(cout);
-  //test.main_test(testlog);
-  //testlog.close();
-  //string diff = GetStdoutFromCommand("diff testlog.txt testref.txt");
-  //if (!diff.empty())
-  // cout << "### UNIT TEST FAILED! :" << endl << diff << endl;
-
+  std::cout << "C2 experimental chess-engine" << std::endl;
   //for (int i = 0; i < argc; ++i)
-  //    cout << argv[i] << "\n";
+  //    std::cout << argv[i] << "\n";
 
   // The engine can log all communication with GUI, and
   // other stuff to the command_log.txt file.
   // This requires that the engine has been started by
   // the GUI from a directory where it has write-permisson.
   // And that's of course where you can find the logfile.
-  ofstream ofs(get_logfile_name());
+  std::ofstream ofs(get_logfile_name());
+  // TODO: check if open failed
   Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
 
   // Open a shared_ostream for the cmdline-interface:
@@ -287,12 +265,12 @@ int main(int argc, char* argv[])
   // Thread which receives input commands and puts them in the
   // ipput_buffer, While the main engine process is "thinking"
   // about other things.
-  thread input_thread(read_input, &input_buffer, &game);
+  std::thread input_thread(read_input, &input_buffer, &game);
 
   // Thread which buffers output commands from the engine.
-  thread output_thread(write_output, &output_buffer);
+  std::thread output_thread(write_output, &output_buffer);
 
-  string command;
+  std::string command;
 
   logfile << "Engine started" << "\n";
   while (true)
@@ -328,7 +306,7 @@ int main(int argc, char* argv[])
 
       // Other commands, "uci", "position" etc, are sent to the parse_command() function and most
       // of them are also taken care of there
-      vector < string > command_tokens; // will contain tokens from the following parsing.
+      std::vector < std::string > command_tokens; // will contain tokens from the following parsing.
       int rc = parse_command(command, output_buffer, game, config_params, command_tokens);
       if (rc == 1) // This means go ...
       {
@@ -337,11 +315,11 @@ int main(int argc, char* argv[])
 //        game.init();
 
         // logfile << "go command_tokens:" << "\n";
-        // for (string token:command_tokens)
+        // for (std::string token:command_tokens)
         //   logfile << token << "\n";
 
         // Get the time-limit from the go-command, if there is one.
-        string max_search_time = parse_go_command(command_tokens, "movetime");
+        std::string max_search_time = parse_go_command(command_tokens, "movetime");
         if (!max_search_time.empty())
         {
            logfile << "max_search_time = " << max_search_time << " milliseconds\n";

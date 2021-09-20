@@ -1,12 +1,10 @@
 #include <iostream>
 #include "castling_state.hpp"
 
-using namespace std;
-
 namespace C2_chess
 {
 
-ostream& operator<<(ostream& os, const Castling_state& cm)
+std::ostream& operator<<(std::ostream& os, const Castling_state& cm)
 {
   if (cm._w_kingside_OK)
     os << 'K';
@@ -21,9 +19,9 @@ ostream& operator<<(ostream& os, const Castling_state& cm)
   return os;
 }
 
-istream& operator>>(istream& is, Castling_state& cm)
+std::istream& operator>>(std::istream& is, Castling_state& cm)
 {
-  string cs;
+  std::string cs;
   is >> cs;
   cm._w_kingside_OK = false;
   cm._b_kingside_OK = false;
