@@ -321,16 +321,16 @@ std::ostream& operator<<(std::ostream& os, const Move& m)
   switch (m._promotion_piece_type)
   {
     case piecetype::Queen:
-      os << "Q";
+      os << "=Q";
       break;
     case piecetype::Rook:
-      os << "R";
+      os << "=R";
       break;
     case piecetype::Bishop:
-      os << "B";
+      os << "=B";
       break;
     case piecetype::Knight:
-      os << "N";
+      os << "=N";
       break;
     default:
       break;

@@ -65,7 +65,7 @@ std::string get_logfile_name()
   return ss.str();
 }
 
-#ifdef __linux
+#ifdef __linux__
 std::ostream& print_backtrace(std::ostream& os)
 {
   char pid_buf[30];

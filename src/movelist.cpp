@@ -143,7 +143,7 @@ Move* Movelist::operator[](int i) const
     std::cout << "index " << i << " out of bounds error in Movelist[], size = " << _list.size() << std::endl;
 #ifdef __linux__
     print_backtrace(std::cerr) << std::endl;
-#endif // __linux__
+#endif // linux
 
     for (auto it : _list)
       std::cout << *(Move*) (it) << std::endl;
@@ -158,11 +158,15 @@ void Movelog::set_first_moveno(int moveno)
   _first_moveno = moveno;
 }
 
-std::ostream & Movelist::write(std::ostream & os) const
+std::ostream & Movelist::write(std::ostream & os, bool same_line) const
 {
   for (auto it : _list)
   {
-    os << *it << std::endl;
+    os << *it;
+    if (same_line)
+      os << " ";
+    else
+      os << std::endl;
   }
   return os;
 }

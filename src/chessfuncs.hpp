@@ -21,6 +21,26 @@
 
 namespace fs = std::filesystem;
 
+// template for enum class
+// So the enum-value can be used as an int-index
+// in arrays, for instance. Didn't want to write
+// static_cast<int> everywhere.
+template<typename T>
+inline int index(const T& val)
+{
+  return static_cast<int>(val);
+}
+
+// A fast log2 function for integer types.
+// Uses a gcc-functio
+#ifdef __linux__
+template<typename T>
+inline unsigned int LOG2(const T& val)
+{
+  return (64 - __builtin_clzl((static_cast<long unsigned int>(val))) - 1);
+}
+#endif
+
 namespace C2_chess
 {
 

@@ -91,13 +91,14 @@ int FEN_reader::read_position(const std::string& inputfile)
 
     if (regexp_match(line, "^[[]FEN.*"))
     {
+      Board dummy_board;
       FEN_found = true;
       cmdline << "\n" << "Position: " << line << "\n";
       std::istringstream fen_line(line);
       std::string fen_string;
       std::getline(fen_line, rubbish, '"');
       std::getline(fen_line, fen_string, '"');
-      int status = parse_FEN_string(fen_string);
+      int status = parse_FEN_string(fen_string, dummy_board);
       if (status != 0)
       {
         cmdline << "Read error: [FEN-string could not be parsed" << "\n";
@@ -112,7 +113,7 @@ int FEN_reader::read_position(const std::string& inputfile)
   return 0;
 }
 
-int FEN_reader::parse_FEN_string(const std::string& FEN_string) const
+int FEN_reader::parse_FEN_string(const std::string& FEN_string, Board& b) const
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   std::cout << FEN_string << std::endl;
@@ -250,6 +251,7 @@ int FEN_reader::parse_FEN_string(const std::string& FEN_string) const
   int move_number;
   is >> move_number;
   // cout << "move_number = " << move_number << endl;
+  b = chessboard;
   _game.figure_out_last_move(chessboard, col_from_string(col_to_move), half_move_counter, move_number);
   return 0;
 }

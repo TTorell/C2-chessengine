@@ -16,15 +16,6 @@ const float eval_max = 100.0F;
 const float eval_min = -eval_max;
 const float epsilon = 0.00000001F;
 
-// template for enum class
-// So the enum-value can be used as an int-index
-// in arrays, for instance. Didn't want to write
-// static_cast<int> everywhere.
-template<typename T>
-inline int index(const T& val)
-{
-  return static_cast<int>(val);
-}
 
 enum class piecetype {
   King,

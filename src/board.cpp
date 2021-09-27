@@ -233,9 +233,9 @@ std::ostream& Board::write(std::ostream &os, outputtype wt, col from_perspective
   return os;
 }
 
-std::ostream& Board::write_possible_moves(std::ostream &os)
+std::ostream& Board::write_possible_moves(std::ostream &os, bool same_line) const
 {
-  os << _possible_moves << std::endl;
+  _possible_moves.write(os, same_line) << std::endl;
   return os;
 }
 

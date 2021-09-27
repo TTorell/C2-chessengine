@@ -23,9 +23,9 @@ class Board {
     Square* _king_square[2];
     Square* _en_passant_square = 0;
     unsigned long _hash_tag;
-    static Zobrist_hash hash_table;
     float _material_evaluation;
   public:
+    static Zobrist_hash hash_table;
     static Board level_boards[];  // declaration, incomplete type
     Board();
     Board(const Board&);
@@ -39,7 +39,7 @@ class Board {
     float evaluate_position(col col_to_move, outputtype ot, int level) const;
     std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;
     std::ostream& write_cmdline_style(std::ostream &os, outputtype wt, col from_perspective) const;
-    std::ostream& write_possible_moves(std::ostream& os);
+    std::ostream& write_possible_moves(std::ostream& os, bool same_line = false) const;
     void read_position(std::ifstream& positionfile, col& col_to_move);
     void calculate_moves(col col_to_move);
     std::istream& operator>>(std::istream&);

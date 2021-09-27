@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.16)
 
-set( CMAKE_VERBOSE_MAKEFILE ON )
+set( CMAKE_VERBOSE_MAKEFILE TRUE )
 
 # set the project name
 project(C2 VERSION 1.0)
@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(SOURCE_FILES
     ${PROJECT_SOURCE_DIR}/chessfuncs.cpp
+    ${PROJECT_SOURCE_DIR}/Bitboard.cpp
+    ${PROJECT_SOURCE_DIR}/Bitboard_with_utils.cpp
     ${PROJECT_SOURCE_DIR}/board.cpp
     ${PROJECT_SOURCE_DIR}/castling_state.cpp
     ${PROJECT_SOURCE_DIR}/game.cpp
@@ -39,9 +41,9 @@ if(MSVC)
     # applicable to everyone anyway.
 
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z -Wall -Wextra -Werror")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Wextra -Werror")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -O0")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g0 -O3")
 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")

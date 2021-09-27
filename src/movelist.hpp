@@ -36,7 +36,7 @@ class Movelist
     bool in_list(const Move& m,int& index) const;
     void clear();
     Move* operator[](int) const;
-    virtual std::ostream& write(std::ostream& os) const;
+    virtual std::ostream& write(std::ostream& os, bool same_line = false) const;
     friend std::ostream& operator<<(std::ostream& os, const Movelist& ml)
     {
       ml.write(os);

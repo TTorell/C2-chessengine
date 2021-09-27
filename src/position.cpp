@@ -39,7 +39,7 @@ bool Position::operator==(const Position& p) const
 int Position::get_file() const
 {
   return _file;
-};
+}
 
 int Position::get_rank() const
 {
@@ -107,7 +107,7 @@ std::ostream& operator<<(std::ostream& os, const Position& p)
       os << 'h';
       break;
     default:
-      std::cerr << "Illegal filename in Position::operator<<" << std::endl;
+      std::cerr << "Illegal number \'" << p._file << "\' of file in Position::operator<<" << std::endl;
       require(false, __FILE__, __func__, __LINE__);
   }
   os << p._rank;
