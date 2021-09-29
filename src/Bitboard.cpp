@@ -1737,6 +1737,25 @@ inline void Bitboard::move_piece(uint64_t from_square,
   update_hash_tag(from_square, to_square, _col_to_move, p_type);
 }
 
+// TOD: continue work here:
+inline void Bitboard::update_hash_tag_remove_castling_rights(uint8_t cr)
+{
+  if (_col_to_move == col::white)
+  {
+    if (_castling_rights ^ (_castling_rights & cr))
+      _hash_tag ^= hash_table._castling_rights[0];
+//    if (_castling_state._w_queenside_OK)
+//      _hash_tag ^= hash_table._castling_rights[1];
+//  }
+//  else
+//  {
+//    if (_castling_state._b_kingside_OK)
+//      _hash_tag ^= hash_table._castling_rights[2];
+//    if (_castling_state._b_queenside_OK)
+//      _hash_tag ^= hash_table._castling_rights[3];
+  }
+}
+
 // Set a "unique" hash tag for the position after
 // adding or removing one piece from a square.
 inline void Bitboard::update_hash_tag(uint64_t square, col p_color, piecetype p_type)
@@ -1767,7 +1786,8 @@ void Bitboard::make_move(int i)
   //uint64_t tmp_ep_square = _ep_square;
   _ep_square = 0;
 
-  // Remove possible piece of other color on to_square.
+  // Remove possible piece of other color on to_square and
+  // Then make the move (updates hashtag)
   if (to_square & _s.other_pieces)
     remove_other_piece(to_square);
   move_piece(from_square, to_square, m.piece_type);

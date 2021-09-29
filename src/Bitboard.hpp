@@ -412,6 +412,8 @@ class Bitboard
 
     inline void update_hash_tag(uint64_t square1, uint64_t square2, col p_color, piecetype type);
 
+    inline void update_hash_tag_remove_castling_rights(uint8_t cr);
+
     inline piecetype get_piece_type(uint64_t square);
 
   public:

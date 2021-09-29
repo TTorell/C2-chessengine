@@ -1400,23 +1400,23 @@ void Board::fix_promotion_move(Move *m)
   _possible_moves.into(um.get());
 }
 
-void Board::update_hash_tag_remove_en_passant_file()
+inline void Board::update_hash_tag_remove_en_passant_file()
 {
   if (_en_passant_square)
     _hash_tag ^= hash_table._en_passant_file[_en_passant_square->get_fileindex()];
 }
 
-void Board::update_hash_tag_en_passant_file(int fileindex)
+inline void Board::update_hash_tag_en_passant_file(int fileindex)
 {
   _hash_tag ^= hash_table._en_passant_file[fileindex];
 }
 
-void Board::update_hash_tag_change_color_to_move()
+inline void Board::update_hash_tag_change_color_to_move()
 {
   _hash_tag ^= hash_table._black_to_move;
 }
 
-void Board::update_hash_tag_remove_castling_rights(col color)
+inline void Board::update_hash_tag_remove_castling_rights(col color)
 {
   if (color == col::white)
   {
@@ -1434,7 +1434,7 @@ void Board::update_hash_tag_remove_castling_rights(col color)
   }
 }
 
-void Board::update_hash_tag_remove_kingside_castling_rights(col color)
+inline void Board::update_hash_tag_remove_kingside_castling_rights(col color)
 {
   if (color == col::white)
   {
@@ -1448,7 +1448,7 @@ void Board::update_hash_tag_remove_kingside_castling_rights(col color)
   }
 }
 
-void Board::update_hash_tag_remove_queenside_castling_rights(col color)
+inline void Board::update_hash_tag_remove_queenside_castling_rights(col color)
 {
   if (color == col::white)
   {
@@ -1462,13 +1462,13 @@ void Board::update_hash_tag_remove_queenside_castling_rights(col color)
   }
 }
 
-void Board::update_hash_tag(const Square* square)
+inline void Board::update_hash_tag(const Square* square)
 {
   Piece* p = square->get_piece();
   _hash_tag ^= hash_table._random_table[square->get_fileindex()][square->get_rankindex()][index(p->get_color())][index(p->get_type())];
 }
 
-void Board::update_hash_tag(int fileindex, int rankindex, col color, piecetype type)
+inline void Board::update_hash_tag(int fileindex, int rankindex, col color, piecetype type)
 {
   _hash_tag ^= hash_table._random_table[fileindex][rankindex][index(color)][index(type)];
 }
