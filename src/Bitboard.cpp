@@ -1738,21 +1738,29 @@ inline void Bitboard::move_piece(uint64_t from_square,
 }
 
 // TOD: continue work here:
-inline void Bitboard::update_hash_tag_remove_castling_rights(uint8_t cr)
+inline void Bitboard::remove_castling_rights()
 {
-  if (_col_to_move == col::white)
+  uint8_t cr = (_col_to_move == col::white) ? castling_rights_W : castling_rights_B;
+  if (_castling_rights & cr)
   {
-    if (_castling_rights ^ (_castling_rights & cr))
+    // Even if A & B is true the result can have different bits set.
+    // So we still have to check if A & B & C is true.
+    if (_castling_rights & cr & castling_rights_WK)
+    {
       _hash_tag ^= hash_table._castling_rights[0];
-//    if (_castling_state._w_queenside_OK)
-//      _hash_tag ^= hash_table._castling_rights[1];
-//  }
-//  else
-//  {
-//    if (_castling_state._b_kingside_OK)
-//      _hash_tag ^= hash_table._castling_rights[2];
-//    if (_castling_state._b_queenside_OK)
-//      _hash_tag ^= hash_table._castling_rights[3];
+    }
+    if (_castling_rights & cr & castling_rights_WQ)
+    {
+      _hash_tag ^= hash_table._castling_rights[1];
+    }
+    if (_castling_rights & cr & castling_rights_BK)
+    {
+      _hash_tag ^= hash_table._castling_rights[2];
+    }
+    if (_castling_rights & cr & castling_rights_BQ)
+    {
+      _hash_tag ^= hash_table._castling_rights[3];
+    }
   }
 }
 
@@ -1782,24 +1790,21 @@ void Bitboard::make_move(int i)
   uint64_t to_square = m.to_square;
   uint64_t from_square = m.from_square;
 
-  // Clear _ep_square but remember its value.
-  //uint64_t tmp_ep_square = _ep_square;
+// Clear _ep_square but remember its value.
+//uint64_t tmp_ep_square = _ep_square;
   _ep_square = 0;
 
-  // Remove possible piece of other color on to_square and
-  // Then make the move (updates hashtag)
+// Remove possible piece of other color on to_square and
+// Then make the move (updates hashtag)
   if (to_square & _s.other_pieces)
     remove_other_piece(to_square);
   move_piece(from_square, to_square, m.piece_type);
 
-  // OK we have moved the piece, now we must
-  // look at some special cases.
+// OK we have moved the piece, now we must
+// look at some special cases.
   if (m.piece_type == piecetype::King)
   {
-    // Clear castling rights when king has moved.
-    // And move the rook if it's actually a castling move.
-    _castling_rights = castling_rights_none;
-    // update_hash_tag
+    // Move the rook if it's actually a castling move.
     if (m.properties == move_props_castling)
     {
       if (static_cast<long int>(from_square - to_square) > 0)
@@ -1831,86 +1836,88 @@ void Bitboard::make_move(int i)
         }
       }
     }
-    else if (m.piece_type == piecetype::Rook)
+    if (from_square & e8_square)
+      remove_castling_rights();
+  }
+  else if (m.piece_type == piecetype::Rook)
+  {
+    // Clear castling rights for one side if applicable.
+    if (to_square & _W_Rooks)
     {
-      // Clear castling rights for one side if applicable.
-      if (to_square & _W_Rooks)
+      if (from_square & a1_square)
+        _castling_rights &= !castling_rights_WQ;
+      if (from_square & h1_square)
+        _castling_rights &= !castling_rights_WK;
+    }
+    else
+    {
+      // Black rook
+      if (from_square & a8_square)
+        _castling_rights &= !castling_rights_BQ;
+      if (from_square & h8_square)
+        _castling_rights &= !castling_rights_BK;
+    }
+  }
+  else if (m.piece_type == piecetype::Pawn)
+  {
+    if (m.properties == move_props_en_passant)
+    {
+      // Remove the pawn taken e.p.
+      (_col_to_move == col::white) ? _B_Pawns ^= _ep_square, _material_diff += 1.0 :
+                                     _W_Pawns ^= _ep_square, _material_diff -= 1.0;
+      update_hash_tag(to_square, other_color(_col_to_move), piecetype::Pawn);
+    }
+    else if (_col_to_move == col::white)
+    {
+      // Set _ep_square if it's a two-square-move?
+      if ((from_square & row_2) && (to_square & row_4))
       {
-        if (from_square & a1_square)
-          _castling_rights &= !castling_rights_WQ;
-        if (from_square & h1_square)
-          _castling_rights &= !castling_rights_WK;
-      }
-      else
-      {
-        // Black rook
-        if (from_square & a8_square)
-          _castling_rights &= !castling_rights_BQ;
-        if (from_square & h8_square)
-          _castling_rights &= !castling_rights_BK;
+        // Check if there is a pawn of other color alongside to_square.
+        if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
+            ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
+          _ep_square = to_square << 8;
       }
     }
-    else if (m.piece_type == piecetype::Pawn)
+    else
     {
-      if (m.properties == move_props_en_passant)
+      if ((from_square & row_7) && (to_square & row_5))
       {
-        // Remove the pawn taken e.p.
-        (_col_to_move == col::white) ? _B_Pawns ^= _ep_square, _material_diff += 1.0 :
-                                       _W_Pawns ^= _ep_square, _material_diff -= 1.0;
-        update_hash_tag(to_square, other_color(_col_to_move), piecetype::Pawn);
-      }
-      else if (_col_to_move == col::white)
-      {
-        // Set _ep_square if it's a two-square-move?
-        if ((from_square & row_2) && (to_square & row_4))
-        {
-          // Check if there is a pawn of other color alongside to_square.
-          if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
-              ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
-            _ep_square = to_square << 8;
-        }
-      }
-      else
-      {
-        if ((from_square & row_7) && (to_square & row_5))
-        {
-          if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
-              ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
-            _ep_square = to_square >> 8;
-        }
+        if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
+            ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
+          _ep_square = to_square >> 8;
       }
     }
-    else if (m.promotion_piece_type != piecetype::Undefined)
-    {
+  }
+  else if (m.promotion_piece_type != piecetype::Undefined)
+  {
 // Remove the pawn from promotion square
 // subtract 1 from the normal piece-values
 // because the pawn disappears from the board.
-      (_col_to_move == col::white) ? _W_Pawns ^= to_square : _B_Pawns ^= to_square;
-      switch (m.promotion_piece_type)
-      {
-        case piecetype::Queen:
-          (_col_to_move == col::white) ? _material_diff += 8.0, _W_Queens |= to_square :
-                                         _material_diff -= 8.0, _B_Queens |= to_square;
-          break;
-        case piecetype::Rook:
-          (_col_to_move == col::white) ? _material_diff += 4.0, _W_Rooks |= to_square :
-                                         _material_diff -= 4.0, _B_Rooks |= to_square;
-          break;
-        case piecetype::Knight:
-          (_col_to_move == col::white) ? _material_diff += 2.0, _W_Knights |= to_square :
-                                         _material_diff -= 2.0, _B_Knights |= to_square;
-          break;
-        case piecetype::Bishop:
-          (_col_to_move == col::white) ? _material_diff += 2.0, _W_Bishops |= to_square :
-                                         _material_diff -= 2.0, _B_Bishops |= to_square;
-          break;
-        default:
-          ;
-      }
+    (_col_to_move == col::white) ? _W_Pawns ^= to_square : _B_Pawns ^= to_square;
+    switch (m.promotion_piece_type)
+    {
+      case piecetype::Queen:
+        (_col_to_move == col::white) ? _material_diff += 8.0, _W_Queens |= to_square :
+                                       _material_diff -= 8.0, _B_Queens |= to_square;
+        break;
+      case piecetype::Rook:
+        (_col_to_move == col::white) ? _material_diff += 4.0, _W_Rooks |= to_square :
+                                       _material_diff -= 4.0, _B_Rooks |= to_square;
+        break;
+      case piecetype::Knight:
+        (_col_to_move == col::white) ? _material_diff += 2.0, _W_Knights |= to_square :
+                                       _material_diff -= 2.0, _B_Knights |= to_square;
+        break;
+      case piecetype::Bishop:
+        (_col_to_move == col::white) ? _material_diff += 2.0, _W_Bishops |= to_square :
+                                       _material_diff -= 2.0, _B_Bishops |= to_square;
+        break;
+      default:
+        ;
     }
-// init _material_diff
-    init_piece_state();
   }
+// init _material_diff
+  init_piece_state();
 }
 
 } // namespace C2_chess

@@ -165,12 +165,16 @@ constexpr uint8_t move_props_promotion = 0x20;
 constexpr uint8_t move_props_castling = 0x40;
 
 // Castling rights
-constexpr uint8_t castling_rights_none = 0x00;
-constexpr uint8_t castling_rights_all = 0x0F;
-constexpr uint8_t castling_rights_WK = 0x08;
-constexpr uint8_t castling_rights_WQ = 0x04;
-constexpr uint8_t castling_rights_BK = 0x02;
-constexpr uint8_t castling_rights_BQ = 0x01;
+constexpr uint8_t castling_rights_all = 0B00001111;
+constexpr uint8_t castling_rights_none = 0B00000000;
+
+constexpr uint8_t castling_rights_WK = 0B00001000;
+constexpr uint8_t castling_rights_WQ = 0B00000100;
+constexpr uint8_t castling_rights_W = 0B00001100;
+
+constexpr uint8_t castling_rights_BK = 0B00000010;
+constexpr uint8_t castling_rights_BQ = 0B00000001;
+constexpr uint8_t castling_rights_B = 0B00000011;
 
 struct BitMove
 {
@@ -406,13 +410,14 @@ class Bitboard
                            uint64_t to_square,
                            piecetype p_type);
 
+    inline void remove_castling_rights();
+
     inline void place_piece(piecetype p_type, uint64_t square);
 
     inline void update_hash_tag(uint64_t square, col p_color, piecetype type);
 
     inline void update_hash_tag(uint64_t square1, uint64_t square2, col p_color, piecetype type);
 
-    inline void update_hash_tag_remove_castling_rights(uint8_t cr);
 
     inline piecetype get_piece_type(uint64_t square);
 
