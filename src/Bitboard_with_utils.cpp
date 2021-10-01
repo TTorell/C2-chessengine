@@ -402,7 +402,7 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum, const std::string& FEN_s
 {
   CurrentTime now;
   std::cout << "-- Test " << testnum << " --" << std::endl;
-  //std::cout << "FEN_string = " << FEN_string << std::endl;
+//  std::cout << "FEN_string = " << FEN_string << std::endl;
   Bitboard_with_utils chessboard;
   std::vector<std::string> matches;
   regexp_grep(FEN_string, "^([^\\s]+\\s){5}[^\\s]+", matches); // Matches the first 6 "words" in the string.
@@ -414,6 +414,8 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum, const std::string& FEN_s
     std::cerr << "Couldn't read FEN string." << std::endl;
     return -1;
   }
+  std::cout << "reversed:    " << reverse_FEN_string(matches[0]) << std::endl;
+
   //chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
 
   uint64_t start = now.nanoseconds();

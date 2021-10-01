@@ -11,6 +11,7 @@
 #include <sstream>
 //#include <iomanip>
 #include <regex>
+#include <vector>
 //#include <memory>
 //#include <array>
 //#include <utility>
@@ -27,7 +28,6 @@
 // Redefining a namespace to something shorter.
 namespace fs = std::filesystem;
 
-
 #ifdef __linux__
 extern "C"
 {
@@ -39,22 +39,19 @@ extern "C"
 namespace C2_chess
 {
 
-col other_color(col& c)
+col other_color(const col& c)
 {
   return (c == col::white) ? col::black : col::white;
 }
 
-col& operator++(col& c)
+inline col& operator++(col& c)
 {
   return c = (c == col::white) ? col::black : col::white;
 }
 
 col col_from_string(const std::string& s)
 {
-  if (s == "w")
-    return col::white;
-  else
-    return col::black;
+  return (s == "w") ? col::white : col::black;
 }
 
 std::string get_logfile_name()
@@ -101,7 +98,7 @@ void require(bool bo, std::string file, std::string method, int line)
   }
 }
 
-void require_m(bool bo, std::string file, std::string method, int line, const Move &m)
+void require_m(bool bo, std::string file, std::string method, int line, const Move& m)
 {
   if (!bo)
   {
@@ -115,7 +112,7 @@ void require_m(bool bo, std::string file, std::string method, int line, const Mo
   }
 }
 
-#ifdef __linux
+#ifdef __linux__
 #define open_pipe popen
 #define close_pipe pclose
 #else
@@ -123,7 +120,7 @@ void require_m(bool bo, std::string file, std::string method, int line, const Mo
 #define close_pipe _pclose
 #endif
 
-// Run a command and return it's output as a string.
+// Run a shell-command and return it's output as a string.
 // This function returns the output (stdout and stderr) from a command in the environment
 // you run the program from.
 // NOTE: Also the trailing newline from the command will be present in the result.
@@ -179,12 +176,12 @@ bool check_execution_dir(const std::string& preferred_exec_dir)
   if (process_return.second != 0)
   {
     std::cerr << "ERROR: could not execute command \"pwd\"" << std::endl
-         << "program exited with status code "
-         << process_return.second << std::endl
-         << "captured stdout and stderr; "
-         << std::endl
-         << process_return.first
-         << std::endl;
+              << "program exited with status code "
+              << process_return.second << std::endl
+              << "captured stdout and stderr; "
+              << std::endl
+              << process_return.first
+              << std::endl;
     return false;
   }
   std::string current_dir = process_return.first;
@@ -476,20 +473,6 @@ bool compare_move_lists(const std::vector<std::string>& out_vector, const std::v
   return success;
 }
 
-std::string to_binary_board(uint64_t in)
-{
-  std::stringstream ss;
-  uint8_t rank;
-  uint64_t mask = 0x00000000000000FF;
-  for (int i = 7; i >= 0; i--)
-  {
-    rank = in & mask;
-    ss << to_binary(rank) << std::endl;
-    in >>= 8;
-  }
-  return ss.str();
-}
-
 bool question_to_user(const std::string& question, std::string regexp_correct_answer)
 {
   std::string answer;
@@ -504,6 +487,63 @@ std::string user_input(const std::string& message)
   std::cout << message;
   getline(std::cin, input);
   return input;
+}
+
+// Turns a FEN_string into a corresponding, reversed FEN_string
+// with the other color to move. (Just to be able to test the
+// same position for both black and white, without having to
+// define two FEN_strings.)
+std::string reverse_FEN_string(const std::string& FEN_string)
+{
+  std::string reversed_FEN_string = "";
+  std::string reversed_position = cut(FEN_string, ' ', 1);
+  // Change color of the pieces.
+  for (char& ch : reversed_position)
+  {
+    if (std::islower(ch))
+    {
+      ch = std::toupper(ch);
+    }
+    else if (std::isupper(ch))
+      ch = std::tolower(ch);
+  }
+  // Reverse order of the ranks.
+  std::vector<std::string> rank_vector = split(reversed_position, '/');
+  for (int i = 7; i >= 0; i--)
+  {
+    reversed_FEN_string += rank_vector[i];
+    if (i > 0)
+      reversed_FEN_string += "/";
+  }
+  reversed_FEN_string += " ";
+  // Change color to move.
+  reversed_FEN_string += ((cut(FEN_string, ' ', 2) == "w") ? "b " : "w ");
+  // Reverse castling_rights.
+  std::string castling_rights = cut(FEN_string, ' ', 3);
+  for (char& ch : castling_rights)
+  {
+    if (std::islower(ch))
+      ch = std::toupper(ch);
+    else if (std::isupper(ch))
+      ch = std::tolower(ch);
+  }
+  reversed_FEN_string += castling_rights + " ";
+  // en_passant square
+  std::string en_passant_square = cut(FEN_string, ' ', 4);
+  for (char& ch : en_passant_square)
+  {
+    if (std::isdigit(ch))
+    {
+      ch = '9' - (ch - '0');
+    }
+  }
+  reversed_FEN_string += en_passant_square + " ";
+  // Half-move_counter (50 half-moves without a capture
+  // or a pawn move is a draw).
+  reversed_FEN_string += cut(FEN_string, ' ', 5) + " ";
+  // Fullmove number (the number of the full move in the game)
+  reversed_FEN_string += cut(FEN_string, ' ', 6);
+  return reversed_FEN_string;
 }
 
 } // End namespace C2_chess

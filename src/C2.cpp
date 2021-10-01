@@ -361,8 +361,8 @@ int main(int argc, char* argv[])
     bool result = chessboard.bitboard_tests(arg);
     if (!result)
       std::cout << "TESTS FAILED!" << std::endl;
-    if (old_mg_tests(0) != 0)
-      std::cout << "OLD TESTS FAILED!" << std::endl;
+//    if (old_mg_tests(0) != 0)
+//      std::cout << "OLD TESTS FAILED!" << std::endl;
     return 0;
   }
 

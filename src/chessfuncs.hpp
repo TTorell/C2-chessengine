@@ -55,8 +55,8 @@ std::string to_binary(const T& x)
 class Move;
 class Config_params;
 
-col& operator++(col& c);
-col other_color(col& c);
+col other_color(const col& c);
+inline col& operator++(col& c);
 col col_from_string(const std::string& s);
 std::string get_logfile_name();
 void require(bool b, std::string file, std::string method, int line);
@@ -85,6 +85,7 @@ bool all_in_a_exist_in_b(const std::vector<std::string>& a, const std::vector<st
 std::string to_binary_board(uint64_t in);
 bool question_to_user(const std::string& question, std::string regexp_correct_answer);
 std::string user_input(const std::string& message);
+std::string reverse_FEN_string(const std::string& FEN_string);
 
 } // End namespace C2_chess
 #endif //CHESSFUNCS_HPP_
