@@ -140,6 +140,18 @@ constexpr uint64_t ad(const int i)
   return val;
 }
 
+// slow TODO: improve
+inline uint64_t to_file(uint64_t square)
+{
+  uint64_t f;
+  for (f = 0; f <= 7; f++)
+  {
+    if (file[f] & square)
+      return file[f];
+  }
+  return 0L;
+}
+
 constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14)};
 
 //constexpr uint8_t Direction_north = 0x80;
@@ -224,19 +236,19 @@ struct BitMove
 
     uint8_t from_f_index() const
     {
-      return (7 - ((int) log2(from_square)) % 8);
+      return (7 - (static_cast<int>( LOG2(from_square))) % 8);
     }
     uint8_t from_r_index() const
     {
-      return (8 - ((int) log2(from_square)) / 8);
+      return (8 - (static_cast<int>( LOG2(from_square))) / 8);
     }
     uint8_t to_f_index() const
     {
-      return (7 - ((int) log2(to_square)) % 8);
+      return (7 - (static_cast<int>(LOG2(to_square))) % 8);
     }
     uint8_t to_r_index() const
     {
-      return (8 - ((int) log2(to_square)) / 8);
+      return (8 - (static_cast<int>( LOG2(to_square))) / 8);
     }
 
     friend std::ostream& operator <<(std::ostream& os, const BitMove& m);

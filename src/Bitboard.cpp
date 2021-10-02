@@ -82,7 +82,7 @@ inline void Bitboard::init_piece_state()
     _s.King_rank = _B_King_rank;
     _s.King_diagonal = _B_King_diagonal;
     _s.King_anti_diagonal = _B_King_anti_diagonal;
-    _s.King_initial_square = e1_square;
+    _s.King_initial_square = e8_square;
     _s.castling_rights_K = _castling_rights & castling_rights_BK;
     _s.castling_rights_Q = _castling_rights & castling_rights_BQ;
     _s.own_pieces = _B_King | _B_Queens | _B_Rooks | _B_Bishops | _B_Knights | _B_Pawns;
@@ -296,6 +296,7 @@ bool Bitboard::square_is_threatened(int8_t file_index, int8_t rank_index, bool K
   return false;
 }
 
+// Finds normal King-moves not including castling.
 inline void Bitboard::find_king_moves()
 {
 
@@ -1204,26 +1205,32 @@ bool Bitboard::castling_squares_are_threatened_Q(const uint64_t square)
 
 void Bitboard::find_short_castling(const uint64_t square)
 {
-  // Next if-statement should be true if the initial FEN-string's castling-rights wasn't bad.
-  if (square == _s.King_initial_square && ((square >> 3) & _s.Rooks))
+  if (_castling_rights & ((_col_to_move == col::white) ? castling_rights_WK : castling_rights_BK))
   {
-    if (_s.King_rank & castling_empty_squares_K & _s.all_pieces)
-      return;
-    if (castling_squares_are_threatened_K(square))
-      return;
-    _movelist.push_front(BitMove(piecetype::King, move_props_castling, _s.King_initial_square, _s.King_initial_square >> 2));
+    // Next if-statement should be true if the initial FEN-string's castling-rights wasn't bad.
+    if (square == _s.King_initial_square && ((square >> 3) & _s.Rooks))
+    {
+      if (_s.King_rank & castling_empty_squares_K & _s.all_pieces)
+        return;
+      if (castling_squares_are_threatened_K(square))
+        return;
+      _movelist.push_front(BitMove(piecetype::King, move_props_castling, _s.King_initial_square, _s.King_initial_square >> 2));
+    }
   }
 }
 
 void Bitboard::find_long_castling(const uint64_t square)
 {
-  if (square == _s.King_initial_square && ((square << 4) & _s.Rooks))
+  if (_castling_rights & ((_col_to_move == col::white) ? castling_rights_WQ : castling_rights_BQ))
   {
-    if (_s.King_rank & castling_empty_squares_Q & _s.all_pieces)
-      return;
-    if (castling_squares_are_threatened_Q(square))
-      return;
-    _movelist.push_front(BitMove(piecetype::King, move_props_castling, _s.King_initial_square, _s.King_initial_square << 2));
+    if (square == _s.King_initial_square && ((square << 4) & _s.Rooks))
+    {
+      if (_s.King_rank & castling_empty_squares_Q & _s.all_pieces)
+        return;
+      if (castling_squares_are_threatened_Q(square))
+        return;
+      _movelist.push_front(BitMove(piecetype::King, move_props_castling, _s.King_initial_square, _s.King_initial_square << 2));
+    }
   }
 }
 
@@ -1317,29 +1324,49 @@ inline uint64_t Bitboard::step_out_from_square(uint64_t square,
 // Sub-function to try_adding_ep_pawn_move()
 bool Bitboard::check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint64_t own_pawn_square, uint8_t inc)
 {
-  uint64_t square;
-  // Check if other_pawn_square is to the (east or north of the King)
-  // or to the (west or south of the King), so we now which way to shift.
+  uint64_t square, file_condition, pinning_pieces;
+  // Check if other_pawn_square is (directly to the east or to the north of the King)
+  // or (directly to the west or to the south of the King), so we know which way to shift.
   // Step out from the King in the direction of other_pawn_square.
+
+  // TODO: Can this method fail when the king is on a8, the square with the largest value.
+  // MSB is set (but only MSB is set). I cast the (unsigned long)-diff to a (long int).
+  // I don't think it can fail unless the other square is zero, but then something really
+  // wrong has happened before this.
 
   // When file_condition becomes false we have reached the edge of the board
   // and moved to a square on the other side of the board, so the loop should stop.
   // This condition is valid here because we never start at the a_file or h_file,
-  // pins on the king-file pose no problem.
+  // pins on the king-file pose no problem. So, inc == 8 is disregarded.
   // If we instead go over the bottom or top edge of the board, square will be 0L
   // and the loop will stop.
-  uint64_t file_condition = ((long int) (_s.King - _s.checking_piece_square) > 0) ? not_a_file : not_h_file;
-
-  uint64_t pinning_pieces = (abs(inc) == 1 || abs(inc) == 8) ? _s.other_Queens_or_Rooks : _s.other_Queens_or_Bishops;
-  // abs(inc) == 8 should never happen, but I keep it in case I want to use this approach somewhere else in the code.
-
-  for (square = ((long int) (_s.King - _s.checking_piece_square) > 0) ? _s.King >> inc : _s.King << inc;
-      (square & file_condition);
-      ((long int) (_s.King - _s.checking_piece_square) > 0) ? square >>= inc : square <<= inc)
+  if (inc == 1)
   {
-    // Can we put any piece between our King and the checking piece?
+    // Along the rank
+    file_condition = (static_cast<long int>(_s.King - other_pawn_square) > 0) ? not_a_file : not_h_file;
+    pinning_pieces = _s.other_Queens_or_Rooks;
+  }
+  else if (inc == 9)
+  {
+    // Along the King-diagonal (moving up will also mean moving to the right).
+    file_condition = (static_cast<long int>(_s.King - other_pawn_square) > 0) ? not_a_file : not_h_file;
+    pinning_pieces = _s.other_Queens_or_Bishops;
+  }
+  else if (inc == 7)
+  {
+    // Along the King-anti-diagonal (moving up will also mean moving to the left).
+    file_condition = (static_cast<long int>(_s.King - other_pawn_square) > 0) ? not_h_file : not_a_file;
+    pinning_pieces = _s.other_Queens_or_Bishops;
+  }
+  else
+    return false;
+
+  for (square = (static_cast<long int>(_s.King - other_pawn_square) > 0) ? _s.King >> inc : _s.King << inc;
+      (square & file_condition);
+      (static_cast<long int>(_s.King - other_pawn_square) > 0) ? square >>= inc : square <<= inc)
+  {
     if (square & pinning_pieces)
-      return true;
+      return true; // We have reached the pinning piece without any interruption of the loop.
     // Continue loop if empty squares, other_pawn_square or own_pawn_square is found.
     // own_pawn_square can be a blocker on a rank together with other_pawn_square
     // which both would be gone from the rank after the move.

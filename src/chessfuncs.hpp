@@ -86,6 +86,6 @@ std::string to_binary_board(uint64_t in);
 bool question_to_user(const std::string& question, std::string regexp_correct_answer);
 std::string user_input(const std::string& message);
 std::string reverse_FEN_string(const std::string& FEN_string);
-
+std::vector<std::string> reverse_moves(const std::vector<std::string>& moves);
 } // End namespace C2_chess
 #endif //CHESSFUNCS_HPP_

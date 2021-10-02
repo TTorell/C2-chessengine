@@ -34,6 +34,7 @@ int Bitboard_with_utils::read_position(const std::string& FEN_string)
   if (FEN_tokens.size() != 6)
   {
     std::cerr << "Read error: Number of elements in FEN string should be 6, but there are " << FEN_tokens.size() << std::endl;
+    std::cerr << "FEN-string: " << FEN_string << std::endl;
     return -1;
   }
 
@@ -44,7 +45,6 @@ int Bitboard_with_utils::read_position(const std::string& FEN_string)
   //for (i = 0; i < FEN_string.size() && ch != ' '; i++)
   for (const char& ch : FEN_tokens[0])
   {
-    //ch = FEN_string[i];
     switch (ch)
     {
       case ' ':
@@ -113,22 +113,26 @@ int Bitboard_with_utils::read_position(const std::string& FEN_string)
         if (r < 1)
         {
           std::cerr << "Read error: corrupt FEN input (rank)" << "\n";
+          std::cerr << "FEN-string: " << FEN_string << std::endl;
           return -1;
         }
         continue; // without increasing f
       default:
         std::cerr << "Read error: unexpected character in FEN input" << ch << "\n";
+        std::cerr << "FEN-string: " << FEN_string << std::endl;
         return -1;
     } // end of case-statement
     if (f > h)
     {
       std::cerr << "Read error: corrupt FEN input (file)" << "\n";
+      std::cerr << "FEN-string: " << FEN_string << std::endl;
       return -1;
     }
     f++;
   } // end of for-loop
   _col_to_move = (FEN_tokens[1] == "w") ? col::white : col::black;
   std::string castling_rights = FEN_tokens[2];
+  _castling_rights = castling_rights_none;
   for (const char& cr : castling_rights)
   {
     switch (cr)
@@ -150,6 +154,7 @@ int Bitboard_with_utils::read_position(const std::string& FEN_string)
         break;
       default:
         std::cerr << "Read error: Strange castling character \'" << cr << "\' in FEN-string." << std::endl;
+        std::cerr << "FEN-string: " << FEN_string << std::endl;
         return -1;
     }
   }
@@ -157,6 +162,7 @@ int Bitboard_with_utils::read_position(const std::string& FEN_string)
   if (!regexp_match(ep_string, "^-|([a-h][36])$")) // Either a "-" or a square on rank 3 or 6-
   {
     std::cerr << "Read error: Strange en_passant_square characters \"" << ep_string << "\" in FEN-string." << std::endl;
+    std::cerr << "FEN-string: " << FEN_string << std::endl;
     return -1;
   }
   _ep_square = 0L;
@@ -251,20 +257,15 @@ std::ostream& Bitboard_with_utils::write(std::ostream& os, outputtype wt, col fr
   return os;
 }
 
-inline std::ostream& operator <<(std::ostream& os, const BitMove& m)
+std::ostream& operator <<(std::ostream& os, const BitMove& m)
 {
-  int from_file = 7 - ((int) log2(m.from_square)) % 8;
-  int from_rank = 8 - ((int) log2(m.from_square)) / 8;
-  int to_file = 7 - ((int) log2(m.to_square)) % 8;
-  int to_rank = 8 - ((int) log2(m.to_square)) / 8;
-
   switch (m.piece_type)
   {
     case piecetype::King:
       {
-      if (abs((long int) (from_file - to_file)) == 2)
+      if (abs((long int) (m.from_f_index() - m.to_f_index())) == 2)
       {
-        if (to_file == g)
+        if (m.to_f_index() == g)
           os << "0-0";
         else
           os << "0-0-0";
@@ -288,8 +289,8 @@ inline std::ostream& operator <<(std::ostream& os, const BitMove& m)
     default:
       break;
   }
-  Position from(from_file, from_rank);
-  Position to(to_file, to_rank);
+  Position from(m.from_f_index(), m.from_r_index());
+  Position to(m.to_f_index(), m.to_r_index());
   os << from;
   if (m.properties & move_props_capture)
     os << "x";
@@ -398,55 +399,39 @@ void Bitboard_with_utils::add_mg_test_position(const std::string& filename)
   }
 }
 
-bool Bitboard_with_utils::run_mg_test_case(int testnum, const std::string& FEN_string)
+bool Bitboard_with_utils::run_mg_test_case(int testnum,
+                                           const std::string& FEN_string,
+                                           const std::vector<std::string>& ref_moves_vector,
+                                           const std::string& testcase_info)
 {
   CurrentTime now;
-  std::cout << "-- Test " << testnum << " --" << std::endl;
-//  std::cout << "FEN_string = " << FEN_string << std::endl;
+  std::cout << "-- Test " << testnum << " " << testcase_info << " --" << std::endl;
+
   Bitboard_with_utils chessboard;
-  std::vector<std::string> matches;
-  regexp_grep(FEN_string, "^([^\\s]+\\s){5}[^\\s]+", matches); // Matches the first 6 "words" in the string.
-  //std::cout << "matches: " << std::endl;
-  //for (unsigned int i = 0; i < matches.size(); i++)
-  //std::cout << "match[" << i << "] = " << "\"" << matches[i] << "\"" << std::endl;
-  if (chessboard.read_position(matches[0]) != 0)
+  if (chessboard.read_position(FEN_string) != 0)
   {
     std::cerr << "Couldn't read FEN string." << std::endl;
-    return -1;
+    return false;
   }
-  std::cout << "reversed:    " << reverse_FEN_string(matches[0]) << std::endl;
-
   //chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
 
   uint64_t start = now.nanoseconds();
+
   chessboard.find_all_legal_moves();
+
   uint64_t stop = now.nanoseconds();
   std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
 
-  // Compare output and reference moves
+  // Compare output and reference moves, first build a vector of "output-moves".
   std::stringstream out_moves;
   chessboard.write_movelist(out_moves);
-  // In this case The FEN_string also contains a list of
-  // all legal moves in the position.
   std::vector<std::string> out_moves_vector;
   std::string out_move = "";
-  while (getline(out_moves, out_move))
+  while (std::getline(out_moves, out_move))
     out_moves_vector.push_back(out_move);
-  // In this case the "lines" in FEN_test_positions.txt contains the FEN_string
-  // followed by a list of all legal moves in the position at the end.
-  std::vector<std::string> ref_moves_vector = split(FEN_string, ' ');
-  // Erase the actual FEN_string tokens from the vector.
-  ref_moves_vector.erase(ref_moves_vector.begin(), ref_moves_vector.begin() + 6);
-  // fix that "e.p." has been treated as a separate token.
-  for (unsigned int i = 0; i < ref_moves_vector.size(); i++)
-    if (ref_moves_vector[i] == "e.p.")
-    {
-      ref_moves_vector[i - 1] += " e.p.";
-      ref_moves_vector.erase(ref_moves_vector.begin() + i);
-    }
   if (!compare_move_lists(out_moves_vector, ref_moves_vector))
   {
-    std::cout << "ERROR: Test " << testnum << " failed!" << std::endl;
+    std::cout << "ERROR: Test " << testnum << " " << testcase_info << " failed!" << std::endl;
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     std::cout << "Comparing program output with test case reference:" << std::endl;
     chessboard.write_movelist(std::cout, true);
@@ -467,7 +452,7 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum, const std::string& FEN_s
 
 int Bitboard_with_utils::test_move_generation(unsigned int single_testnum)
 {
-  std::string FEN_string;
+  std::string line;
   std::string filename = "test_positions/FEN_test_positions.txt";
   std::ifstream ifs(filename);
   if (!ifs.is_open())
@@ -477,17 +462,47 @@ int Bitboard_with_utils::test_move_generation(unsigned int single_testnum)
   }
   std::vector<unsigned int> failed_testcases;
   unsigned int testnum = 1;
-  while (getline(ifs, FEN_string))
+  while (std::getline(ifs, line))
   {
     // Skip empty lines and lines starting with a blank.
     //std::cout << "single_testnum: " << single_testnum << ", " << "testnum: " << testnum << std::endl;
     if (single_testnum == 0 || single_testnum == testnum)
     {
-      if ((FEN_string.empty()) || FEN_string[0] == ' ')
+      if ((line.empty()) || line[0] == ' ')
         continue;
 
-      if (!run_mg_test_case(testnum, FEN_string))
+      // In this case each line in FEN_test_positions.txt contains the FEN-string
+      // followed by a list of all legal moves in the position at the end.
+      // Extract the actual FEN_string:
+      // Match the first 6 tokens in the string.
+      std::vector<std::string> matches;
+      regexp_grep(line, "^([^\\s]+\\s){5}[^\\s]+", matches);
+      std::string FEN_string = matches[0];
+      //std::cout << "FEN_string1: " << FEN_string << std::endl;
+      // Put all the reference moves in a string-vector
+      std::vector<std::string> ref_moves_vector = split(line, ' ');
+      // Erase the actual FEN_string tokens from the vector.
+      ref_moves_vector.erase(ref_moves_vector.begin(), ref_moves_vector.begin() + 6);
+      // fix that "e.p." has been treated as a separate token
+      // (because it's separated from the move by a blank-character.
+      for (unsigned int i = 0; i < ref_moves_vector.size(); i++)
+        if (ref_moves_vector[i] == "e.p.")
+        {
+          ref_moves_vector[i - 1] += " e.p.";
+          ref_moves_vector.erase(ref_moves_vector.begin() + i);
+        }
+
+      // Run the testcase for the position:
+      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "for inital color"))
         failed_testcases.push_back(testnum);
+
+      // Run the same test-case with reversed colors.
+      std::string reversed_FEN_string = reverse_FEN_string(matches[0]);
+      //std::cout << "FEN_string2: " << reversed_FEN_string << std::endl;
+      std::vector<std::string> reversed_ref_moves_vector = reverse_moves(ref_moves_vector);
+      if (!run_mg_test_case(testnum, reversed_FEN_string, reversed_ref_moves_vector, "for other color"))
+        failed_testcases.push_back(testnum);
+
     }
     testnum++;
   }

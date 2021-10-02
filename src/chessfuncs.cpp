@@ -498,12 +498,11 @@ std::string reverse_FEN_string(const std::string& FEN_string)
   std::string reversed_FEN_string = "";
   std::string reversed_position = cut(FEN_string, ' ', 1);
   // Change color of the pieces.
+  // (change lower-case to upper-case and vice versa).
   for (char& ch : reversed_position)
   {
     if (std::islower(ch))
-    {
       ch = std::toupper(ch);
-    }
     else if (std::isupper(ch))
       ch = std::tolower(ch);
   }
@@ -541,9 +540,33 @@ std::string reverse_FEN_string(const std::string& FEN_string)
   // Half-move_counter (50 half-moves without a capture
   // or a pawn move is a draw).
   reversed_FEN_string += cut(FEN_string, ' ', 5) + " ";
-  // Fullmove number (the number of the full move in the game)
+  // Full-move number (the number of the full move in the game)
   reversed_FEN_string += cut(FEN_string, ' ', 6);
   return reversed_FEN_string;
 }
 
+std::vector<std::string> reverse_moves(const std::vector<std::string>& moves)
+{
+  std::vector<std::string> reversed_moves;
+  for (std::string move : moves)
+  {
+    if (move != "0-0" && move != "0-0-0")
+    {
+      // transform the square-numbers symmetrically in an imagined horizontal
+      // line/plane between rank 4 and 5, so e.g. d6 will become d3 and h8 will
+      // become h1.
+      for (char& ch : move)
+      {
+        if (std::isdigit(ch))
+        {
+          ch = '9' - (ch - '0');
+        }
+      }
+    }
+    reversed_moves.push_back(move);
+  }
+  return reversed_moves;
+}
+
 } // End namespace C2_chess
+

@@ -8,7 +8,10 @@
 #define Bitboard_with_utils_HPP_
 
 #include <fstream>
+#include <vector>
+#include <string>
 #include "Bitboard.hpp"
+
 namespace C2_chess
 {
 
@@ -19,6 +22,10 @@ std::ostream& operator <<(std::ostream& os, const BitMove& m);
 class Bitboard_with_utils: public Bitboard
 {
   protected:
+    bool run_mg_test_case(int testnum,
+                          const std::string& FEN_string,
+                          const std::vector<std::string>& reference_moves,
+                          const std::string& testcase_info);
     bool run_mg_test_case(int testnum, const std::string& FEN_string);
 
   public:

@@ -329,14 +329,14 @@ using namespace C2_chess;
 int main(int argc, char* argv[])
 {
   //long long unsigned int input = 1;
-  uint64_t input = 1;
-  while (input)
-  {
-    std::cout << to_binary(input) << std::endl;
-    printf("log(%llu) = %u\n", static_cast<long long unsigned int>(input), LOG2(input));
-    input <<= 1;
-  }
-
+//  uint64_t input = 1;
+//  while (input)
+//  {
+//    std::cout << to_binary(input) << std::endl;
+//    printf("log(%llu) = %u\n", static_cast<long long unsigned int>(input), LOG2(input));
+//    input <<= 1;
+//  }
+//
 //  for (int i = 0; i < argc; ++i)
 //    std::cout << argv[i] << "\n";
 
