@@ -19,9 +19,9 @@ namespace C2_chess
 
 struct bitboard_hash_element
 {
-  int best_move_index;
-  float evaluation;
-  int level;
+    int best_move_index;
+    float evaluation;
+    int level;
 };
 
 class Zobrist_bitboard_hash
@@ -31,22 +31,24 @@ class Zobrist_bitboard_hash
     std::unordered_map<unsigned long, bitboard_hash_element> _hash_map;
     unsigned long _random_table[64][2][6]; // square_index, piece_color, piece_type
     unsigned long _en_passant_file[8];
-    unsigned long _castling_rights[4];
+    unsigned long _castling_rights[16]; // we only use index 1, 2, 4 and 8
     unsigned long _black_to_move;
 
     void init_random_numbers()
     {
       std::random_device rd;
       std::mt19937 mt(rd());
-      std::uniform_real_distribution<double> dist(0, pow(2,64));
+      std::uniform_real_distribution<double> dist(0, pow(2, 64));
       for (int square_index = 0; square_index < 64; square_index++)
         for (int rank = 1; rank <= 8; rank++)
           for (int col = index(col::white); col <= index(col::black); col++)
             for (int type = index(piecetype::King); type <= index(piecetype::Pawn); type++)
               _random_table[square_index][col][type] = round(dist(mt));
 
-      for (int i = 0; i < 4; i++)
-        _castling_rights[i] = round(dist(mt));
+      _castling_rights[1] = round(dist(mt));
+      _castling_rights[2] = round(dist(mt));
+      _castling_rights[4] = round(dist(mt));
+      _castling_rights[8] = round(dist(mt));
 
       for (int i = 0; i < 8; i++)
         _en_passant_file[i] = round(dist(mt));
@@ -83,5 +85,4 @@ class Zobrist_bitboard_hash
 } // End namespace C2_chess
 
 #endif
-
 

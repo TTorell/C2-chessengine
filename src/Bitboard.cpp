@@ -20,7 +20,7 @@ namespace C2_chess
 
 std::atomic<bool> Bitboard::time_left(false);
 Bitboard Bitboard::level_boards[38];
-Zobrist_bitboard_hash Bitboard::hash_table;
+Zobrist_bitboard_hash Bitboard::bb_hash_table;
 
 inline void Bitboard::clear_movelist()
 {
@@ -44,8 +44,8 @@ inline void Bitboard::init_piece_state()
     _s.King_diagonal = _W_King_diagonal;
     _s.King_anti_diagonal = _W_King_anti_diagonal;
     _s.King_initial_square = e1_square;
-    _s.castling_rights_K = _castling_rights & castling_rights_WK;
-    _s.castling_rights_Q = _castling_rights & castling_rights_WQ;
+    _s.castling_rights_K = _castling_rights & castling_right_WK;
+    _s.castling_rights_Q = _castling_rights & castling_right_WQ;
     _s.own_pieces = _W_King | _W_Queens | _W_Rooks | _W_Bishops | _W_Knights | _W_Pawns;
     _s.adjacent_files = (_W_King_file_index - 1 >= a) ? file[_W_King_file_index - 1] : 0L;
     _s.adjacent_files |= file[_W_King_file_index + 1];
@@ -83,8 +83,8 @@ inline void Bitboard::init_piece_state()
     _s.King_diagonal = _B_King_diagonal;
     _s.King_anti_diagonal = _B_King_anti_diagonal;
     _s.King_initial_square = e8_square;
-    _s.castling_rights_K = _castling_rights & castling_rights_BK;
-    _s.castling_rights_Q = _castling_rights & castling_rights_BQ;
+    _s.castling_rights_K = _castling_rights & castling_right_BK;
+    _s.castling_rights_Q = _castling_rights & castling_right_BQ;
     _s.own_pieces = _B_King | _B_Queens | _B_Rooks | _B_Bishops | _B_Knights | _B_Pawns;
     _s.adjacent_files = (_B_King_file_index - 1 >= a) ? file[_B_King_file_index - 1] : 0L;
     _s.adjacent_files |= file[_B_King_file_index + 1];
@@ -335,7 +335,7 @@ inline void Bitboard::find_king_moves()
 bool Bitboard::find_check_or_pinned_piece(uint64_t square,
                                           uint64_t threatening_pieces,
                                           uint64_t opponents_other_pieces,
-                                          uint64_t& pinned_piece)
+                                          uint64_t &pinned_piece)
 {
   if (square & opponents_other_pieces)
   {
@@ -637,9 +637,9 @@ void Bitboard::step_from_King_to_pinning_piece(uint64_t from_square,
   // Check if the pinned_piece is to the (east or north of the King)
   // or to the (west or south of the King), so we now which way to shift.
   // Step out from the King in the direction of the pinned and pining pieces.
-  for (to_square = ((long int) (_s.King - from_square) > 0) ? _s.King >> inc : _s.King << inc;
+  for (to_square = ((long int)(_s.King - from_square) > 0) ? _s.King >> inc : _s.King << inc;
       (to_square & pinning_pieces) == 0L;
-      ((long int) (_s.King - from_square) > 0) ? to_square >>= inc : to_square <<= inc)
+      ((long int)(_s.King - from_square) > 0) ? to_square >>= inc : to_square <<= inc)
   {
     if (to_square != from_square)
       _movelist.push_back(BitMove(p_type, move_props_none, from_square, to_square));
@@ -1205,7 +1205,7 @@ bool Bitboard::castling_squares_are_threatened_Q(const uint64_t square)
 
 void Bitboard::find_short_castling(const uint64_t square)
 {
-  if (_castling_rights & ((_col_to_move == col::white) ? castling_rights_WK : castling_rights_BK))
+  if (_castling_rights & ((_col_to_move == col::white) ? castling_right_WK : castling_right_BK))
   {
     // Next if-statement should be true if the initial FEN-string's castling-rights wasn't bad.
     if (square == _s.King_initial_square && ((square >> 3) & _s.Rooks))
@@ -1221,7 +1221,7 @@ void Bitboard::find_short_castling(const uint64_t square)
 
 void Bitboard::find_long_castling(const uint64_t square)
 {
-  if (_castling_rights & ((_col_to_move == col::white) ? castling_rights_WQ : castling_rights_BQ))
+  if (_castling_rights & ((_col_to_move == col::white) ? castling_right_WQ : castling_right_BQ))
   {
     if (square == _s.King_initial_square && ((square << 4) & _s.Rooks))
     {
@@ -1277,8 +1277,8 @@ void Bitboard::find_normal_legal_moves()
 // Sub-function to find_moves_to_square()
 inline uint64_t Bitboard::step_out_from_square(uint64_t square,
                                                int8_t inc,
-                                               piecetype& p_type,
-                                               uint64_t& pieces)
+                                               piecetype &p_type,
+                                               uint64_t &pieces)
 {
   uint64_t allowed_squares = whole_board; // for inc 8 and -8 (files)
   uint64_t second = _s.Rooks; // for inc 8, -8, 1, -1 (files and ranks)
@@ -1480,7 +1480,7 @@ void Bitboard::find_moves_to_square(uint64_t to_square)
                                           pieces = _s.Rooks)))
     try_adding_move(pieces, p_type, move_props_none, from_square, to_square);
 
-// Diagonal
+  // Diagonal
   if ((from_square = step_out_from_square(to_square,
                                           9,
                                           p_type = piecetype::Bishop,
@@ -1493,7 +1493,7 @@ void Bitboard::find_moves_to_square(uint64_t to_square)
                                           pieces = _s.Bishops)))
     try_adding_move(pieces, p_type, move_props_none, from_square, to_square);
 
-// Anti-diagonal
+  // Anti-diagonal
   if ((from_square = step_out_from_square(to_square,
                                           7,
                                           p_type = piecetype::Bishop,
@@ -1514,9 +1514,9 @@ void Bitboard::step_from_King_to_checking_piece(uint8_t inc)
   // Check if the checking_piece is to the (east or north of the King)
   // or to the (west or south of the King), so we now which way to shift.
   // Step out from the King in the direction of the checking piece.
-  for (square = ((long int) (_s.King - _s.checking_piece_square) > 0) ? _s.King >> inc : _s.King << inc;
+  for (square = ((long int)(_s.King - _s.checking_piece_square) > 0) ? _s.King >> inc : _s.King << inc;
       (square & _s.checking_piece_square) == 0L;
-      ((long int) (_s.King - _s.checking_piece_square) > 0) ? square >>= inc : square <<= inc)
+      ((long int)(_s.King - _s.checking_piece_square) > 0) ? square >>= inc : square <<= inc)
   {
     // Can we put any piece between our King and the checking piece?
     find_moves_to_square(square);
@@ -1677,11 +1677,22 @@ inline void Bitboard::remove_other_piece(uint64_t square)
   if (_col_to_move == col::white)
   {
     if (_B_Queens & square)
+    {
       _B_Queens ^= square, _material_diff += 9, pt = piecetype::Queen;
+    }
     else if (_B_Pawns & square)
+    {
       _B_Pawns ^= square, _material_diff += 1, pt = piecetype::Pawn;
+    }
     else if (_B_Rooks & square)
+    {
       _B_Rooks ^= square, _material_diff += 5, pt = piecetype::Rook;
+      // update castling rights if needed
+      if (square & h8_square)
+        _hash_tag ^= bb_hash_table._castling_rights[2];
+      if (square & a8_square)
+        _hash_tag ^= bb_hash_table._castling_rights[3];
+    }
     else if (_B_Bishops & square)
       _B_Bishops ^= square, _material_diff += 3, pt = piecetype::Bishop;
     else if (_B_Knights & square)
@@ -1695,7 +1706,14 @@ inline void Bitboard::remove_other_piece(uint64_t square)
     else if (_W_Pawns & square)
       _W_Pawns ^= square, _material_diff -= 1, pt = piecetype::Pawn;
     else if (_W_Rooks & square)
+    {
       _W_Rooks ^= square, _material_diff -= 5, pt = piecetype::Rook;
+      // update castling rights if needed
+      if (square & h1_square)
+        _hash_tag ^= bb_hash_table._castling_rights[0];
+      if (square & a1_square)
+        _hash_tag ^= bb_hash_table._castling_rights[1];
+    }
     else if (_W_Bishops & square)
       _W_Bishops ^= square, _material_diff -= 3, pt = piecetype::Bishop;
     else if (_W_Knights & square)
@@ -1736,7 +1754,7 @@ inline void Bitboard::move_piece(uint64_t from_square,
                                  uint64_t to_square,
                                  piecetype p_type)
 {
-  uint64_t* p = nullptr;
+  uint64_t *p = nullptr;
   switch (p_type)
   {
     case piecetype::Pawn:
@@ -1764,38 +1782,40 @@ inline void Bitboard::move_piece(uint64_t from_square,
   update_hash_tag(from_square, to_square, _col_to_move, p_type);
 }
 
-// TOD: continue work here:
-inline void Bitboard::remove_castling_rights()
+// Preconditions: Remove One castling_right at the time
+inline void Bitboard::remove_castling_right(uint8_t cr)
 {
-  uint8_t cr = (_col_to_move == col::white) ? castling_rights_W : castling_rights_B;
   if (_castling_rights & cr)
   {
-    // Even if A & B is true the result can have different bits set.
-    // So we still have to check if A & B & C is true.
-    if (_castling_rights & cr & castling_rights_WK)
-    {
-      _hash_tag ^= hash_table._castling_rights[0];
-    }
-    if (_castling_rights & cr & castling_rights_WQ)
-    {
-      _hash_tag ^= hash_table._castling_rights[1];
-    }
-    if (_castling_rights & cr & castling_rights_BK)
-    {
-      _hash_tag ^= hash_table._castling_rights[2];
-    }
-    if (_castling_rights & cr & castling_rights_BQ)
-    {
-      _hash_tag ^= hash_table._castling_rights[3];
-    }
+    _castling_rights &= !cr;
+    _hash_tag ^= bb_hash_table._castling_rights[cr];
   }
+}
+
+//inline int Bitboard::ep_file()
+//{
+//  // En passant seldom happens so it may be OK with
+//  // some calculations when it really does happen.
+//  return 7 - static_cast<int>((LOG2(_ep_square)) % 8);
+//}
+
+inline void Bitboard::clear_ep_square()
+{
+  _hash_tag ^= bb_hash_table._en_passant_file[7 - static_cast<int>((LOG2(_ep_square)) % 8)];
+  _ep_square = 0L;
+}
+
+inline void Bitboard::set_ep_square(uint64_t ep_square)
+{
+  _ep_square = ep_square;
+  _hash_tag ^= bb_hash_table._en_passant_file[7 - static_cast<int>((LOG2(_ep_square)) % 8)];
 }
 
 // Set a "unique" hash tag for the position after
 // adding or removing one piece from a square.
 inline void Bitboard::update_hash_tag(uint64_t square, col p_color, piecetype p_type)
 {
-  _hash_tag ^= hash_table._random_table[LOG2(square)][index(p_color)][index(p_type)];
+  _hash_tag ^= bb_hash_table._random_table[LOG2(square)][index(p_color)][index(p_type)];
 }
 
 // Set a "unique" hash tag for the position after
@@ -1803,8 +1823,14 @@ inline void Bitboard::update_hash_tag(uint64_t square, col p_color, piecetype p_
 // the same piece on an empty square.
 inline void Bitboard::update_hash_tag(uint64_t square1, uint64_t square2, col p_color, piecetype p_type)
 {
-  _hash_tag ^= (hash_table._random_table[LOG2(square1)][index(p_color)][index(p_type)] ^
-                hash_table._random_table[LOG2(square2)][index(p_color)][index(p_type)]);
+  _hash_tag ^= (bb_hash_table._random_table[LOG2(square1)][index(p_color)][index(p_type)] ^
+                bb_hash_table._random_table[LOG2(square2)][index(p_color)][index(p_type)]);
+}
+
+void Bitboard::update_col_to_move()
+{
+  _col_to_move = other_color(_col_to_move);
+  _hash_tag ^= bb_hash_table._black_to_move;
 }
 
 // Move a piece
@@ -1817,18 +1843,18 @@ void Bitboard::make_move(int i)
   uint64_t to_square = m.to_square;
   uint64_t from_square = m.from_square;
 
-// Clear _ep_square but remember its value.
-//uint64_t tmp_ep_square = _ep_square;
-  _ep_square = 0;
+  // Clear _ep_square
+  if (_ep_square)
+    clear_ep_square();
 
-// Remove possible piece of other color on to_square and
-// Then make the move (updates hashtag)
+  // Remove possible piece of other color on to_square and
+  // Then make the move (updates hashtag)
   if (to_square & _s.other_pieces)
     remove_other_piece(to_square);
   move_piece(from_square, to_square, m.piece_type);
 
-// OK we have moved the piece, now we must
-// look at some special cases.
+  // OK we have moved the piece, now we must
+  // look at some special cases.
   if (m.piece_type == piecetype::King)
   {
     // Move the rook if it's actually a castling move.
@@ -1863,8 +1889,16 @@ void Bitboard::make_move(int i)
         }
       }
     }
-    if (from_square & e8_square)
-      remove_castling_rights();
+    if (from_square & e1_square)
+    {
+      remove_castling_right(castling_right_WK);
+      remove_castling_right(castling_right_WQ);
+    }
+    else if (from_square & e8_square)
+    {
+      remove_castling_right(castling_right_BK);
+      remove_castling_right(castling_right_BQ);
+    }
   }
   else if (m.piece_type == piecetype::Rook)
   {
@@ -1872,17 +1906,17 @@ void Bitboard::make_move(int i)
     if (to_square & _W_Rooks)
     {
       if (from_square & a1_square)
-        _castling_rights &= !castling_rights_WQ;
-      if (from_square & h1_square)
-        _castling_rights &= !castling_rights_WK;
+        remove_castling_right(castling_right_WQ);
+      else if (from_square & h1_square)
+        remove_castling_right(castling_right_WK);
     }
     else
     {
       // Black rook
       if (from_square & a8_square)
-        _castling_rights &= !castling_rights_BQ;
-      if (from_square & h8_square)
-        _castling_rights &= !castling_rights_BK;
+        remove_castling_right(castling_right_BQ);
+      else if (from_square & h8_square)
+        remove_castling_right(castling_right_BQ);
     }
   }
   else if (m.piece_type == piecetype::Pawn)
@@ -1890,8 +1924,16 @@ void Bitboard::make_move(int i)
     if (m.properties == move_props_en_passant)
     {
       // Remove the pawn taken e.p.
-      (_col_to_move == col::white) ? _B_Pawns ^= _ep_square, _material_diff += 1.0 :
-                                     _W_Pawns ^= _ep_square, _material_diff -= 1.0;
+      if (_col_to_move == col::white)
+      {
+        _B_Pawns ^= _ep_square << 8, _material_diff += 1.0;
+        update_hash_tag(_ep_square << 8, col::black, piecetype::Pawn);
+      }
+      else
+      {
+        _W_Pawns ^= _ep_square >> 8, _material_diff -= 1.0;
+        update_hash_tag(_ep_square >> 8, col::black, piecetype::Pawn);
+      }
       update_hash_tag(to_square, other_color(_col_to_move), piecetype::Pawn);
     }
     else if (_col_to_move == col::white)
@@ -1902,7 +1944,7 @@ void Bitboard::make_move(int i)
         // Check if there is a pawn of other color alongside to_square.
         if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
             ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
-          _ep_square = to_square << 8;
+          set_ep_square(to_square << 8); // updates hash_tg
       }
     }
     else
@@ -1911,39 +1953,45 @@ void Bitboard::make_move(int i)
       {
         if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
             ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
-          _ep_square = to_square >> 8;
+          set_ep_square(to_square >> 8); // updates hash_tg
       }
     }
   }
   else if (m.promotion_piece_type != piecetype::Undefined)
   {
-// Remove the pawn from promotion square
-// subtract 1 from the normal piece-values
-// because the pawn disappears from the board.
+    // Remove the pawn from promotion square
+    // subtract 1 from the normal piece-values
+    // because the pawn disappears from the board.
     (_col_to_move == col::white) ? _W_Pawns ^= to_square : _B_Pawns ^= to_square;
+    update_hash_tag(to_square, other_color(_col_to_move), piecetype::Pawn);
     switch (m.promotion_piece_type)
     {
       case piecetype::Queen:
         (_col_to_move == col::white) ? _material_diff += 8.0, _W_Queens |= to_square :
                                        _material_diff -= 8.0, _B_Queens |= to_square;
+        update_hash_tag(to_square, _col_to_move, piecetype::Queen);
         break;
       case piecetype::Rook:
         (_col_to_move == col::white) ? _material_diff += 4.0, _W_Rooks |= to_square :
                                        _material_diff -= 4.0, _B_Rooks |= to_square;
+        update_hash_tag(to_square, _col_to_move, piecetype::Rook);
         break;
       case piecetype::Knight:
         (_col_to_move == col::white) ? _material_diff += 2.0, _W_Knights |= to_square :
                                        _material_diff -= 2.0, _B_Knights |= to_square;
+        update_hash_tag(to_square, _col_to_move, piecetype::Knight);
         break;
       case piecetype::Bishop:
         (_col_to_move == col::white) ? _material_diff += 2.0, _W_Bishops |= to_square :
                                        _material_diff -= 2.0, _B_Bishops |= to_square;
+        update_hash_tag(to_square, _col_to_move, piecetype::Bishop);
         break;
       default:
         ;
     }
   }
-// init _material_diff
+  update_col_to_move();
+// Todo:init _material_diff
   init_piece_state();
 }
 

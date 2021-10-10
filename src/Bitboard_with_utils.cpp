@@ -141,16 +141,16 @@ int Bitboard_with_utils::read_position(const std::string& FEN_string)
         _castling_rights = castling_rights_none;
         break;
       case 'K':
-        _castling_rights |= castling_rights_WK;
+        _castling_rights |= castling_right_WK;
         break;
       case 'Q':
-        _castling_rights |= castling_rights_WQ;
+        _castling_rights |= castling_right_WQ;
         break;
       case 'k':
-        _castling_rights |= castling_rights_BK;
+        _castling_rights |= castling_right_BK;
         break;
       case 'q':
-        _castling_rights |= castling_rights_BQ;
+        _castling_rights |= castling_right_BQ;
         break;
       default:
         std::cerr << "Read error: Strange castling character \'" << cr << "\' in FEN-string." << std::endl;
