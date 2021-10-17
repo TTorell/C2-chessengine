@@ -7,7 +7,6 @@
 //============================================================================
 
 #include "bitboard.hpp"
-
 #include <iostream>
 #include <fstream>
 #include <sstream>

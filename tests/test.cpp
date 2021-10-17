@@ -6,15 +6,15 @@
  */
 
 #define CATCH_CONFIG_MAIN
-#include "../src/catch.hpp"
+#include "catch.hpp"
 #include <iostream>
 #include <string>
-#include "bitboard_with_utils.hpp"
-#include "chessfuncs.hpp"
+#include "../src/bitboard_with_utils.hpp"
+#include "../src/chessfuncs.hpp"
 
 using namespace C2_chess;
 
-namespace // fileprivate namespace
+namespace // file private namespace
 {
 
 std::string get_FEN_test_position(unsigned int n)
@@ -124,7 +124,7 @@ TEST_CASE("Castling_wrights")
     chessboard.make_move(17); // ...Rh8-g8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
-    REQUIRE(chessboard.get_castling_rights() == (castling_right_BQ | castling_right_WK));
+    REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_WK));
   }
 
 }

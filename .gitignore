@@ -17,3 +17,5 @@ test/
 src/out/
 *~
 /unit_test/
+/Unit_test/
+/chesslib/
