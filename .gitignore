@@ -16,3 +16,4 @@ build/
 test/
 src/out/
 *~
+/unit_test/

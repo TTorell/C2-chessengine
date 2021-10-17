@@ -81,10 +81,15 @@ class Config_params
   public:
     Config_params()
     {
-      _config_params.insert(std::make_pair("max_search_level", *(new Config_param("max_search_level", "7", "spin", "7", "2", "8"))));
-      _config_params.insert(std::make_pair("use_pruning", *(new Config_param("use_pruning", "true", "check", "true"))));
-      _config_params.insert(std::make_pair("use_incremental_search", *(new Config_param("use_incremental_search", "true", "check", "true"))));
-      _config_params.insert(std::make_pair("search_until_no_captures", *(new Config_param("search_until_no_captures", "false", "check", "false"))));
+      // This construct is just to not leakmemory
+      Config_param p1("max_search_level", "7", "spin", "7", "2", "8");
+      Config_param p2("use_pruning", "true", "check", "true");
+      Config_param p3("use_incremental_search", "true", "check", "true");
+      Config_param p4("search_until_no_captures", "false", "check", "false");
+      _config_params.insert(std::make_pair("max_search_level", p1));
+      _config_params.insert(std::make_pair("use_pruning", p2));
+      _config_params.insert(std::make_pair("use_incremental_search", p3));
+      _config_params.insert(std::make_pair("search_until_no_captures", p4));
     }
 
     std::map<std::string, Config_param> get_map() const

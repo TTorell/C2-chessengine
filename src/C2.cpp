@@ -8,12 +8,13 @@
 #include <atomic>
 #include <cstring>
 #include <cstdio>
+
+#include "bitboard_with_utils.hpp"
 #include "chessfuncs.hpp"
 #include "chesstypes.hpp"
 #include "config_param.hpp"
 #include "game.hpp"
 #include "position_reader.hpp"
-#include "Bitboard_with_utils.hpp"
 #include "current_time.hpp"
 
 namespace C2_chess
@@ -355,6 +356,9 @@ int main(int argc, char* argv[])
   if (argc > 1 && strcmp(argv[1], "-test") == 0)
   {
     Bitboard_with_utils chessboard;
+    const char* const preferred_test_exec_dir = "/home/torsten/eclipse-workspace/C2-chessengine";
+    if (!check_execution_dir(preferred_test_exec_dir))
+      return false;
     std::string arg = "";
     if (argc > 2)
       arg = argv[2];

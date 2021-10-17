@@ -414,11 +414,16 @@ class Bitboard
 
     inline void update_hash_tag(uint64_t square1, uint64_t square2, col p_color, piecetype type);
 
-    void update_col_to_move();
+    inline void update_col_to_move();
+
+    inline void update_state_after_king_move(const BitMove& m);
 
     inline piecetype get_piece_type(uint64_t square);
 
   public:
+
+    int read_position(const std::string& FEN_string);
+
     void find_all_legal_moves();
 
     void make_move(int i);

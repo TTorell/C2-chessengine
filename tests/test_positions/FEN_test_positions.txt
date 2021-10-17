@@ -68,3 +68,4 @@ r1r3k1/3bbppp/4pn2/2qp2B1/5N1P/1Pp1PQ2/2P2PP1/3RK2R b KQkq - 0 1 Qc5xe3 Kg8-f8 K
 5b2/8/1p6/1PpP4/7r/K5Pq/1P6/2b3k1 w - c6 0 1 Ka3-a2 Ka3-b3 d5-d6
 6b1/8/8/2PpP3/2K5/4k3/8/8 w - - 0 1 Kc4-b3 Kc4-b4 Kc4-b5 Kc4-c3
 6b1/8/8/2PpP3/2K5/4k3/8/8 w - d6 0 1 Kc4-b3 Kc4-b4 Kc4-b5 Kc4-c3
+r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1 Rh1xh8 0-0-0 0-0 Ra1xa8 Ke1-d1 Ke1-d2 Ke1-e2 Ke1-f1 Ke1-f2 Ra1-b1 Ra1-c1 Ra1-d1 Ra1-a2 Ra1-a3 Ra1-a4 Ra1-a5 Ra1-a6 Ra1-a7 Rh1-g1 Rh1-f1 Rh1-h2 Rh1-h3 Rh1-h4 Rh1-h5 Rh1-h6 Rh1-h7

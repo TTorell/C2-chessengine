@@ -6,177 +6,14 @@
  */
 
 #include <vector>
-#include "Bitboard_with_utils.hpp"
+
+#include "bitboard_with_utils.hpp"
 #include "chessfuncs.hpp"
 #include "current_time.hpp"
 
 namespace C2_chess
 {
 
-// Inits the Bitboard position from a text string (Forsyth-Edwards Notation)
-int Bitboard_with_utils::read_position(const std::string& FEN_string)
-{
-  //std::cout << "\"" << FEN_string << "\"" << std::endl;
-  _W_King = 0L;
-  _W_Queens = 0L;
-  _W_Rooks = 0L;
-  _W_Bishops = 0L;
-  _W_Knights = 0L;
-  _W_Pawns = 0L;
-  _B_King = 0L;
-  _B_Queens = 0L;
-  _B_Rooks = 0L;
-  _B_Bishops = 0L;
-  _B_Knights = 0L;
-  _B_Pawns = 0L;
-
-  std::vector<std::string> FEN_tokens = split(FEN_string, ' ');
-  if (FEN_tokens.size() != 6)
-  {
-    std::cerr << "Read error: Number of elements in FEN string should be 6, but there are " << FEN_tokens.size() << std::endl;
-    std::cerr << "FEN-string: " << FEN_string << std::endl;
-    return -1;
-  }
-
-  int r = 8;
-  int f = a;
-  //char ch = '0';
-  //unsigned int i;
-  //for (i = 0; i < FEN_string.size() && ch != ' '; i++)
-  for (const char& ch : FEN_tokens[0])
-  {
-    switch (ch)
-    {
-      case ' ':
-        break;
-      case 'K':
-        _W_King_file_index = f;
-        _W_King_rank_index = r;
-        _W_King_file = file[f];
-        _W_King_rank = rank[r];
-        _W_King = _W_King_file & _W_King_rank;
-        _W_King_diagonal = diagonal[8 - r + f];
-        _W_King_anti_diagonal = anti_diagonal[f + r - 1];
-        break;
-      case 'k':
-        _B_King_file_index = f;
-        _B_King_rank_index = r;
-        _B_King_file = file[f];
-        _B_King_rank = rank[r];
-        _B_King = _B_King_file & _B_King_rank;
-        _B_King_diagonal = diagonal[8 - r + f];
-        _B_King_anti_diagonal = anti_diagonal[f + r - 1];
-        break;
-      case 'Q':
-        _W_Queens |= (file[f] & rank[r]);
-        break;
-      case 'q':
-        _B_Queens |= (file[f] & rank[r]);
-        break;
-      case 'B':
-        _W_Bishops |= (file[f] & rank[r]);
-        break;
-      case 'b':
-        _B_Bishops |= (file[f] & rank[r]);
-        break;
-      case 'N':
-        _W_Knights |= (file[f] & rank[r]);
-        break;
-      case 'n':
-        _B_Knights |= (file[f] & rank[r]);
-        break;
-      case 'R':
-        _W_Rooks |= (file[f] & rank[r]);
-        break;
-      case 'r':
-        _B_Rooks |= (file[f] & rank[r]);
-        break;
-      case 'P':
-        _W_Pawns |= (file[f] & rank[r]);
-        break;
-      case 'p':
-        _B_Pawns |= (file[f] & rank[r]);
-        break;
-      case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        f += ch - '1';
-        break;
-      case '/':
-        f = a;
-        r--;
-        if (r < 1)
-        {
-          std::cerr << "Read error: corrupt FEN input (rank)" << "\n";
-          std::cerr << "FEN-string: " << FEN_string << std::endl;
-          return -1;
-        }
-        continue; // without increasing f
-      default:
-        std::cerr << "Read error: unexpected character in FEN input" << ch << "\n";
-        std::cerr << "FEN-string: " << FEN_string << std::endl;
-        return -1;
-    } // end of case-statement
-    if (f > h)
-    {
-      std::cerr << "Read error: corrupt FEN input (file)" << "\n";
-      std::cerr << "FEN-string: " << FEN_string << std::endl;
-      return -1;
-    }
-    f++;
-  } // end of for-loop
-  _col_to_move = (FEN_tokens[1] == "w") ? col::white : col::black;
-  std::string castling_rights = FEN_tokens[2];
-  _castling_rights = castling_rights_none;
-  for (const char& cr : castling_rights)
-  {
-    switch (cr)
-    {
-      case '-':
-        _castling_rights = castling_rights_none;
-        break;
-      case 'K':
-        _castling_rights |= castling_right_WK;
-        break;
-      case 'Q':
-        _castling_rights |= castling_right_WQ;
-        break;
-      case 'k':
-        _castling_rights |= castling_right_BK;
-        break;
-      case 'q':
-        _castling_rights |= castling_right_BQ;
-        break;
-      default:
-        std::cerr << "Read error: Strange castling character \'" << cr << "\' in FEN-string." << std::endl;
-        std::cerr << "FEN-string: " << FEN_string << std::endl;
-        return -1;
-    }
-  }
-  std::string ep_string = FEN_tokens[3];
-  if (!regexp_match(ep_string, "^-|([a-h][36])$")) // Either a "-" or a square on rank 3 or 6-
-  {
-    std::cerr << "Read error: Strange en_passant_square characters \"" << ep_string << "\" in FEN-string." << std::endl;
-    std::cerr << "FEN-string: " << FEN_string << std::endl;
-    return -1;
-  }
-  _ep_square = 0L;
-  if (ep_string.length() == 2)
-  {
-    _ep_square = file[ep_string[0] - 'a'] & rank[ep_string[1] - '0'];
-  }
-  //std::cout << "ep_square: " << std::endl << to_binary_board(_ep_square) << std::endl;
-
-  return 0;
-}
-
-// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Kkq - 0 1
-// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 inline std::ostream& Bitboard_with_utils::write_piece(std::ostream& os, uint64_t square) const
 {
   if (square & _W_King)
@@ -453,7 +290,7 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum,
 int Bitboard_with_utils::test_move_generation(unsigned int single_testnum)
 {
   std::string line;
-  std::string filename = "test_positions/FEN_test_positions.txt";
+  std::string filename = "tests/test_positions/FEN_test_positions.txt";
   std::ifstream ifs(filename);
   if (!ifs.is_open())
   {
@@ -533,8 +370,6 @@ bool Bitboard_with_utils::bitboard_tests(const std::string& arg)
 {
   Bitboard_with_utils chessboard;
   unsigned int single_testnum = 0;
-  if (!check_execution_dir(preferred_exec_dir))
-    return false;
   if (arg != "")
   {
     if (regexp_match(arg, "^testpos[0-9]+.pgn$")) // matches e.g. testpos23.pgn

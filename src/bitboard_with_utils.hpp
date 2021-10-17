@@ -10,12 +10,11 @@
 #include <fstream>
 #include <vector>
 #include <string>
-#include "Bitboard.hpp"
+
+#include "bitboard.hpp"
 
 namespace C2_chess
 {
-
-const char* const preferred_exec_dir = "/home/torsten/eclipse-workspace/C2-chessengine";
 
 std::ostream& operator <<(std::ostream& os, const BitMove& m);
 
@@ -29,7 +28,7 @@ class Bitboard_with_utils: public Bitboard
     bool run_mg_test_case(int testnum, const std::string& FEN_string);
 
   public:
-    int read_position(const std::string& FEN_string);
+    uint8_t get_castling_rights()const {return _castling_rights;}
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
     std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;
     std::ostream& write_movelist(std::ostream& os, bool same_line = false);

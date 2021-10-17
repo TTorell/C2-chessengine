@@ -6,13 +6,15 @@
 // Description : C++ code for a bitboard-representation of a chess board.
 //============================================================================
 
+#include "bitboard.hpp"
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <atomic>
 #include "chessfuncs.hpp"
-#include "Bitboard.hpp"
+#include "chesstypes.hpp"
 #include "zobrist_bitboard_hash.hpp"
 
 namespace C2_chess
@@ -25,6 +27,170 @@ Zobrist_bitboard_hash Bitboard::bb_hash_table;
 inline void Bitboard::clear_movelist()
 {
   _movelist.clear();
+}
+
+// Inits the Bitboard position from a text string (Forsyth-Edwards Notation)
+int Bitboard::read_position(const std::string& FEN_string)
+{
+  //std::cout << "\"" << FEN_string << "\"" << std::endl;
+  _W_King = 0L;
+  _W_Queens = 0L;
+  _W_Rooks = 0L;
+  _W_Bishops = 0L;
+  _W_Knights = 0L;
+  _W_Pawns = 0L;
+  _B_King = 0L;
+  _B_Queens = 0L;
+  _B_Rooks = 0L;
+  _B_Bishops = 0L;
+  _B_Knights = 0L;
+  _B_Pawns = 0L;
+
+  std::vector<std::string> FEN_tokens = split(FEN_string, ' ');
+  if (FEN_tokens.size() != 6)
+  {
+    std::cerr << "Read error: Number of elements in FEN string should be 6, but there are " << FEN_tokens.size() << std::endl;
+    std::cerr << "FEN-string: " << FEN_string << std::endl;
+    return -1;
+  }
+
+  int r = 8;
+  int f = a;
+  //char ch = '0';
+  //unsigned int i;
+  //for (i = 0; i < FEN_string.size() && ch != ' '; i++)
+  for (const char& ch : FEN_tokens[0])
+  {
+    switch (ch)
+    {
+      case ' ':
+        break;
+      case 'K':
+        _W_King_file_index = f;
+        _W_King_rank_index = r;
+        _W_King_file = file[f];
+        _W_King_rank = rank[r];
+        _W_King = _W_King_file & _W_King_rank;
+        _W_King_diagonal = diagonal[8 - r + f];
+        _W_King_anti_diagonal = anti_diagonal[f + r - 1];
+        break;
+      case 'k':
+        _B_King_file_index = f;
+        _B_King_rank_index = r;
+        _B_King_file = file[f];
+        _B_King_rank = rank[r];
+        _B_King = _B_King_file & _B_King_rank;
+        _B_King_diagonal = diagonal[8 - r + f];
+        _B_King_anti_diagonal = anti_diagonal[f + r - 1];
+        break;
+      case 'Q':
+        _W_Queens |= (file[f] & rank[r]), _material_diff += 9;
+        break;
+      case 'q':
+        _B_Queens |= (file[f] & rank[r]), _material_diff -= 9;
+        break;
+      case 'B':
+        _W_Bishops |= (file[f] & rank[r]), _material_diff += 3;
+        break;
+      case 'b':
+        _B_Bishops |= (file[f] & rank[r]), _material_diff -= 3;
+        break;
+      case 'N':
+        _W_Knights |= (file[f] & rank[r]), _material_diff += 3;
+        break;
+      case 'n':
+        _B_Knights |= (file[f] & rank[r]), _material_diff -= 3;
+        break;
+      case 'R':
+        _W_Rooks |= (file[f] & rank[r]), _material_diff += 5;
+        break;
+      case 'r':
+        _B_Rooks |= (file[f] & rank[r]), _material_diff -= 5;
+        break;
+      case 'P':
+        _W_Pawns |= (file[f] & rank[r]), _material_diff += 1;
+        break;
+      case 'p':
+        _B_Pawns |= (file[f] & rank[r]), _material_diff -= 1;
+        break;
+      case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        f += ch - '1';
+        break;
+      case '/':
+        f = a;
+        r--;
+        if (r < 1)
+        {
+          std::cerr << "Read error: corrupt FEN input (rank)" << "\n";
+          std::cerr << "FEN-string: " << FEN_string << std::endl;
+          return -1;
+        }
+        continue; // without increasing f
+      default:
+        std::cerr << "Read error: unexpected character in FEN input" << ch << "\n";
+        std::cerr << "FEN-string: " << FEN_string << std::endl;
+        return -1;
+    } // end of case-statement
+    if (f > h)
+    {
+      std::cerr << "Read error: corrupt FEN input (file)" << "\n";
+      std::cerr << "FEN-string: " << FEN_string << std::endl;
+      return -1;
+    }
+    f++;
+  } // end of for-loop
+  _col_to_move = col::white;
+  if (FEN_tokens[1] == "b")
+    update_col_to_move();
+  std::string castling_rights = FEN_tokens[2];
+  _castling_rights = castling_rights_none;
+  for (const char& cr : castling_rights)
+  {
+    switch (cr)
+    {
+      case '-':
+        _castling_rights = castling_rights_none;
+        break;
+      case 'K':
+        _castling_rights |= castling_right_WK;
+        break;
+      case 'Q':
+        _castling_rights |= castling_right_WQ;
+        break;
+      case 'k':
+        _castling_rights |= castling_right_BK;
+        break;
+      case 'q':
+        _castling_rights |= castling_right_BQ;
+        break;
+      default:
+        std::cerr << "Read error: Strange castling character \'" << cr << "\' in FEN-string." << std::endl;
+        std::cerr << "FEN-string: " << FEN_string << std::endl;
+        return -1;
+    }
+  }
+  std::string ep_string = FEN_tokens[3];
+  if (!regexp_match(ep_string, "^-|([a-h][36])$")) // Either a "-" or a square on rank 3 or 6-
+  {
+    std::cerr << "Read error: Strange en_passant_square characters \"" << ep_string << "\" in FEN-string." << std::endl;
+    std::cerr << "FEN-string: " << FEN_string << std::endl;
+    return -1;
+  }
+  _ep_square = 0L;
+  if (ep_string.length() == 2)
+  {
+    _ep_square = file[ep_string[0] - 'a'] & rank[ep_string[1] - '0'];
+  }
+  //std::cout << "ep_square: " << std::endl << to_binary_board(_ep_square) << std::endl;
+
+  return 0;
 }
 
 inline void Bitboard::init_piece_state()
@@ -329,13 +495,39 @@ inline void Bitboard::find_king_moves()
   }
 }
 
+//inline void Bitboard::find_king_move(int inc, uint64_t edge_condition)
+//{
+//  uint64_t square = 0L;
+//  if (_s.King & edge_condition)
+//  {
+//    if (inc >= 0)
+//      uint64_t square = _s.King >> inc;
+//    else
+//      square = _s.King << -inc;
+//    if ((square & _s.own_pieces) == 0L)
+//    {
+//      // There is NOT one of King's own pieces on the square, continue examination.
+//      if (!square_is_threatened(f, r, true))
+//      {
+//        // Found a valid King move
+//        if (square & _s.other_pieces)
+//        {
+//          _movelist.push_front(BitMove(piecetype::King, move_props_capture, _s.King, square));
+//        }
+//        else
+//          _movelist.push_back(BitMove(piecetype::King, move_props_none, _s.King, square));
+//      }
+//    }
+//
+//  }
+
 // Checks one square while stepping out from King's square in any direction.
 // returns true if we can stop the loop
 // returns false if we must keep on looping
 bool Bitboard::find_check_or_pinned_piece(uint64_t square,
                                           uint64_t threatening_pieces,
                                           uint64_t opponents_other_pieces,
-                                          uint64_t &pinned_piece)
+                                          uint64_t& pinned_piece)
 {
   if (square & opponents_other_pieces)
   {
@@ -637,9 +829,9 @@ void Bitboard::step_from_King_to_pinning_piece(uint64_t from_square,
   // Check if the pinned_piece is to the (east or north of the King)
   // or to the (west or south of the King), so we now which way to shift.
   // Step out from the King in the direction of the pinned and pining pieces.
-  for (to_square = ((long int)(_s.King - from_square) > 0) ? _s.King >> inc : _s.King << inc;
+  for (to_square = ((long int) (_s.King - from_square) > 0) ? _s.King >> inc : _s.King << inc;
       (to_square & pinning_pieces) == 0L;
-      ((long int)(_s.King - from_square) > 0) ? to_square >>= inc : to_square <<= inc)
+      ((long int) (_s.King - from_square) > 0) ? to_square >>= inc : to_square <<= inc)
   {
     if (to_square != from_square)
       _movelist.push_back(BitMove(p_type, move_props_none, from_square, to_square));
@@ -1094,7 +1286,7 @@ bool Bitboard::castling_squares_are_threatened_K(const uint64_t square)
     return true;
 
   uint64_t tmp_square = square >> 1;
-  for (uint8_t index = 5; index <= 7; index++, tmp_square >>= 1)
+  for (uint8_t index = f; index <= g; index++, tmp_square >>= 1)
   {
     // Is square threatened on file?
     if (file[index] & _s.other_Queens_or_Rooks)
@@ -1158,7 +1350,7 @@ bool Bitboard::castling_squares_are_threatened_Q(const uint64_t square)
     return true;
 
   uint64_t tmp_square = square << 1;
-  for (uint8_t index = 3; (tmp_square & _s.Rooks) == 0L; tmp_square <<= 1, index--)
+  for (uint8_t index = d; index >= b; tmp_square <<= 1, index--)
   {
     // Is square threatened on file?
     if (file[index] & _s.other_Queens_or_Rooks)
@@ -1265,7 +1457,9 @@ void Bitboard::find_normal_legal_moves()
           else if (square & _s.King)
           {
             // Only castling remains to examine.
-            find_short_castling(square);
+            if ((_col_to_move == col::white && square == e1_square) ||
+                (_col_to_move == col::black && square == e8_square))
+              find_short_castling(square);
             find_long_castling(square);
           }
         }
@@ -1277,8 +1471,8 @@ void Bitboard::find_normal_legal_moves()
 // Sub-function to find_moves_to_square()
 inline uint64_t Bitboard::step_out_from_square(uint64_t square,
                                                int8_t inc,
-                                               piecetype &p_type,
-                                               uint64_t &pieces)
+                                               piecetype& p_type,
+                                               uint64_t& pieces)
 {
   uint64_t allowed_squares = whole_board; // for inc 8 and -8 (files)
   uint64_t second = _s.Rooks; // for inc 8, -8, 1, -1 (files and ranks)
@@ -1514,9 +1708,9 @@ void Bitboard::step_from_King_to_checking_piece(uint8_t inc)
   // Check if the checking_piece is to the (east or north of the King)
   // or to the (west or south of the King), so we now which way to shift.
   // Step out from the King in the direction of the checking piece.
-  for (square = ((long int)(_s.King - _s.checking_piece_square) > 0) ? _s.King >> inc : _s.King << inc;
+  for (square = ((long int) (_s.King - _s.checking_piece_square) > 0) ? _s.King >> inc : _s.King << inc;
       (square & _s.checking_piece_square) == 0L;
-      ((long int)(_s.King - _s.checking_piece_square) > 0) ? square >>= inc : square <<= inc)
+      ((long int) (_s.King - _s.checking_piece_square) > 0) ? square >>= inc : square <<= inc)
   {
     // Can we put any piece between our King and the checking piece?
     find_moves_to_square(square);
@@ -1689,9 +1883,9 @@ inline void Bitboard::remove_other_piece(uint64_t square)
       _B_Rooks ^= square, _material_diff += 5, pt = piecetype::Rook;
       // update castling rights if needed
       if (square & h8_square)
-        _hash_tag ^= bb_hash_table._castling_rights[2];
-      if (square & a8_square)
-        _hash_tag ^= bb_hash_table._castling_rights[3];
+        remove_castling_right(castling_right_BK);
+      else if (square & a8_square)
+        remove_castling_right(castling_right_BQ);
     }
     else if (_B_Bishops & square)
       _B_Bishops ^= square, _material_diff += 3, pt = piecetype::Bishop;
@@ -1710,9 +1904,9 @@ inline void Bitboard::remove_other_piece(uint64_t square)
       _W_Rooks ^= square, _material_diff -= 5, pt = piecetype::Rook;
       // update castling rights if needed
       if (square & h1_square)
-        _hash_tag ^= bb_hash_table._castling_rights[0];
-      if (square & a1_square)
-        _hash_tag ^= bb_hash_table._castling_rights[1];
+        remove_castling_right(castling_right_WK);
+      else if (square & a1_square)
+        remove_castling_right(castling_right_WQ);
     }
     else if (_W_Bishops & square)
       _W_Bishops ^= square, _material_diff -= 3, pt = piecetype::Bishop;
@@ -1754,7 +1948,7 @@ inline void Bitboard::move_piece(uint64_t from_square,
                                  uint64_t to_square,
                                  piecetype p_type)
 {
-  uint64_t *p = nullptr;
+  uint64_t* p = nullptr;
   switch (p_type)
   {
     case piecetype::Pawn:
@@ -1787,7 +1981,7 @@ inline void Bitboard::remove_castling_right(uint8_t cr)
 {
   if (_castling_rights & cr)
   {
-    _castling_rights &= !cr;
+    _castling_rights ^= cr;
     _hash_tag ^= bb_hash_table._castling_rights[cr];
   }
 }
@@ -1827,16 +2021,84 @@ inline void Bitboard::update_hash_tag(uint64_t square1, uint64_t square2, col p_
                 bb_hash_table._random_table[LOG2(square2)][index(p_color)][index(p_type)]);
 }
 
-void Bitboard::update_col_to_move()
+inline void Bitboard::update_col_to_move()
 {
   _col_to_move = other_color(_col_to_move);
   _hash_tag ^= bb_hash_table._black_to_move;
 }
 
+inline void Bitboard::update_state_after_king_move(const BitMove& m)
+{
+  uint64_t from_square = m.from_square, to_square = m.to_square;
+  int8_t r = m.to_r_index(), f = m.to_f_index();
+
+  if (_col_to_move == col::white)
+  {
+    // Could be slow.
+    _W_King_file = file[f], _W_King_file_index = f;
+    _W_King_rank = rank[r], _W_King_rank_index = r;
+    _W_King_diagonal = diagonal[8 - r + f];
+    _W_King_anti_diagonal = anti_diagonal[f + r - 1];
+  }
+  else
+  {
+    _B_King_file = file[f], _B_King_file_index = f;
+    _B_King_rank = rank[r], _B_King_rank_index = r;
+    _B_King_diagonal = diagonal[8 - r + f];
+    _B_King_anti_diagonal = anti_diagonal[f + r - 1];
+  }
+  if (from_square & e1_square)
+  {
+    remove_castling_right(castling_right_WK);
+    remove_castling_right(castling_right_WQ);
+  }
+  else if (from_square & e8_square)
+  {
+    remove_castling_right(castling_right_BK);
+    remove_castling_right(castling_right_BQ);
+  }
+  // Move the rook if it's actually a castling move.
+  if (m.properties == move_props_castling)
+  {
+    if (static_cast<long int>(from_square - to_square) > 0)
+    {
+      // Castling king side. TODO: is this right ?
+      if (_col_to_move == col::white)
+      {
+        _W_Rooks ^= (h1_square | f1_square);
+        update_hash_tag(h1_square, f1_square, _col_to_move, piecetype::Rook);
+        _W_King_file >>= 2, _W_King_file_index += 2;
+      }
+      else
+      {
+        _B_Rooks ^= (h8_square | f8_square);
+        update_hash_tag(h8_square, f8_square, _col_to_move, piecetype::Rook);
+        _B_King_file <<= 2, _B_King_file_index -= 2;
+      }
+    }
+    else
+    {
+      // Castling queen side. TODO: is this right ?
+      if (_col_to_move == col::white)
+      {
+        _W_Rooks ^= (a1_square | d1_square);
+        update_hash_tag(a1_square, d1_square, _col_to_move, piecetype::Rook);
+        _W_King_file <<= 3, _W_King_file_index -= 3;
+      }
+      else
+      {
+        _B_Rooks ^= (a8_square | d8_square);
+        update_hash_tag(a8_square, d8_square, _col_to_move, piecetype::Rook);
+        _B_King_file >>= 3, _B_King_file_index += 3;
+      }
+    }
+  }
+}
+
 // Move a piece
 // Preconditions:
-// - i < movelist.size()
-// - the move must be valid
+//   i < movelist.size()
+//   the move must be valid
 void Bitboard::make_move(int i)
 {
   BitMove m = _movelist[i];
@@ -1844,6 +2106,7 @@ void Bitboard::make_move(int i)
   uint64_t from_square = m.from_square;
 
   // Clear _ep_square
+  uint64_t tmp_ep_square = _ep_square;
   if (_ep_square)
     clear_ep_square();
 
@@ -1857,48 +2120,7 @@ void Bitboard::make_move(int i)
   // look at some special cases.
   if (m.piece_type == piecetype::King)
   {
-    // Move the rook if it's actually a castling move.
-    if (m.properties == move_props_castling)
-    {
-      if (static_cast<long int>(from_square - to_square) > 0)
-      {
-        // Castling king side. TODO: is this right ?
-        if (_col_to_move == col::white)
-        {
-          _W_Rooks ^= (h1_square | f1_square);
-          update_hash_tag(h1_square, f1_square, _col_to_move, piecetype::Rook);
-        }
-        else
-        {
-          _B_Rooks ^= (h8_square | f8_square);
-          update_hash_tag(h8_square, f8_square, _col_to_move, piecetype::Rook);
-        }
-      }
-      else
-      {
-        // Castling queen side. TODO: is this right ?
-        if (_col_to_move == col::white)
-        {
-          _W_Rooks ^= (a1_square | d1_square);
-          update_hash_tag(a1_square, d1_square, _col_to_move, piecetype::Rook);
-        }
-        else
-        {
-          _B_Rooks ^= (a8_square | d8_square);
-          update_hash_tag(a8_square, d8_square, _col_to_move, piecetype::Rook);
-        }
-      }
-    }
-    if (from_square & e1_square)
-    {
-      remove_castling_right(castling_right_WK);
-      remove_castling_right(castling_right_WQ);
-    }
-    else if (from_square & e8_square)
-    {
-      remove_castling_right(castling_right_BK);
-      remove_castling_right(castling_right_BQ);
-    }
+    update_state_after_king_move(m);
   }
   else if (m.piece_type == piecetype::Rook)
   {
@@ -1926,13 +2148,13 @@ void Bitboard::make_move(int i)
       // Remove the pawn taken e.p.
       if (_col_to_move == col::white)
       {
-        _B_Pawns ^= _ep_square << 8, _material_diff += 1.0;
-        update_hash_tag(_ep_square << 8, col::black, piecetype::Pawn);
+        _B_Pawns ^= tmp_ep_square << 8, _material_diff += 1.0;
+        update_hash_tag(tmp_ep_square << 8, col::black, piecetype::Pawn);
       }
       else
       {
-        _W_Pawns ^= _ep_square >> 8, _material_diff -= 1.0;
-        update_hash_tag(_ep_square >> 8, col::black, piecetype::Pawn);
+        _W_Pawns ^= tmp_ep_square >> 8, _material_diff -= 1.0;
+        update_hash_tag(tmp_ep_square >> 8, col::black, piecetype::Pawn);
       }
       update_hash_tag(to_square, other_color(_col_to_move), piecetype::Pawn);
     }
@@ -1944,7 +2166,7 @@ void Bitboard::make_move(int i)
         // Check if there is a pawn of other color alongside to_square.
         if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
             ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
-          set_ep_square(to_square << 8); // updates hash_tg
+          set_ep_square(to_square << 8);
       }
     }
     else
@@ -1953,7 +2175,7 @@ void Bitboard::make_move(int i)
       {
         if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
             ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
-          set_ep_square(to_square >> 8); // updates hash_tg
+          set_ep_square(to_square >> 8);
       }
     }
   }
@@ -1991,8 +2213,8 @@ void Bitboard::make_move(int i)
     }
   }
   update_col_to_move();
-// Todo:init _material_diff
   init_piece_state();
+  find_all_legal_moves();
 }
 
 } // namespace C2_chess
