@@ -108,7 +108,7 @@ TEST_CASE("Castling_wrights")
       chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ));
-      chessboard.make_move(0); // 0-0
+      chessboard.make_move(0); // ... 0-0
       chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -124,7 +124,59 @@ TEST_CASE("Castling_wrights")
     chessboard.make_move(17); // ...Rh8-g8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
-    REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_WK));
+    REQUIRE(chessboard.get_castling_rights() == (castling_right_BQ | castling_right_WK));
+    chessboard.make_move(15); // ...Rh1-g1
+    chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
+    chessboard.write_movelist(std::cout, true) << std::endl;
+    REQUIRE(chessboard.get_castling_rights() == castling_right_BQ);
+    chessboard.make_move(6); // ...Ra8-b8
+    chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
+    chessboard.write_movelist(std::cout, true) << std::endl;
+    REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
+  }
+
+  SECTION("King moves")
+  {
+    chessboard.make_move(4); // Ke1-d1
+    chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
+    chessboard.write_movelist(std::cout, true) << std::endl;
+    REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ));
+    chessboard.make_move(6); // ... Ke8-e7
+    chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
+    chessboard.write_movelist(std::cout, true) << std::endl;
+    REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
+    // Kings move back
+    chessboard.make_move(5); // Kd1-e1
+    chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
+    chessboard.write_movelist(std::cout, true) << std::endl;
+    REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
+    chessboard.make_move(6); // ... Ke7-e8
+    chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
+    chessboard.write_movelist(std::cout, true) << std::endl;
+    REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
+
+    uint64_t htag = chessboard.get_hash_tag(); // first test of _hash_tag
+
+    // Make another King_move
+    chessboard.make_move(4); // Ke1-e2
+    chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
+    chessboard.write_movelist(std::cout, true) << std::endl;
+    REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
+    chessboard.make_move(3); // ... Ke8-d8
+    chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
+    chessboard.write_movelist(std::cout, true) << std::endl;
+    REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
+    // and move back again
+    chessboard.make_move(5); // Ke2-e1
+    chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
+    chessboard.write_movelist(std::cout, true) << std::endl;
+    REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
+    chessboard.make_move(6); // ... Kd8-e8
+    chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
+    chessboard.write_movelist(std::cout, true) << std::endl;
+    REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
+
+    REQUIRE(htag == chessboard.get_hash_tag());
   }
 
 }

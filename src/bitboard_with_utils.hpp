@@ -28,7 +28,8 @@ class Bitboard_with_utils: public Bitboard
     bool run_mg_test_case(int testnum, const std::string& FEN_string);
 
   public:
-    uint8_t get_castling_rights()const {return _castling_rights;}
+    uint8_t get_castling_rights() const {return _castling_rights;}
+    uint64_t get_hash_tag() const { return _hash_tag;}
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
     std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;
     std::ostream& write_movelist(std::ostream& os, bool same_line = false);

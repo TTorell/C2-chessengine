@@ -2137,7 +2137,7 @@ void Bitboard::make_move(int i)
       if (from_square & a8_square)
         remove_castling_right(castling_right_BQ);
       else if (from_square & h8_square)
-        remove_castling_right(castling_right_BQ);
+        remove_castling_right(castling_right_BK);
     }
   }
   else if (m.piece_type == piecetype::Pawn)
