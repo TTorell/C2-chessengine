@@ -29,7 +29,7 @@ inline void Bitboard::clear_movelist()
 }
 
 // Inits the Bitboard position from a text string (Forsyth-Edwards Notation)
-int Bitboard::read_position(const std::string& FEN_string)
+int Bitboard::read_position(const std::string &FEN_string)
 {
   //std::cout << "\"" << FEN_string << "\"" << std::endl;
   _W_King = 0L;
@@ -58,7 +58,7 @@ int Bitboard::read_position(const std::string& FEN_string)
   //char ch = '0';
   //unsigned int i;
   //for (i = 0; i < FEN_string.size() && ch != ' '; i++)
-  for (const char& ch : FEN_tokens[0])
+  for (const char &ch : FEN_tokens[0])
   {
     switch (ch)
     {
@@ -150,7 +150,7 @@ int Bitboard::read_position(const std::string& FEN_string)
     update_col_to_move();
   std::string castling_rights = FEN_tokens[2];
   _castling_rights = castling_rights_none;
-  for (const char& cr : castling_rights)
+  for (const char &cr : castling_rights)
   {
     switch (cr)
     {
@@ -276,6 +276,22 @@ inline void Bitboard::init_piece_state()
     _s.all_pieces = _s.own_pieces | _s.other_pieces;
     _s.empty_squares = whole_board ^ _s.all_pieces;
   }
+}
+
+bool Bitboard::square_is_threatened2(uint64_t square, bool King_is_asking)
+{
+  if (King_is_asking)
+    std::cout << "king_is_asking" << std::endl;
+  if (_s.other_Knights && (adjust_pattern(knight_pattern, square) & _s.other_Knights))
+    return true;
+  if (adjust_pattern(king_pattern, square) & (_s.other_King | _s.other_Queens))
+    return true;
+  if ((file_idx(square) != h) && (_s.other_Pawns & (_col_to_move == col::white) ? square >> 9 : square << 7))
+    return true;
+  if ((file_idx(square) != a) && (_s.other_Pawns & (_col_to_move == col::white) ? square >> 7 : square << 9))
+    return true;
+
+  return false;
 }
 
 bool Bitboard::square_is_threatened(int8_t file_index, int8_t rank_index, bool King_is_asking)
@@ -464,32 +480,23 @@ bool Bitboard::square_is_threatened(int8_t file_index, int8_t rank_index, bool K
 // Finds normal King-moves not including castling.
 inline void Bitboard::find_king_moves()
 {
-
-  int8_t file_min = std::max(a, _s.King_file_index - 1);
-  int8_t file_max = std::min(h, _s.King_file_index + 1);
-  int8_t rank_min = std::max(1, _s.King_rank_index - 1);
-  int8_t rank_max = std::min(8, _s.King_rank_index + 1);
-
-  for (int8_t f = file_min; f <= file_max; f++)
+  uint64_t king_moves = adjust_pattern(king_pattern, _s.King);
+  king_moves &= (~_s.own_pieces);
+  while (king_moves)
   {
-    for (int8_t r = rank_min; r <= rank_max; r++)
+    uint8_t square_index = popright_bit_idx(king_moves);
+    uint64_t square = (h8_square << square_index);
+    uint8_t f = file_idx(square);
+    uint8_t r = rank_idx(square);
+    if (!square_is_threatened(f, r, true))
     {
-      uint64_t square = file[f] & rank[r];
-      // King's own square always contains the King himself.
-      if ((square & _s.own_pieces) == 0L)
+      // Found a valid King move
+      if (square & _s.other_pieces)
       {
-        // There is NOT one of King's own pieces on the square, continue examination.
-        if (!square_is_threatened(f, r, true))
-        {
-          // Found a valid King move
-          if (square & _s.other_pieces)
-          {
-            _movelist.push_front(BitMove(piecetype::King, move_props_capture, _s.King, square));
-          }
-          else
-            _movelist.push_back(BitMove(piecetype::King, move_props_none, _s.King, square));
-        }
+        _movelist.push_front(BitMove(piecetype::King, move_props_capture, _s.King, square));
       }
+      else
+        _movelist.push_back(BitMove(piecetype::King, move_props_none, _s.King, square));
     }
   }
 }
@@ -526,7 +533,7 @@ inline void Bitboard::find_king_moves()
 bool Bitboard::find_check_or_pinned_piece(uint64_t square,
                                           uint64_t threatening_pieces,
                                           uint64_t opponents_other_pieces,
-                                          uint64_t& pinned_piece)
+                                          uint64_t &pinned_piece)
 {
   if (square & opponents_other_pieces)
   {
@@ -828,9 +835,9 @@ void Bitboard::step_from_King_to_pinning_piece(uint64_t from_square,
   // Check if the pinned_piece is to the (east or north of the King)
   // or to the (west or south of the King), so we now which way to shift.
   // Step out from the King in the direction of the pinned and pining pieces.
-  for (to_square = ((long int) (_s.King - from_square) > 0) ? _s.King >> inc : _s.King << inc;
+  for (to_square = ((long int)(_s.King - from_square) > 0) ? _s.King >> inc : _s.King << inc;
       (to_square & pinning_pieces) == 0L;
-      ((long int) (_s.King - from_square) > 0) ? to_square >>= inc : to_square <<= inc)
+      ((long int)(_s.King - from_square) > 0) ? to_square >>= inc : to_square <<= inc)
   {
     if (to_square != from_square)
       _movelist.push_back(BitMove(p_type, move_props_none, from_square, to_square));
@@ -1470,8 +1477,8 @@ void Bitboard::find_normal_legal_moves()
 // Sub-function to find_moves_to_square()
 inline uint64_t Bitboard::step_out_from_square(uint64_t square,
                                                int8_t inc,
-                                               piecetype& p_type,
-                                               uint64_t& pieces)
+                                               piecetype &p_type,
+                                               uint64_t &pieces)
 {
   uint64_t allowed_squares = whole_board; // for inc 8 and -8 (files)
   uint64_t second = _s.Rooks; // for inc 8, -8, 1, -1 (files and ranks)
@@ -1707,9 +1714,9 @@ void Bitboard::step_from_King_to_checking_piece(uint8_t inc)
   // Check if the checking_piece is to the (east or north of the King)
   // or to the (west or south of the King), so we now which way to shift.
   // Step out from the King in the direction of the checking piece.
-  for (square = ((long int) (_s.King - _s.checking_piece_square) > 0) ? _s.King >> inc : _s.King << inc;
+  for (square = ((long int)(_s.King - _s.checking_piece_square) > 0) ? _s.King >> inc : _s.King << inc;
       (square & _s.checking_piece_square) == 0L;
-      ((long int) (_s.King - _s.checking_piece_square) > 0) ? square >>= inc : square <<= inc)
+      ((long int)(_s.King - _s.checking_piece_square) > 0) ? square >>= inc : square <<= inc)
   {
     // Can we put any piece between our King and the checking piece?
     find_moves_to_square(square);
@@ -1947,7 +1954,7 @@ inline void Bitboard::move_piece(uint64_t from_square,
                                  uint64_t to_square,
                                  piecetype p_type)
 {
-  uint64_t* p = nullptr;
+  uint64_t *p = nullptr;
   switch (p_type)
   {
     case piecetype::Pawn:
@@ -2026,7 +2033,7 @@ inline void Bitboard::update_col_to_move()
   _hash_tag ^= bb_hash_table._black_to_move;
 }
 
-inline void Bitboard::update_state_after_king_move(const BitMove& m)
+inline void Bitboard::update_state_after_king_move(const BitMove &m)
 {
   uint64_t from_square = m.from_square, to_square = m.to_square;
   int8_t r = m.to_r_index(), f = m.to_f_index();

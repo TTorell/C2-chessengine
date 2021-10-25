@@ -8,8 +8,11 @@
 #ifndef __BITBOARD
 #define __BITBOARD
 
+#include <cstdint>
+#include <cassert>
 #include <ostream>
 #include <sstream>
+#include <bit>
 #include <bitset>
 #include <deque>
 #include <cmath>
@@ -80,6 +83,7 @@ constexpr uint64_t d8_square = d_file & row_8;
 constexpr uint64_t e1_square = e_file & row_1;
 constexpr uint64_t e2_square = e_file & row_2;
 constexpr uint64_t e3_square = e_file & row_3;
+constexpr uint64_t e4_square = e_file & row_4;
 constexpr uint64_t e6_square = e_file & row_6;
 constexpr uint64_t e7_square = e_file & row_7;
 constexpr uint64_t e8_square = e_file & row_8;
@@ -89,6 +93,12 @@ constexpr uint64_t f7_square = f_file & row_7;
 constexpr uint64_t f8_square = f_file & row_8;
 constexpr uint64_t h1_square = h_file & row_1;
 constexpr uint64_t h8_square = h_file & row_8;
+
+// King-moves, with the king placed att e4
+constexpr uint64_t king_pattern = ((d_file | e_file | f_file) & (row_3 | row_4 | row_5)) ^ e4_square;
+// Knight-moves, with the knight placed att e4
+constexpr uint64_t knight_pattern = ((d_file | f_file) & (row_6 | row_2)) | ((c_file | g_file) & (row_3 | row_5));
+constexpr int e4_square_idx = std::countr_zero(e4_square);
 
 constexpr uint64_t castling_empty_squares_K = (row_1 | row_8) & (f_file | g_file);
 constexpr uint64_t castling_empty_squares_Q = (row_1 | row_8) & (b_file | c_file | d_file);
@@ -140,19 +150,49 @@ constexpr uint64_t ad(const int i)
   return val;
 }
 
-// slow TODO: improve
-inline uint64_t to_file(uint64_t square)
+constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14)};
+
+
+inline uint8_t bit_idx(uint64_t square)
 {
-  uint64_t f;
-  for (f = 0; f <= 7; f++)
-  {
-    if (file[f] & square)
-      return file[f];
-  }
-  return 0L;
+  return std::countr_zero(square);
 }
 
-constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14)};
+inline uint8_t file_idx(uint64_t square)
+{
+  return 7 - (bit_idx(square) & 7);
+}
+
+inline uint8_t rank_idx(uint64_t square)
+{
+  return 8 - (bit_idx(square) >> 3);
+}
+
+inline uint64_t to_file(uint64_t square)
+{
+  return file[file_idx(square)];
+}
+
+inline uint8_t popright_bit_idx(uint64_t& squares)
+{
+  assert(squares);
+  uint8_t idx = std::countr_zero(squares);
+  squares &= (squares - 1);
+  return idx;
+}
+
+inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
+{
+  uint64_t squares;
+  int shift = bit_idx(center_square) - e4_square_idx;
+  squares = (shift >= 0) ? (pattern << shift) : (pattern >> -shift);
+  if (file_idx(center_square) == a)
+    squares &= not_g_h_files;
+  else if (file_idx(center_square) == h)
+    squares &= not_a_b_files;
+  return squares;
+}
+
 
 //constexpr uint8_t Direction_north = 0x80;
 //constexpr uint8_t Direction_south = 0x40;
@@ -263,6 +303,7 @@ struct Piece_state
     int8_t pawnstep;
 
     uint64_t other_pieces;
+    uint64_t other_King;
     uint64_t other_Queens;
     uint64_t other_Queens_or_Rooks;
     uint64_t other_Queens_or_Bishops;
@@ -332,6 +373,8 @@ class Bitboard
     bool square_is_threatened(int8_t file_index,
                               int8_t rank_index,
                               bool King_is_asking);
+
+    bool square_is_threatened2(uint64_t square, bool King_is_asking);
 
     inline void contains_checking_piece(const uint64_t square,
                                         const uint64_t pieces,
