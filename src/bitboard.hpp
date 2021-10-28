@@ -208,31 +208,31 @@ inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
 
 struct BitMove
 {
-    piecetype piece_type;
-    uint8_t properties;
-    piecetype promotion_piece_type;
-    uint64_t from_square;
-    uint64_t to_square;
-    float evaluation;
+    piecetype _piece_type;
+    uint8_t _properties;
+    piecetype _promotion_piece_type;
+    uint64_t _from_square;
+    uint64_t _to_square;
+    float _evaluation;
 
     BitMove() :
-        piece_type(piecetype::Pawn),
-        properties(0),
-        promotion_piece_type(piecetype::Queen),
-        from_square(0L),
-        to_square(0L),
-        evaluation(0.0)
+        _piece_type(piecetype::Pawn),
+        _properties(0),
+        _promotion_piece_type(piecetype::Queen),
+        _from_square(0L),
+        _to_square(0L),
+        _evaluation(0.0)
     {
       // cout << "BitMove::default_ctor" << endl;
     }
 
     BitMove(const BitMove& m) :
-        piece_type(m.piece_type),
-        properties(m.properties),
-        promotion_piece_type(m.promotion_piece_type),
-        from_square(m.from_square),
-        to_square(m.to_square),
-        evaluation(m.evaluation)
+        _piece_type(m._piece_type),
+        _properties(m._properties),
+        _promotion_piece_type(m._promotion_piece_type),
+        _from_square(m._from_square),
+        _to_square(m._to_square),
+        _evaluation(m._evaluation)
     {
       // cout << "BitMove::copy_ctor" << endl;
     }
@@ -242,31 +242,31 @@ struct BitMove
             uint64_t from_square,
             uint64_t to_square,
             piecetype ppt = piecetype::Queen) :
-        piece_type(type),
-        properties(props),
-        promotion_piece_type(ppt),
-        from_square(from_square),
-        to_square(to_square),
-        evaluation(0.0)
+        _piece_type(type),
+        _properties(props),
+        _promotion_piece_type(ppt),
+        _from_square(from_square),
+        _to_square(to_square),
+        _evaluation(0.0)
     {
       //cout << "BitMove::value_ctor: " << *this << endl;
     }
 
     uint8_t from_f_index() const
     {
-      return (7 - (static_cast<int>( LOG2(from_square))) % 8);
+      return (7 - (static_cast<int>( LOG2(_from_square))) % 8);
     }
     uint8_t from_r_index() const
     {
-      return (8 - (static_cast<int>( LOG2(from_square))) / 8);
+      return (8 - (static_cast<int>( LOG2(_from_square))) / 8);
     }
     uint8_t to_f_index() const
     {
-      return (7 - (static_cast<int>(LOG2(to_square))) % 8);
+      return (7 - (static_cast<int>(LOG2(_to_square))) % 8);
     }
     uint8_t to_r_index() const
     {
-      return (8 - (static_cast<int>( LOG2(to_square))) / 8);
+      return (8 - (static_cast<int>( LOG2(_to_square))) / 8);
     }
 
     friend std::ostream& operator <<(std::ostream& os, const BitMove& m);
@@ -464,6 +464,8 @@ class Bitboard
     inline piecetype get_piece_type(uint64_t square);
 
   public:
+
+    Bitboard();
 
     int read_position(const std::string& FEN_string);
 

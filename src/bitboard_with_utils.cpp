@@ -96,7 +96,7 @@ std::ostream& Bitboard_with_utils::write(std::ostream& os, outputtype wt, col fr
 
 std::ostream& operator <<(std::ostream& os, const BitMove& m)
 {
-  switch (m.piece_type)
+  switch (m._piece_type)
   {
     case piecetype::King:
       {
@@ -129,16 +129,16 @@ std::ostream& operator <<(std::ostream& os, const BitMove& m)
   Position from(m.from_f_index(), m.from_r_index());
   Position to(m.to_f_index(), m.to_r_index());
   os << from;
-  if (m.properties & move_props_capture)
+  if (m._properties & move_props_capture)
     os << "x";
   else
     os << "-";
   os << to;
-  if (m.properties & move_props_en_passant)
+  if (m._properties & move_props_en_passant)
     os << " " << "e.p.";
-  if (m.properties & move_props_promotion)
+  if (m._properties & move_props_promotion)
   {
-    switch (m.promotion_piece_type)
+    switch (m._promotion_piece_type)
     {
       case piecetype::Queen:
         os << "=Q";
@@ -156,11 +156,11 @@ std::ostream& operator <<(std::ostream& os, const BitMove& m)
         break;
     }
   }
-  if (m.properties & move_props_check)
+  if (m._properties & move_props_check)
     os << "+";
-  if (m.properties & move_props_mate)
+  if (m._properties & move_props_mate)
     os << " mate";
-  if (m.properties & move_props_stalemate)
+  if (m._properties & move_props_stalemate)
     os << " stalemate";
   return os;
 }

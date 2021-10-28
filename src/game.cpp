@@ -20,7 +20,7 @@ namespace C2_chess
 
 Game::Game(Config_params& config_params):
     _is_first_position(true), _move_log(), _chessboard(), _player1(playertype::human, col::white, _chessboard), _player2(playertype::computer, col::black, _chessboard), _moveno(1),
-    _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
+    _col_to_move(col::white), _score(0), _pgn_info(), _config_params(config_params), _playing(false)
 {
   _player[index(col::white)] = &_player1;
   _player[index(col::black)] = &_player2;
@@ -32,7 +32,7 @@ Game::Game(Config_params& config_params):
 Game::Game(col color, Config_params& config_params):
     _is_first_position(true), _move_log(), _chessboard(), _player1(playertype::human, color, _chessboard),
     _player2(playertype::computer, color == col::white ? col::black : col::white, _chessboard), _moveno(1),
-    _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
+    _col_to_move(col::white), _score(0), _pgn_info(), _config_params(config_params), _playing(false)
 {
   _player[index(color)] = &_player1;
   _player[index(color == col::white ? col::black : col::white)] = &_player2;
@@ -43,7 +43,7 @@ Game::Game(col color,
            playertype pt2,
            Config_params& config_params):
     _is_first_position(true), _move_log(), _chessboard(), _player1(pt1, color, _chessboard), _player2(pt2, color == col::white ? col::black : col::white, _chessboard), _moveno(1),
-    _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
+    _col_to_move(col::white), _score(0), _pgn_info(), _config_params(config_params), _playing(false)
 {
   _player[index(color)] = &_player1;
   _player[index(color == col::white ? col::black : col::white)] = &_player2;

@@ -21,6 +21,9 @@ class File {
         _rank[i] = 0;
       }
     }
+
+    File(const File&) = delete;
+
     ~File()
     {
       for (int i = 1; i <= 8; ++i)
@@ -32,6 +35,9 @@ class File {
         }
       }
     }
+
+    File operator=(const C2_chess::File&) = delete;
+
     void name(char name)
     {
       _name = name;

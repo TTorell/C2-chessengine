@@ -2141,9 +2141,9 @@ void Board::init_board_hash_tag(col col_to_move)
       Piece* p = _file[file][rank]->get_piece();
       if (p)
       {
-        col c = p->get_color();
+        col color = p->get_color();
         piecetype type = p->get_type();
-        _hash_tag ^= hash_table._random_table[file][rank][index(c)][index(type)];
+        _hash_tag ^= hash_table._random_table[file][rank][index(color)][index(type)];
       }
     }
   }

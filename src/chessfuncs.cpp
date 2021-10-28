@@ -39,14 +39,14 @@ extern "C"
 namespace C2_chess
 {
 
-col other_color(const col& c)
+col other_color(const col& color)
 {
-  return (c == col::white) ? col::black : col::white;
+  return (color == col::white) ? col::black : col::white;
 }
 
-inline col& operator++(col& c)
+inline col& operator++(col& color)
 {
-  return c = (c == col::white) ? col::black : col::white;
+  return color = (color == col::white) ? col::black : col::white;
 }
 
 col col_from_string(const std::string& s)
@@ -152,9 +152,9 @@ std::pair<std::string, int> exec(const char* cmd)
   std::array<char, 128> buffer;
   std::string result;
   int return_code = -1;
-  auto pclose_wrapper = [&return_code](FILE* cmd)
+  auto pclose_wrapper = [&return_code](FILE* file)
                                        {
-                                         return_code = close_pipe(cmd);
+                                         return_code = close_pipe(file);
                                        };
   {
     // scope is important, have to make sure the ptr goes out of scope first
@@ -433,14 +433,14 @@ bool has_duplicates(const std::vector<std::string>& vector, const std::string& m
   return has_duplicates;
 }
 
-bool all_in_a_exist_in_b(const std::vector<std::string>& a, const std::vector<std::string>& b, bool order_out_ref)
+bool all_in_a_exist_in_b(const std::vector<std::string>& a_vec, const std::vector<std::string>& b_vec, bool order_out_ref)
 {
   bool success = true;
-  for (const std::string& s1 : a)
+  for (const std::string& s1 : a_vec)
   {
     //std::cout << "Move: " << s1 << std::endl;
     bool found = false;
-    for (const std::string& s2 : b)
+    for (const std::string& s2 : b_vec)
     {
       if (s1 == s2)
       {

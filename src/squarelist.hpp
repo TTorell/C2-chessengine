@@ -19,7 +19,9 @@ class Squarelist
 					    //be declared const. See first() and next().
 	public:
 		Squarelist();
+		Squarelist(const Squarelist&) = delete;
 		~Squarelist();
+		Squarelist operator=(const C2_chess::Squarelist&) = delete;
 		Square* first() const; //pseudo const
 		Square* next() const;  //----||------
 		void into(Square* const);

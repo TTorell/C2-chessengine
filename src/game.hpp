@@ -30,11 +30,13 @@ class Game {
     Game(Config_params& config_params);
     Game(col c,
          Config_params& config_params);
+    Game(const Game&) = delete;
     Game(col c,
          playertype pt1,
          playertype pt2,
          Config_params& config_params);
     ~Game();
+    Game operator=(const C2_chess::Game&) = delete;
     void init();
     void clear_chessboard();
     void clear_move_log();

@@ -57,7 +57,9 @@ class Zobrist_bitboard_hash
 
   public:
 
-    Zobrist_bitboard_hash()
+    Zobrist_bitboard_hash() :
+        _hash_map(),
+        _black_to_move(0L)
     {
       init_random_numbers();
     }

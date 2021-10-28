@@ -18,9 +18,9 @@ namespace C2_chess
 
 struct hash_element
 {
-  int best_move_index;
-  float evaluation;
-  int level;
+    int best_move_index;
+    float evaluation;
+    int level;
 };
 
 class Zobrist_hash
@@ -37,7 +37,7 @@ class Zobrist_hash
     {
       std::random_device rd;
       std::mt19937 mt(rd());
-      std::uniform_real_distribution<double> dist(0, pow(2,64));
+      std::uniform_real_distribution<double> dist(0, pow(2, 64));
       for (int file = a; file <= h; file++)
         for (int rank = 1; rank <= 8; rank++)
           for (int col = index(col::white); col <= index(col::black); col++)
@@ -54,7 +54,9 @@ class Zobrist_hash
 
   public:
 
-    Zobrist_hash()
+    Zobrist_hash() :
+        _hash_map(),
+        _black_to_move(0L)
     {
       init_random_numbers();
     }

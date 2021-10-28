@@ -155,19 +155,19 @@ class Shared_ostream {
       return *this;
     }
 
-    Shared_ostream& operator<<(float f)
+    Shared_ostream& operator<<(float flt)
     {
       std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
-        _os << iso_8859_1_to_utf8(std::to_string(f)) << std::flush;
+        _os << iso_8859_1_to_utf8(std::to_string(flt)) << std::flush;
       return *this;
     }
 
-    Shared_ostream& operator<<(double d)
+    Shared_ostream& operator<<(double dbl)
     {
       std::lock_guard < std::mutex > locker(static_mutex);
       if (_is_open)
-        _os << iso_8859_1_to_utf8(std::to_string(d)) << std::flush;
+        _os << iso_8859_1_to_utf8(std::to_string(dbl)) << std::flush;
       return *this;
     }
 

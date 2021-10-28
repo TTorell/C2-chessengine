@@ -25,16 +25,13 @@ class Config_param
     std::string _max;
 
   public:
-    Config_param()
-    {
-    }
 
-    Config_param(const std::string& id,
-                 const std::string& value,
-                 const std::string& type,
-                 const std::string& default_value,
-                 const std::string& min = "",
-                 const std::string& max = "") :
+    Config_param(const std::string &id,
+                 const std::string &value,
+                 const std::string &type,
+                 const std::string &default_value,
+                 const std::string &min = "",
+                 const std::string &max = "") :
         _name(id),
         _value(value),
         _type(type),
@@ -44,7 +41,7 @@ class Config_param
     {
     }
 
-    Config_param(const Config_param& param) :
+    Config_param(const Config_param &param) :
         _name(param._name),
         _value(param._value),
         _type(param._type),
@@ -54,7 +51,7 @@ class Config_param
     {
     }
 
-    void set_value(const std::string& s)
+    void set_value(const std::string &s)
     {
       _value = s;
     }
@@ -79,7 +76,8 @@ class Config_params
     std::map<std::string, Config_param> _config_params;
 
   public:
-    Config_params()
+    Config_params() :
+        _config_params()
     {
       // This construct is just to not leakmemory
       Config_param p1("max_search_level", "7", "spin", "7", "2", "8");
@@ -97,14 +95,14 @@ class Config_params
       return _config_params;
     }
 
-    void set_config_param(const std::string& name, const std::string& value)
+    void set_config_param(const std::string &name, const std::string &value)
     {
       auto search = _config_params.find(name);
       if (search != _config_params.end())
         search->second.set_value(value);
     }
 
-    std::string get_config_param(const std::string& name) const
+    std::string get_config_param(const std::string &name) const
     {
       auto it = _config_params.find(name);
       if (it != _config_params.end())
@@ -118,7 +116,7 @@ class Config_params
     std::string get_params_string() const
     {
       std::string s = "";
-      for (const std::pair<const std::string, Config_param>& param : _config_params)
+      for (const std::pair<const std::string, Config_param> &param : _config_params)
       {
         s += param.first + ": " + param.second.get_value() + "\n";
       }

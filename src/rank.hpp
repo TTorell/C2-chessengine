@@ -8,9 +8,10 @@ namespace C2_chess
 
 class Square;
 
-class Rank {
+class Rank
+{
   protected:
-    Square* _file[8];
+    Square *_file[8];
     char _name;
 
   public:
@@ -22,25 +23,35 @@ class Rank {
         _file[i] = 0;
       }
     }
+
+    Rank(const Rank&) :
+        _file{ nullptr },
+        _name('?')
+    {
+    }
+
     ~Rank()
     {
     }
-//    char get_name()
+    //    char get_name()
 //    {
 //      return _name;
 //    }
+
+    Rank operator=(const Rank&) = delete;
+
     void set_name(char name)
     {
       _name = name;
     }
     int get_rankindex()
     {
-      return ((int) _name - 48);
+      return ((int)_name - 48);
     }
     Square*& operator[](int index) const
     {
       require(index >= a && index <= h, __FILE__, __FUNCTION__, __LINE__);
-      return (Square*&) _file[index];
+      return const_cast<Square*&>(_file[index]);
     }
 };
 }

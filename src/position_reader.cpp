@@ -113,7 +113,7 @@ int FEN_reader::read_position(const std::string& inputfile)
   return 0;
 }
 
-int FEN_reader::parse_FEN_string(const std::string& FEN_string, Board& b) const
+int FEN_reader::parse_FEN_string(const std::string& FEN_string, Board& board) const
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   std::cout << FEN_string << std::endl;
@@ -251,7 +251,7 @@ int FEN_reader::parse_FEN_string(const std::string& FEN_string, Board& b) const
   int move_number;
   is >> move_number;
   // cout << "move_number = " << move_number << endl;
-  b = chessboard;
+  board = chessboard;
   _game.figure_out_last_move(chessboard, col_from_string(col_to_move), half_move_counter, move_number);
   return 0;
 }

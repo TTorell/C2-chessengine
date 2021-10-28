@@ -32,7 +32,7 @@ class FEN_reader: public Position_reader {
     FEN_reader(Game& game);
     ~FEN_reader();
 
-    int parse_FEN_string(const std::string& FEN_string, Board& b) const;
+    int parse_FEN_string(const std::string& FEN_string, Board& board) const;
     int read_position(const std::string& inputfile);
     std::istream& read_position(std::istream& is);
   private:

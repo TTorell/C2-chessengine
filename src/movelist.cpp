@@ -10,11 +10,13 @@ namespace C2_chess
 {
 
   Movelist::Movelist() :
+      _list(),
     _listindex(0)
 {
 }
 
 Movelist::Movelist(const Movelist& ml) :
+    _list(ml._list),
     _listindex(ml._listindex)
 {
   for (Move* obj : ml._list)

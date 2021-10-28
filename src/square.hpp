@@ -20,7 +20,11 @@ class Square {
 
   private:
     Square() :
-        _piece(0)
+        _piece(0),
+        _position(),
+        _moves(),
+        _threats(),
+        _protections()
     {
     }
 
@@ -29,7 +33,9 @@ class Square {
         _piece(0), _position(file, rank), _moves(), _threats(), _protections()
     {
     }
-    //Square(const Square& s);
+
+    Square(const Square&) = delete;
+
     ~Square()
     {
       if (_piece)
@@ -37,11 +43,14 @@ class Square {
         delete _piece;
       }
     }
-    //Square& operator=(const Square& s);
+
+    Square operator=(const Square&) = delete;
+
     Position get_position() const
     {
       return _position;
     }
+
     int get_fileindex() const
     {
       return _position.get_file();
