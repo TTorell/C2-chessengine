@@ -473,6 +473,19 @@ bool compare_move_lists(const std::vector<std::string>& out_vector, const std::v
   return success;
 }
 
+std::string to_binary_board(uint64_t in)
+{
+  std::ostringstream oss;
+  uint64_t mask = 0xFF;
+  uint8_t row;
+  for (int n = 0; n < 8; n++, in >>= 8)
+  {
+    row = in & mask;
+    oss << to_binary(row) << std::endl;
+  }
+  return oss.str();
+}
+
 bool question_to_user(const std::string& question, std::string regexp_correct_answer)
 {
   std::string answer;

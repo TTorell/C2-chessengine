@@ -244,6 +244,8 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum,
   CurrentTime now;
   std::cout << "-- Test " << testnum << " " << testcase_info << " --" << std::endl;
 
+  if (testnum == 20)
+    std::cout << "20" << std::endl;
   Bitboard_with_utils chessboard;
   if (chessboard.read_position(FEN_string) != 0)
   {
@@ -349,10 +351,12 @@ int Bitboard_with_utils::test_move_generation(unsigned int single_testnum)
     for (unsigned int tn : failed_testcases)
       std::cout << " " << tn;
     std::cout << std::endl;
+    return -1;
   }
   else if (failed_testcases.size() == 1)
   {
     std::cout << "FAILURE: Test case " << failed_testcases[0] << " failed." << std::endl;
+    return -1;
   }
   else
   {
@@ -382,8 +386,7 @@ bool Bitboard_with_utils::bitboard_tests(const std::string& arg)
       return false;
     }
   }
-  chessboard.test_move_generation(single_testnum);
-  return true;
+  return chessboard.test_move_generation(single_testnum);
 }
 
 } // End namespace C2_chess

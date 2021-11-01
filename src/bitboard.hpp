@@ -33,7 +33,7 @@ namespace C2_chess
 // constants instantiated at compile time?
 // For more complex expressions and functions it
 // has significance though.
-constexpr uint64_t whole_board = 0xFFFFFFFFFFFFFFFF;
+
 constexpr uint64_t a_file = 0x8080808080808080;
 constexpr uint64_t b_file = 0x4040404040404040;
 constexpr uint64_t c_file = 0x2020202020202020;
@@ -51,10 +51,19 @@ constexpr uint64_t row_6 = 0x0000000000FF0000;
 constexpr uint64_t row_7 = 0x000000000000FF00;
 constexpr uint64_t row_8 = 0x00000000000000FF;
 
+constexpr uint64_t zero = 0x0000000000000000;
+constexpr uint64_t one = 0x0000000000000001;
+constexpr uint64_t whole_board = 0xFFFFFFFFFFFFFFFF;
+
+//constexpr uint64_t lower_board_half = row_1 | row_2 | row_3 | row_4;
+//constexpr uint64_t upper_board_half = row_5 | row_6 | row_7 | row_8;
+
 constexpr uint64_t not_a_file = whole_board ^ a_file;
+constexpr uint64_t a_b_files = a_file | b_file;
 constexpr uint64_t not_a_b_files = not_a_file ^ b_file;
 constexpr uint64_t not_h_file = whole_board ^ h_file;
 constexpr uint64_t not_g_h_files = not_h_file ^ g_file;
+constexpr uint64_t g_h_files = g_file | h_file;
 constexpr uint64_t not_row_8 = whole_board ^ row_8;
 constexpr uint64_t not_row_1 = whole_board ^ row_1;
 
@@ -63,10 +72,10 @@ constexpr uint64_t not_row_1 = whole_board ^ row_1;
 // the chess board. They reduce the control
 // necessary to check if a file/rank-index
 // is allowed (is inside the board).
-constexpr uint64_t file[] = {a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file, 0L, 0L};
+constexpr uint64_t file[] = {a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file, zero, zero};
 
 // 0 is not used as rank-index
-constexpr uint64_t rank[] = {0L, row_1, row_2, row_3, row_4, row_5, row_6, row_7, row_8, 0L, 0L};
+constexpr uint64_t rank[] = {zero, row_1, row_2, row_3, row_4, row_5, row_6, row_7, row_8, zero, zero};
 
 constexpr uint64_t king_side = e_file | f_file | g_file | h_file;
 constexpr uint64_t queen_side = a_file | b_file | c_file | d_file;
@@ -75,10 +84,13 @@ constexpr uint64_t upper_board_half = row_5 | row_6 | row_7 | row_8;
 
 // Castling
 constexpr uint64_t a1_square = a_file & row_1;
+constexpr uint64_t a7_square = a_file & row_7;
 constexpr uint64_t a8_square = a_file & row_8;
+constexpr uint64_t b1_square = b_file & row_1;
 constexpr uint64_t c2_square = c_file & row_2;
 constexpr uint64_t c7_square = c_file & row_7;
 constexpr uint64_t d1_square = d_file & row_1;
+constexpr uint64_t d7_square = d_file & row_7;
 constexpr uint64_t d8_square = d_file & row_8;
 constexpr uint64_t e1_square = e_file & row_1;
 constexpr uint64_t e2_square = e_file & row_2;
@@ -91,6 +103,7 @@ constexpr uint64_t f1_square = f_file & row_1;
 constexpr uint64_t f2_square = f_file & row_2;
 constexpr uint64_t f7_square = f_file & row_7;
 constexpr uint64_t f8_square = f_file & row_8;
+constexpr uint64_t g2_square = g_file & row_2;
 constexpr uint64_t h1_square = h_file & row_1;
 constexpr uint64_t h8_square = h_file & row_8;
 
@@ -109,14 +122,10 @@ constexpr uint64_t threatening_knight_squares_K = ((row_2 | row_7) & (d_file | e
 constexpr uint64_t threatening_knight_squares_Q = (((row_2 | row_3 | row_6 | row_7) & queen_side)
                                                    ^ (c2_square | c7_square))
                                                   | (e2_square | e7_square | e3_square | e6_square | f2_square | f7_square);
-//    ^ (c2_square) | c7_square)) | e2_square | e7_square | e3_square |  e6_square |  f2_square | f7_square;
-//                                                | ((row_6 | row_7) & king_side);
-//constexpr uint64_t lower_board_half = row_1 | row_2 | row_3 | row_4;
-//constexpr uint64_t upper_board_half = row_5 | row_6 | row_7 | row_8;
 constexpr uint64_t di(int i)
 {
   uint8_t fi = a, r = 0;
-  uint64_t val = 0L;
+  uint64_t val = zero;
   if (i < 8)
   {
     for (fi = a, r = 8 - i; r <= 8; fi++, r++)
@@ -136,7 +145,7 @@ constexpr uint64_t ad(const int i)
 {
   int8_t fi = a; // important: NOT uint8_t becasue f-- will become 255, not -1
   uint8_t r = 1;
-  uint64_t val = 0L;
+  uint64_t val = zero;
   if (i < 8)
   {
     for (r = 1, fi = i; fi >= a; fi--, r++)
@@ -152,10 +161,16 @@ constexpr uint64_t ad(const int i)
 
 constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14)};
 
-
 inline uint8_t bit_idx(uint64_t square)
 {
+  assert(std::has_single_bit(square));
   return std::countr_zero(square);
+}
+
+inline uint64_t to_square(uint8_t bit_idx)
+{
+  assert(bit_idx < 64);
+  return one << bit_idx;
 }
 
 inline uint8_t file_idx(uint64_t square)
@@ -163,14 +178,56 @@ inline uint8_t file_idx(uint64_t square)
   return 7 - (bit_idx(square) & 7);
 }
 
+inline uint64_t to_file(uint64_t square)
+{
+  return file[file_idx(square)];
+}
+
 inline uint8_t rank_idx(uint64_t square)
 {
   return 8 - (bit_idx(square) >> 3);
 }
 
-inline uint64_t to_file(uint64_t square)
+inline uint64_t to_rank(uint64_t square)
 {
-  return file[file_idx(square)];
+  return rank[rank_idx(square)];
+}
+
+inline uint64_t to_diagonal(uint64_t square)
+{
+  return diagonal[8 - rank_idx(square) + file_idx(square)];
+}
+
+inline uint64_t to_diagonal(uint8_t f_idx, uint8_t r_idx)
+{
+  assert(f_idx < 8 && r_idx <= 8 && r_idx > 0);
+  return diagonal[8 - r_idx + f_idx];
+}
+
+inline uint64_t to_anti_diagonal(uint64_t square)
+{
+  return anti_diagonal[file_idx(square) + rank_idx(square) - 1];
+}
+
+inline uint64_t to_anti_diagonal(uint8_t f_idx, uint8_t r_idx)
+{
+  assert(f_idx < 8 && r_idx <= 8 && r_idx > 0);
+  return anti_diagonal[f_idx + r_idx - 1];
+}
+
+// Precondition: sq1 and sq2 must be on the same file, rank, diagonal or antidiagonal.
+inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diagonals = false)
+{
+  assert(squares);
+  uint64_t common_squares;
+  if (diagonals)
+    common_squares = squares & (to_diagonal(sq2) | to_anti_diagonal(sq2));
+  else
+    common_squares = squares & (to_file(sq2) | to_rank(sq2));
+  if (static_cast<int64_t>(sq1 - sq2) > 0)
+    return common_squares & ((sq1 - one) ^ ((sq2 << 1) - one));
+  else
+    return common_squares & ((sq2 - one) ^ ((sq1 << 1) - one));
 }
 
 inline uint8_t popright_bit_idx(uint64_t& squares)
@@ -183,16 +240,21 @@ inline uint8_t popright_bit_idx(uint64_t& squares)
 
 inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
 {
+  assert(pattern);
   uint64_t squares;
   int shift = bit_idx(center_square) - e4_square_idx;
   squares = (shift >= 0) ? (pattern << shift) : (pattern >> -shift);
-  if (file_idx(center_square) == a)
+  // Remove squares in the pattern which may have
+  // been shifted over to the other side of the board.
+  // (the pattern is max 5 bits wide, so we can remove
+  // two files regardless of if center_square is on a-,
+  // or b-file etc).
+  if (to_file(center_square) & a_b_files)
     squares &= not_g_h_files;
-  else if (file_idx(center_square) == h)
+  else if (to_file(center_square) & g_h_files)
     squares &= not_a_b_files;
   return squares;
 }
-
 
 //constexpr uint8_t Direction_north = 0x80;
 //constexpr uint8_t Direction_south = 0x40;
@@ -219,8 +281,8 @@ struct BitMove
         _piece_type(piecetype::Pawn),
         _properties(0),
         _promotion_piece_type(piecetype::Queen),
-        _from_square(0L),
-        _to_square(0L),
+        _from_square(zero),
+        _to_square(zero),
         _evaluation(0.0)
     {
       // cout << "BitMove::default_ctor" << endl;
@@ -254,11 +316,11 @@ struct BitMove
 
     uint8_t from_f_index() const
     {
-      return (7 - (static_cast<int>( LOG2(_from_square))) % 8);
+      return (7 - (static_cast<int>(LOG2(_from_square))) % 8);
     }
     uint8_t from_r_index() const
     {
-      return (8 - (static_cast<int>( LOG2(_from_square))) / 8);
+      return (8 - (static_cast<int>(LOG2(_from_square))) / 8);
     }
     uint8_t to_f_index() const
     {
@@ -266,7 +328,7 @@ struct BitMove
     }
     uint8_t to_r_index() const
     {
-      return (8 - (static_cast<int>( LOG2(_to_square))) / 8);
+      return (8 - (static_cast<int>(LOG2(_to_square))) / 8);
     }
 
     friend std::ostream& operator <<(std::ostream& os, const BitMove& m);
@@ -292,8 +354,6 @@ struct Piece_state
     uint64_t r2;
     uint64_t adjacent_ranks; // Ranks adjacent to our King_square.
     uint64_t pinned_pieces; // Squares of our pinned pieces
-    uint64_t checking_piece_square;
-    uint8_t check_count;
     uint64_t empty_squares;
     uint64_t Queens;
     uint64_t Rooks;
@@ -315,6 +375,7 @@ struct Piece_state
     uint64_t other_Pawns;
 
     uint64_t all_pieces;
+    uint64_t checkers;
 };
 
 class Bitboard
@@ -329,7 +390,7 @@ class Bitboard
     std::deque<BitMove> _movelist;
     col _col_to_move = col::white;
     uint8_t _castling_rights = castling_rights_none;
-    uint64_t _ep_square = 0L;
+    uint64_t _ep_square = zero;
     float _material_diff;
     Piece_state _s;
     uint64_t _W_King;
@@ -370,15 +431,17 @@ class Bitboard
                                     uint64_t opponents_other_pieces,
                                     uint64_t& pinned_piece);
 
-    bool square_is_threatened(int8_t file_index,
-                              int8_t rank_index,
-                              bool King_is_asking);
+    bool square_is_threatened_old(int8_t file_index,
+                                  int8_t rank_index,
+                                  bool King_is_asking);
 
-    bool square_is_threatened2(uint64_t square, bool King_is_asking);
+    bool square_is_threatened(uint64_t square, bool King_is_asking);
 
     inline void contains_checking_piece(const uint64_t square,
                                         const uint64_t pieces,
                                         const uint64_t forbidden_files);
+
+    void find_checkers_and_pinned_pieces();
 
     void look_for_checks_and_pinned_pieces();
 
@@ -429,7 +492,9 @@ class Bitboard
 
     void step_from_King_to_checking_piece(uint8_t inc);
 
-    void find_moves_after_check();
+    void find_moves_after_check_old();
+
+    void find_moves_after_check(uint64_t checker);
 
     void find_normal_legal_moves();
 

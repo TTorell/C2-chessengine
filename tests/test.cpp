@@ -51,10 +51,10 @@ TEST_CASE("Move_generation")
   const char* const preferred_test_exec_dir = "/home/torsten/eclipse-workspace/C2-chessengine";
   REQUIRE(check_execution_dir(preferred_test_exec_dir));
   Bitboard_with_utils chessboard;
-  bool result = chessboard.bitboard_tests("");
-  if (!result)
+  int result = chessboard.bitboard_tests("");
+  if (result != 0)
     std::cout << "TESTS FAILED!" << std::endl;
-  REQUIRE(result);
+  REQUIRE(result == 0);
 }
 
 TEST_CASE("Castling_wrights")
@@ -81,7 +81,7 @@ TEST_CASE("Castling_wrights")
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_right_WQ);
-    // White castles queenside
+    // White castles queen-side
     chessboard.make_move(1);
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
@@ -137,11 +137,11 @@ TEST_CASE("Castling_wrights")
 
   SECTION("King moves")
   {
-    chessboard.make_move(4); // Ke1-d1
+    chessboard.make_move(8); // Ke1-d1
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ));
-    chessboard.make_move(6); // ... Ke8-e7
+    chessboard.make_move(7); // ... Ke8-e7
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -150,7 +150,7 @@ TEST_CASE("Castling_wrights")
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
-    chessboard.make_move(6); // ... Ke7-e8
+    chessboard.make_move(3); // ... Ke7-e8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -158,7 +158,7 @@ TEST_CASE("Castling_wrights")
     uint64_t htag = chessboard.get_hash_tag(); // first test of _hash_tag
 
     // Make another King_move
-    chessboard.make_move(4); // Ke1-e2
+    chessboard.make_move(3); // Ke1-e2
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -167,17 +167,78 @@ TEST_CASE("Castling_wrights")
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
     // and move back again
-    chessboard.make_move(5); // Ke2-e1
+    chessboard.make_move(8); // Ke2-e1
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
-    chessboard.make_move(6); // ... Kd8-e8
+    chessboard.make_move(2); // ... Kd8-e8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
 
     REQUIRE(htag == chessboard.get_hash_tag());
   }
+}
 
+TEST_CASE("Bitboard between")
+{
+  uint64_t squares = between(e8_square, e1_square, e_file | row_8);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == (e_file ^ (e8_square | e1_square)));
+  squares = between(e1_square, e8_square, e_file | row_1);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == (e_file ^ (e8_square | e1_square)));
+  squares = between(a1_square, a8_square, a_file | row_1);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == (a_file ^ (a8_square | a1_square)));
+  squares = between(a8_square, a1_square, a_file | row_8);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == (a_file ^ (a8_square | a1_square)));
+  squares = between(a8_square, a7_square, a_file | row_8);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == zero);
+  squares = between(a7_square, a8_square, a_file | row_7);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == zero);
+  squares = between(a1_square, b1_square, a_file | row_1);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == zero);
+  squares = between(b1_square, a1_square, b_file | row_1);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == zero);
+  squares = between(a1_square, h1_square, a_file | row_1);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == (row_1 ^ (a1_square | h1_square)));
+  squares = between(h1_square, a1_square, h_file | row_1);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == (row_1 ^ (a1_square | h1_square)));
+  squares = between(c7_square, e7_square, c_file | row_7);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == d7_square);
+  squares = between(e7_square, c7_square, e_file | row_7);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == d7_square);
+  uint64_t a1_diag = to_diagonal(a1_square);
+  REQUIRE(a1_diag == diagonal[7]);
+  uint64_t a1_anti_diag = to_anti_diagonal(a1_square);
+  REQUIRE(a1_anti_diag == anti_diagonal[0]);
+  squares = between(a1_square, h8_square, to_diagonal(a1_square) | to_anti_diagonal(a1_square), true);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == (diagonal[7] ^ (a1_square | h8_square)));
+  squares = between(h8_square, a1_square, to_diagonal(h8_square) | to_anti_diagonal(h8_square), true);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == (diagonal[7] ^ (a1_square | h8_square)));
+  squares = between(a8_square, h1_square, to_diagonal(a8_square) | to_anti_diagonal(a8_square), true);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == (anti_diagonal[7] ^ (a8_square | h1_square)));
+  squares = between(h1_square, a8_square, to_diagonal(h1_square) | to_anti_diagonal(h1_square), true);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == (anti_diagonal[7] ^ (a8_square | h1_square)));
+  squares = between(h1_square, g2_square, to_diagonal(h1_square) | to_anti_diagonal(h1_square), true);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == zero);
+  squares = between(g2_square, h1_square, to_diagonal(g2_square) | to_anti_diagonal(g2_square), true);
+  std::cout << to_binary_board(squares) << std::endl;
+  REQUIRE(squares == zero);
 }
 
