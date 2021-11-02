@@ -167,11 +167,24 @@ inline uint8_t bit_idx(uint64_t square)
   return std::countr_zero(square);
 }
 
-inline uint64_t to_square(uint8_t bit_idx)
+inline uint8_t file_idx(uint8_t bit_idx)
+{
+  assert(bit_idx < 64);
+  return 7 - (bit_idx & 7);
+}
+
+inline uint8_t rank_idx(uint8_t bit_idx)
+{
+  assert(bit_idx < 64);
+  return 8 - (bit_idx >> 3);
+}
+
+inline uint64_t square(uint8_t bit_idx)
 {
   assert(bit_idx < 64);
   return one << bit_idx;
 }
+
 
 inline uint8_t file_idx(uint64_t square)
 {
@@ -238,6 +251,14 @@ inline uint8_t popright_bit_idx(uint64_t& squares)
   return idx;
 }
 
+inline uint64_t popright_square(uint64_t& squares)
+{
+  assert(squares);
+  uint64_t tmp_squares = squares;
+  squares &= (squares-1);
+  return squares ^ tmp_squares;
+}
+
 inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
 {
   assert(pattern);
@@ -254,6 +275,12 @@ inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
   else if (to_file(center_square) & g_h_files)
     squares &= not_a_b_files;
   return squares;
+}
+
+inline uint64_t ortogonal_squares(uint64_t square)
+{
+  uint8_t b_idx = bit_idx(square);
+  return file[file_idx(b_idx)] | rank[rank_idx(b_idx)];
 }
 
 //constexpr uint8_t Direction_north = 0x80;

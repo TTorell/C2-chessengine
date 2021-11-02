@@ -115,7 +115,7 @@ TEST_CASE("Castling_wrights")
     }
   }
 
-  SECTION("Rook moves, but nocapture")
+  SECTION("Rook moves, but no capture")
   {
     chessboard.make_move(9); // Ra8-b8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
@@ -240,5 +240,40 @@ TEST_CASE("Bitboard between")
   squares = between(g2_square, h1_square, to_diagonal(g2_square) | to_anti_diagonal(g2_square), true);
   std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
+}
+
+TEST_CASE("popright_square")
+{
+  uint64_t squares = whole_board;
+  uint64_t saved_squares = squares;
+  for (int8_t bit_idx = 0; bit_idx < 64; bit_idx++)
+  {
+    std::cout << to_binary(squares) << std::endl;
+    std::cout << to_binary(square(bit_idx)) << std::endl;
+    REQUIRE(popright_square(squares) == square(bit_idx));
+    REQUIRE((squares ^ square(bit_idx)) == saved_squares);
+    saved_squares = squares;
+  }
+  std::cout << "" << std::endl;
+  squares = diagonal[7];
+  saved_squares = squares;
+  uint64_t bit_idx = 0;
+  while (squares)
+  {
+    std::cout << to_binary(squares) << std::endl;
+    REQUIRE(popright_square(squares) == square(bit_idx));
+    REQUIRE((squares ^ square(bit_idx)) == saved_squares);
+    saved_squares = squares;
+    bit_idx += 9;
+  }
+}
+
+TEST_CASE("ortogonal_squares")
+{
+  REQUIRE((ortogonal_squares(e4_square) ^ (e_file | row_4)) == zero);
+  REQUIRE((ortogonal_squares(a1_square) ^ (a_file | row_1)) == zero);
+  REQUIRE((ortogonal_squares(h8_square) ^ (h_file | row_8)) == zero);
+  REQUIRE((ortogonal_squares(a8_square) ^ (a_file | row_8)) == zero);
+
 }
 
