@@ -244,8 +244,8 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum,
   CurrentTime now;
   std::cout << "-- Test " << testnum << " " << testcase_info << " --" << std::endl;
 
-  if (testnum == 20)
-    std::cout << "20" << std::endl;
+  if (testnum == 25)
+    std::cout << "25" << std::endl;
   Bitboard_with_utils chessboard;
   if (chessboard.read_position(FEN_string) != 0)
   {
@@ -321,14 +321,14 @@ int Bitboard_with_utils::test_move_generation(unsigned int single_testnum)
       // Put all the reference moves in a string-vector
       std::vector<std::string> ref_moves_vector = split(line, ' ');
       // Erase the actual FEN_string tokens from the vector.
-      ref_moves_vector.erase(ref_moves_vector.begin(), ref_moves_vector.begin() + 6);
+      ref_moves_vector.erase(ref_moves_vector.begin(), static_cast<std::vector<std::string>::iterator>(ref_moves_vector.begin() + 6));
       // fix that "e.p." has been treated as a separate token
       // (because it's separated from the move by a blank-character.
       for (unsigned int i = 0; i < ref_moves_vector.size(); i++)
         if (ref_moves_vector[i] == "e.p.")
         {
           ref_moves_vector[i - 1] += " e.p.";
-          ref_moves_vector.erase(ref_moves_vector.begin() + i);
+          ref_moves_vector.erase(static_cast<std::vector<std::string>::iterator>(ref_moves_vector.begin() + i));
         }
 
       // Run the testcase for the position:

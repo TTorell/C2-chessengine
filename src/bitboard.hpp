@@ -55,9 +55,6 @@ constexpr uint64_t zero = 0x0000000000000000;
 constexpr uint64_t one = 0x0000000000000001;
 constexpr uint64_t whole_board = 0xFFFFFFFFFFFFFFFF;
 
-//constexpr uint64_t lower_board_half = row_1 | row_2 | row_3 | row_4;
-//constexpr uint64_t upper_board_half = row_5 | row_6 | row_7 | row_8;
-
 constexpr uint64_t not_a_file = whole_board ^ a_file;
 constexpr uint64_t a_b_files = a_file | b_file;
 constexpr uint64_t not_a_b_files = not_a_file ^ b_file;
@@ -283,6 +280,11 @@ inline uint64_t ortogonal_squares(uint64_t square)
   return file[file_idx(b_idx)] | rank[rank_idx(b_idx)];
 }
 
+inline uint64_t diagonal_squares(uint64_t square)
+{
+  return to_diagonal(square) | to_anti_diagonal(square);
+}
+
 //constexpr uint8_t Direction_north = 0x80;
 //constexpr uint8_t Direction_south = 0x40;
 //constexpr uint8_t Direction_west = 0x20;
@@ -447,7 +449,8 @@ class Bitboard
     int8_t _B_King_file_index;
     int8_t _B_King_rank_index;
 
-    inline void init_piece_state();
+
+    void init_piece_state();
 
     inline void clear_movelist();
 
@@ -476,12 +479,15 @@ class Bitboard
 
     void find_legal_moves_for_pinned_piece(uint64_t from_square);
 
+    void find_legal_moves_for_pinned_pieces();
+
     inline void try_adding_move(uint64_t pieces,
                                 piecetype p_type,
                                 uint8_t move_props,
                                 uint64_t from_square,
                                 uint64_t to_square);
 
+    bool check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint64_t own_pawn_square);
     bool check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint64_t own_pawn_square, uint8_t inc);
 
     void try_adding_ep_pawn_move(uint64_t from_square);
@@ -490,9 +496,9 @@ class Bitboard
 
     uint64_t add_two_knight_moves(uint64_t from_square, uint64_t allowed_squares, int8_t inc1, int8_t inc2);
 
-    void find_Pawn_moves(const uint64_t square);
+    void find_Pawn_moves();
 
-    void find_Knight_moves(const uint64_t square);
+    void find_Knight_moves();
 
     void find_Knight_moves_to_square(const uint64_t to_square);
 
@@ -500,13 +506,13 @@ class Bitboard
 
     void find_Rook_or_Queen_moves(const uint64_t square, piecetype p_type);
 
-    void find_short_castling(const uint64_t square);
+    void find_short_castling();
 
-    void find_long_castling(const uint64_t square);
+    void find_long_castling();
 
-    bool castling_squares_are_threatened_K(const uint64_t square);
+    bool castling_squares_are_threatened_K();
 
-    bool castling_squares_are_threatened_Q(const uint64_t square);
+    bool castling_squares_are_threatened_Q();
 
     inline uint64_t step_out_from_square(uint64_t square,
                                          int8_t inc,
@@ -549,7 +555,7 @@ class Bitboard
 
     inline void update_hash_tag(uint64_t square1, uint64_t square2, col p_color, piecetype type);
 
-    inline void update_col_to_move();
+    void update_col_to_move();
 
     inline void update_state_after_king_move(const BitMove& m);
 

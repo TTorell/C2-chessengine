@@ -21,7 +21,6 @@ namespace C2_chess
 
 std::atomic<bool> Bitboard::time_left(false);
 Bitboard Bitboard::level_boards[38];
-Zobrist_bitboard_hash Bitboard::bb_hash_table;
 
 Bitboard::Bitboard() :
     _hash_tag(zero),
@@ -227,7 +226,7 @@ int Bitboard::read_position(const std::string& FEN_string)
   return 0;
 }
 
-inline void Bitboard::init_piece_state()
+void Bitboard::init_piece_state()
 {
   clear_movelist();
   _s.pinned_pieces = zero;
@@ -343,7 +342,6 @@ bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking)
     tmp_all_pieces ^= _s.King;
   }
 
-  uint8_t r_idx = rank_idx(to_square);
   // Check threats on file and rank
   if (_s.other_Queens_or_Rooks)
   {
@@ -361,196 +359,13 @@ bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking)
   // Check diagonal threats
   if (_s.other_Queens_or_Bishops)
   {
-    uint64_t diagonal_squares = to_diagonal(f_idx, r_idx) | to_anti_diagonal(f_idx, r_idx);
-    possible_attackers = diagonal_squares & _s.other_Queens_or_Bishops;
+    uint64_t to_diagonal_squares = diagonal_squares(to_square);
+    possible_attackers = to_diagonal_squares & _s.other_Queens_or_Bishops;
     while (possible_attackers)
     {
       attacker = popright_square(possible_attackers);
-      if ((between(to_square, attacker, diagonal_squares, true) & tmp_all_pieces) == zero)
+      if ((between(to_square, attacker, to_diagonal_squares, true) & tmp_all_pieces) == zero)
         return true;
-    }
-  }
-  return false;
-}
-
-bool Bitboard::square_is_threatened_old(int8_t file_index, int8_t rank_index, bool King_is_asking)
-{
-  // -----------------------------------------------------------
-  // Checks if square is threatened by any piece
-  // of color "threatened_by_color".
-  // -----------------------------------------------------------
-
-  uint64_t square_file = file[file_index];
-  uint64_t square_rank = rank[rank_index];
-  uint64_t square = square_file & square_rank;
-
-  uint64_t adjacent_files = file[file_index + 1];
-  adjacent_files |= ((file_index - 1 >= a) ? file[file_index - 1] : zero);
-  uint64_t adjacent_ranks = rank[rank_index + 1];
-  adjacent_ranks |= rank[rank_index - 1];
-  uint64_t r1; // Rank from which Pawns can attack the square.
-  if (_col_to_move == col::white)
-    r1 = rank[rank_index + 1];
-  else
-    r1 = rank[rank_index - 1];
-  // Check Pawns and King and adjacent Queen or Bishop diagonal threats)
-  // Check Pawns, King and adjacent Queen or Bishop diagonal threats.
-  // White pawns can only attack diagonally from below and
-  // black Pawns from above (_s.r1)
-  if (adjacent_files & r1 & _s.other_Pawns)
-    return true;
-  // The other pieces can attack from all diagonals.
-  if (adjacent_files & adjacent_ranks & _s.other_King_Queens_or_Bishops)
-    return true;
-
-  // Check King, Queen or Rook threats on adjacent squares on the file or rank.
-  uint64_t squares = (square_file & adjacent_ranks) | (adjacent_files & square_rank);
-  if (squares & _s.other_King_Queens_or_Rooks)
-    return true;
-
-  // Check Knights two ranks from square
-  uint64_t knight_ranks = rank[rank_index + 2];
-  knight_ranks |= (rank_index - 2 >= 1) ? rank[rank_index - 2] : zero;
-  if (adjacent_files & knight_ranks & _s.other_Knights)
-    return true;
-  // Check Knights two files from square
-  uint64_t knight_files = file[file_index + 2];
-  knight_files |= (file_index - 2 >= a) ? file[file_index - 2] : zero;
-  if (knight_files & adjacent_ranks & _s.other_Knights)
-    return true;
-
-  // Check Queen or Rook on same file or rank
-  // If it is the black King asking if he can go to the square, then we can't use
-  // the King as a blocking piece and the square will be threatened when the King
-  // moves there anyway, so we "sort of" remove the King, before asking. You could
-  // say that the square is threatened by x-ray through the King.
-  uint64_t other_pieces = _s.other_pieces ^ _s.other_Queens_or_Rooks;
-  uint64_t own_pieces = _s.own_pieces;
-  if (King_is_asking)
-    own_pieces ^= _s.King;
-  int8_t fi, ri;
-  if ((square_file ^ square) & _s.other_Queens_or_Rooks)
-  {
-    // Opponent has at least one Queen or Rook on the same file
-    // Step downwards from the square.
-    for (ri = rank_index - 1; ri >= 1; ri--)
-    {
-      if (square_file & rank[ri] & _s.other_Queens_or_Rooks)
-      {
-        return true;
-      }
-      if (square_file & rank[ri] & (other_pieces | own_pieces))
-      {
-        // Other piece found, no threat possible.
-        break;
-      }
-    }
-    // Step upwards from the square.
-    for (ri = rank_index + 1; ri <= 8; ri++)
-    {
-      if (square_file & rank[ri] & _s.other_Queens_or_Rooks)
-      {
-        return true;
-      }
-      if (square_file & rank[ri] & (other_pieces | own_pieces))
-      {
-        // Other piece found, no threat possible.
-        break;
-      }
-    }
-  }
-  if ((square_rank ^ square) & _s.other_Queens_or_Rooks)
-  {
-    // Opponent has a Queen or Rook on the same rank.
-    // Step to the left from the square.
-    for (fi = file_index - 1; fi >= a; fi--)
-    {
-      if (file[fi] & square_rank & _s.other_Queens_or_Rooks)
-      {
-        return true;
-      }
-      if (file[fi] & square_rank & (other_pieces | own_pieces))
-      {
-        // Other piece found, no threat possible.
-        break;
-      }
-    }
-    // We haven't found the queen_or rook yet.
-    // Step to the right from the square.
-    for (fi = file_index + 1; fi <= h; fi++)
-    {
-      if (file[fi] & square_rank & _s.other_Queens_or_Rooks)
-      {
-        return true;
-      }
-      if (file[fi] & square_rank & (other_pieces | own_pieces))
-      {
-        // Other piece found, no threat possible.
-        break;
-      }
-    }
-  }
-
-  // Check for queen or bishop threats along diagonals.
-  // We  can't use bishops as blocking pieces on the
-  // diagonals. It would still be check.
-  other_pieces = _s.other_pieces ^ _s.other_Queens_or_Bishops;
-  if ((diagonal[8 + file_index - rank_index] ^ square) & _s.other_Queens_or_Bishops)
-  {
-    // Step north-east from the square.
-    for (fi = file_index + 1, ri = rank_index + 1; fi <= h && ri <= 8; fi++, ri++)
-    {
-      if (file[fi] & rank[ri] & _s.other_Queens_or_Bishops)
-      {
-        return true;
-      }
-      if (file[fi] & rank[ri] & (other_pieces | own_pieces))
-      {
-        // Other piece found, no threat possible.
-        break;
-      }
-    }
-    // Step south-west from the square.
-    for (fi = file_index - 1, ri = rank_index - 1; fi >= a && ri >= 1; fi--, ri--)
-    {
-      if (file[fi] & rank[ri] & _s.other_Queens_or_Bishops)
-      {
-        return true;
-      }
-      if (file[fi] & rank[ri] & (other_pieces | own_pieces))
-      {
-        // Other piece found, no threat possible.
-        break;
-      }
-    }
-  }
-  if ((anti_diagonal[file_index + rank_index - 1] ^ square) & _s.other_Queens_or_Bishops)
-  {
-    // Step north-west from the square.
-    for (fi = file_index - 1, ri = rank_index + 1; fi >= a && ri <= 8; fi--, ri++)
-    {
-      if (file[fi] & rank[ri] & _s.other_Queens_or_Bishops)
-      {
-        return true;
-      }
-      if (file[fi] & rank[ri] & (other_pieces | own_pieces))
-      {
-        // Other piece found, no threat possible.
-        break;
-      }
-    }
-    // Step south-east from the square.
-    for (fi = file_index + 1, ri = rank_index - 1; fi <= h && ri >= 1; fi++, ri--)
-    {
-      if (file[fi] & rank[ri] & _s.other_Queens_or_Bishops)
-      {
-        return true;
-      }
-      if (file[fi] & rank[ri] & (other_pieces | own_pieces))
-      {
-        // Other piece found, no threat possible.
-        break;
-      }
     }
   }
   return false;
@@ -627,11 +442,44 @@ inline void Bitboard::contains_checking_piece(const uint64_t square,
   }
 }
 
+// --------------------------------------------------------
+// Detects check, double check and pinned_pieces.
+//
+// Returns the number of checks found.
+//
+// The squares of Pinned pieces are stored in the member
+// variable _pinned_pieces and the square of the last
+// found check is stored in _checking_piece_square.
+//
+// Knowing about this can speed up the process of
+// figuring out all possible moves in a position.
+// On a double check only King moves are possible.
+// On a single check we must also check if we can capture
+// the checking piece or put a piece in between, but still
+// we can skip checking all other more normal moves.
+//
+// When it comes to double checks I've figured out the
+// following logic restrictions which could be useful:
+// - A double check must contain a discovered check.
+// - The checking piece that is discovered can of course never
+//   be a Knight or pawn.
+// - A double check can never consist of two diagonal checks.
+// - A double check can never consist of two checks along
+//   files and/or ranks.
+// - A double check can never consist of two checks from
+//   pieces of the same type.
+// - A double check can never consist of a Knight-check and
+//   a Pawn-check.
+// - A check from a Queen on adjacent square to the King can
+//   never be part of a double check.
+//
+// But naturally, I haven't made use of all these
+// restrictions.
+// ------------------------------------------------------
 void Bitboard::find_checkers_and_pinned_pieces()
 {
   uint64_t possible_checkers, possible_checker, between_squares;
   uint8_t King_file_idx = file_idx(_s.King);
-  uint8_t King_rank_idx = rank_idx(_s.King);
 
   // Check Pawn-threats
   if (_s.other_Pawns)
@@ -673,8 +521,7 @@ void Bitboard::find_checkers_and_pinned_pieces()
   // Check diagonal threats
   if (_s.other_Queens_or_Bishops)
   {
-    uint64_t King_diagonal_squares = (to_diagonal(King_file_idx, King_rank_idx) |
-                                      to_anti_diagonal(King_file_idx, King_rank_idx));
+    uint64_t King_diagonal_squares = diagonal_squares(_s.King);
     possible_checkers = King_diagonal_squares & _s.other_Queens_or_Bishops;
     while (possible_checkers)
     {
@@ -684,219 +531,6 @@ void Bitboard::find_checkers_and_pinned_pieces()
         _s.checkers |= possible_checker;
       else if (std::popcount(between_squares & _s.all_pieces) == 1)
         _s.pinned_pieces |= (between_squares & _s.own_pieces);
-    }
-  }
-}
-
-void Bitboard::look_for_checks_and_pinned_pieces()
-{
-// --------------------------------------------------------
-// Detects check and double check and pinned_pieces.
-//
-// Returns the number of checks found.
-//
-// The squares of Pinned pieces are stored in the member
-// variable _pinned_pieces and the square of the last
-// found check is stored in _checking_piece_square.
-//
-// Knowing about this can speed up the process of
-// figuring out all possible moves in a position.
-// On a double check only King moves are possible.
-// On a single check we must also check if we can capture
-// the checking piece or put a piece in between, but still
-// we can skip checking all other more normal moves.
-//
-// When it comes to double checks I've figured out the
-// following logic restrictions which could be useful:
-// - A double check must contain a discovered check.
-// - The checking piece that is discovered can of course never
-//   be a Knight or pawn.
-// - A double check can never consist of two diagonal checks.
-// - A double check can never consist of two checks along
-//   files and/or ranks.
-// - A double check can never consist of two checks from
-//   pieces of the same type.
-// - A double check can never consist of a Knight-check and
-//   a Pawn-check.
-// - A check from a Queen on adjacent square to the King can
-//   never be part of a double check.
-//
-// But naturally, I haven't made use of all these
-// restrictions.
-// ------------------------------------------------------
-
-  uint8_t check_count = 0;
-
-// ----------------------------------------
-// Is there a check from a Pawn?
-// ----------------------------------------
-// Go north-east/south-east.
-  if ((_col_to_move == col::white))
-    contains_checking_piece(_s.King >> 9, _s.other_Pawns, h_file);
-  else
-    contains_checking_piece(_s.King << 7, _s.other_Pawns, h_file);
-// Go north-west/south-west.
-  if ((_col_to_move == col::white))
-    contains_checking_piece(_s.King >> 7, _s.other_Pawns, a_file);
-  else
-    contains_checking_piece(_s.King << 9, _s.other_Pawns, a_file);
-
-// ----------------------------------------
-// Knight checks? (Only one knigh-check is
-// possible and it cannot be combined with
-// a pawn-check.)
-// ----------------------------------------
-  if (_s.other_Knights && (check_count == 0))
-  {
-    // Check Knights far east
-    contains_checking_piece(_s.King >> 10,
-                            _s.other_Knights,
-                            h_file | g_file);
-    contains_checking_piece(_s.King << 6,
-                            _s.other_Knights,
-                            h_file | g_file);
-    // Check Knights close east
-    contains_checking_piece(_s.King >> 17,
-                            _s.other_Knights,
-                            h_file);
-    contains_checking_piece(_s.King << 15,
-                            _s.other_Knights,
-                            h_file);
-    // Check Knights far west
-    contains_checking_piece(_s.King >> 6,
-                            _s.other_Knights,
-                            a_file | b_file);
-    contains_checking_piece(_s.King << 10,
-                            _s.other_Knights,
-                            a_file | b_file);
-    // Check Knights close west
-    contains_checking_piece(_s.King >> 15,
-                            _s.other_Knights,
-                            a_file);
-    contains_checking_piece(_s.King << 17,
-                            _s.other_Knights,
-                            a_file);
-  }
-// ----------------------------------------
-// Step out from the King in all directions
-// to find checks and pinned pieces.
-// ----------------------------------------
-  _s.pinned_pieces = zero;
-  uint64_t pinned_piece = zero;
-// Check Queen or Rook on same file or rank
-  int8_t fi, ri;
-  uint64_t square;
-  uint64_t other_pieces = _s.other_pieces ^ _s.other_Queens_or_Rooks;
-  if (_s.King_file & _s.other_Queens_or_Rooks)
-  {
-    // Opponent has a Queen or Rook on the same file
-    // Step downwards from the square.
-    for (ri = _s.King_rank_index - 1; ri >= 1; ri--)
-    {
-      square = _s.King_file & rank[ri];
-      if (find_check_or_pinned_piece(square,
-                                     _s.other_Queens_or_Rooks,
-                                     other_pieces,
-                                     pinned_piece))
-        break;
-    }
-    // Step upwards from the square.
-    pinned_piece = zero;
-    for (ri = _s.King_rank_index + 1; ri <= 8; ri++)
-    {
-      square = _s.King_file & rank[ri];
-      if (find_check_or_pinned_piece(square,
-                                     _s.other_Queens_or_Rooks,
-                                     other_pieces,
-                                     pinned_piece))
-        break;
-    }
-  }
-  if (_s.King_rank & _s.other_Queens_or_Rooks)
-  {
-    // Opponent has a Queen or Rook on the same rank
-    // Step west from the square.
-    pinned_piece = zero;
-    for (fi = _s.King_file_index - 1; fi >= a; fi--)
-    {
-      square = file[fi] & _s.King_rank;
-      if (find_check_or_pinned_piece(square,
-                                     _s.other_Queens_or_Rooks,
-                                     other_pieces,
-                                     pinned_piece))
-        break;
-    }
-    // Step east from square
-    pinned_piece = zero;
-    for (fi = _s.King_file_index + 1; fi <= h; fi++)
-    {
-      square = file[fi] & _s.King_rank;
-      if (find_check_or_pinned_piece(square,
-                                     _s.other_Queens_or_Rooks,
-                                     other_pieces,
-                                     pinned_piece))
-        break;
-    }
-  }
-// -------------------------------------------------
-// Check for queen or bishop threats along diagonals.
-// (We  can't use white bishops as blocking pieces
-// on the diagonals. It would still be check. But
-// now white rooks can block instead.)
-// -------------------------------------------------
-  other_pieces = _s.other_pieces ^ _s.other_Queens_or_Bishops;
-  if (_s.King_diagonal & _s.other_Queens_or_Bishops)
-  {
-    // Step north-east from the square.
-    pinned_piece = zero;
-    for (fi = _s.King_file_index + 1, ri = _s.King_rank_index + 1; fi <= h && ri <= 8; fi++, ri++)
-    {
-      square = file[fi] & rank[ri];
-      // TODO if (square & _All_pieces)
-      if (find_check_or_pinned_piece(square,
-                                     _s.other_Queens_or_Bishops,
-                                     other_pieces,
-                                     pinned_piece))
-        break;
-    }
-    // Step south-west from the square.
-    pinned_piece = zero;
-    for (fi = _s.King_file_index - 1, ri = _s.King_rank_index - 1; fi >= a && ri >= 1; fi--, ri--)
-    {
-      square = file[fi] & rank[ri];
-      // TODO if (square & _All_pieces)
-      if (find_check_or_pinned_piece(square,
-                                     _s.other_Queens_or_Bishops,
-                                     other_pieces,
-                                     pinned_piece))
-        break;
-    }
-  }
-  if (_s.King_anti_diagonal & _s.other_Queens_or_Bishops)
-  {
-    // Step north-west from the square.
-    pinned_piece = zero;
-    for (fi = _s.King_file_index - 1, ri = _s.King_rank_index + 1; fi >= a && ri <= 8; fi--, ri++)
-    {
-      square = file[fi] & rank[ri];
-      // TODO if (square & _All_pieces)
-      if (find_check_or_pinned_piece(square,
-                                     _s.other_Queens_or_Bishops,
-                                     other_pieces,
-                                     pinned_piece))
-        break;
-    }
-    // Step south-east from the square.
-    pinned_piece = zero;
-    for (fi = _s.King_file_index + 1, ri = _s.King_rank_index - 1; fi <= h && ri >= 1; fi++, ri--)
-    {
-      square = file[fi] & rank[ri];
-      // TODO if (square & _All_pieces)
-      if (find_check_or_pinned_piece(square,
-                                     _s.other_Queens_or_Bishops,
-                                     other_pieces,
-                                     pinned_piece))
-        break;
     }
   }
 }
@@ -924,7 +558,7 @@ void Bitboard::step_from_King_to_pinning_piece(uint64_t from_square,
 void Bitboard::find_legal_moves_for_pinned_piece(uint64_t from_square)
 {
   uint64_t to_square;
-// Here we know that "square" is somewhere between our King and a piece of other color.
+  // Here we know that "square" is somewhere between our King and a piece of other color.
   if (from_square & _s.King_file)
   {
     // The piece is pinned along the King-file.
@@ -952,8 +586,7 @@ void Bitboard::find_legal_moves_for_pinned_piece(uint64_t from_square)
         }
       }
     }
-
-    if (from_square & (_s.Queens))
+    else if (from_square & (_s.Queens))
       step_from_King_to_pinning_piece(from_square, 8, piecetype::Queen, _s.other_Queens_or_Rooks);
     else if (from_square & _s.Rooks)
       step_from_King_to_pinning_piece(from_square, 8, piecetype::Rook, _s.other_Queens_or_Rooks);
@@ -990,7 +623,7 @@ void Bitboard::find_legal_moves_for_pinned_piece(uint64_t from_square)
           add_pawn_move_check_promotion(from_square, to_square);
       }
     }
-    if (from_square & _s.Queens)
+    else if (from_square & _s.Queens)
       step_from_King_to_pinning_piece(from_square, 9, piecetype::Queen, _s.other_Queens_or_Bishops);
     else if (from_square & (_s.Bishops))
       step_from_King_to_pinning_piece(from_square, 9, piecetype::Bishop, _s.other_Queens_or_Bishops);
@@ -1017,7 +650,7 @@ void Bitboard::find_legal_moves_for_pinned_piece(uint64_t from_square)
           add_pawn_move_check_promotion(from_square, to_square);
       }
     }
-    if (from_square & _s.Queens)
+    else if (from_square & _s.Queens)
       step_from_King_to_pinning_piece(from_square, 7, piecetype::Queen, _s.other_Queens_or_Bishops);
     else if (from_square & (_s.Bishops))
       step_from_King_to_pinning_piece(from_square, 7, piecetype::Bishop, _s.other_Queens_or_Bishops);
@@ -1056,7 +689,8 @@ inline void Bitboard::try_adding_move(uint64_t pieces,
 //   to _ep_square is possible.
 void Bitboard::try_adding_ep_pawn_move(uint64_t from_square)
 {
-  if (from_square & (whole_board ^ _s.pinned_pieces))
+  assert(std::has_single_bit(from_square));
+  if (from_square & (~_s.pinned_pieces))
   {
     // Our pawn is not pinned.
     // Here we must check that our King won't be in check when
@@ -1068,19 +702,9 @@ void Bitboard::try_adding_ep_pawn_move(uint64_t from_square)
 
     // A pin (of the other pawn) on the king-file poses no problem,
     // since our own pawn will block the file after the capture.
-    if (other_pawn_square & _s.King_rank)
+    if ((other_pawn_square & _s.King_file) == zero)
     {
-      if (check_if_other_pawn_is_pinned_ep(other_pawn_square, from_square, 1))
-        return;
-    }
-    else if (other_pawn_square & _s.King_diagonal)
-    {
-      if (check_if_other_pawn_is_pinned_ep(other_pawn_square, from_square, 9))
-        return;
-    }
-    else if (other_pawn_square & _s.King_anti_diagonal)
-    {
-      if (check_if_other_pawn_is_pinned_ep(other_pawn_square, from_square, 7))
+      if (check_if_other_pawn_is_pinned_ep(other_pawn_square, from_square))
         return;
     }
     _movelist.push_front(BitMove(piecetype::Pawn,
@@ -1088,7 +712,7 @@ void Bitboard::try_adding_ep_pawn_move(uint64_t from_square)
                                  from_square,
                                  _ep_square));
   }
-  else if ((from_square & _s.Pawns) && (from_square & _s.pinned_pieces))
+  else
   {
     // Our own pawn is pinned, but can still capture e.p. along the
     // diagonal of the king.
@@ -1138,7 +762,7 @@ void Bitboard::add_pawn_move_check_promotion(uint64_t from_square,
                                    to_square));
     }
   }
-  else if (to_square) // Condition not necessary if we never try to add illegal Pawn moves.
+  else
   {
     // Promotion
     uint8_t move_props = move_props_promotion;
@@ -1160,74 +784,78 @@ void Bitboard::add_pawn_move_check_promotion(uint64_t from_square,
   }
 }
 
-// Find all possible moves for a pawn on from_square
-// Preconditions:
-// - There should be a, not pinned, pawn of color _col_to_move
-//   on from_square. (pinned pieces are taken care of elsewhere.)
-void Bitboard::find_Pawn_moves(const uint64_t from_square)
+void Bitboard::find_Pawn_moves()
 {
-  uint64_t to_square;
-// Can the Pawn take en_passant or capture piece
-  if (from_square & not_h_file)
+  uint64_t to_square, moved_pawns;
+  uint64_t pawns = _s.Pawns & ~(_s.pinned_pieces);
+  // Shift unpinned pawns one square ahead. Check if the new square is empty:
+  pawns = ((_col_to_move == col::white) ? pawns >> 8 : pawns << 8) & ~_s.all_pieces;
+  // save moved pieces
+  moved_pawns = pawns;
+  while (pawns)
   {
-    to_square = (_col_to_move == col::white) ? from_square >> 9 : from_square << 7; // Go north east or south east.
-    if (to_square & _ep_square)
-      try_adding_ep_pawn_move(from_square);
-    else if (to_square & _s.other_pieces)
-      add_pawn_move_check_promotion(from_square, to_square);
+    to_square = popright_square(pawns);
+    add_pawn_move_check_promotion((_col_to_move == col::white) ? to_square << 8 : to_square >> 8, to_square);
   }
-  if (from_square & not_a_file)
+  // Check if any of the moved pawns can take another step forward
+  if (moved_pawns)
   {
-    to_square = (_col_to_move == col::white) ? from_square >> 7 : from_square << 9; // Go north west or south west.
-    if (to_square & _ep_square)
-      try_adding_ep_pawn_move(from_square);
-    else if (to_square & _s.other_pieces)
-      add_pawn_move_check_promotion(from_square, to_square);
-  }
-// Can the pawn move one square along the file?
-  to_square = (_col_to_move == col::white) ? from_square >> 8 : from_square << 8; // Go one step north or south.
-  if (to_square & _s.empty_squares)
-  {
-    add_pawn_move_check_promotion(from_square, to_square);
-    // Can the pawn move two squares along the file?
-    if (from_square & ((_col_to_move == col::white) ? row_2 : row_7))
+    moved_pawns = (~_s.all_pieces) & ((_col_to_move == col::white) ? ((moved_pawns >> 8) & rank[4]) :
+                                                                     ((moved_pawns << 8) & rank[5]));
+    while (moved_pawns)
     {
-      (_col_to_move == col::white) ? to_square >>= 8 : to_square <<= 8;
-      if (to_square & _s.empty_squares)
-        _movelist.push_back(BitMove(piecetype::Pawn,
-                                    move_props_none,
-                                    from_square,
-                                    to_square));
+      to_square = popright_square(moved_pawns);
+      _movelist.push_back(BitMove(piecetype::Pawn,
+                                  move_props_none,
+                                  (_col_to_move == col::white) ? to_square << 16 : to_square >> 16,
+                                  to_square));
     }
+  }
+  // Check for pawn captures and ep.
+  pawns = _s.Pawns & (~_s.pinned_pieces);
+  moved_pawns = ((_col_to_move == col::white) ? pawns >> 9 : pawns << 7) & not_a_file;
+  while (moved_pawns)
+  {
+    to_square = popright_square(moved_pawns);
+    if (to_square & _s.other_pieces)
+      add_pawn_move_check_promotion((_col_to_move == col::white) ? to_square << 9 :
+                                                                   to_square >> 7,
+                                    to_square);
+    if (to_square == _ep_square)
+      try_adding_ep_pawn_move((_col_to_move == col::white) ? to_square << 9 : to_square >> 7);
+  }
+  moved_pawns = ((_col_to_move == col::white) ? pawns >> 7 : pawns << 9) & not_h_file;
+  while (moved_pawns)
+  {
+    to_square = popright_square(moved_pawns);
+    if (to_square & _s.other_pieces)
+      add_pawn_move_check_promotion((_col_to_move == col::white) ? to_square << 7 :
+                                                                   to_square >> 9,
+                                    to_square);
+    if (to_square == _ep_square)
+      try_adding_ep_pawn_move((_col_to_move == col::white) ? to_square << 7 : to_square >> 9);
   }
 }
 
-void Bitboard::find_Knight_moves(const uint64_t from_square)
+void Bitboard::find_Knight_moves()
 {
-// Here we must check so the file_index of the knight-move is within the board-limits (a-h).
-// If the rank_index is outside the board, then to_square will be zero, so this is not a
-// problem.
-
-  if (from_square & not_a_b_files)
+  uint64_t from_square, to_square, to_squares;
+  if (_s.Knights)
   {
-    try_adding_move(_s.Knights, piecetype::Knight, move_props_none, from_square, from_square >> 6); // -2 + 1*8
-    try_adding_move(_s.Knights, piecetype::Knight, move_props_none, from_square, from_square << 10); // -2 - 1*8
-  }
-  if (from_square & not_a_file)
-  {
-    try_adding_move(_s.Knights, piecetype::Knight, move_props_none, from_square, from_square >> 15); // -1 + 2*8
-    try_adding_move(_s.Knights, piecetype::Knight, move_props_none, from_square, from_square << 17); // -1 - 2*8
-  }
-  if (from_square & not_g_h_files)
-  {
-    try_adding_move(_s.Knights, piecetype::Knight, move_props_none, from_square, from_square >> 10); // 2 + 1*8
-    try_adding_move(_s.Knights, piecetype::Knight, move_props_none, from_square, from_square << 6); // 2 - 1*8
-  }
-
-  if (from_square & not_h_file)
-  {
-    try_adding_move(_s.Knights, piecetype::Knight, move_props_none, from_square, from_square >> 17); // 1 + 2*8
-    try_adding_move(_s.Knights, piecetype::Knight, move_props_none, from_square, from_square << 15); // 1 - 2*8
+    uint64_t knights = _s.Knights & (~_s.pinned_pieces);
+    while (knights)
+    {
+      from_square = popright_square(knights);
+      to_squares = adjust_pattern(knight_pattern, from_square) & (~_s.own_pieces);
+      while (to_squares)
+      {
+        to_square = popright_square(to_squares);
+        if (to_square & _s.other_pieces)
+          _movelist.push_back(BitMove(piecetype::Knight, move_props_capture, from_square, to_square));
+        else
+          _movelist.push_front(BitMove(piecetype::Knight, move_props_none, from_square, to_square));
+      }
+    }
   }
 }
 
@@ -1335,316 +963,130 @@ void Bitboard::find_Rook_or_Queen_moves(const uint64_t from_square, piecetype p_
   }
 }
 
-// The following method is specific for checking if the squares between the King's
-// initial square and the Rook on the king-side are threatened by any of the opponent's
-// pieces. It presumes that these squares are empty, so it doesn't check threats from
-// the side along the King rank, only from the "front" and from the two "front diagonals".
-// Checking threats from "behind" would obviously be pointless, since the squares are
-// on the brim of he chess board.)
-bool Bitboard::castling_squares_are_threatened_K(const uint64_t square)
-{
-  uint64_t board_half = lower_board_half;
-  uint8_t di_offset = 7;
-  uint8_t ad_offset = 0;
-  if (_col_to_move == col::black)
-  {
-    board_half = lower_board_half;
-    di_offset = 0;
-    ad_offset = 7;
-  }
-
-  if ((threatening_pawn_squares_K & board_half) & (_s.other_Pawns | _s.other_King_Queens_or_Bishops))
-    return true;
-  if ((threatening_knight_squares_K & board_half) & _s.other_Knights)
-    return true;
-
-  uint64_t tmp_square = square >> 1;
-  for (uint8_t index = f; index <= g; index++, tmp_square >>= 1)
-  {
-    // Is square threatened on file?
-    if (file[index] & _s.other_Queens_or_Rooks)
-    {
-      for (uint64_t sq = (_col_to_move == col::white) ? tmp_square >> 8 : tmp_square <<= 8;
-          true;
-          (_col_to_move == col::white) ? sq >>= 8 : sq <<= 8)
-      {
-        if (sq & _s.other_Queens_or_Rooks)
-          return true;
-        if (sq & (_s.all_pieces))
-          break;
-      }
-    }
-
-    // Is square threatened on diagonal?
-    if (diagonal[index + di_offset] & _s.other_Queens_or_Bishops)
-    {
-      for (uint64_t sq = (_col_to_move == col::white) ? tmp_square >> 9 : tmp_square << 9;
-          true;
-          (_col_to_move == col::white) ? sq >>= 9 : sq <<= 9)
-      {
-        if (sq & _s.other_Queens_or_Bishops)
-          return true;
-        if (sq & _s.all_pieces)
-          break;
-      }
-    }
-    // Is square threatened on anti diagonal?
-    if (anti_diagonal[index + ad_offset] & _s.other_Queens_or_Bishops)
-    {
-      for (uint64_t sq = (_col_to_move == col::white) ? tmp_square >> 7 : tmp_square << 7;
-          true;
-          (_col_to_move == col::white) ? sq >>= 7 : sq <<= 7)
-      {
-        if (sq & _s.other_Queens_or_Bishops)
-          return true;
-        if (sq & _s.all_pieces)
-          break;
-      }
-    }
-  }
-  return false;
-}
-
-// This is analog to the previous method, but on the queen-side.
-bool Bitboard::castling_squares_are_threatened_Q(const uint64_t square)
-{
-  uint64_t board_half = lower_board_half;
-  uint8_t di_offset = 7;
-  uint8_t ad_offset = 0;
-  if (_col_to_move == col::black)
-  {
-    board_half = upper_board_half;
-    di_offset = 0;
-    ad_offset = 7;
-  }
-  if ((threatening_pawn_squares_Q & board_half) & (_s.other_Pawns | _s.other_King_Queens_or_Bishops))
-    return true;
-  if ((threatening_knight_squares_Q & board_half) & _s.other_Knights)
-    return true;
-
-  uint64_t tmp_square = square << 1;
-  for (uint8_t index = d; index >= b; tmp_square <<= 1, index--)
-  {
-    // Is square threatened on file?
-    if (file[index] & _s.other_Queens_or_Rooks)
-    {
-      for (uint64_t sq = (_col_to_move == col::white) ? tmp_square >> 8 : tmp_square <<= 8;
-          true;
-          (_col_to_move == col::white) ? sq >>= 8 : sq <<= 8)
-      {
-        if (sq & _s.other_Queens_or_Rooks)
-          return true;
-        if (sq & (_s.all_pieces))
-          break;
-      }
-    }
-    // Is square threatened on diagonal?
-    if (diagonal[index + di_offset] & _s.other_Queens_or_Bishops)
-    {
-      for (uint64_t sq = (_col_to_move == col::white) ? tmp_square >> 9 : tmp_square << 9;
-          true;
-          (_col_to_move == col::white) ? sq >>= 9 : sq <<= 9)
-      {
-        if (sq & _s.other_Queens_or_Bishops)
-          return true;
-        if (sq & _s.all_pieces)
-          break;
-      }
-    }
-    // Is square threatened on anti diagonal?
-    if (anti_diagonal[index + ad_offset] & _s.other_Queens_or_Bishops)
-    {
-      for (uint64_t sq = (_col_to_move == col::white) ? tmp_square >> 7 : tmp_square << 7;
-          true;
-          (_col_to_move == col::white) ? sq >>= 7 : sq <<= 7)
-      {
-        if (sq & _s.other_Queens_or_Bishops)
-          return true;
-        if (sq & _s.all_pieces)
-          break;
-      }
-    }
-  }
-  return false;
-}
-
-void Bitboard::find_short_castling(const uint64_t square)
+void Bitboard::find_short_castling()
 {
   if (_castling_rights & ((_col_to_move == col::white) ? castling_right_WK : castling_right_BK))
   {
-    // Next if-statement should be true if the initial FEN-string's castling-rights wasn't bad.
-    if (square == _s.King_initial_square && ((square >> 3) & _s.Rooks))
+    uint64_t castling_empty_squares = (castling_empty_squares_K & ((_col_to_move == col::white) ? lower_board_half : upper_board_half));
+    if (castling_empty_squares & _s.all_pieces)
+      return;
+    while (castling_empty_squares)
     {
-      if (_s.King_rank & castling_empty_squares_K & _s.all_pieces)
+      if (square_is_threatened(popright_square(castling_empty_squares), false))
         return;
-      if (castling_squares_are_threatened_K(square))
-        return;
-      _movelist.push_front(BitMove(piecetype::King, move_props_castling, _s.King_initial_square, _s.King_initial_square >> 2));
     }
+    _movelist.push_front(BitMove(piecetype::King, move_props_castling, _s.King_initial_square, _s.King_initial_square >> 2));
   }
 }
 
-void Bitboard::find_long_castling(const uint64_t square)
+void Bitboard::find_long_castling()
 {
   if (_castling_rights & ((_col_to_move == col::white) ? castling_right_WQ : castling_right_BQ))
   {
-    if (square == _s.King_initial_square && ((square << 4) & _s.Rooks))
+    uint64_t castling_empty_squares = (castling_empty_squares_Q & ((_col_to_move == col::white) ? lower_board_half : upper_board_half));
+    if (castling_empty_squares & _s.all_pieces)
+      return;
+    while (castling_empty_squares)
     {
-      if (_s.King_rank & castling_empty_squares_Q & _s.all_pieces)
+      if (square_is_threatened(popright_square(castling_empty_squares), false))
         return;
-      if (castling_squares_are_threatened_Q(square))
-        return;
-      _movelist.push_front(BitMove(piecetype::King, move_props_castling, _s.King_initial_square, _s.King_initial_square << 2));
     }
+    _movelist.push_front(BitMove(piecetype::King, move_props_castling, _s.King_initial_square, _s.King_initial_square << 2));
   }
+}
+
+void Bitboard::find_legal_moves_for_pinned_pieces()
+{
+  uint64_t squares = _s.pinned_pieces;
+  while (squares)
+    find_legal_moves_for_pinned_piece(popright_square(squares));
 }
 
 void Bitboard::find_normal_legal_moves()
 {
-  int8_t from_f, from_r;
-  for (from_r = 1; from_r <= 8; from_r++)
+  find_Pawn_moves();
+  find_Knight_moves();
+
+  uint64_t pieces = _s.own_pieces;
+  while (pieces)
   {
-    if ((rank[from_r] & _s.own_pieces))
+    uint64_t square = popright_square(pieces);
+    if (square & _s.pinned_pieces)
+      find_legal_moves_for_pinned_piece(square);
+    else if (square & _s.Bishops)
+      find_Bishop_or_Queen_moves(square, piecetype::Bishop);
+    else if (square & _s.Rooks)
+      find_Rook_or_Queen_moves(square, piecetype::Rook);
+    else if (square & _s.Queens)
     {
-      uint64_t square = file[a] & rank[from_r];
-      for (from_f = a; from_f <= h; from_f++, square >>= 1)
+      find_Rook_or_Queen_moves(square, piecetype::Queen);
+      find_Bishop_or_Queen_moves(square, piecetype::Queen);
+    }
+    else if (square & _s.King)
+    {
+      // Only castling remains to examine.
+      if ((_col_to_move == col::white && square == e1_square) ||
+          (_col_to_move == col::black && square == e8_square))
       {
-        //cout << "--------------------------" << endl << to_binary_board(square) << endl;
-        if (square & (_s.own_pieces))
+        find_short_castling();
+        find_long_castling();
+      }
+    }
+  }
+}
+
+bool Bitboard::check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint64_t own_pawn_square)
+{
+  uint64_t possible_pinners, possible_pinner, between_squares;
+// Check file and rank
+  if (_s.other_Queens_or_Rooks)
+  {
+    uint64_t King_ortogonal_squares = ortogonal_squares(_s.King);
+    if (King_ortogonal_squares & other_pawn_square)
+    {
+      possible_pinners = King_ortogonal_squares & _s.other_Queens_or_Rooks;
+      while (possible_pinners)
+      {
+        possible_pinner = popright_square(possible_pinners);
+        between_squares = between(_s.King, possible_pinner, King_ortogonal_squares);
+        if (between_squares & other_pawn_square)
         {
-          if (square & _s.pinned_pieces)
-            find_legal_moves_for_pinned_piece(square);
-          else if (square & _s.Pawns)
-            find_Pawn_moves(square);
-          else if (square & _s.Knights)
-            find_Knight_moves(square);
-          else if (square & _s.Bishops)
-            find_Bishop_or_Queen_moves(square, piecetype::Bishop);
-          else if (square & _s.Rooks)
-            find_Rook_or_Queen_moves(square, piecetype::Rook);
-          else if (square & _s.Queens)
+          if (std::has_single_bit(between_squares & _s.all_pieces))
+            return true;
+          // own_pawn_square can be a blocker on a rank together with other_pawn_square
+          // which both would be gone from the rank after the ep-move.
+          if (rank[rank_idx(_s.King)] & other_pawn_square)
           {
-            find_Rook_or_Queen_moves(square, piecetype::Queen);
-            find_Bishop_or_Queen_moves(square, piecetype::Queen);
-          }
-          else if (square & _s.King)
-          {
-            // Only castling remains to examine.
-            if ((_col_to_move == col::white && square == e1_square) ||
-                (_col_to_move == col::black && square == e8_square))
-              find_short_castling(square);
-            find_long_castling(square);
+            if ((std::popcount(between_squares & _s.all_pieces) == 2) && (between_squares & own_pawn_square))
+            {
+              return true;
+            }
           }
         }
       }
     }
   }
-}
-
-// Sub-function to find_moves_to_square()
-inline uint64_t Bitboard::step_out_from_square(uint64_t square,
-                                               int8_t inc,
-                                               piecetype& p_type,
-                                               uint64_t& pieces)
-{
-  uint64_t allowed_squares = whole_board; // for inc 8 and -8 (files)
-  uint64_t second = _s.Rooks; // for inc 8, -8, 1, -1 (files and ranks)
-  switch (inc)
+  if (_s.other_Queens_or_Bishops)
   {
-    case -7:
-      case 9:
-      second = _s.Bishops;
-      allowed_squares = not_a_file;
-      break;
-    case 1:
-      allowed_squares = not_a_file;
-      break;
-    case 7:
-      case -9:
-      allowed_squares = not_h_file;
-      second = _s.Bishops;
-      break;
-    case -1:
-      allowed_squares = not_h_file;
-      break;
-  }
-  for (uint64_t sq = (inc > 0) ? square >> inc : square << -inc;
-      (sq & allowed_squares);
-      (inc > 0) ? sq >>= inc : sq <<= -inc)
-  {
-    if (sq & _s.Queens)
+    uint64_t King_diagonal_squares = diagonal_squares(_s.King);
+    if (King_diagonal_squares & other_pawn_square)
     {
-      p_type = piecetype::Queen;
-      pieces = _s.Queens;
-      return sq;
+      possible_pinners = King_diagonal_squares & _s.other_Queens_or_Bishops;
+      while (possible_pinners)
+      {
+        possible_pinner = popright_square(possible_pinners);
+        between_squares = between(_s.King, possible_pinner, King_diagonal_squares, true);
+        if (between_squares & other_pawn_square)
+        {
+          if (std::has_single_bit(between_squares & _s.all_pieces))
+            return true;
+        }
+      }
     }
-    if (sq & second)
-    {
-      return sq;
-    }
-    if (sq & _s.all_pieces)
-      return zero;
-  }
-  return zero;
-}
-
-// Sub-function to try_adding_ep_pawn_move()
-bool Bitboard::check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint64_t own_pawn_square, uint8_t inc)
-{
-  uint64_t square, file_condition, pinning_pieces;
-// Check if other_pawn_square is (directly to the east or to the north of the King)
-// or (directly to the west or to the south of the King), so we know which way to shift.
-// Step out from the King in the direction of other_pawn_square.
-
-// TODO: Can this method fail when the king is on a8, the square with the largest value.
-// MSB is set (but only MSB is set). I cast the (unsigned long)-diff to a (long int).
-// I don't think it can fail unless the other square is zero, but then something really
-// wrong has happened before this.
-
-// When file_condition becomes false we have reached the edge of the board
-// and moved to a square on the other side of the board, so the loop should stop.
-// This condition is valid here because we never start at the a_file or h_file,
-// pins on the king-file pose no problem. So, inc == 8 is disregarded.
-// If we instead go over the bottom or top edge of the board, square will be zero
-// and the loop will stop.
-  if (inc == 1)
-  {
-    // Along the rank
-    file_condition = (static_cast<long int>(_s.King - other_pawn_square) > 0) ? not_a_file : not_h_file;
-    pinning_pieces = _s.other_Queens_or_Rooks;
-  }
-  else if (inc == 9)
-  {
-    // Along the King-diagonal (moving up will also mean moving to the right).
-    file_condition = (static_cast<long int>(_s.King - other_pawn_square) > 0) ? not_a_file : not_h_file;
-    pinning_pieces = _s.other_Queens_or_Bishops;
-  }
-  else if (inc == 7)
-  {
-    // Along the King-anti-diagonal (moving up will also mean moving to the left).
-    file_condition = (static_cast<long int>(_s.King - other_pawn_square) > 0) ? not_h_file : not_a_file;
-    pinning_pieces = _s.other_Queens_or_Bishops;
-  }
-  else
-    return false;
-
-  for (square = (static_cast<long int>(_s.King - other_pawn_square) > 0) ? _s.King >> inc : _s.King << inc;
-      (square & file_condition);
-      (static_cast<long int>(_s.King - other_pawn_square) > 0) ? square >>= inc : square <<= inc)
-  {
-    if (square & pinning_pieces)
-      return true; // We have reached the pinning piece without any interruption of the loop.
-    // Continue loop if empty squares, other_pawn_square or own_pawn_square is found.
-    // own_pawn_square can be a blocker on a rank together with other_pawn_square
-    // which both would be gone from the rank after the move.
-    if ((square & _s.empty_squares) || (square & other_pawn_square) || (square & own_pawn_square))
-      continue;
-    break; // We have found another blocking piece.
   }
   return false;
 }
 
-// Sub-function to step_from_King_to_checking_piece().
 // preconditions:
 // - to_square should be empty
 void Bitboard::find_pawn_moves_to_empty_square(uint64_t to_square)
@@ -1721,9 +1163,7 @@ void Bitboard::find_moves_to_square(uint64_t to_square)
 
   find_Knight_moves_to_square(to_square);
 
-  // Check file and rank
-  uint8_t to_file_idx = file_idx(to_square);
-  uint8_t to_rank_idx = rank_idx(to_square);
+// Check file and rank
   uint64_t Queens_or_Rooks = _s.Queens | _s.Rooks;
   if (Queens_or_Rooks)
   {
@@ -1747,19 +1187,18 @@ void Bitboard::find_moves_to_square(uint64_t to_square)
     }
   }
 
-  // Check diagonals
+// Check diagonals
   uint64_t Queens_or_Bishops = _s.Queens | _s.Bishops;
   if (Queens_or_Bishops)
   {
-    uint64_t diagonal_squares = (to_diagonal(to_file_idx, to_rank_idx) |
-                                 to_anti_diagonal(to_file_idx, to_rank_idx));
-    move_candidates = diagonal_squares & Queens_or_Bishops;
+    uint64_t to_diagonal_squares = diagonal_squares(to_square);
+    move_candidates = to_diagonal_squares & Queens_or_Bishops;
     while (move_candidates)
     {
       move_candidate = popright_square(move_candidates);
       if (move_candidate & not_pinned_pieces)
       {
-        between_squares = between(to_square, move_candidate, diagonal_squares, true); // true = diagonal
+        between_squares = between(to_square, move_candidate, to_diagonal_squares, true); // true = diagonal
         if ((between_squares & _s.all_pieces) == zero)
         {
           piecetype p_type = (to_square & _s.Queens) ? piecetype::Queen : piecetype::Bishop;
@@ -1771,50 +1210,12 @@ void Bitboard::find_moves_to_square(uint64_t to_square)
       }
     }
   }
-
-}
-
-// Sub-function to find_moves_after_check()
-void Bitboard::step_from_King_to_checking_piece(uint8_t inc)
-{
-  uint64_t square;
-// Check if the checking_piece is to the (east or north of the King)
-// or to the (west or south of the King), so we now which way to shift.
-// Step out from the King in the direction of the checking piece.
-  for (square = ((long int) (_s.King - _s.checkers) > 0) ? _s.King >> inc : _s.King << inc;
-      (square & _s.checkers) == 0;
-      ((long int) (_s.King - _s.checkers) > 0) ? square >>= inc : square <<= inc)
-  {
-    // Can we put any piece between our King and the checking piece?
-    find_moves_to_square(square);
-  }
-// Loop stopped at the square of the checking piece.
-// Can we take it?
-  find_moves_to_square(square);
-// Also check if the piece can be taken e.p.
-  if (_ep_square & ((_col_to_move == col::white) ? square >> 8 : square << 8))
-  {
-    if (_ep_square & not_a_file)
-    {
-      uint64_t from_square = (_col_to_move == col::white) ? _ep_square << 9 : _ep_square >> 7;
-      if (from_square & _s.Pawns)
-        try_adding_ep_pawn_move(from_square);
-    }
-    if (_ep_square & not_h_file)
-    {
-      uint64_t from_square = (_col_to_move == col::white) ? _ep_square << 7 : _ep_square >> 9;
-      if (from_square & _s.Pawns)
-        try_adding_ep_pawn_move(from_square);
-    }
-  }
 }
 
 void Bitboard::find_moves_after_check(uint64_t checker)
 {
 // All possible King-moves have already been found.
   uint64_t between_squares, between_square;
-  uint8_t King_file_idx = file_idx(_s.King);
-  uint8_t King_rank_idx = rank_idx(_s.King);
   uint64_t King_ortogonal_squares = ortogonal_squares(_s.King);
   if (checker & King_ortogonal_squares)
   {
@@ -1828,8 +1229,7 @@ void Bitboard::find_moves_after_check(uint64_t checker)
   }
   else
   {
-    uint64_t King_diagonal_squares = (to_diagonal(King_file_idx, King_rank_idx) |
-                                      to_anti_diagonal(King_file_idx, King_rank_idx));
+    uint64_t King_diagonal_squares = diagonal_squares(_s.King);
     if (checker & King_diagonal_squares)
     {
       // Can we put any piece between the King and the checker?
@@ -1841,10 +1241,10 @@ void Bitboard::find_moves_after_check(uint64_t checker)
       }
     }
   }
-  // Can we take the checking piece?
+// Can we take the checking piece?
   find_moves_to_square(checker);
 
-  // Also check if the checker is Pawn which can be taken e.p.
+// Also check if the checker is a Pawn which can be taken e.p.
   if (_ep_square & ((_col_to_move == col::white) ? checker >> 8 : checker << 8))
   {
     if (_ep_square & not_a_file)
@@ -1860,21 +1260,6 @@ void Bitboard::find_moves_after_check(uint64_t checker)
         try_adding_ep_pawn_move(from_square);
     }
   }
-}
-
-void Bitboard::find_moves_after_check_old()
-{
-// We never should call this method if it,s a double-check.
-  assert(std::has_single_bit(_s.checkers));
-// All King-moves has already been found.
-  if (_s.checkers & _s.King_file)
-    step_from_King_to_checking_piece(8); // along the file
-  else if (_s.checkers & _s.King_rank)
-    step_from_King_to_checking_piece(1); // along the rank
-  else if (_s.checkers & _s.King_diagonal)
-    step_from_King_to_checking_piece(9); // along the diagonal
-  else if (_s.checkers & _s.King_anti_diagonal)
-    step_from_King_to_checking_piece(7); // along the anti-diagonal
 }
 
 void Bitboard::find_all_legal_moves()
@@ -1905,435 +1290,6 @@ void Bitboard::find_all_legal_moves()
     // of course.
     find_normal_legal_moves();
   }
-}
-
-inline void Bitboard::add_promotion_piece(piecetype p_type)
-{
-  switch (p_type)
-  {
-    case piecetype::Queen:
-      (_col_to_move == col::white) ? _material_diff += 8.0 : _material_diff -= 8.0;
-      break;
-    case piecetype::Rook:
-      (_col_to_move == col::white) ? _material_diff += 4.0 : _material_diff -= 4.0;
-      break;
-    case piecetype::Knight:
-      (_col_to_move == col::white) ? _material_diff += 2.0 : _material_diff -= 2.0;
-      break;
-    case piecetype::Bishop:
-      (_col_to_move == col::white) ? _material_diff += 2.0 : _material_diff -= 2.0;
-      break;
-    default:
-      ;
-  }
-}
-
-inline void Bitboard::touch_piece(uint64_t square)
-{
-  if (_col_to_move == col::white)
-  {
-    if (_W_Queens & square)
-      _W_Queens ^= square;
-    else if (_W_Pawns & square)
-      _W_Pawns ^= square;
-    else if (_W_King & square)
-      _W_King ^= square;
-    else if (_W_Rooks & square)
-      _W_Rooks ^= square;
-    else if (_W_Bishops & square)
-      _W_Bishops ^= square;
-    else if (_W_Knights & square)
-      _W_Knights ^= square;
-  }
-  else
-  {
-    if (_B_Queens & square)
-      _B_Queens ^= square;
-    else if (_B_Pawns & square)
-      _B_Pawns ^= square;
-    else if (_B_King & square)
-      _B_King ^= square;
-    else if (_B_Rooks & square)
-      _B_Rooks ^= square;
-    else if (_B_Bishops & square)
-      _B_Bishops ^= square;
-    else if (_B_Knights & square)
-      _B_Knights ^= square;
-  }
-}
-
-inline piecetype Bitboard::get_piece_type(uint64_t square)
-{
-  if ((_W_Pawns & square) || (_B_Pawns & square))
-  {
-    return piecetype::Pawn;
-  }
-  else if ((_W_Queens & square) || (_B_Queens & square))
-  {
-    return piecetype::Queen;
-  }
-  else if ((_W_Rooks & square) || (_B_Rooks & square))
-  {
-    return piecetype::Rook;
-  }
-  else if ((_W_Bishops & square) || (_B_Bishops & square))
-  {
-    return piecetype::Bishop;
-  }
-  else if ((_W_Knights & square) || (_B_Knights & square))
-  {
-    return piecetype::Knight;
-  }
-  else if ((_W_King & square) || (_B_King & square))
-  {
-    return piecetype::King;
-  }
-  return piecetype::Undefined;
-}
-
-inline void Bitboard::remove_other_piece(uint64_t square)
-{
-  piecetype pt = piecetype::Undefined;
-  if (_col_to_move == col::white)
-  {
-    if (_B_Queens & square)
-    {
-      _B_Queens ^= square, _material_diff += 9, pt = piecetype::Queen;
-    }
-    else if (_B_Pawns & square)
-    {
-      _B_Pawns ^= square, _material_diff += 1, pt = piecetype::Pawn;
-    }
-    else if (_B_Rooks & square)
-    {
-      _B_Rooks ^= square, _material_diff += 5, pt = piecetype::Rook;
-      // update castling rights if needed
-      if (square & h8_square)
-        remove_castling_right(castling_right_BK);
-      else if (square & a8_square)
-        remove_castling_right(castling_right_BQ);
-    }
-    else if (_B_Bishops & square)
-      _B_Bishops ^= square, _material_diff += 3, pt = piecetype::Bishop;
-    else if (_B_Knights & square)
-      _B_Knights ^= square, _material_diff += 3, pt = piecetype::Knight;
-    update_hash_tag(square, col::black, pt);
-  }
-  else
-  {
-    if (_W_Queens & square)
-      _W_Queens ^= square, _material_diff -= 9, pt = piecetype::Queen;
-    else if (_W_Pawns & square)
-      _W_Pawns ^= square, _material_diff -= 1, pt = piecetype::Pawn;
-    else if (_W_Rooks & square)
-    {
-      _W_Rooks ^= square, _material_diff -= 5, pt = piecetype::Rook;
-      // update castling rights if needed
-      if (square & h1_square)
-        remove_castling_right(castling_right_WK);
-      else if (square & a1_square)
-        remove_castling_right(castling_right_WQ);
-    }
-    else if (_W_Bishops & square)
-      _W_Bishops ^= square, _material_diff -= 3, pt = piecetype::Bishop;
-    else if (_W_Knights & square)
-      _W_Knights ^= square, _material_diff -= 3, pt = piecetype::Knight;
-    update_hash_tag(square, col::white, pt);
-  }
-}
-
-inline void Bitboard::place_piece(piecetype p_type, uint64_t square)
-{
-  switch (p_type)
-  {
-    case piecetype::Pawn:
-      (_col_to_move == col::white) ? _W_Pawns |= square : _B_Pawns |= square;
-      break;
-    case piecetype::Queen:
-      (_col_to_move == col::white) ? _W_Queens |= square : _B_Queens |= square;
-      break;
-    case piecetype::King:
-      (_col_to_move == col::white) ? _W_King |= square : _B_King |= square;
-      break;
-    case piecetype::Rook:
-      (_col_to_move == col::white) ? _W_Rooks |= square : _B_Rooks |= square;
-      break;
-    case piecetype::Knight:
-      (_col_to_move == col::white) ? _W_Knights |= square : _B_Knights |= square;
-      break;
-    case piecetype::Bishop:
-      (_col_to_move == col::white) ? _W_Bishops |= square : _B_Bishops |= square;
-      break;
-    default:
-      ;
-  }
-}
-
-// Move the piece and update the hash_tag.
-inline void Bitboard::move_piece(uint64_t from_square,
-                                 uint64_t to_square,
-                                 piecetype p_type)
-{
-  uint64_t* p = nullptr;
-  switch (p_type)
-  {
-    case piecetype::Pawn:
-      p = (_col_to_move == col::white) ? &_W_Pawns : &_B_Pawns;
-      break;
-    case piecetype::Queen:
-      p = (_col_to_move == col::white) ? &_W_Queens : &_B_Queens;
-      break;
-    case piecetype::King:
-      p = (_col_to_move == col::white) ? &_W_King : &_B_King;
-      break;
-    case piecetype::Rook:
-      p = (_col_to_move == col::white) ? &_W_Rooks : &_B_Rooks;
-      break;
-    case piecetype::Knight:
-      p = (_col_to_move == col::white) ? &_W_Knights : &_B_Knights;
-      break;
-    case piecetype::Bishop:
-      p = (_col_to_move == col::white) ? &_W_Bishops : &_B_Bishops;
-      break;
-    default:
-      ;
-  }
-  (*p) ^= (from_square | to_square);
-  update_hash_tag(from_square, to_square, _col_to_move, p_type);
-}
-
-// Preconditions: Remove One castling_right at the time
-inline void Bitboard::remove_castling_right(uint8_t cr)
-{
-  if (_castling_rights & cr)
-  {
-    _castling_rights ^= cr;
-    _hash_tag ^= bb_hash_table._castling_rights[cr];
-  }
-}
-
-inline void Bitboard::clear_ep_square()
-{
-  _hash_tag ^= bb_hash_table._en_passant_file[to_file(_ep_square)];
-  _ep_square = zero;
-}
-
-inline void Bitboard::set_ep_square(uint64_t ep_square)
-{
-  _ep_square = ep_square;
-  _hash_tag ^= bb_hash_table._en_passant_file[to_file(_ep_square)];
-}
-
-// Set a "unique" hash tag for the position after
-// adding or removing one piece from a square.
-inline void Bitboard::update_hash_tag(uint64_t square, col p_color, piecetype p_type)
-{
-  _hash_tag ^= bb_hash_table._random_table[bit_idx(square)][index(p_color)][index(p_type)];
-}
-
-// Set a "unique" hash tag for the position after
-// removing one piece from a square and putting
-// the same piece on an empty square.
-inline void Bitboard::update_hash_tag(uint64_t square1, uint64_t square2, col p_color, piecetype p_type)
-{
-  _hash_tag ^= (bb_hash_table._random_table[bit_idx(square1)][index(p_color)][index(p_type)] ^
-                bb_hash_table._random_table[bit_idx(square2)][index(p_color)][index(p_type)]);
-}
-
-inline void Bitboard::update_col_to_move()
-{
-  _col_to_move = other_color(_col_to_move);
-  _hash_tag ^= bb_hash_table._black_to_move;
-}
-
-inline void Bitboard::update_state_after_king_move(const BitMove& m)
-{
-  uint64_t from_square = m._from_square, to_square = m._to_square;
-  int8_t ri = m.to_r_index(), fi = m.to_f_index();
-
-  if (_col_to_move == col::white)
-  {
-    // Could be slow.
-    _W_King_file = file[fi], _W_King_file_index = fi;
-    _W_King_rank = rank[ri], _W_King_rank_index = ri;
-    _W_King_diagonal = diagonal[8 - ri + fi];
-    _W_King_anti_diagonal = anti_diagonal[fi + ri - 1];
-  }
-  else
-  {
-    _B_King_file = file[fi], _B_King_file_index = fi;
-    _B_King_rank = rank[ri], _B_King_rank_index = ri;
-    _B_King_diagonal = diagonal[8 - ri + fi];
-    _B_King_anti_diagonal = anti_diagonal[fi + ri - 1];
-  }
-  if (from_square & e1_square)
-  {
-    remove_castling_right(castling_right_WK);
-    remove_castling_right(castling_right_WQ);
-  }
-  else if (from_square & e8_square)
-  {
-    remove_castling_right(castling_right_BK);
-    remove_castling_right(castling_right_BQ);
-  }
-// Move the rook if it's actually a castling move.
-  if (m._properties == move_props_castling)
-  {
-    if (static_cast<long int>(from_square - to_square) > 0)
-    {
-      // Castling.
-      if (_col_to_move == col::white)
-      {
-        _W_Rooks ^= (h1_square | f1_square);
-        update_hash_tag(h1_square, f1_square, _col_to_move, piecetype::Rook);
-        _W_King_file >>= 2, _W_King_file_index += 2;
-      }
-      else
-      {
-        _B_Rooks ^= (h8_square | f8_square);
-        update_hash_tag(h8_square, f8_square, _col_to_move, piecetype::Rook);
-        _B_King_file <<= 2, _B_King_file_index -= 2;
-      }
-    }
-    else
-    {
-      // Castling queen side.
-      if (_col_to_move == col::white)
-      {
-        _W_Rooks ^= (a1_square | d1_square);
-        update_hash_tag(a1_square, d1_square, _col_to_move, piecetype::Rook);
-        _W_King_file <<= 3, _W_King_file_index -= 3;
-      }
-      else
-      {
-        _B_Rooks ^= (a8_square | d8_square);
-        update_hash_tag(a8_square, d8_square, _col_to_move, piecetype::Rook);
-        _B_King_file >>= 3, _B_King_file_index += 3;
-      }
-    }
-  }
-}
-
-// Move a piece
-// Preconditions:
-//   i < movelist.size()
-//   the move must be valid
-void Bitboard::make_move(int i)
-{
-  BitMove m = _movelist[i];
-  uint64_t to_square = m._to_square;
-  uint64_t from_square = m._from_square;
-
-// Clear _ep_square
-  uint64_t tmp_ep_square = _ep_square;
-  if (_ep_square)
-    clear_ep_square();
-
-// Remove possible piece of other color on to_square and
-// Then make the move (updates hashtag)
-  if (to_square & _s.other_pieces)
-    remove_other_piece(to_square);
-  move_piece(from_square, to_square, m._piece_type);
-
-// OK we have moved the piece, now we must
-// look at some special cases.
-  if (m._piece_type == piecetype::King)
-  {
-    update_state_after_king_move(m);
-  }
-  else if (m._piece_type == piecetype::Rook)
-  {
-    // Clear castling rights for one side if applicable.
-    if (to_square & _W_Rooks)
-    {
-      if (from_square & a1_square)
-        remove_castling_right(castling_right_WQ);
-      else if (from_square & h1_square)
-        remove_castling_right(castling_right_WK);
-    }
-    else
-    {
-      // Black rook
-      if (from_square & a8_square)
-        remove_castling_right(castling_right_BQ);
-      else if (from_square & h8_square)
-        remove_castling_right(castling_right_BK);
-    }
-  }
-  else if (m._piece_type == piecetype::Pawn)
-  {
-    if (m._properties == move_props_en_passant)
-    {
-      // Remove the pawn taken e.p.
-      if (_col_to_move == col::white)
-      {
-        _B_Pawns ^= tmp_ep_square << 8, _material_diff += 1.0;
-        update_hash_tag(tmp_ep_square << 8, col::black, piecetype::Pawn);
-      }
-      else
-      {
-        _W_Pawns ^= tmp_ep_square >> 8, _material_diff -= 1.0;
-        update_hash_tag(tmp_ep_square >> 8, col::black, piecetype::Pawn);
-      }
-      update_hash_tag(to_square, other_color(_col_to_move), piecetype::Pawn);
-    }
-    else if (_col_to_move == col::white)
-    {
-      // Set _ep_square if it's a two-square-move?
-      if ((from_square & row_2) && (to_square & row_4))
-      {
-        // Check if there is a pawn of other color alongside to_square.
-        if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
-            ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
-          set_ep_square(to_square << 8);
-      }
-    }
-    else
-    {
-      if ((from_square & row_7) && (to_square & row_5))
-      {
-        if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
-            ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
-          set_ep_square(to_square >> 8);
-      }
-    }
-  }
-  else if (m._promotion_piece_type != piecetype::Undefined)
-  {
-    // Remove the pawn from promotion square
-    // subtract 1 from the normal piece-values
-    // because the pawn disappears from the board.
-    (_col_to_move == col::white) ? _W_Pawns ^= to_square : _B_Pawns ^= to_square;
-    update_hash_tag(to_square, other_color(_col_to_move), piecetype::Pawn);
-    switch (m._promotion_piece_type)
-    {
-      case piecetype::Queen:
-        (_col_to_move == col::white) ? _material_diff += 8.0, _W_Queens |= to_square :
-                                       _material_diff -= 8.0, _B_Queens |= to_square;
-        update_hash_tag(to_square, _col_to_move, piecetype::Queen);
-        break;
-      case piecetype::Rook:
-        (_col_to_move == col::white) ? _material_diff += 4.0, _W_Rooks |= to_square :
-                                       _material_diff -= 4.0, _B_Rooks |= to_square;
-        update_hash_tag(to_square, _col_to_move, piecetype::Rook);
-        break;
-      case piecetype::Knight:
-        (_col_to_move == col::white) ? _material_diff += 2.0, _W_Knights |= to_square :
-                                       _material_diff -= 2.0, _B_Knights |= to_square;
-        update_hash_tag(to_square, _col_to_move, piecetype::Knight);
-        break;
-      case piecetype::Bishop:
-        (_col_to_move == col::white) ? _material_diff += 2.0, _W_Bishops |= to_square :
-                                       _material_diff -= 2.0, _B_Bishops |= to_square;
-        update_hash_tag(to_square, _col_to_move, piecetype::Bishop);
-        break;
-      default:
-        ;
-    }
-  }
-  update_col_to_move();
-  init_piece_state();
-  find_all_legal_moves();
 }
 
 } // namespace C2_chess
