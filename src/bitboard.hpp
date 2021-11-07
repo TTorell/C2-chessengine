@@ -64,12 +64,7 @@ constexpr uint64_t g_h_files = g_file | h_file;
 constexpr uint64_t not_row_8 = whole_board ^ row_8;
 constexpr uint64_t not_row_1 = whole_board ^ row_1;
 
-// The elements with value 0 can be useful.
-// They represent files and ranks outside
-// the chess board. They reduce the control
-// necessary to check if a file/rank-index
-// is allowed (is inside the board).
-constexpr uint64_t file[] = {a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file, zero, zero};
+constexpr uint64_t file[] = {a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file};
 
 // 0 is not used as rank-index
 constexpr uint64_t rank[] = {zero, row_1, row_2, row_3, row_4, row_5, row_6, row_7, row_8, zero, zero};
@@ -79,7 +74,8 @@ constexpr uint64_t queen_side = a_file | b_file | c_file | d_file;
 constexpr uint64_t lower_board_half = row_1 | row_2 | row_3 | row_4;
 constexpr uint64_t upper_board_half = row_5 | row_6 | row_7 | row_8;
 
-// Castling
+// Squares, some are only used in the unit-test program
+// and some may not be used at all.
 constexpr uint64_t a1_square = a_file & row_1;
 constexpr uint64_t a7_square = a_file & row_7;
 constexpr uint64_t a8_square = a_file & row_8;
@@ -104,21 +100,17 @@ constexpr uint64_t g2_square = g_file & row_2;
 constexpr uint64_t h1_square = h_file & row_1;
 constexpr uint64_t h8_square = h_file & row_8;
 
-// King-moves, with the king placed att e4
+// Square-patterns which can be shifted to a specific square:
+// King-moves, with the king placed at e4
 constexpr uint64_t king_pattern = ((d_file | e_file | f_file) & (row_3 | row_4 | row_5)) ^ e4_square;
-// Knight-moves, with the knight placed att e4
+// Knight-moves, with the knight placed at e4
 constexpr uint64_t knight_pattern = ((d_file | f_file) & (row_6 | row_2)) | ((c_file | g_file) & (row_3 | row_5));
 constexpr int e4_square_idx = std::countr_zero(e4_square);
 
 constexpr uint64_t castling_empty_squares_K = (row_1 | row_8) & (f_file | g_file);
 constexpr uint64_t castling_empty_squares_Q = (row_1 | row_8) & (b_file | c_file | d_file);
-constexpr uint64_t threatening_pawn_squares_K = (row_2 | row_7) & king_side;
-constexpr uint64_t threatening_pawn_squares_Q = ((row_2 | row_7) & (queen_side)) | (e2_square | e7_square);
-constexpr uint64_t threatening_knight_squares_K = ((row_2 | row_7) & (d_file | e_file | h_file))
-                                                  | ((row_3 | row_6) & king_side);
-constexpr uint64_t threatening_knight_squares_Q = (((row_2 | row_3 | row_6 | row_7) & queen_side)
-                                                   ^ (c2_square | c7_square))
-                                                  | (e2_square | e7_square | e3_square | e6_square | f2_square | f7_square);
+
+// Generate diagonals and anti-diagonals in compile-time
 constexpr uint64_t di(int i)
 {
   uint8_t fi = a, r = 0;
@@ -135,12 +127,11 @@ constexpr uint64_t di(int i)
   }
   return val;
 }
-
 constexpr uint64_t diagonal[15] = {di(0), di(1), di(2), di(3), di(4), di(5), di(6), di(7), di(8), di(9), di(10), di(11), di(12), di(13), di(14)};
 
 constexpr uint64_t ad(const int i)
 {
-  int8_t fi = a; // important: NOT uint8_t becasue f-- will become 255, not -1
+  int8_t fi = a; // important: NOT uint8_t because f-- will then become 255, not -1
   uint8_t r = 1;
   uint64_t val = zero;
   if (i < 8)
@@ -155,7 +146,6 @@ constexpr uint64_t ad(const int i)
   }
   return val;
 }
-
 constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14)};
 
 inline uint8_t bit_idx(uint64_t square)
@@ -185,7 +175,7 @@ inline uint64_t square(uint8_t bit_idx)
 
 inline uint8_t file_idx(uint64_t square)
 {
-  return 7 - (bit_idx(square) & 7);
+  return 7LL - (bit_idx(square) & 7);
 }
 
 inline uint64_t to_file(uint64_t square)
@@ -241,7 +231,6 @@ inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diago
 }
 
 
-
 inline uint8_t popright_bit_idx(uint64_t& squares)
 {
   assert(squares);
@@ -260,7 +249,7 @@ inline uint64_t popright_square(uint64_t& squares)
 
 inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
 {
-  assert(pattern);
+  assert(pattern && std::has_single_bit(center_square));
   uint64_t squares;
   int shift = bit_idx(center_square) - e4_square_idx;
   squares = (shift >= 0) ? (pattern << shift) : (pattern >> -shift);
