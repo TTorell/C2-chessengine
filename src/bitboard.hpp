@@ -151,7 +151,8 @@ constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5)
 inline uint8_t bit_idx(uint64_t square)
 {
   assert(std::has_single_bit(square));
-  return std::countr_zero(square);
+  //  return std::countr_zero(square);
+  return __builtin_ctzll(square);
 }
 
 inline uint8_t file_idx(uint8_t bit_idx)
@@ -224,27 +225,37 @@ inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diago
     common_squares = squares & (to_diagonal(sq2) | to_anti_diagonal(sq2));
   else
     common_squares = squares & (to_file(sq2) | to_rank(sq2));
-  if (static_cast<int64_t>(sq1 - sq2) > 0)
+  if (sq1 > sq2)
     return common_squares & ((sq1 - one) ^ ((sq2 << 1) - one));
   else
     return common_squares & ((sq2 - one) ^ ((sq1 << 1) - one));
 }
 
 
-inline uint8_t popright_bit_idx(uint64_t& squares)
-{
-  assert(squares);
-  uint8_t idx = std::countr_zero(squares);
-  squares &= (squares - 1);
-  return idx;
-}
+//inline uint8_t popright_bit_idx(uint64_t& squares)
+//{
+//  assert(squares);
+//  // uint8_t idx = std::countr_zero(squares);
+//  uint8_t idx = __builtin_ctzll(squares);
+//  squares &= (squares - 1);
+//  return idx;
+//}
 
 inline uint64_t popright_square(uint64_t& squares)
 {
-  assert(squares);
+  if (squares == zero)
+    return zero;
   uint64_t tmp_squares = squares;
   squares &= (squares-1);
   return squares ^ tmp_squares;
+}
+
+inline uint64_t popleft_square(uint64_t& squares)
+{
+  assert(squares);
+  uint64_t sq = square(63 - std::countl_zero(squares));
+  squares ^= sq;
+  return sq;
 }
 
 inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
@@ -498,8 +509,9 @@ class Bitboard
     inline void update_state_after_king_move(const BitMove& m);
 
     inline piecetype get_piece_type(uint64_t square);
-
   public:
+
+    uint64_t find_blockers(uint64_t sq, uint64_t rank_file_di_or_adi, uint64_t all_pieces);
 
     Bitboard();
 

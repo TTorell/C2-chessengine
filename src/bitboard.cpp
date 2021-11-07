@@ -385,7 +385,7 @@ inline uint64_t Bitboard::between_extended(uint64_t sq1, uint64_t sq2, uint64_t 
     common_squares = squares & (to_diagonal(sq2) | to_anti_diagonal(sq2));
   else
     common_squares = squares & (to_file(sq2) | to_rank(sq2));
-  if (static_cast<int64_t>(sq1 - sq2) > 0)
+  if (sq1 > sq2)
   {
     // sq1 is (to the left of sq2 on the same rank) or below sq2
     // mask away sq2 and all bits (to the right of sq2 on the same rank) or above sq2
@@ -1153,6 +1153,21 @@ void Bitboard::find_all_legal_moves()
     // of course.
     find_normal_legal_moves();
   }
+}
+
+uint64_t Bitboard::find_blockers(uint64_t sq, uint64_t rank_file_di_or_adi, uint64_t all_pieces)
+{
+  uint64_t blockers = rank_file_di_or_adi & all_pieces;
+  uint64_t blocker = zero;
+  uint64_t saved_blocker = zero;
+  while (sq > blocker)
+  {
+      saved_blocker = blocker;
+      blocker = popright_square(blockers);
+      if (blocker == zero)
+        break;
+  }
+  return saved_blocker | blocker;
 }
 
 } // End namespace C2_chess

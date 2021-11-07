@@ -2359,5 +2359,6 @@ int Board::get_move_index(const Move& m) const
   return index;
 }
 
+
 } // namespace C2_chess
 

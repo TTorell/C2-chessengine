@@ -277,3 +277,13 @@ TEST_CASE("ortogonal_squares")
 
 }
 
+TEST_CASE("find_blockers")
+{
+  Bitboard_with_utils chessboard;
+  uint64_t all_pieces = a1_square | b1_square | d1_square | f1_square | h1_square;
+  uint64_t sq = e1_square;
+  uint64_t my_rank = row_1;
+  uint64_t blockers = chessboard.find_blockers(sq, my_rank, all_pieces);
+  std::cout << to_binary(blockers) << std::endl;
+  REQUIRE(blockers == (d1_square | f1_square));
+}
