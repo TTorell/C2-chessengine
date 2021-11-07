@@ -240,6 +240,8 @@ inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diago
     return common_squares & ((sq2 - one) ^ ((sq1 << 1) - one));
 }
 
+
+
 inline uint8_t popright_bit_idx(uint64_t& squares)
 {
   assert(squares);
@@ -382,7 +384,6 @@ struct Piece_state
     uint64_t r1; // Rank from which white pawns can attack our King.
     uint64_t r2;
     uint64_t adjacent_ranks; // Ranks adjacent to our King_square.
-    uint64_t pinned_pieces; // Squares of our pinned pieces
     uint64_t empty_squares;
     uint64_t Queens;
     uint64_t Rooks;
@@ -405,6 +406,8 @@ struct Piece_state
 
     uint64_t all_pieces;
     uint64_t checkers;
+    uint64_t pinned_pieces; // Squares of our pinned pieces
+    uint64_t pinning_pieces; // Squares of other side pinners
 };
 
 class Bitboard
@@ -477,8 +480,6 @@ class Bitboard
 
     void step_from_King_to_pinning_piece(uint64_t from_square, uint8_t inc, piecetype p_type, uint64_t pinning_squares);
 
-    void find_legal_moves_for_pinned_piece(uint64_t from_square);
-
     void find_legal_moves_for_pinned_pieces();
 
     inline void try_adding_move(uint64_t pieces,
@@ -502,9 +503,14 @@ class Bitboard
 
     void find_Knight_moves_to_square(const uint64_t to_square);
 
-    void find_Bishop_or_Queen_moves(const uint64_t square, const piecetype pt);
+    void find_Bishop_or_Queen_moves();
 
-    void find_Rook_or_Queen_moves(const uint64_t square, piecetype p_type);
+    inline uint64_t between_extended(uint64_t sq1,
+                                     uint64_t sq2,
+                                     uint64_t squares,
+                                     bool diagonals = false);
+
+    void find_Rook_or_Queen_moves();
 
     void find_short_castling();
 

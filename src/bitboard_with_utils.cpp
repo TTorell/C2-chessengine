@@ -244,8 +244,8 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum,
   CurrentTime now;
   std::cout << "-- Test " << testnum << " " << testcase_info << " --" << std::endl;
 
-  if (testnum == 25)
-    std::cout << "25" << std::endl;
+  if (testnum == 26)
+    std::cout << "26" << std::endl;
   Bitboard_with_utils chessboard;
   if (chessboard.read_position(FEN_string) != 0)
   {
