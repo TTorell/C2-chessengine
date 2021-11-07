@@ -287,18 +287,6 @@ inline uint64_t diagonal_squares(uint64_t square)
   return to_diagonal(square) | to_anti_diagonal(square);
 }
 
-//constexpr uint8_t Direction_north = 0x80;
-//constexpr uint8_t Direction_south = 0x40;
-//constexpr uint8_t Direction_west = 0x20;
-//constexpr uint8_t Direction_east = 0x10;
-//constexpr uint8_t Direction_northeast = 0x08;
-//constexpr uint8_t Direction_southeast = 0x04;
-//constexpr uint8_t Direction_northwest = 0x02;
-//constexpr uint8_t Direction_southwest = 0x01;
-
-//light squares      0x55AA55AA55AA55AA
-//dark squares       0xAA55AA55AA55AA55
-
 struct BitMove
 {
     piecetype _piece_type;
@@ -371,34 +359,22 @@ struct Piece_state
     uint8_t King_file_index;
     uint8_t King_rank_index;
     uint64_t King_file;
+    uint64_t King_rank;
     uint64_t King_diagonal;
     uint64_t King_anti_diagonal;
-    uint64_t King_rank;
-    uint64_t King_initial_square;
     uint8_t castling_rights_K;
     uint8_t castling_rights_Q;
-    uint64_t Rook_initial_square_K;
-    uint64_t Rook_initial_square_Q;
     uint64_t own_pieces;
-    uint64_t adjacent_files; // Files adjacent to King_square.
-    uint64_t r1; // Rank from which white pawns can attack our King.
-    uint64_t r2;
-    uint64_t adjacent_ranks; // Ranks adjacent to our King_square.
-    uint64_t empty_squares;
     uint64_t Queens;
     uint64_t Rooks;
     uint64_t Bishops;
     uint64_t Knights;
     uint64_t Pawns;
-    int8_t pawnstep;
-
     uint64_t other_pieces;
     uint64_t other_King;
     uint64_t other_Queens;
     uint64_t other_Queens_or_Rooks;
     uint64_t other_Queens_or_Bishops;
-    uint64_t other_King_Queens_or_Bishops;
-    uint64_t other_King_Queens_or_Rooks;
     uint64_t other_Rooks;
     uint64_t other_Bishops;
     uint64_t other_Knights;
@@ -407,7 +383,7 @@ struct Piece_state
     uint64_t all_pieces;
     uint64_t checkers;
     uint64_t pinned_pieces; // Squares of our pinned pieces
-    uint64_t pinning_pieces; // Squares of other side pinners
+    uint64_t pinners; // Squares of other side pinners
 };
 
 class Bitboard
@@ -457,51 +433,12 @@ class Bitboard
 
     inline void clear_movelist();
 
-    inline void find_king_moves();
+    // Methods for move-generation
+    // ------------------------------
 
-    bool find_check_or_pinned_piece(uint64_t square,
-                                    uint64_t threatening_pieces,
-                                    uint64_t opponents_other_pieces,
-                                    uint64_t& pinned_piece);
+    void find_long_castling();
 
-    bool square_is_threatened_old(int8_t file_index,
-                                  int8_t rank_index,
-                                  bool King_is_asking);
-
-    bool square_is_threatened(uint64_t square, bool King_is_asking);
-
-    inline void contains_checking_piece(const uint64_t square,
-                                        const uint64_t pieces,
-                                        const uint64_t forbidden_files);
-
-    void find_checkers_and_pinned_pieces();
-
-    void look_for_checks_and_pinned_pieces();
-
-    void step_from_King_to_pinning_piece(uint64_t from_square, uint8_t inc, piecetype p_type, uint64_t pinning_squares);
-
-    void find_legal_moves_for_pinned_pieces();
-
-    inline void try_adding_move(uint64_t pieces,
-                                piecetype p_type,
-                                uint8_t move_props,
-                                uint64_t from_square,
-                                uint64_t to_square);
-
-    bool check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint64_t own_pawn_square);
-    bool check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint64_t own_pawn_square, uint8_t inc);
-
-    void try_adding_ep_pawn_move(uint64_t from_square);
-
-    void add_pawn_move_check_promotion(uint64_t from_square, uint64_t to_square);
-
-    uint64_t add_two_knight_moves(uint64_t from_square, uint64_t allowed_squares, int8_t inc1, int8_t inc2);
-
-    void find_Pawn_moves();
-
-    void find_Knight_moves();
-
-    void find_Knight_moves_to_square(const uint64_t to_square);
+    void find_short_castling();
 
     void find_Bishop_or_Queen_moves();
 
@@ -512,30 +449,36 @@ class Bitboard
 
     void find_Rook_or_Queen_moves();
 
-    void find_short_castling();
+    void find_legal_moves_for_pinned_pieces();
 
-    void find_long_castling();
+    void find_Knight_moves();
 
-    bool castling_squares_are_threatened_K();
+    void find_Pawn_moves();
 
-    bool castling_squares_are_threatened_Q();
+    void find_normal_legal_moves();
 
-    inline uint64_t step_out_from_square(uint64_t square,
-                                         int8_t inc,
-                                         piecetype& p_type,
-                                         uint64_t& pieces);
+    void find_Knight_moves_to_square(const uint64_t to_square);
+
+    bool check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint64_t own_pawn_square);
+
+    void try_adding_ep_pawn_move(uint64_t from_square);
+
+    void add_pawn_move_check_promotion(uint64_t from_square, uint64_t to_square);
 
     void find_pawn_moves_to_empty_square(uint64_t to_square);
 
     void find_moves_to_square(uint64_t to_square);
 
-    void step_from_King_to_checking_piece(uint8_t inc);
-
-    void find_moves_after_check_old();
-
     void find_moves_after_check(uint64_t checker);
 
-    void find_normal_legal_moves();
+    void find_checkers_and_pinned_pieces();
+
+    bool square_is_threatened(uint64_t square, bool King_is_asking);
+
+    inline void find_king_moves();
+
+    // Methods for make move
+    // ------------------------
 
     inline void add_promotion_piece(piecetype p_type);
 
