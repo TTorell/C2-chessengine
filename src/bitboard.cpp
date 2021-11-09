@@ -689,8 +689,8 @@ bool Bitboard::check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint
 void Bitboard::try_adding_ep_pawn_move(uint64_t from_square)
 {
   assert(std::has_single_bit(from_square) && _ep_square &&
-      (abs(static_cast<int64_t>(bit_idx(_ep_square) - bit_idx(from_square))) == 7 ||
-      abs(static_cast<int64_t>(bit_idx(_ep_square) - bit_idx(from_square))) == 9 ));
+         (abs(static_cast<int64_t>(bit_idx(_ep_square) - bit_idx(from_square))) == 7 ||
+          abs(static_cast<int64_t>(bit_idx(_ep_square) - bit_idx(from_square))) == 9));
 
   if (from_square & ~_s.pinned_pieces)
   {
@@ -1155,19 +1155,18 @@ void Bitboard::find_all_legal_moves()
   }
 }
 
-uint64_t Bitboard::find_blockers(uint64_t sq, uint64_t rank_file_di_or_adi, uint64_t all_pieces)
+uint64_t Bitboard::find_legal_squares(uint64_t sq, uint64_t mask, uint64_t all_pieces, uint64_t other_pieces)
 {
-  uint64_t blockers = rank_file_di_or_adi & all_pieces;
-  uint64_t blocker = zero;
-  uint64_t saved_blocker = zero;
-  while (sq > blocker)
-  {
-      saved_blocker = blocker;
-      blocker = popright_square(blockers);
-      if (blocker == zero)
-        break;
-  }
-  return saved_blocker | blocker;
+  mask ^= sq;
+  uint64_t left_side = mask & all_pieces & ~(sq -1);
+  uint64_t left_blocker = rightmost_square(left_side);
+  uint64_t right_side = mask & all_pieces & (sq -1);
+  uint64_t right_blocker = leftmost_square(right_side);
+  uint64_t other_color_blockers = (left_blocker | right_blocker) & other_pieces;
+  if (right_blocker)
+    return (((left_blocker - one) ^ ((right_blocker << 1) - one)) | other_color_blockers) & mask;
+  else
+    return ((left_blocker - one) | other_color_blockers) & mask;
 }
 
 } // End namespace C2_chess

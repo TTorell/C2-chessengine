@@ -250,12 +250,27 @@ inline uint64_t popright_square(uint64_t& squares)
   return squares ^ tmp_squares;
 }
 
+inline uint64_t rightmost_square(const uint64_t squares)
+{
+  if (squares == zero)
+    return zero;
+//  return square(std::countr_zero(squares));
+  return (squares & (squares-1)) ^ (squares);
+}
+
 inline uint64_t popleft_square(uint64_t& squares)
 {
   assert(squares);
   uint64_t sq = square(63 - std::countl_zero(squares));
   squares ^= sq;
   return sq;
+}
+
+inline uint64_t leftmost_square(uint64_t squares)
+{
+  if (squares == zero)
+    return zero;
+  return square(63 - std::countl_zero(squares));
 }
 
 inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
@@ -511,7 +526,6 @@ class Bitboard
     inline piecetype get_piece_type(uint64_t square);
   public:
 
-    uint64_t find_blockers(uint64_t sq, uint64_t rank_file_di_or_adi, uint64_t all_pieces);
 
     Bitboard();
 
@@ -520,7 +534,10 @@ class Bitboard
     void find_all_legal_moves();
 
     void make_move(int i);
+
+    uint64_t find_legal_squares(uint64_t sq, uint64_t rank_file_di_or_adi, uint64_t all_pieces, uint64_t other_pieces);
 };
+
 
 } // namespace C2_chess
 #endif

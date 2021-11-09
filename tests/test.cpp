@@ -71,7 +71,7 @@ TEST_CASE("Castling_wrights")
   SECTION("Rh1xh8 taking Rook at h8 etc")
   {
     // Rh1xh8: Both colors looses KS castling
-    chessboard.make_move(0);
+    chessboard.make_move(3);
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BQ | castling_right_WQ));
@@ -82,7 +82,7 @@ TEST_CASE("Castling_wrights")
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_right_WQ);
     // White castles queen-side
-    chessboard.make_move(1);
+    chessboard.make_move(0);
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -92,11 +92,11 @@ TEST_CASE("Castling_wrights")
   {
     SECTION("Queenside-Kingside")
     {
-      chessboard.make_move(1); // 0-0-0
+      chessboard.make_move(0); // 0-0-0
       chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ));
-      chessboard.make_move(1); // ...0-0
+      chessboard.make_move(0); // ...0-0
       chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -104,7 +104,7 @@ TEST_CASE("Castling_wrights")
 
     SECTION("Kingside-Queenside")
     {
-      chessboard.make_move(2); // 0-0
+      chessboard.make_move(1); // 0-0
       chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ));
@@ -117,19 +117,19 @@ TEST_CASE("Castling_wrights")
 
   SECTION("Rook moves, but no capture")
   {
-    chessboard.make_move(9); // Ra8-b8
+    chessboard.make_move(25); // Ra1-b1
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ | castling_right_WK));
-    chessboard.make_move(17); // ...Rh8-g8
+    chessboard.make_move(7); // ...Rh8-g8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BQ | castling_right_WK));
-    chessboard.make_move(15); // ...Rh1-g1
+    chessboard.make_move(12); // ...Rh1-g1
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_right_BQ);
-    chessboard.make_move(6); // ...Ra8-b8
+    chessboard.make_move(23); // ...Ra8-b8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -183,62 +183,62 @@ TEST_CASE("Castling_wrights")
 TEST_CASE("Bitboard between")
 {
   uint64_t squares = between(e8_square, e1_square, e_file | row_8);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (e_file ^ (e8_square | e1_square)));
   squares = between(e1_square, e8_square, e_file | row_1);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (e_file ^ (e8_square | e1_square)));
   squares = between(a1_square, a8_square, a_file | row_1);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (a_file ^ (a8_square | a1_square)));
   squares = between(a8_square, a1_square, a_file | row_8);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (a_file ^ (a8_square | a1_square)));
   squares = between(a8_square, a7_square, a_file | row_8);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
   squares = between(a7_square, a8_square, a_file | row_7);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
   squares = between(a1_square, b1_square, a_file | row_1);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
   squares = between(b1_square, a1_square, b_file | row_1);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
   squares = between(a1_square, h1_square, a_file | row_1);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (row_1 ^ (a1_square | h1_square)));
   squares = between(h1_square, a1_square, h_file | row_1);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (row_1 ^ (a1_square | h1_square)));
   squares = between(c7_square, e7_square, c_file | row_7);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == d7_square);
   squares = between(e7_square, c7_square, e_file | row_7);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == d7_square);
   uint64_t a1_diag = to_diagonal(a1_square);
   REQUIRE(a1_diag == diagonal[7]);
   uint64_t a1_anti_diag = to_anti_diagonal(a1_square);
   REQUIRE(a1_anti_diag == anti_diagonal[0]);
   squares = between(a1_square, h8_square, to_diagonal(a1_square) | to_anti_diagonal(a1_square), true);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (diagonal[7] ^ (a1_square | h8_square)));
   squares = between(h8_square, a1_square, to_diagonal(h8_square) | to_anti_diagonal(h8_square), true);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (diagonal[7] ^ (a1_square | h8_square)));
   squares = between(a8_square, h1_square, to_diagonal(a8_square) | to_anti_diagonal(a8_square), true);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (anti_diagonal[7] ^ (a8_square | h1_square)));
   squares = between(h1_square, a8_square, to_diagonal(h1_square) | to_anti_diagonal(h1_square), true);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (anti_diagonal[7] ^ (a8_square | h1_square)));
   squares = between(h1_square, g2_square, to_diagonal(h1_square) | to_anti_diagonal(h1_square), true);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
   squares = between(g2_square, h1_square, to_diagonal(g2_square) | to_anti_diagonal(g2_square), true);
-  std::cout << to_binary_board(squares) << std::endl;
+  // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
 }
 
@@ -248,19 +248,19 @@ TEST_CASE("popright_square")
   uint64_t saved_squares = squares;
   for (int8_t bit_idx = 0; bit_idx < 64; bit_idx++)
   {
-    std::cout << to_binary(squares) << std::endl;
-    std::cout << to_binary(square(bit_idx)) << std::endl;
+//    std::cout << to_binary(squares) << std::endl;
+//    std::cout << to_binary(square(bit_idx)) << std::endl;
     REQUIRE(popright_square(squares) == square(bit_idx));
     REQUIRE((squares ^ square(bit_idx)) == saved_squares);
     saved_squares = squares;
   }
-  std::cout << "" << std::endl;
+//  std::cout << "" << std::endl;
   squares = diagonal[7];
   saved_squares = squares;
   uint64_t bit_idx = 0;
   while (squares)
   {
-    std::cout << to_binary(squares) << std::endl;
+//    std::cout << to_binary(squares) << std::endl;
     REQUIRE(popright_square(squares) == square(bit_idx));
     REQUIRE((squares ^ square(bit_idx)) == saved_squares);
     saved_squares = squares;
@@ -277,13 +277,71 @@ TEST_CASE("ortogonal_squares")
 
 }
 
-TEST_CASE("find_blockers")
+TEST_CASE("find_legal_squares")
 {
+  uint64_t other_pieces, legal_squares, all_pieces;
   Bitboard_with_utils chessboard;
-  uint64_t all_pieces = a1_square | b1_square | d1_square | f1_square | h1_square;
   uint64_t sq = e1_square;
   uint64_t my_rank = row_1;
-  uint64_t blockers = chessboard.find_blockers(sq, my_rank, all_pieces);
-  std::cout << to_binary(blockers) << std::endl;
-  REQUIRE(blockers == (d1_square | f1_square));
+
+  SECTION("more than one pawn on each side")
+  {
+    all_pieces = a1_square | b1_square | d1_square | e1_square | f1_square | h1_square;
+
+    SECTION("both blockers of other color")
+    {
+      other_pieces = a1_square | b1_square | d1_square | f1_square | h1_square;
+      legal_squares = chessboard.find_legal_squares(sq, my_rank, all_pieces, other_pieces);
+//  std::cout << to_binary(blockers) << std::endl;
+      REQUIRE(legal_squares == (d1_square | f1_square));
+    }
+    SECTION("one blocker of other color")
+    {
+      other_pieces = a1_square | b1_square | f1_square | h1_square;
+      legal_squares = chessboard.find_legal_squares(sq, my_rank, all_pieces, other_pieces);
+      REQUIRE(legal_squares == (f1_square));
+    }
+
+    SECTION("No blocker of other color")
+    {
+      other_pieces = a1_square | b1_square | h1_square;
+      legal_squares = chessboard.find_legal_squares(sq, my_rank, all_pieces, other_pieces);
+      REQUIRE(legal_squares == zero);
+    }
+  }
+
+  SECTION("no pawns to the left")
+  {
+    all_pieces = e1_square | f1_square | h1_square;
+
+    SECTION("right blockers of other color")
+    {
+      other_pieces = f1_square;
+      legal_squares = chessboard.find_legal_squares(sq, my_rank, all_pieces, other_pieces);
+      REQUIRE(legal_squares == ((row_1 & not_g_h_files) ^ e1_square));
+    }
+    SECTION("right blocker of same color")
+    {
+      other_pieces = zero;
+      legal_squares = chessboard.find_legal_squares(sq, my_rank, all_pieces, other_pieces);
+      REQUIRE(legal_squares == (row_1 & ~(e_file | f_file | g_file | h_file)));
+    }
+  }
+  SECTION("no pawns to the right")
+  {
+    all_pieces = a1_square | b1_square | d1_square;
+
+    SECTION("left blocker of other color")
+    {
+      other_pieces = d1_square;
+      legal_squares = chessboard.find_legal_squares(sq, my_rank, all_pieces, other_pieces);
+      REQUIRE(legal_squares == (row_1 & (d_file | f_file | g_file | h_file)));
+    }
+    SECTION("left blocker of same color")
+    {
+      other_pieces = zero;
+      legal_squares = chessboard.find_legal_squares(sq, my_rank, all_pieces, other_pieces);
+      REQUIRE(legal_squares == (row_1 & (f_file | g_file | h_file)));
+    }
+  }
 }
