@@ -59,7 +59,7 @@ TEST_CASE("Move_generation")
 
 TEST_CASE("Castling_wrights")
 {
-  // Load testposition 71
+  // Load test position 71
   std::string FEN_string = get_FEN_test_position(71);
   Bitboard_with_utils chessboard;
   REQUIRE(chessboard.read_position(FEN_string) == 0);
@@ -71,18 +71,18 @@ TEST_CASE("Castling_wrights")
   SECTION("Rh1xh8 taking Rook at h8 etc")
   {
     // Rh1xh8: Both colors looses KS castling
-    chessboard.make_move(3);
+    chessboard.make_move("h1h8");
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BQ | castling_right_WQ));
 
     // Black King steps away loosing right to casle QS as well.
-    chessboard.make_move(0);
+    chessboard.make_move("e8f7");
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_right_WQ);
     // White castles queen-side
-    chessboard.make_move(0);
+    chessboard.make_move("e1c1");
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -92,11 +92,11 @@ TEST_CASE("Castling_wrights")
   {
     SECTION("Queenside-Kingside")
     {
-      chessboard.make_move(0); // 0-0-0
+      chessboard.make_move("e1c1"); // 0-0-0
       chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ));
-      chessboard.make_move(0); // ...0-0
+      chessboard.make_move("e8g8"); // ...0-0
       chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -104,11 +104,11 @@ TEST_CASE("Castling_wrights")
 
     SECTION("Kingside-Queenside")
     {
-      chessboard.make_move(1); // 0-0
+      chessboard.make_move("e1g1"); // 0-0
       chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ));
-      chessboard.make_move(0); // ... 0-0
+      chessboard.make_move("e8c8"); // ... 0-0-0
       chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -117,19 +117,19 @@ TEST_CASE("Castling_wrights")
 
   SECTION("Rook moves, but no capture")
   {
-    chessboard.make_move(25); // Ra1-b1
+    chessboard.make_move("a1b1"); // Ra1-b1
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ | castling_right_WK));
-    chessboard.make_move(7); // ...Rh8-g8
+    chessboard.make_move("h8g8"); // ...Rh8-g8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BQ | castling_right_WK));
-    chessboard.make_move(12); // ...Rh1-g1
+    chessboard.make_move("h1g1"); // ...Rh1-g1
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_right_BQ);
-    chessboard.make_move(23); // ...Ra8-b8
+    chessboard.make_move("a8b8"); // ...Ra8-b8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -137,20 +137,20 @@ TEST_CASE("Castling_wrights")
 
   SECTION("King moves")
   {
-    chessboard.make_move(8); // Ke1-d1
+    chessboard.make_move("e1d1"); // Ke1-d1
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ));
-    chessboard.make_move(7); // ... Ke8-e7
+    chessboard.make_move("e8e7"); // ... Ke8-e7
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
     // Kings move back
-    chessboard.make_move(5); // Kd1-e1
+    chessboard.make_move("d1e1"); // Kd1-e1
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
-    chessboard.make_move(3); // ... Ke7-e8
+    chessboard.make_move("e7e8"); // ... Ke7-e8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -158,20 +158,20 @@ TEST_CASE("Castling_wrights")
     uint64_t htag = chessboard.get_hash_tag(); // first test of _hash_tag
 
     // Make another King_move
-    chessboard.make_move(3); // Ke1-e2
+    chessboard.make_move("e1e2"); // Ke1-e2
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
-    chessboard.make_move(3); // ... Ke8-d8
+    chessboard.make_move("e8d8"); // ... Ke8-d8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
     // and move back again
-    chessboard.make_move(8); // Ke2-e1
+    chessboard.make_move("e2e1"); // Ke2-e1
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
-    chessboard.make_move(2); // ... Kd8-e8
+    chessboard.make_move("d8e8"); // ... Kd8-e8
     chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
@@ -248,19 +248,19 @@ TEST_CASE("popright_square")
   uint64_t saved_squares = squares;
   for (int8_t bit_idx = 0; bit_idx < 64; bit_idx++)
   {
-//    std::cout << to_binary(squares) << std::endl;
-//    std::cout << to_binary(square(bit_idx)) << std::endl;
+    //    std::cout << to_binary(squares) << std::endl;
+    //    std::cout << to_binary(square(bit_idx)) << std::endl;
     REQUIRE(popright_square(squares) == square(bit_idx));
     REQUIRE((squares ^ square(bit_idx)) == saved_squares);
     saved_squares = squares;
   }
-//  std::cout << "" << std::endl;
+  //  std::cout << "" << std::endl;
   squares = diagonal[7];
   saved_squares = squares;
   uint64_t bit_idx = 0;
   while (squares)
   {
-//    std::cout << to_binary(squares) << std::endl;
+    //    std::cout << to_binary(squares) << std::endl;
     REQUIRE(popright_square(squares) == square(bit_idx));
     REQUIRE((squares ^ square(bit_idx)) == saved_squares);
     saved_squares = squares;
@@ -274,7 +274,6 @@ TEST_CASE("ortogonal_squares")
   REQUIRE((ortogonal_squares(a1_square) ^ (a_file | row_1)) == zero);
   REQUIRE((ortogonal_squares(h8_square) ^ (h_file | row_8)) == zero);
   REQUIRE((ortogonal_squares(a8_square) ^ (a_file | row_8)) == zero);
-
 }
 
 TEST_CASE("find_legal_squares")
@@ -327,9 +326,9 @@ TEST_CASE("find_legal_squares")
       REQUIRE(legal_squares == (row_1 & ~(e_file | f_file | g_file | h_file)));
     }
   }
-  SECTION("no pawns to the right")
+  SECTION("no blockers to the right")
   {
-    all_pieces = a1_square | b1_square | d1_square;
+    all_pieces = a1_square | b1_square | d1_square | e1_square;
 
     SECTION("left blocker of other color")
     {
@@ -343,5 +342,12 @@ TEST_CASE("find_legal_squares")
       legal_squares = chessboard.find_legal_squares(sq, my_rank, all_pieces, other_pieces);
       REQUIRE(legal_squares == (row_1 & (f_file | g_file | h_file)));
     }
+  }
+  SECTION("no blockers at all")
+  {
+    all_pieces = e1_square;
+    other_pieces = zero;
+    legal_squares = chessboard.find_legal_squares(sq, my_rank, all_pieces, other_pieces);
+    REQUIRE(legal_squares == (row_1 ^ e1_square));
   }
 }

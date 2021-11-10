@@ -173,7 +173,6 @@ inline uint64_t square(uint8_t bit_idx)
   return one << bit_idx;
 }
 
-
 inline uint8_t file_idx(uint64_t square)
 {
   return 7LL - (bit_idx(square) & 7);
@@ -231,7 +230,6 @@ inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diago
     return common_squares & ((sq2 - one) ^ ((sq1 << 1) - one));
 }
 
-
 //inline uint8_t popright_bit_idx(uint64_t& squares)
 //{
 //  assert(squares);
@@ -246,7 +244,7 @@ inline uint64_t popright_square(uint64_t& squares)
   if (squares == zero)
     return zero;
   uint64_t tmp_squares = squares;
-  squares &= (squares-1);
+  squares &= (squares - 1);
   return squares ^ tmp_squares;
 }
 
@@ -255,7 +253,7 @@ inline uint64_t rightmost_square(const uint64_t squares)
   if (squares == zero)
     return zero;
 //  return square(std::countr_zero(squares));
-  return (squares & (squares-1)) ^ (squares);
+  return (squares & (squares - 1)) ^ (squares);
 }
 
 inline uint64_t popleft_square(uint64_t& squares)
@@ -443,7 +441,6 @@ class Bitboard
     int8_t _B_King_file_index;
     int8_t _B_King_rank_index;
 
-
     void init_piece_state();
 
     inline void clear_movelist();
@@ -455,14 +452,7 @@ class Bitboard
 
     void find_short_castling();
 
-    void find_Bishop_or_Queen_moves();
-
-    inline uint64_t between_extended(uint64_t sq1,
-                                     uint64_t sq2,
-                                     uint64_t squares,
-                                     bool diagonals = false);
-
-    void find_Rook_or_Queen_moves();
+    void find_Queen_Rook_and_Bishop_moves();
 
     void find_legal_moves_for_pinned_pieces();
 
@@ -524,8 +514,10 @@ class Bitboard
     inline void update_state_after_king_move(const BitMove& m);
 
     inline piecetype get_piece_type(uint64_t square);
-  public:
 
+    uint64_t find_legal_squares(uint64_t sq, uint64_t mask);
+
+  public:
 
     Bitboard();
 
@@ -535,9 +527,7 @@ class Bitboard
 
     void make_move(int i);
 
-    uint64_t find_legal_squares(uint64_t sq, uint64_t rank_file_di_or_adi, uint64_t all_pieces, uint64_t other_pieces);
 };
-
 
 } // namespace C2_chess
 #endif
