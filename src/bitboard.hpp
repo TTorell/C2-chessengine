@@ -386,8 +386,6 @@ struct Piece_state
     uint64_t other_pieces;
     uint64_t other_King;
     uint64_t other_Queens;
-    uint64_t other_Queens_or_Rooks;
-    uint64_t other_Queens_or_Bishops;
     uint64_t other_Rooks;
     uint64_t other_Bishops;
     uint64_t other_Knights;

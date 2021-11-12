@@ -250,9 +250,7 @@ void Bitboard::init_piece_state()
     _s.other_Bishops = _B_Bishops;
     _s.other_Knights = _B_Knights;
     _s.other_Pawns = _B_Pawns;
-    _s.other_Queens_or_Rooks = _s.other_Queens | _s.other_Rooks;
-    _s.other_Queens_or_Bishops = _s.other_Queens | _s.other_Bishops;
-    _s.other_pieces = _s.other_King | _s.other_Queens_or_Rooks | _s.other_Bishops | _s.other_Knights | _s.other_Pawns;
+    _s.other_pieces = _s.other_King | _s.other_Queens |_s.other_Rooks | _s.other_Bishops | _s.other_Knights | _s.other_Pawns;
     _s.all_pieces = _s.own_pieces | _s.other_pieces;
   }
   else
@@ -278,9 +276,7 @@ void Bitboard::init_piece_state()
     _s.other_Bishops = _W_Bishops;
     _s.other_Knights = _W_Knights;
     _s.other_Pawns = _W_Pawns;
-    _s.other_Queens_or_Rooks = _s.other_Queens | _s.other_Rooks;
-    _s.other_Queens_or_Bishops = _s.other_Queens | _s.other_Bishops;
-    _s.other_pieces = _s.other_King | _s.other_Queens_or_Rooks | _W_Bishops | _W_Knights | _W_Pawns;
+    _s.other_pieces = _s.other_King | _s.other_Queens | _s.other_Rooks | _s.other_Bishops | _s.other_Knights | _s.other_Pawns;
     _s.all_pieces = _s.own_pieces | _s.other_pieces;
   }
 }

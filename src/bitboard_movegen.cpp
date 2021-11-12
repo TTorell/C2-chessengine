@@ -247,13 +247,15 @@ bool Bitboard::check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint
   uint64_t possible_pinners;
   uint64_t possible_pinner;
   uint64_t between_squares;
+  uint64_t other_Queens_or_Rooks = _s.other_Queens | _s.other_Rooks;
+  uint64_t other_Queens_or_Bishops = _s.other_Queens | _s.other_Bishops;
 // Check file and rank
-  if (_s.other_Queens_or_Rooks)
+  if (other_Queens_or_Rooks)
   {
     uint64_t King_ortogonal_squares = ortogonal_squares(_s.King);
     if (King_ortogonal_squares & other_pawn_square)
     {
-      possible_pinners = King_ortogonal_squares & _s.other_Queens_or_Rooks;
+      possible_pinners = King_ortogonal_squares & other_Queens_or_Rooks;
       while (possible_pinners)
       {
         possible_pinner = popright_square(possible_pinners);
@@ -275,12 +277,12 @@ bool Bitboard::check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint
       }
     }
   }
-  if (_s.other_Queens_or_Bishops)
+  if (other_Queens_or_Bishops)
   {
     uint64_t King_diagonal_squares = diagonal_squares(_s.King);
     if (King_diagonal_squares & other_pawn_square)
     {
-      possible_pinners = King_diagonal_squares & _s.other_Queens_or_Bishops;
+      possible_pinners = King_diagonal_squares & other_Queens_or_Bishops;
       while (possible_pinners)
       {
         possible_pinner = popright_square(possible_pinners);
@@ -615,6 +617,8 @@ void Bitboard::find_checkers_and_pinned_pieces()
   uint64_t possible_checker;
   uint64_t between_squares;
   uint8_t King_file_idx = file_idx(_s.King);
+  uint64_t other_Queens_or_Rooks = _s.other_Queens | _s.other_Rooks;
+  uint64_t other_Queens_or_Bishops = _s.other_Queens | _s.other_Bishops;
 
   // Check Pawn-threats
   if (_s.other_Pawns)
@@ -638,10 +642,10 @@ void Bitboard::find_checkers_and_pinned_pieces()
     _s.checkers |= (adjust_pattern(knight_pattern, _s.King) & _s.other_Knights);
 
   // Check threats on file and rank
-  if (_s.other_Queens_or_Rooks)
+  if (other_Queens_or_Rooks)
   {
     uint64_t King_ortogonal_squares = ortogonal_squares(_s.King);
-    possible_checkers = King_ortogonal_squares & _s.other_Queens_or_Rooks;
+    possible_checkers = King_ortogonal_squares & other_Queens_or_Rooks;
     while (possible_checkers)
     {
       possible_checker = popright_square(possible_checkers);
@@ -657,10 +661,10 @@ void Bitboard::find_checkers_and_pinned_pieces()
   }
 
   // Check diagonal threats
-  if (_s.other_Queens_or_Bishops)
+  if (other_Queens_or_Bishops)
   {
     uint64_t King_diagonal_squares = diagonal_squares(_s.King);
-    possible_checkers = King_diagonal_squares & _s.other_Queens_or_Bishops;
+    possible_checkers = King_diagonal_squares & other_Queens_or_Bishops;
     while (possible_checkers)
     {
       possible_checker = popright_square(possible_checkers);
@@ -707,11 +711,11 @@ bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking)
   }
 
   // Check threats on file and rank
-  if (_s.other_Queens_or_Rooks)
+  if (_s.other_Queens | _s.other_Rooks)
   {
     // Check threats on file and rank
     uint64_t to_ortogonal_squares = ortogonal_squares(to_square);
-    possible_attackers = to_ortogonal_squares & _s.other_Queens_or_Rooks;
+    possible_attackers = to_ortogonal_squares & (_s.other_Queens | _s.other_Rooks);
     while (possible_attackers)
     {
       attacker = popright_square(possible_attackers);
@@ -721,10 +725,10 @@ bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking)
   }
 
   // Check diagonal threats
-  if (_s.other_Queens_or_Bishops)
+  if (_s.other_Queens | _s.other_Bishops)
   {
     uint64_t to_diagonal_squares = diagonal_squares(to_square);
-    possible_attackers = to_diagonal_squares & _s.other_Queens_or_Bishops;
+    possible_attackers = to_diagonal_squares & (_s.other_Queens | _s.other_Bishops);
     while (possible_attackers)
     {
       attacker = popright_square(possible_attackers);
