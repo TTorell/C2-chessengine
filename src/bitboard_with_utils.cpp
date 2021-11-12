@@ -14,7 +14,7 @@
 namespace C2_chess
 {
 
-inline std::ostream& Bitboard_with_utils::write_piece(std::ostream& os, uint64_t square) const
+inline std::ostream& Bitboard_with_utils::write_piece(std::ostream &os, uint64_t square) const
 {
   if (square & _W_King)
     os << "\u2654";
@@ -43,7 +43,7 @@ inline std::ostream& Bitboard_with_utils::write_piece(std::ostream& os, uint64_t
   return os;
 }
 
-std::ostream& Bitboard_with_utils::write(std::ostream& os, outputtype wt, col from_perspective) const
+std::ostream& Bitboard_with_utils::write(std::ostream &os, outputtype wt, col from_perspective) const
 {
   uint64_t _W_pieces = _W_King | _W_Queens | _W_Rooks | _W_Bishops | _W_Knights | _W_Pawns;
   uint64_t _B_pieces = _B_King | _B_Queens | _B_Rooks | _B_Bishops | _B_Knights | _B_Pawns;
@@ -94,13 +94,13 @@ std::ostream& Bitboard_with_utils::write(std::ostream& os, outputtype wt, col fr
   return os;
 }
 
-std::ostream& operator <<(std::ostream& os, const BitMove& m)
+std::ostream& operator <<(std::ostream &os, const BitMove &m)
 {
   switch (m._piece_type)
   {
     case piecetype::King:
       {
-      if (abs((long int) (m.from_f_index() - m.to_f_index())) == 2)
+      if (abs((long int)(m.from_f_index() - m.to_f_index())) == 2)
       {
         if (m.to_f_index() == g)
           os << "0-0";
@@ -165,12 +165,12 @@ std::ostream& operator <<(std::ostream& os, const BitMove& m)
   return os;
 }
 
-std::ostream& Bitboard_with_utils::write_movelist(std::ostream& os, bool same_line)
+std::ostream& Bitboard_with_utils::write_movelist(std::ostream &os, bool same_line)
 {
   if (_movelist.size() > 0)
   {
     bool first = true;
-    for (const BitMove& m : _movelist)
+    for (const BitMove &m : _movelist)
     {
       if (same_line)
       {
@@ -191,10 +191,10 @@ std::ostream& Bitboard_with_utils::write_movelist(std::ostream& os, bool same_li
   return os;
 }
 
-std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::vector<std::string>& moves, col col_to_move)
+std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::vector<std::string> &moves, col col_to_move)
 {
   std::vector<std::string> stripped_moves;
-  for (const std::string& move : moves)
+  for (const std::string &move : moves)
   {
     if (move == "0-0")
     {
@@ -208,7 +208,7 @@ std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::ve
     {
       std::string stripped_move = "";
       bool promotion = false;
-      for (const char& ch : move)
+      for (const char &ch : move)
       {
         if (std::isspace(ch))
           break;
@@ -227,7 +227,7 @@ std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::ve
   return stripped_moves;
 }
 
-void Bitboard_with_utils::make_move(const std::string& UCI_move)
+void Bitboard_with_utils::make_move(const std::string &UCI_move)
 {
   std::stringstream out_moves;
   write_movelist(out_moves);
@@ -237,7 +237,7 @@ void Bitboard_with_utils::make_move(const std::string& UCI_move)
     out_moves_vector.push_back(out_move);
   out_moves_vector = convert_moves_to_UCI(out_moves_vector, _col_to_move);
   int i = 0;
-  for (const std::string& s : out_moves_vector)
+  for (const std::string &s : out_moves_vector)
   {
     if (s == UCI_move)
       break;
@@ -246,7 +246,7 @@ void Bitboard_with_utils::make_move(const std::string& UCI_move)
   Bitboard::make_move(i);
 }
 
-void Bitboard_with_utils::add_mg_test_position(const std::string& filename)
+void Bitboard_with_utils::add_mg_test_position(const std::string &filename)
 {
   std::string line, FEN_string;
   std::ifstream ifs;
@@ -292,9 +292,9 @@ void Bitboard_with_utils::add_mg_test_position(const std::string& filename)
 }
 
 bool Bitboard_with_utils::run_mg_test_case(int testnum,
-                                           const std::string& FEN_string,
-                                           const std::vector<std::string>& ref_moves_vector,
-                                           const std::string& testcase_info)
+                                           const std::string &FEN_string,
+                                           const std::vector<std::string> &ref_moves_vector,
+                                           const std::string &testcase_info)
 {
   CurrentTime now;
   std::cout << "-- Test " << testnum << " " << testcase_info << " --" << std::endl;
@@ -330,7 +330,7 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum,
     std::cout << "Comparing program output with test case reference:" << std::endl;
     chessboard.write_movelist(std::cout, true);
     bool first = true;
-    for (const std::string& Move : ref_moves_vector)
+    for (const std::string &Move : ref_moves_vector)
     {
       if (first)
         first = false;
@@ -425,7 +425,7 @@ int Bitboard_with_utils::test_move_generation(unsigned int single_testnum)
   return 0;
 }
 
-bool Bitboard_with_utils::bitboard_tests(const std::string& arg)
+bool Bitboard_with_utils::bitboard_tests(const std::string &arg)
 {
   Bitboard_with_utils chessboard;
   unsigned int single_testnum = 0;
@@ -449,6 +449,36 @@ uint64_t Bitboard_with_utils::find_legal_squares(uint64_t sq, uint64_t mask, uin
   _s.all_pieces = all_pieces;
   _s.other_pieces = other_pieces;
   return Bitboard::find_legal_squares(sq, mask);
+}
+
+uint64_t Bitboard_with_utils::ortogonal_squares(uint64_t square)
+{
+  return Bitboard::ortogonal_squares(square);
+}
+
+uint64_t Bitboard_with_utils::square(uint8_t bit_idx)
+{
+  return Bitboard::square(bit_idx);
+}
+
+uint64_t Bitboard_with_utils::between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diagonals)
+{
+  return Bitboard::between(sq1, sq2, squares, diagonals);
+}
+
+uint64_t Bitboard_with_utils::to_diagonal(uint64_t square)
+{
+  return Bitboard::to_diagonal(square);
+}
+
+uint64_t Bitboard_with_utils::to_anti_diagonal(uint64_t square)
+{
+  return Bitboard::to_anti_diagonal(square);
+}
+
+uint64_t Bitboard_with_utils::popright_square(uint64_t &squares)
+{
+  return Bitboard::popright_square(squares);
 }
 
 } // End namespace C2_chess

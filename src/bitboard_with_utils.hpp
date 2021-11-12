@@ -38,6 +38,12 @@ class Bitboard_with_utils: public Bitboard
     bool bitboard_tests(const std::string& arg);
     uint64_t find_legal_squares(uint64_t sq, uint64_t mask, uint64_t all_pieces, uint64_t other_pieces);
     void make_move(const std::string& UCI_move);
+    uint64_t ortogonal_squares(uint64_t square);
+    uint64_t square(uint8_t bit_idx);
+    uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diagonals = false);
+    uint64_t to_diagonal(uint64_t square);
+    uint64_t to_anti_diagonal(uint64_t square);
+    uint64_t popright_square(uint64_t &squares);
 };
 
 } // End namespace C2_chess
