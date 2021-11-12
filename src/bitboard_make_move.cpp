@@ -7,12 +7,6 @@
 
 
 #include "bitboard.hpp"
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <atomic>
-#include "chessfuncs.hpp"
 #include "chesstypes.hpp"
 #include "zobrist_bitboard_hash.hpp"
 
