@@ -149,72 +149,148 @@ constexpr uint64_t ad(const int i)
 }
 constexpr uint64_t anti_diagonal[15] = { ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14) };
 
+inline uint8_t bit_idx(uint64_t square)
+{
+  assert(std::has_single_bit(square));
+  //  return std::countr_zero(square);
+  return __builtin_ctzll(square);
+}
+
+inline uint64_t square(uint8_t bit_idx)
+{
+  assert(bit_idx < 64);
+  return one << bit_idx;
+}
+
+inline uint8_t file_idx(uint8_t bit_idx)
+{
+  assert(bit_idx < 64);
+  return 7 - (bit_idx & 7);
+}
+
+inline uint8_t file_idx(uint64_t square)
+{
+  return 7LL - (bit_idx(square) & 7);
+}
+
+inline uint8_t rank_idx(uint8_t bit_idx)
+{
+  assert(bit_idx < 64);
+  return 8 - (bit_idx >> 3);
+}
+
+inline uint8_t rank_idx(uint64_t square)
+{
+  return 8 - (bit_idx(square) >> 3);
+}
 
 struct BitMove
 {
-    piecetype _piece_type;
-    uint8_t _properties;
-    piecetype _promotion_piece_type;
-    uint64_t _from_square;
-    uint64_t _to_square;
-    float _evaluation;
+    uint32_t move;
+    float evaluation;
 
-    BitMove() :
-        _piece_type(piecetype::Pawn),
-        _properties(0),
-        _promotion_piece_type(piecetype::Queen),
-        _from_square(zero),
-        _to_square(zero),
-        _evaluation(0.0)
-    {
-      // cout << "BitMove::default_ctor" << endl;
-    }
-
-    BitMove(const BitMove &m) :
-        _piece_type(m._piece_type),
-        _properties(m._properties),
-        _promotion_piece_type(m._promotion_piece_type),
-        _from_square(m._from_square),
-        _to_square(m._to_square),
-        _evaluation(m._evaluation)
-    {
-      // cout << "BitMove::copy_ctor" << endl;
-    }
-
-    BitMove(const piecetype type,
-            uint8_t props,
+    BitMove(piecetype p_type,
+            uint8_t move_props,
             uint64_t from_square,
             uint64_t to_square,
-            piecetype ppt = piecetype::Queen) :
-        _piece_type(type),
-        _properties(props),
-        _promotion_piece_type(ppt),
-        _from_square(from_square),
-        _to_square(to_square),
-        _evaluation(0.0)
+            piecetype promotion_pt = piecetype::Queen) :
+        move(0),
+        evaluation(0.0)
     {
-      //cout << "BitMove::value_ctor: " << *this << endl;
+      move = (index(p_type) << 24) + (move_props << 14) + (index(promotion_pt) << 12) + (bit_idx(from_square) << 6) + bit_idx(to_square);
     }
 
-    uint8_t from_f_index() const
+    uint64_t to() const
     {
-      return (7 - (static_cast<int>(LOG2(_from_square))) % 8);
-    }
-    uint8_t from_r_index() const
-    {
-      return (8 - (static_cast<int>(LOG2(_from_square))) / 8);
-    }
-    uint8_t to_f_index() const
-    {
-      return (7 - (static_cast<int>(LOG2(_to_square))) % 8);
-    }
-    uint8_t to_r_index() const
-    {
-      return (8 - (static_cast<int>(LOG2(_to_square))) / 8);
+      return square(move & 0x3F);
     }
 
-    friend std::ostream& operator <<(std::ostream &os, const BitMove &m);
+    uint64_t from() const
+    {
+      return square((move >> 6) & 0x3F);
+    }
+
+    piecetype promotion_piece_type() const
+    {
+      return static_cast<piecetype>((move >> 12) & 0x03);
+    }
+
+    uint8_t properties() const
+    {
+      return (move >> 14) & 0xFF;
+    }
+
+    piecetype piece_type() const
+    {
+      return static_cast<piecetype>(move >> 24);
+    }
 };
+
+//struct BitMove
+//{
+//    piecetype _piece_type;
+//    uint8_t _properties;
+//    piecetype _promotion_piece_type;
+//    uint64_t _from_square;
+//    uint64_t _to_square;
+//    float _evaluation;
+//
+//    BitMove() :
+//        _piece_type(piecetype::Pawn),
+//        _properties(0),
+//        _promotion_piece_type(piecetype::Queen),
+//        _from_square(zero),
+//        _to_square(zero),
+//        _evaluation(0.0)
+//    {
+//      // cout << "BitMove::default_ctor" << endl;
+//    }
+//
+//    BitMove(const BitMove &m) :
+//        _piece_type(m._piece_type),
+//        _properties(m._properties),
+//        _promotion_piece_type(m._promotion_piece_type),
+//        _from_square(m._from_square),
+//        _to_square(m._to_square),
+//        _evaluation(m._evaluation)
+//    {
+//      // cout << "BitMove::copy_ctor" << endl;
+//    }
+//
+//    BitMove(const piecetype type,
+//            uint8_t props,
+//            uint64_t from_square,
+//            uint64_t to_square,
+//            piecetype ppt = piecetype::Queen) :
+//        _piece_type(type),
+//        _properties(props),
+//        _promotion_piece_type(ppt),
+//        _from_square(from_square),
+//        _to_square(to_square),
+//        _evaluation(0.0)
+//    {
+//      //cout << "BitMove::value_ctor: " << *this << endl;
+//    }
+//
+//    uint8_t from_f_index() const
+//    {
+//      return (7 - (static_cast<int>(LOG2(_from_square))) % 8);
+//    }
+//    uint8_t from_r_index() const
+//    {
+//      return (8 - (static_cast<int>(LOG2(_from_square))) / 8);
+//    }
+//    uint8_t to_f_index() const
+//    {
+//      return (7 - (static_cast<int>(LOG2(_to_square))) % 8);
+//    }
+//    uint8_t to_r_index() const
+//    {
+//      return (8 - (static_cast<int>(LOG2(_to_square))) / 8);
+//    }
+//
+//    friend std::ostream& operator <<(std::ostream &os, const BitMove &m);
+//};
 
 struct Piece_state
 {
@@ -292,44 +368,9 @@ class Bitboard
     // Basic Bitboard_functions
     // ------------------------
 
-    inline uint8_t bit_idx(uint64_t square)
-    {
-      assert(std::has_single_bit(square));
-      //  return std::countr_zero(square);
-      return __builtin_ctzll(square);
-    }
-
-    inline uint8_t file_idx(uint8_t bit_idx)
-    {
-      assert(bit_idx < 64);
-      return 7 - (bit_idx & 7);
-    }
-
-    inline uint8_t rank_idx(uint8_t bit_idx)
-    {
-      assert(bit_idx < 64);
-      return 8 - (bit_idx >> 3);
-    }
-
-    inline uint64_t square(uint8_t bit_idx)
-    {
-      assert(bit_idx < 64);
-      return one << bit_idx;
-    }
-
-    inline uint8_t file_idx(uint64_t square)
-    {
-      return 7LL - (bit_idx(square) & 7);
-    }
-
     inline uint64_t to_file(uint64_t square)
     {
       return file[file_idx(square)];
-    }
-
-    inline uint8_t rank_idx(uint64_t square)
-    {
-      return 8 - (bit_idx(square) >> 3);
     }
 
     inline uint64_t to_rank(uint64_t square)
@@ -443,7 +484,6 @@ class Bitboard
     {
       return to_diagonal(square) | to_anti_diagonal(square);
     }
-
 
     void init_piece_state();
 

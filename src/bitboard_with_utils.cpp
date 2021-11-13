@@ -96,13 +96,13 @@ std::ostream& Bitboard_with_utils::write(std::ostream &os, outputtype wt, col fr
 
 std::ostream& operator <<(std::ostream &os, const BitMove &m)
 {
-  switch (m._piece_type)
+  switch (m.piece_type())
   {
     case piecetype::King:
       {
-      if (abs((long int)(m.from_f_index() - m.to_f_index())) == 2)
+      if (abs(static_cast<int64_t>(file_idx(m.from()) - file_idx(m.to()))) == 2)
       {
-        if (m.to_f_index() == g)
+        if (file_idx(m.to()) == g)
           os << "0-0";
         else
           os << "0-0-0";
@@ -126,19 +126,19 @@ std::ostream& operator <<(std::ostream &os, const BitMove &m)
     default:
       break;
   }
-  Position from(m.from_f_index(), m.from_r_index());
-  Position to(m.to_f_index(), m.to_r_index());
+  Position from(file_idx(m.from()), rank_idx(m.from()));
+  Position to(file_idx(m.to()), rank_idx(m.to()));
   os << from;
-  if (m._properties & move_props_capture)
+  if (m.properties() & move_props_capture)
     os << "x";
   else
     os << "-";
   os << to;
-  if (m._properties & move_props_en_passant)
+  if (m.properties() & move_props_en_passant)
     os << " " << "e.p.";
-  if (m._properties & move_props_promotion)
+  if (m.properties() & move_props_promotion)
   {
-    switch (m._promotion_piece_type)
+    switch (m.promotion_piece_type())
     {
       case piecetype::Queen:
         os << "=Q";
@@ -156,11 +156,11 @@ std::ostream& operator <<(std::ostream &os, const BitMove &m)
         break;
     }
   }
-  if (m._properties & move_props_check)
+  if (m.properties() & move_props_check)
     os << "+";
-  if (m._properties & move_props_mate)
+  if (m.properties() & move_props_mate)
     os << " mate";
-  if (m._properties & move_props_stalemate)
+  if (m.properties() & move_props_stalemate)
     os << " stalemate";
   return os;
 }
@@ -454,11 +454,6 @@ uint64_t Bitboard_with_utils::find_legal_squares(uint64_t sq, uint64_t mask, uin
 uint64_t Bitboard_with_utils::ortogonal_squares(uint64_t square)
 {
   return Bitboard::ortogonal_squares(square);
-}
-
-uint64_t Bitboard_with_utils::square(uint8_t bit_idx)
-{
-  return Bitboard::square(bit_idx);
 }
 
 uint64_t Bitboard_with_utils::between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diagonals)

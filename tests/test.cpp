@@ -252,8 +252,8 @@ TEST_CASE("popright_square")
   {
     //    std::cout << to_binary(squares) << std::endl;
     //    std::cout << to_binary(square(bit_idx)) << std::endl;
-    REQUIRE(chessboard.popright_square(squares) == chessboard.square(bit_idx));
-    REQUIRE((squares ^ chessboard.square(bit_idx)) == saved_squares);
+    REQUIRE(chessboard.popright_square(squares) == square(bit_idx));
+    REQUIRE((squares ^ square(bit_idx)) == saved_squares);
     saved_squares = squares;
   }
   //  std::cout << "" << std::endl;
@@ -263,8 +263,8 @@ TEST_CASE("popright_square")
   while (squares)
   {
     //    std::cout << to_binary(squares) << std::endl;
-    REQUIRE(chessboard.popright_square(squares) == chessboard.square(bit_idx));
-    REQUIRE((squares ^ chessboard.square(bit_idx)) == saved_squares);
+    REQUIRE(chessboard.popright_square(squares) == square(bit_idx));
+    REQUIRE((squares ^ square(bit_idx)) == saved_squares);
     saved_squares = squares;
     bit_idx += 9;
   }

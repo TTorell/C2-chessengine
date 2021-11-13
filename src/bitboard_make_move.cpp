@@ -258,8 +258,10 @@ void Bitboard::update_col_to_move()
 
 inline void Bitboard::update_state_after_king_move(const BitMove& m)
 {
-  uint64_t from_square = m._from_square, to_square = m._to_square;
-  int8_t ri = m.to_r_index(), fi = m.to_f_index();
+  uint64_t from_square = m.from();
+  uint64_t to_square = m.to();
+  int8_t fi = file_idx(to_square);
+  int8_t ri = rank_idx(to_square);
 
   if (_col_to_move == col::white)
   {
@@ -287,11 +289,11 @@ inline void Bitboard::update_state_after_king_move(const BitMove& m)
     remove_castling_right(castling_right_BQ);
   }
 // Move the rook if it's actually a castling move.
-  if (m._properties == move_props_castling)
+  if (m.properties() & move_props_castling)
   {
-    if (static_cast<long int>(from_square - to_square) > 0)
+    if (from_square > to_square)
     {
-      // Castling.
+      // Castling king side.
       if (_col_to_move == col::white)
       {
         _W_Rooks ^= (h1_square | f1_square);
@@ -331,8 +333,8 @@ inline void Bitboard::update_state_after_king_move(const BitMove& m)
 void Bitboard::make_move(int i)
 {
   BitMove m = _movelist[i];
-  uint64_t to_square = m._to_square;
-  uint64_t from_square = m._from_square;
+  uint64_t to_square = m.to();
+  uint64_t from_square = m.from();
 
 // Clear _ep_square
   uint64_t tmp_ep_square = _ep_square;
@@ -343,15 +345,15 @@ void Bitboard::make_move(int i)
 // Then make the move (updates hashtag)
   if (to_square & _s.other_pieces)
     remove_other_piece(to_square);
-  move_piece(from_square, to_square, m._piece_type);
+  move_piece(from_square, to_square, m.piece_type());
 
 // OK we have moved the piece, now we must
 // look at some special cases.
-  if (m._piece_type == piecetype::King)
+  if (m.piece_type() == piecetype::King)
   {
     update_state_after_king_move(m);
   }
-  else if (m._piece_type == piecetype::Rook)
+  else if (m.piece_type() == piecetype::Rook)
   {
     // Clear castling rights for one side if applicable.
     if (to_square & _W_Rooks)
@@ -370,9 +372,9 @@ void Bitboard::make_move(int i)
         remove_castling_right(castling_right_BK);
     }
   }
-  else if (m._piece_type == piecetype::Pawn)
+  else if (m.piece_type() == piecetype::Pawn)
   {
-    if (m._properties == move_props_en_passant)
+    if (m.properties() & move_props_en_passant)
     {
       // Remove the pawn taken e.p.
       if (_col_to_move == col::white)
@@ -408,14 +410,14 @@ void Bitboard::make_move(int i)
       }
     }
   }
-  else if (m._promotion_piece_type != piecetype::Undefined)
+  else if (m.promotion_piece_type() != piecetype::Undefined)
   {
     // Remove the pawn from promotion square
     // subtract 1 from the normal piece-values
     // because the pawn disappears from the board.
     (_col_to_move == col::white) ? _W_Pawns ^= to_square : _B_Pawns ^= to_square;
     update_hash_tag(to_square, other_color(_col_to_move), piecetype::Pawn);
-    switch (m._promotion_piece_type)
+    switch (m.promotion_piece_type())
     {
       case piecetype::Queen:
         (_col_to_move == col::white) ? _material_diff += 8.0, _W_Queens |= to_square :

@@ -60,13 +60,13 @@ constexpr uint8_t castling_rights_B = 0B00000011;
 
 // BitMove properties
 constexpr uint8_t move_props_none = 0x00;
-constexpr uint8_t move_props_capture = 0x01;
-constexpr uint8_t move_props_check = 0x02;
-constexpr uint8_t move_props_en_passant = 0x04;
-constexpr uint8_t move_props_mate = 0x08;
-constexpr uint8_t move_props_stalemate = 0x10;
-constexpr uint8_t move_props_promotion = 0x20;
+constexpr uint8_t move_props_en_passant = 0x01;
+constexpr uint8_t move_props_promotion = 0x02;
 constexpr uint8_t move_props_castling = 0x40;
+constexpr uint8_t move_props_capture = 0x04;
+constexpr uint8_t move_props_check = 0x08;
+constexpr uint8_t move_props_mate = 0x10;
+constexpr uint8_t move_props_stalemate = 0x20;
 
 } // namespace
 #endif
