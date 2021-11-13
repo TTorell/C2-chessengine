@@ -20,12 +20,12 @@ const float epsilon = 0.00000001F;
 
 
 enum class piecetype {
-  King,
   Queen,
   Rook,
   Bishop,
   Knight,
   Pawn,
+  King,
   Undefined
 };
 

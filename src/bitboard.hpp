@@ -28,7 +28,7 @@ namespace C2_chess
 // constexpr is a way of telling the compiler
 // that we wish these expressions to be calculated
 // at compile time. For simple constants I don't
-// know if it mkes any difference compared to
+// know if it makes any difference compared to
 // declaring them with just "const". Isn't normal
 // constants instantiated at compile time?
 // For more complex expressions and functions it
