@@ -250,12 +250,20 @@ bool Bitboard::check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint
   uint64_t other_Queens_or_Rooks = _s.other_Queens | _s.other_Rooks;
   uint64_t other_Queens_or_Bishops = _s.other_Queens | _s.other_Bishops;
 // Check file and rank
+<<<<<<< Updated upstream
   if (other_Queens_or_Rooks)
+=======
+  if (_s.other_Queens | _s.other_Rooks)
+>>>>>>> Stashed changes
   {
     uint64_t King_ortogonal_squares = ortogonal_squares(_s.King);
     if (King_ortogonal_squares & other_pawn_square)
     {
+<<<<<<< Updated upstream
       possible_pinners = King_ortogonal_squares & other_Queens_or_Rooks;
+=======
+      possible_pinners = King_ortogonal_squares & (_s.other_Queens | _s.other_Rooks);
+>>>>>>> Stashed changes
       while (possible_pinners)
       {
         possible_pinner = popright_square(possible_pinners);
@@ -277,12 +285,20 @@ bool Bitboard::check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint
       }
     }
   }
+<<<<<<< Updated upstream
   if (other_Queens_or_Bishops)
+=======
+  if (_s.other_Queens | _s.other_Bishops)
+>>>>>>> Stashed changes
   {
     uint64_t King_diagonal_squares = diagonal_squares(_s.King);
     if (King_diagonal_squares & other_pawn_square)
     {
+<<<<<<< Updated upstream
       possible_pinners = King_diagonal_squares & other_Queens_or_Bishops;
+=======
+      possible_pinners = King_diagonal_squares & (_s.other_Queens | _s.other_Bishops);
+>>>>>>> Stashed changes
       while (possible_pinners)
       {
         possible_pinner = popright_square(possible_pinners);
@@ -325,7 +341,7 @@ void Bitboard::try_adding_ep_pawn_move(uint64_t from_square)
 
 // A pin (of the other pawn) on the king-file poses no problem,
 // since our own pawn will block the file after the capture.
-    if ((other_pawn_square & _s.King_file) == zero)
+    if ((other_pawn_square & to_file(_s.King)) == zero)
     {
       if (check_if_other_pawn_is_pinned_ep(other_pawn_square, from_square))
         return;
@@ -339,7 +355,7 @@ void Bitboard::try_adding_ep_pawn_move(uint64_t from_square)
   {
 // Our own pawn is pinned, but can still capture e.p. along the
 // diagonal of the king.
-    if (_ep_square & (_s.King_diagonal | _s.King_anti_diagonal))
+    if (_ep_square & (to_diagonal(_s.King) | to_anti_diagonal(_s.King)))
     {
       // No need to check if other_pawn is pinned, it can't be.
       _movelist.push_front(BitMove(piecetype::Pawn,
@@ -642,10 +658,17 @@ void Bitboard::find_checkers_and_pinned_pieces()
     _s.checkers |= (adjust_pattern(knight_pattern, _s.King) & _s.other_Knights);
 
   // Check threats on file and rank
+<<<<<<< Updated upstream
   if (other_Queens_or_Rooks)
   {
     uint64_t King_ortogonal_squares = ortogonal_squares(_s.King);
     possible_checkers = King_ortogonal_squares & other_Queens_or_Rooks;
+=======
+  if (_s.other_Queens | _s.other_Rooks)
+  {
+    uint64_t King_ortogonal_squares = ortogonal_squares(_s.King);
+    possible_checkers = King_ortogonal_squares & (_s.other_Queens | _s.other_Rooks);
+>>>>>>> Stashed changes
     while (possible_checkers)
     {
       possible_checker = popright_square(possible_checkers);
@@ -661,10 +684,17 @@ void Bitboard::find_checkers_and_pinned_pieces()
   }
 
   // Check diagonal threats
+<<<<<<< Updated upstream
   if (other_Queens_or_Bishops)
   {
     uint64_t King_diagonal_squares = diagonal_squares(_s.King);
     possible_checkers = King_diagonal_squares & other_Queens_or_Bishops;
+=======
+  if (_s.other_Queens | _s.other_Bishops)
+  {
+    uint64_t King_diagonal_squares = diagonal_squares(_s.King);
+    possible_checkers = King_diagonal_squares & (_s.other_Queens | _s.other_Bishops);
+>>>>>>> Stashed changes
     while (possible_checkers)
     {
       possible_checker = popright_square(possible_checkers);

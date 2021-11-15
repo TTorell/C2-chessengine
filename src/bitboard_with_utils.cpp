@@ -16,37 +16,37 @@ namespace C2_chess
 
 inline std::ostream& Bitboard_with_utils::write_piece(std::ostream &os, uint64_t square) const
 {
-  if (square & _W_King)
+  if (square & _white_pieces.King)
     os << "\u2654";
-  else if (square & _W_Queens)
+  else if (square & _white_pieces.Queens)
     os << "\u2655";
-  else if (square & _W_Rooks)
+  else if (square & _white_pieces.Rooks)
     os << "\u2656";
-  else if (square & _W_Bishops)
+  else if (square & _white_pieces.Bishops)
     os << "\u2657";
-  else if (square & _W_Knights)
+  else if (square & _white_pieces.Knights)
     os << "\u2658";
-  else if (square & _W_Pawns)
+  else if (square & _white_pieces.Pawns)
     os << "\u2659";
-  else if (square & _B_King)
+  else if (square & _black_pieces.King)
     os << "\u265A";
-  else if (square & _B_Queens)
+  else if (square & _black_pieces.Queens)
     os << "\u265B";
-  else if (square & _B_Rooks)
+  else if (square & _black_pieces.Rooks)
     os << "\u265C";
-  else if (square & _B_Bishops)
+  else if (square & _black_pieces.Bishops)
     os << "\u265D";
-  else if (square & _B_Knights)
+  else if (square & _black_pieces.Knights)
     os << "\u265E";
-  else if (square & _B_Pawns)
+  else if (square & _black_pieces.Pawns)
     os << "\u265F";
   return os;
 }
 
 std::ostream& Bitboard_with_utils::write(std::ostream &os, outputtype wt, col from_perspective) const
 {
-  uint64_t _W_pieces = _W_King | _W_Queens | _W_Rooks | _W_Bishops | _W_Knights | _W_Pawns;
-  uint64_t _B_pieces = _B_King | _B_Queens | _B_Rooks | _B_Bishops | _B_Knights | _B_Pawns;
+  uint64_t _W_pieces = _white_pieces.King | _white_pieces.Queens | _white_pieces.Rooks | _white_pieces.Bishops | _white_pieces.Knights | _white_pieces.Pawns;
+  uint64_t _B_pieces = _black_pieces.King | _black_pieces.Queens | _black_pieces.Rooks | _black_pieces.Bishops | _black_pieces.Knights | _black_pieces.Pawns;
   uint64_t all_pieces = _W_pieces | _B_pieces;
   switch (wt)
   {

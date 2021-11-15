@@ -226,18 +226,27 @@ struct BitMove
     }
 };
 
+<<<<<<< Updated upstream
+=======
+struct Bitpieces
+{
+    uint64_t King;
+    uint64_t Queens;
+    uint64_t Rooks;
+    uint64_t Bishops;
+    uint64_t Knights;
+    uint64_t Pawns;
+    uint64_t pieces;
+    void assemble_pieces()
+    {
+      pieces = King | Queens | Rooks | Bishops | Knights |  Pawns;
+    }
+};
+>>>>>>> Stashed changes
 
 struct Piece_state
 {
     uint64_t King;
-    uint8_t King_file_index;
-    uint8_t King_rank_index;
-    uint64_t King_file;
-    uint64_t King_rank;
-    uint64_t King_diagonal;
-    uint64_t King_anti_diagonal;
-    uint8_t castling_rights_K;
-    uint8_t castling_rights_Q;
     uint64_t own_pieces;
     uint64_t Queens;
     uint64_t Rooks;
@@ -272,33 +281,11 @@ class Bitboard
     uint8_t _castling_rights = castling_rights_none;
     uint64_t _ep_square = zero;
     float _material_diff;
+    Bitpieces _white_pieces;
+    Bitpieces _black_pieces;
+    Bitpieces* _own;
+    Bitpieces* _other;
     Piece_state _s;
-    uint64_t _W_King;
-    uint64_t _W_Queens;
-    uint64_t _W_Rooks;
-    uint64_t _W_Bishops;
-    uint64_t _W_Knights;
-    uint64_t _W_Pawns;
-    uint64_t _B_King;
-    uint64_t _B_Queens;
-    uint64_t _B_Rooks;
-    uint64_t _B_Bishops;
-    uint64_t _B_Knights;
-    uint64_t _B_Pawns;
-
-    uint64_t _W_King_file;
-    uint64_t _W_King_rank;
-    uint64_t _B_King_file;
-    uint64_t _B_King_rank;
-
-    uint64_t _W_King_diagonal;
-    uint64_t _W_King_anti_diagonal;
-    uint64_t _B_King_diagonal;
-    uint64_t _B_King_anti_diagonal;
-    int8_t _W_King_file_index;
-    int8_t _W_King_rank_index;
-    int8_t _B_King_file_index;
-    int8_t _B_King_rank_index;
 
     // Basic Bitboard_functions
     // ------------------------

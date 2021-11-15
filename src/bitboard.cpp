@@ -29,31 +29,9 @@ Bitboard::Bitboard() :
     _castling_rights(castling_rights_none),
     _ep_square(zero),
     _material_diff(0),
-    _s(),
-    _W_King(zero),
-    _W_Queens(zero),
-    _W_Rooks(zero),
-    _W_Bishops(zero),
-    _W_Knights(zero),
-    _W_Pawns(zero),
-    _B_King(zero),
-    _B_Queens(zero),
-    _B_Rooks(zero),
-    _B_Bishops(zero),
-    _B_Knights(zero),
-    _B_Pawns(zero),
-    _W_King_file(zero),
-    _W_King_rank(zero),
-    _B_King_file(zero),
-    _B_King_rank(zero),
-    _W_King_diagonal(zero),
-    _W_King_anti_diagonal(zero),
-    _B_King_diagonal(zero),
-    _B_King_anti_diagonal(zero),
-    _W_King_file_index(e),
-    _W_King_rank_index(1),
-    _B_King_file_index(e),
-    _B_King_rank_index(8)
+    _white_pieces(),
+    _black_pieces(),
+    _s()
 {
 }
 
@@ -66,19 +44,6 @@ inline void Bitboard::clear_movelist()
 int Bitboard::read_position(const std::string& FEN_string)
 {
   //std::cout << "\"" << FEN_string << "\"" << std::endl;
-  _W_King = zero;
-  _W_Queens = zero;
-  _W_Rooks = zero;
-  _W_Bishops = zero;
-  _W_Knights = zero;
-  _W_Pawns = zero;
-  _B_King = zero;
-  _B_Queens = zero;
-  _B_Rooks = zero;
-  _B_Bishops = zero;
-  _B_Knights = zero;
-  _B_Pawns = zero;
-
   std::vector<std::string> FEN_tokens = split(FEN_string, ' ');
   if (FEN_tokens.size() != 6)
   {
@@ -96,52 +61,40 @@ int Bitboard::read_position(const std::string& FEN_string)
       case ' ':
         break;
       case 'K':
-        _W_King_file_index = fi;
-        _W_King_rank_index = ri;
-        _W_King_file = file[fi];
-        _W_King_rank = rank[ri];
-        _W_King = _W_King_file & _W_King_rank;
-        _W_King_diagonal = diagonal[8 - ri + fi];
-        _W_King_anti_diagonal = anti_diagonal[fi + ri - 1];
+        _white_pieces.King = file[fi] & rank[ri];
         break;
       case 'k':
-        _B_King_file_index = fi;
-        _B_King_rank_index = ri;
-        _B_King_file = file[fi];
-        _B_King_rank = rank[ri];
-        _B_King = _B_King_file & _B_King_rank;
-        _B_King_diagonal = diagonal[8 - ri + fi];
-        _B_King_anti_diagonal = anti_diagonal[fi + ri - 1];
+        _black_pieces.King = file[fi] & rank[ri];
         break;
       case 'Q':
-        _W_Queens |= (file[fi] & rank[ri]), _material_diff += 9;
+        _white_pieces.Queens |= (file[fi] & rank[ri]), _material_diff += 9;
         break;
       case 'q':
-        _B_Queens |= (file[fi] & rank[ri]), _material_diff -= 9;
+        _black_pieces.Queens |= (file[fi] & rank[ri]), _material_diff -= 9;
         break;
       case 'B':
-        _W_Bishops |= (file[fi] & rank[ri]), _material_diff += 3;
+        _white_pieces.Bishops |= (file[fi] & rank[ri]), _material_diff += 3;
         break;
       case 'b':
-        _B_Bishops |= (file[fi] & rank[ri]), _material_diff -= 3;
+        _black_pieces.Bishops |= (file[fi] & rank[ri]), _material_diff -= 3;
         break;
       case 'N':
-        _W_Knights |= (file[fi] & rank[ri]), _material_diff += 3;
+        _white_pieces.Knights |= (file[fi] & rank[ri]), _material_diff += 3;
         break;
       case 'n':
-        _B_Knights |= (file[fi] & rank[ri]), _material_diff -= 3;
+        _black_pieces.Knights |= (file[fi] & rank[ri]), _material_diff -= 3;
         break;
       case 'R':
-        _W_Rooks |= (file[fi] & rank[ri]), _material_diff += 5;
+        _white_pieces.Rooks |= (file[fi] & rank[ri]), _material_diff += 5;
         break;
       case 'r':
-        _B_Rooks |= (file[fi] & rank[ri]), _material_diff -= 5;
+        _black_pieces.Rooks |= (file[fi] & rank[ri]), _material_diff -= 5;
         break;
       case 'P':
-        _W_Pawns |= (file[fi] & rank[ri]), _material_diff += 1;
+        _white_pieces.Pawns |= (file[fi] & rank[ri]), _material_diff += 1;
         break;
       case 'p':
-        _B_Pawns |= (file[fi] & rank[ri]), _material_diff -= 1;
+        _black_pieces.Pawns |= (file[fi] & rank[ri]), _material_diff -= 1;
         break;
       case '1':
         case '2':
@@ -177,6 +130,8 @@ int Bitboard::read_position(const std::string& FEN_string)
     fi++;
   } // end of for-loop
   _col_to_move = col::white;
+  _own = &_white_pieces;
+  _other = &_black_pieces;
   if (FEN_tokens[1] == "b")
     update_col_to_move();
   std::string castling_rights = FEN_tokens[2];
@@ -230,20 +185,15 @@ void Bitboard::init_piece_state()
 
   if (_col_to_move == col::white)
   {
-    _s.King = _W_King;
-    _s.King_file_index = _W_King_file_index;
-    _s.King_rank_index = _W_King_rank_index;
-    _s.King_file = _W_King_file;
-    _s.King_rank = _W_King_rank;
-    _s.King_diagonal = _W_King_diagonal;
-    _s.King_anti_diagonal = _W_King_anti_diagonal;
-    _s.Queens = _W_Queens;
-    _s.Rooks = _W_Rooks;
-    _s.Bishops = _W_Bishops;
-    _s.Knights = _W_Knights;
-    _s.Pawns = _W_Pawns;
+    _s.King = _white_pieces.King;
+    _s.Queens = _white_pieces.Queens;
+    _s.Rooks = _white_pieces.Rooks;
+    _s.Bishops = _white_pieces.Bishops;
+    _s.Knights = _white_pieces.Knights;
+    _s.Pawns = _white_pieces.Pawns;
     _s.own_pieces = _s.King | _s.Queens | _s.Rooks | _s.Bishops | _s.Knights | _s.Pawns;
 
+<<<<<<< Updated upstream
     _s.other_King = _B_King;
     _s.other_Queens = _B_Queens;
     _s.other_Rooks = _B_Rooks;
@@ -251,25 +201,29 @@ void Bitboard::init_piece_state()
     _s.other_Knights = _B_Knights;
     _s.other_Pawns = _B_Pawns;
     _s.other_pieces = _s.other_King | _s.other_Queens |_s.other_Rooks | _s.other_Bishops | _s.other_Knights | _s.other_Pawns;
+=======
+    _s.other_King = _black_pieces.King;
+    _s.other_Queens = _black_pieces.Queens;
+    _s.other_Rooks = _black_pieces.Rooks;
+    _s.other_Bishops = _black_pieces.Bishops;
+    _s.other_Knights = _black_pieces.Knights;
+    _s.other_Pawns = _black_pieces.Pawns;
+    _s.other_pieces = _s.other_King | _s.other_Queens | _s.other_Rooks | _s.other_Bishops | _s.other_Knights | _s.other_Pawns;
+>>>>>>> Stashed changes
     _s.all_pieces = _s.own_pieces | _s.other_pieces;
   }
   else
   {
     // col_to_move is black
-    _s.King = _B_King;
-    _s.King_file_index = _B_King_file_index;
-    _s.King_rank_index = _B_King_rank_index;
-    _s.King_file = _B_King_file;
-    _s.King_rank = _B_King_rank;
-    _s.King_diagonal = _B_King_diagonal;
-    _s.King_anti_diagonal = _B_King_anti_diagonal;
-    _s.Queens = _B_Queens;
-    _s.Rooks = _B_Rooks;
-    _s.Bishops = _B_Bishops;
-    _s.Knights = _B_Knights;
-    _s.Pawns = _B_Pawns;
+    _s.King = _black_pieces.King;
+    _s.Queens = _black_pieces.Queens;
+    _s.Rooks = _black_pieces.Rooks;
+    _s.Bishops = _black_pieces.Bishops;
+    _s.Knights = _black_pieces.Knights;
+    _s.Pawns = _black_pieces.Pawns;
     _s.own_pieces = _s.King | _s.Queens | _s.Rooks | _s.Bishops | _s.Knights | _s.Pawns;
 
+<<<<<<< Updated upstream
     _s.other_King = _W_King;
     _s.other_Queens = _W_Queens;
     _s.other_Rooks = _W_Rooks;
@@ -277,6 +231,15 @@ void Bitboard::init_piece_state()
     _s.other_Knights = _W_Knights;
     _s.other_Pawns = _W_Pawns;
     _s.other_pieces = _s.other_King | _s.other_Queens | _s.other_Rooks | _s.other_Bishops | _s.other_Knights | _s.other_Pawns;
+=======
+    _s.other_King = _white_pieces.King;
+    _s.other_Queens = _white_pieces.Queens;
+    _s.other_Rooks = _white_pieces.Rooks;
+    _s.other_Bishops = _white_pieces.Bishops;
+    _s.other_Knights = _white_pieces.Knights;
+    _s.other_Pawns = _white_pieces.Pawns;
+    _s.other_pieces = _s.other_King | _s.other_Queens | _s.other_Rooks | _white_pieces.Bishops | _white_pieces.Knights | _white_pieces.Pawns;
+>>>>>>> Stashed changes
     _s.all_pieces = _s.own_pieces | _s.other_pieces;
   }
 }
