@@ -268,14 +268,8 @@ void Bitboard::update_col_to_move()
 
 inline void Bitboard::update_state_after_king_move(const BitMove& m)
 {
-<<<<<<< Updated upstream
   uint64_t from_square = m.from();
   uint64_t to_square = m.to();
-  int8_t fi = file_idx(to_square);
-  int8_t ri = rank_idx(to_square);
-=======
-  uint64_t from_square = m._from_square, to_square = m._to_square;
->>>>>>> Stashed changes
 
   if (from_square & e1_square)
   {

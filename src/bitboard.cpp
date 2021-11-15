@@ -193,15 +193,6 @@ void Bitboard::init_piece_state()
     _s.Pawns = _white_pieces.Pawns;
     _s.own_pieces = _s.King | _s.Queens | _s.Rooks | _s.Bishops | _s.Knights | _s.Pawns;
 
-<<<<<<< Updated upstream
-    _s.other_King = _B_King;
-    _s.other_Queens = _B_Queens;
-    _s.other_Rooks = _B_Rooks;
-    _s.other_Bishops = _B_Bishops;
-    _s.other_Knights = _B_Knights;
-    _s.other_Pawns = _B_Pawns;
-    _s.other_pieces = _s.other_King | _s.other_Queens |_s.other_Rooks | _s.other_Bishops | _s.other_Knights | _s.other_Pawns;
-=======
     _s.other_King = _black_pieces.King;
     _s.other_Queens = _black_pieces.Queens;
     _s.other_Rooks = _black_pieces.Rooks;
@@ -209,7 +200,6 @@ void Bitboard::init_piece_state()
     _s.other_Knights = _black_pieces.Knights;
     _s.other_Pawns = _black_pieces.Pawns;
     _s.other_pieces = _s.other_King | _s.other_Queens | _s.other_Rooks | _s.other_Bishops | _s.other_Knights | _s.other_Pawns;
->>>>>>> Stashed changes
     _s.all_pieces = _s.own_pieces | _s.other_pieces;
   }
   else
@@ -223,15 +213,6 @@ void Bitboard::init_piece_state()
     _s.Pawns = _black_pieces.Pawns;
     _s.own_pieces = _s.King | _s.Queens | _s.Rooks | _s.Bishops | _s.Knights | _s.Pawns;
 
-<<<<<<< Updated upstream
-    _s.other_King = _W_King;
-    _s.other_Queens = _W_Queens;
-    _s.other_Rooks = _W_Rooks;
-    _s.other_Bishops = _W_Bishops;
-    _s.other_Knights = _W_Knights;
-    _s.other_Pawns = _W_Pawns;
-    _s.other_pieces = _s.other_King | _s.other_Queens | _s.other_Rooks | _s.other_Bishops | _s.other_Knights | _s.other_Pawns;
-=======
     _s.other_King = _white_pieces.King;
     _s.other_Queens = _white_pieces.Queens;
     _s.other_Rooks = _white_pieces.Rooks;
@@ -239,7 +220,6 @@ void Bitboard::init_piece_state()
     _s.other_Knights = _white_pieces.Knights;
     _s.other_Pawns = _white_pieces.Pawns;
     _s.other_pieces = _s.other_King | _s.other_Queens | _s.other_Rooks | _white_pieces.Bishops | _white_pieces.Knights | _white_pieces.Pawns;
->>>>>>> Stashed changes
     _s.all_pieces = _s.own_pieces | _s.other_pieces;
   }
 }

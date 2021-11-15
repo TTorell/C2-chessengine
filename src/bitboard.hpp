@@ -226,8 +226,6 @@ struct BitMove
     }
 };
 
-<<<<<<< Updated upstream
-=======
 struct Bitpieces
 {
     uint64_t King;
@@ -242,7 +240,6 @@ struct Bitpieces
       pieces = King | Queens | Rooks | Bishops | Knights |  Pawns;
     }
 };
->>>>>>> Stashed changes
 
 struct Piece_state
 {
