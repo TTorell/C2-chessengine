@@ -241,29 +241,6 @@ struct Bitpieces
     }
 };
 
-struct Piece_state
-{
-    uint64_t King;
-    uint64_t own_pieces;
-    uint64_t Queens;
-    uint64_t Rooks;
-    uint64_t Bishops;
-    uint64_t Knights;
-    uint64_t Pawns;
-    uint64_t other_pieces;
-    uint64_t other_King;
-    uint64_t other_Queens;
-    uint64_t other_Rooks;
-    uint64_t other_Bishops;
-    uint64_t other_Knights;
-    uint64_t other_Pawns;
-
-    uint64_t all_pieces;
-    uint64_t checkers;
-    uint64_t pinned_pieces; // Squares of our pinned pieces
-    uint64_t pinners; // Squares of other side pinners
-};
-
 class Bitboard
 {
   protected:
@@ -278,11 +255,15 @@ class Bitboard
     uint8_t _castling_rights = castling_rights_none;
     uint64_t _ep_square = zero;
     float _material_diff;
+
+    uint64_t _checkers;
+    uint64_t _pinners;
+    uint64_t _pinned_pieces;
+    uint64_t _all_pieces;
     Bitpieces _white_pieces;
     Bitpieces _black_pieces;
     Bitpieces* _own;
     Bitpieces* _other;
-    Piece_state _s;
 
     // Basic Bitboard_functions
     // ------------------------

@@ -332,7 +332,7 @@ void Bitboard::make_move(int i)
 
 // Remove possible piece of other color on to_square and
 // Then make the move (updates hashtag)
-  if (to_square & _s.other_pieces)
+  if (to_square & _other->pieces)
     remove_other_piece(to_square);
   move_piece(from_square, to_square, m.piece_type());
 
@@ -384,8 +384,8 @@ void Bitboard::make_move(int i)
       if ((from_square & row_2) && (to_square & row_4))
       {
         // Check if there is a pawn of other color alongside to_square.
-        if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
-            ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
+        if (((to_square & not_a_file) && ((to_square << 1) & _other->Pawns)) ||
+            ((to_square & not_h_file) && ((to_square >> 1) & _other->Pawns)))
           set_ep_square(to_square << 8);
       }
     }
@@ -393,8 +393,8 @@ void Bitboard::make_move(int i)
     {
       if ((from_square & row_7) && (to_square & row_5))
       {
-        if (((to_square & not_a_file) && ((to_square << 1) & _s.other_Pawns)) ||
-            ((to_square & not_h_file) && ((to_square >> 1) & _s.other_Pawns)))
+        if (((to_square & not_a_file) && ((to_square << 1) & _other->Pawns)) ||
+            ((to_square & not_h_file) && ((to_square >> 1) & _other->Pawns)))
           set_ep_square(to_square >> 8);
       }
     }
@@ -433,7 +433,6 @@ void Bitboard::make_move(int i)
     }
   }
   update_col_to_move();
-  init_piece_state();
   find_all_legal_moves();
 }
 

@@ -29,10 +29,15 @@ Bitboard::Bitboard() :
     _castling_rights(castling_rights_none),
     _ep_square(zero),
     _material_diff(0),
+    _checkers(zero),
+    _pinners(zero),
+    _pinned_pieces(zero),
+    _all_pieces(zero),
     _white_pieces(),
-    _black_pieces(),
-    _s()
+    _black_pieces()
 {
+  _own = &_white_pieces;
+  _other = &_black_pieces;
 }
 
 inline void Bitboard::clear_movelist()
@@ -179,49 +184,12 @@ int Bitboard::read_position(const std::string& FEN_string)
 void Bitboard::init_piece_state()
 {
   clear_movelist();
-  _s.checkers = zero;
-  _s.pinners = zero;
-  _s.pinned_pieces = zero;
-
-  if (_col_to_move == col::white)
-  {
-    _s.King = _white_pieces.King;
-    _s.Queens = _white_pieces.Queens;
-    _s.Rooks = _white_pieces.Rooks;
-    _s.Bishops = _white_pieces.Bishops;
-    _s.Knights = _white_pieces.Knights;
-    _s.Pawns = _white_pieces.Pawns;
-    _s.own_pieces = _s.King | _s.Queens | _s.Rooks | _s.Bishops | _s.Knights | _s.Pawns;
-
-    _s.other_King = _black_pieces.King;
-    _s.other_Queens = _black_pieces.Queens;
-    _s.other_Rooks = _black_pieces.Rooks;
-    _s.other_Bishops = _black_pieces.Bishops;
-    _s.other_Knights = _black_pieces.Knights;
-    _s.other_Pawns = _black_pieces.Pawns;
-    _s.other_pieces = _s.other_King | _s.other_Queens | _s.other_Rooks | _s.other_Bishops | _s.other_Knights | _s.other_Pawns;
-    _s.all_pieces = _s.own_pieces | _s.other_pieces;
-  }
-  else
-  {
-    // col_to_move is black
-    _s.King = _black_pieces.King;
-    _s.Queens = _black_pieces.Queens;
-    _s.Rooks = _black_pieces.Rooks;
-    _s.Bishops = _black_pieces.Bishops;
-    _s.Knights = _black_pieces.Knights;
-    _s.Pawns = _black_pieces.Pawns;
-    _s.own_pieces = _s.King | _s.Queens | _s.Rooks | _s.Bishops | _s.Knights | _s.Pawns;
-
-    _s.other_King = _white_pieces.King;
-    _s.other_Queens = _white_pieces.Queens;
-    _s.other_Rooks = _white_pieces.Rooks;
-    _s.other_Bishops = _white_pieces.Bishops;
-    _s.other_Knights = _white_pieces.Knights;
-    _s.other_Pawns = _white_pieces.Pawns;
-    _s.other_pieces = _s.other_King | _s.other_Queens | _s.other_Rooks | _white_pieces.Bishops | _white_pieces.Knights | _white_pieces.Pawns;
-    _s.all_pieces = _s.own_pieces | _s.other_pieces;
-  }
+  _checkers = zero;
+  _pinners = zero;
+  _pinned_pieces = zero;
+  _own->assemble_pieces();
+  _other->assemble_pieces();
+  _all_pieces = _own->pieces | _other->pieces;
 }
 
 } // End namespace C2_chess

@@ -299,8 +299,8 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum,
   CurrentTime now;
   std::cout << "-- Test " << testnum << " " << testcase_info << " --" << std::endl;
 
-  if (testnum == 20)
-    std::cout << "20" << std::endl;
+  if (testnum == 1)
+    std::cout << "1" << std::endl;
   Bitboard_with_utils chessboard;
   if (chessboard.read_position(FEN_string) != 0)
   {
@@ -446,8 +446,8 @@ bool Bitboard_with_utils::bitboard_tests(const std::string &arg)
 
 uint64_t Bitboard_with_utils::find_legal_squares(uint64_t sq, uint64_t mask, uint64_t all_pieces, uint64_t other_pieces)
 {
-  _s.all_pieces = all_pieces;
-  _s.other_pieces = other_pieces;
+  _all_pieces = all_pieces;
+  _other->pieces = other_pieces;
   return Bitboard::find_legal_squares(sq, mask);
 }
 
