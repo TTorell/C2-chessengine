@@ -11,6 +11,7 @@
 #include <string>
 #include "../src/bitboard_with_utils.hpp"
 #include "../src/chessfuncs.hpp"
+#include "../src/current_time.hpp"
 
 using namespace C2_chess;
 
@@ -48,6 +49,9 @@ std::string get_FEN_test_position(unsigned int n)
 
 TEST_CASE("Move_generation")
 {
+  uint64_t start, stop;
+  CurrentTime now;
+  start = now.nanoseconds();
   const char* const preferred_test_exec_dir = "/home/torsten/eclipse-workspace/C2-chessengine";
   REQUIRE(check_execution_dir(preferred_test_exec_dir));
   Bitboard_with_utils chessboard;
@@ -55,6 +59,8 @@ TEST_CASE("Move_generation")
   if (result != 0)
     std::cout << "TESTS FAILED!" << std::endl;
   REQUIRE(result == 0);
+  stop = now.nanoseconds();
+  std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
 }
 
 TEST_CASE("Castling_wrights")
@@ -245,14 +251,13 @@ TEST_CASE("Bitboard between")
 
 TEST_CASE("popright_square")
 {
-  Bitboard_with_utils chessboard;
   uint64_t squares = whole_board;
   uint64_t saved_squares = squares;
   for (int8_t bit_idx = 0; bit_idx < 64; bit_idx++)
   {
     //    std::cout << to_binary(squares) << std::endl;
     //    std::cout << to_binary(square(bit_idx)) << std::endl;
-    REQUIRE(chessboard.popright_square(squares) == square(bit_idx));
+    REQUIRE(popright_square(squares) == square(bit_idx));
     REQUIRE((squares ^ square(bit_idx)) == saved_squares);
     saved_squares = squares;
   }
@@ -263,7 +268,7 @@ TEST_CASE("popright_square")
   while (squares)
   {
     //    std::cout << to_binary(squares) << std::endl;
-    REQUIRE(chessboard.popright_square(squares) == square(bit_idx));
+    REQUIRE(popright_square(squares) == square(bit_idx));
     REQUIRE((squares ^ square(bit_idx)) == saved_squares);
     saved_squares = squares;
     bit_idx += 9;
@@ -354,3 +359,78 @@ TEST_CASE("find_legal_squares")
     REQUIRE(legal_squares == (row_1 ^ e1_square)); // @suppress("C-Style cast instead of C++ cast")
   }
 }
+
+//TEST_CASE("timing basic functions")
+//{
+//  CurrentTime now;
+//  uint8_t b_idx = 0;
+//  uint64_t sq = a1_square;
+//  uint64_t x = 0;
+//
+//  uint64_t start = now.nanoseconds();
+//
+//  for (int k = 0; k < 100000; k++)
+//  {
+//    sq = a1_square;
+//    for (uint8_t i = 0; i < 64; i++)
+//    {
+//      sq = popright_square(sq);
+//      uint8_t z = bit_idx(sq);
+//      b_idx = file_idx(z);
+//      x ^= file[b_idx] ^ square(b_idx);
+//    }
+//  }
+//
+//  uint64_t stop = now.nanoseconds();
+//  std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
+//  start = now.nanoseconds();
+//
+//  for (int k = 0; k < 100000; k++)
+//  {
+//    sq = a1_square;
+//    for (uint8_t i = 0; i < 64; i++)
+//    {
+//      sq = popright_square2(sq);
+//      uint8_t z = bit_idx(sq);
+//      b_idx = file_idx(z);
+//      x ^= file[b_idx] ^ square(b_idx);
+//    }
+//  }
+//
+//  stop = now.nanoseconds();
+//  std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
+//  start = now.nanoseconds();
+//
+//  for (int k = 0; k < 100000; k++)
+//  {
+//    sq = a1_square;
+//    for (uint8_t i = 0; i < 64; i++)
+//    {
+//      sq = popright_square(sq);
+//      uint8_t z = bit_idx(sq);
+//      b_idx = file_idx(z);
+//      x ^= file[b_idx] ^ square(b_idx);
+//    }
+//  }
+//
+//  stop = now.nanoseconds();
+//  std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
+//  start = now.nanoseconds();
+//
+//  for (int k = 0; k < 100000; k++)
+//  {
+//    sq = a1_square;
+//    for (uint8_t i = 0; i < 64; i++)
+//    {
+//      sq = popright_square2(sq);
+//      uint8_t z = bit_idx(sq);
+//      b_idx = file_idx(z);
+//      x ^= file[b_idx] ^ square(b_idx);
+//    }
+//  }
+//
+//  stop = now.nanoseconds();
+//  std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
+//  std::cout << x << b_idx << sq << std::endl;
+//
+//}

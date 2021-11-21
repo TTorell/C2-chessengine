@@ -64,10 +64,10 @@ constexpr uint64_t g_h_files = g_file | h_file;
 constexpr uint64_t not_row_8 = whole_board ^ row_8;
 constexpr uint64_t not_row_1 = whole_board ^ row_1;
 
-constexpr uint64_t file[] = { a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file };
+constexpr uint64_t file[] = {a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file};
 
 // 0 is not used as rank-index
-constexpr uint64_t rank[] = { zero, row_1, row_2, row_3, row_4, row_5, row_6, row_7, row_8, zero, zero };
+constexpr uint64_t rank[] = {zero, row_1, row_2, row_3, row_4, row_5, row_6, row_7, row_8, zero, zero};
 
 constexpr uint64_t king_side = e_file | f_file | g_file | h_file;
 constexpr uint64_t queen_side = a_file | b_file | c_file | d_file;
@@ -128,7 +128,7 @@ constexpr uint64_t di(int i)
   }
   return val;
 }
-constexpr uint64_t diagonal[15] = { di(0), di(1), di(2), di(3), di(4), di(5), di(6), di(7), di(8), di(9), di(10), di(11), di(12), di(13), di(14) };
+constexpr uint64_t diagonal[15] = {di(0), di(1), di(2), di(3), di(4), di(5), di(6), di(7), di(8), di(9), di(10), di(11), di(12), di(13), di(14)};
 
 constexpr uint64_t ad(const int i)
 {
@@ -147,12 +147,13 @@ constexpr uint64_t ad(const int i)
   }
   return val;
 }
-constexpr uint64_t anti_diagonal[15] = { ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14) };
+constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14)};
 
 inline uint8_t bit_idx(uint64_t square)
 {
   assert(std::has_single_bit(square));
-  //  return std::countr_zero(square);
+  // return std::countr_zero(square); // -std=c++20
+  // Seems a tiny bit slower and eventually calls the same builtin after some type checks.
   return __builtin_ctzll(square);
 }
 
@@ -170,7 +171,8 @@ inline uint8_t file_idx(uint8_t bit_idx)
 
 inline uint8_t file_idx(uint64_t square)
 {
-  return 7LL - (bit_idx(square) & 7);
+  // return 7 - (bit_idx(square) % 8); // is possibly a tiny little bit slower
+  return 7 - (bit_idx(square) & 7);
 }
 
 inline uint8_t rank_idx(uint8_t bit_idx)
@@ -181,9 +183,59 @@ inline uint8_t rank_idx(uint8_t bit_idx)
 
 inline uint8_t rank_idx(uint64_t square)
 {
+  // return 8 - (bit_idx(square) % 8); // is possibly a tiny little bit slower
   return 8 - (bit_idx(square) >> 3);
 }
 
+inline uint64_t rightmost_square(const uint64_t squares)
+{
+  if (squares)
+  {
+    // return (squares & (squares - 1)) ^ (squares); // Is just a little bit slower
+    return square(__builtin_ctzll(squares));
+  }
+  return zero;
+}
+
+inline uint64_t leftmost_square(uint64_t squares)
+{
+  if (squares)
+  {
+    // return square(63 - std::countl_zero(squares)); -std=c++20
+    return square(63 - __builtin_clzl(squares));
+  }
+  return zero;
+}
+
+inline uint64_t popright_square(uint64_t& squares)
+{
+  if (squares)
+  {
+    //    The following also works fine:
+    //    uint64_t tmp_squares = squares;
+    //    squares &= (squares - 1);
+    //    return squares ^ tmp_squares;
+    uint64_t square = rightmost_square(squares);
+    squares &= (squares - 1);
+    return square;
+  }
+  return zero;
+}
+
+inline uint64_t popleft_square(uint64_t& squares)
+{
+  assert(squares);
+  uint64_t sq = leftmost_square(squares);
+  squares ^= sq;
+  return sq;
+}
+
+// In Stockfish-style I put the essential move-info in the lowest 16 bits of move,
+// but I also use some of the higher 16 bits for extra information which can be useful
+// e.g. while printing a move during tests and so. Maybe I'll find out later why Stockfish
+// doesn't use those higher 16 bits. The general idea of keeping the move information
+// as packed as possible is probably for "cashing-reasons", I think. The movelist can
+// be fairly long in some positions.
 struct BitMove
 {
     uint32_t move;
@@ -237,7 +289,7 @@ struct Bitpieces
     uint64_t pieces;
     void assemble_pieces()
     {
-      pieces = King | Queens | Rooks | Bishops | Knights |  Pawns;
+      pieces = King | Queens | Rooks | Bishops | Knights | Pawns;
     }
 };
 
@@ -246,7 +298,7 @@ class Bitboard
   protected:
     // Static declarations, incomplete type.
     static Zobrist_bitboard_hash bb_hash_table;
-    static Bitboard level_boards[]; // declaration, incomplete type
+    static Bitboard level_boards[];
     static std::atomic<bool> time_left;
 
     uint64_t _hash_tag;
@@ -324,38 +376,6 @@ class Bitboard
     //  return idx;
     //}
 
-    inline uint64_t popright_square(uint64_t &squares)
-    {
-      if (squares == zero)
-        return zero;
-      uint64_t tmp_squares = squares;
-      squares &= (squares - 1);
-      return squares ^ tmp_squares;
-    }
-
-    inline uint64_t rightmost_square(const uint64_t squares)
-    {
-      if (squares == zero)
-        return zero;
-      //  return square(std::countr_zero(squares));
-      return (squares & (squares - 1)) ^ (squares);
-    }
-
-    inline uint64_t popleft_square(uint64_t &squares)
-    {
-      assert(squares);
-      uint64_t sq = square(63 - std::countl_zero(squares));
-      squares ^= sq;
-      return sq;
-    }
-
-    inline uint64_t leftmost_square(uint64_t squares)
-    {
-      if (squares == zero)
-        return zero;
-      return square(63 - std::countl_zero(squares));
-    }
-
     inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
     {
       assert(pattern && std::has_single_bit(center_square));
@@ -396,6 +416,10 @@ class Bitboard
 
     void find_short_castling();
 
+    uint64_t find_blockers(uint64_t sq, uint64_t mask, uint64_t all_pieces);
+
+    uint64_t find_legal_squares(uint64_t sq, uint64_t mask);
+
     void find_Queen_Rook_and_Bishop_moves();
 
     void find_legal_moves_for_pinned_pieces();
@@ -423,6 +447,8 @@ class Bitboard
     void find_checkers_and_pinned_pieces();
 
     bool square_is_threatened(uint64_t square, bool King_is_asking);
+
+    bool square_is_threatened2(uint64_t to_square, bool King_is_asking);
 
     inline void find_king_moves();
 
@@ -455,17 +481,15 @@ class Bitboard
 
     void update_col_to_move();
 
-    inline void update_state_after_king_move(const BitMove &m);
+    inline void update_state_after_king_move(const BitMove& m);
 
     inline piecetype get_piece_type(uint64_t square);
-
-    uint64_t find_legal_squares(uint64_t sq, uint64_t mask);
 
   public:
 
     Bitboard();
 
-    int read_position(const std::string &FEN_string);
+    int read_position(const std::string& FEN_string);
 
     void find_all_legal_moves();
 

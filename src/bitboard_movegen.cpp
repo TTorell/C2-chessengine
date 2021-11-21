@@ -7,10 +7,10 @@
 #include "bitboard.hpp"
 #include "chesstypes.hpp"
 #include "zobrist_bitboard_hash.hpp"
+#include "current_time.hpp"
 
 namespace C2_chess
 {
-
 
 void Bitboard::find_long_castling()
 {
@@ -22,7 +22,7 @@ void Bitboard::find_long_castling()
       return;
     while (castling_empty_squares)
     {
-      if (square_is_threatened(popright_square(castling_empty_squares), false))
+      if (square_is_threatened2(popright_square(castling_empty_squares), false))
         return;
     }
     _movelist.push_front(BitMove(piecetype::King, move_props_castling, King_initial_square, King_initial_square << 2));
@@ -39,11 +39,34 @@ void Bitboard::find_short_castling()
       return;
     while (castling_empty_squares)
     {
-      if (square_is_threatened(popright_square(castling_empty_squares), false))
+      if (square_is_threatened2(popright_square(castling_empty_squares), false))
         return;
     }
     _movelist.push_front(BitMove(piecetype::King, move_props_castling, King_initial_square, King_initial_square >> 2));
   }
+}
+
+inline uint64_t Bitboard::find_blockers(uint64_t sq, uint64_t mask, uint64_t all_pieces)
+{
+  uint64_t left_side, right_side;
+  mask ^= sq;
+  left_side = mask & all_pieces & ~(sq - 1);
+  right_side = mask & all_pieces & (sq - 1);
+  return leftmost_square(right_side) | rightmost_square(left_side);
+}
+
+uint64_t Bitboard::find_legal_squares(uint64_t sq, uint64_t mask)
+{
+  mask ^= sq;
+  uint64_t left_side = mask & _all_pieces & ~(sq - 1);
+  uint64_t left_blocker = rightmost_square(left_side);
+  uint64_t right_side = mask & _all_pieces & (sq - 1);
+  uint64_t right_blocker = leftmost_square(right_side);
+  uint64_t other_color_blockers = (left_blocker | right_blocker) & _other->pieces;
+  if (right_blocker)
+    return (((left_blocker - one) ^ ((right_blocker << 1) - one)) | other_color_blockers) & mask;
+  else
+    return ((left_blocker - one) | other_color_blockers) & mask;
 }
 
 void Bitboard::find_Queen_Rook_and_Bishop_moves()
@@ -168,7 +191,7 @@ void Bitboard::find_Pawn_moves()
   if (moved_pawns)
   {
     moved_pawns = (~_all_pieces) & ((_col_to_move == col::white) ? ((moved_pawns >> 8) & rank[4]) :
-                                                                     ((moved_pawns << 8) & rank[5]));
+                                                                   ((moved_pawns << 8) & rank[5]));
     while (moved_pawns)
     {
       to_square = popright_square(moved_pawns);
@@ -251,33 +274,33 @@ bool Bitboard::check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint
   uint64_t other_Queens_or_Bishops = _other->Queens | _other->Bishops;
 // Check file and rank
   if (other_Queens_or_Rooks)
-  if (_other->Queens | _other->Rooks)
-  {
-    uint64_t King_ortogonal_squares = ortogonal_squares(_own->King);
-    if (King_ortogonal_squares & other_pawn_square)
+    if (_other->Queens | _other->Rooks)
     {
-      possible_pinners = King_ortogonal_squares & other_Queens_or_Rooks;
-      while (possible_pinners)
+      uint64_t King_ortogonal_squares = ortogonal_squares(_own->King);
+      if (King_ortogonal_squares & other_pawn_square)
       {
-        possible_pinner = popright_square(possible_pinners);
-        between_squares = between(_own->King, possible_pinner, King_ortogonal_squares);
-        if (between_squares & other_pawn_square)
+        possible_pinners = King_ortogonal_squares & other_Queens_or_Rooks;
+        while (possible_pinners)
         {
-          if (std::has_single_bit(between_squares & _all_pieces))
-            return true;
-          // own_pawn_square can be a blocker on a rank together with other_pawn_square
-          // which both would be gone from the rank after the ep-move.
-          if (rank[rank_idx(_own->King)] & other_pawn_square)
+          possible_pinner = popright_square(possible_pinners);
+          between_squares = between(_own->King, possible_pinner, King_ortogonal_squares);
+          if (between_squares & other_pawn_square)
           {
-            if ((std::popcount(between_squares & _all_pieces) == 2) && (between_squares & own_pawn_square))
-            {
+            if (std::has_single_bit(between_squares & _all_pieces))
               return true;
+            // own_pawn_square can be a blocker on a rank together with other_pawn_square
+            // which both would be gone from the rank after the ep-move.
+            if (rank[rank_idx(_own->King)] & other_pawn_square)
+            {
+              if ((std::popcount(between_squares & _all_pieces) == 2) && (between_squares & own_pawn_square))
+              {
+                return true;
+              }
             }
           }
         }
       }
     }
-  }
   if (_other->Queens | _other->Bishops)
   {
     uint64_t King_diagonal_squares = diagonal_squares(_own->King);
@@ -557,10 +580,10 @@ void Bitboard::find_moves_after_check(uint64_t checker)
       }
     }
   }
-// Can we take the checking piece?
+  // Can we take the checking piece?
   find_moves_to_square(checker);
 
-// Also check if the checker is a Pawn which can be taken e.p.
+  // Also check if the checker is a Pawn which can be taken e.p.
   if (_ep_square & ((_col_to_move == col::white) ? checker >> 8 : checker << 8))
   {
     if (_ep_square & not_a_file)
@@ -740,6 +763,63 @@ bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking)
   return false;
 }
 
+// An attempt to speed up the square_is_threatened() method, but it
+// takes about equal time. Sometimes faster, sometimes slower, depending
+// on the position.
+bool Bitboard::square_is_threatened2(uint64_t to_square, bool King_is_asking)
+{
+  uint64_t other_Queens_or_rooks, other_Queens_or_Bishops;
+  uint64_t tmp_all_pieces = _all_pieces;
+  uint8_t to_bit_idx = bit_idx(to_square);
+  uint8_t f_idx = file_idx(to_bit_idx);
+  uint8_t r_idx = rank_idx(to_bit_idx);
+
+  // Check Pawn-threats
+  if (_other->Pawns)
+  {
+    if ((f_idx != h) && (_other->Pawns & ((_col_to_move == col::white) ? to_square >> 9 : to_square << 7)))
+      return true;
+    if ((f_idx != a) && (_other->Pawns & ((_col_to_move == col::white) ? to_square >> 7 : to_square << 9)))
+      return true;
+  }
+
+  // Check Knight-threats
+  if (_other->Knights && ((adjust_pattern(knight_pattern, to_square) & _other->Knights)))
+    return true;
+
+  // Check King (and adjacent Queen-threats)
+  if (adjust_pattern(king_pattern, to_square) & (_other->King | _other->Queens))
+    return true;
+
+  if (King_is_asking)
+  {
+    // Treat King-square as empty to catch xray-attacks through the King-square
+    tmp_all_pieces ^= _own->King;
+  }
+
+  // Check threats on file and rank
+  other_Queens_or_rooks = _other->Queens | _other->Rooks;
+  if (other_Queens_or_rooks)
+  {
+    if (find_blockers(to_square, file[f_idx], tmp_all_pieces) & other_Queens_or_rooks)
+      return true;
+    if (find_blockers(to_square, rank[r_idx], tmp_all_pieces) & other_Queens_or_rooks)
+      return true;
+  }
+
+  // Check diagonal threats
+  other_Queens_or_Bishops = _other->Queens | _other->Bishops;
+  if (other_Queens_or_Bishops)
+  {
+    if (find_blockers(to_square, to_diagonal(f_idx, r_idx), tmp_all_pieces) & other_Queens_or_Bishops)
+      return true;
+    if (find_blockers(to_square, to_anti_diagonal(f_idx, r_idx), tmp_all_pieces) & other_Queens_or_Bishops)
+      return true;
+  }
+
+  return false;
+}
+
 // Finds normal King-moves not including castling.
 inline void Bitboard::find_king_moves()
 {
@@ -791,21 +871,5 @@ void Bitboard::find_all_legal_moves()
     find_normal_legal_moves();
   }
 }
-
-uint64_t Bitboard::find_legal_squares(uint64_t sq, uint64_t mask)
-{
-  mask ^= sq;
-  uint64_t left_side = mask & _all_pieces & ~(sq - 1);
-  uint64_t left_blocker = rightmost_square(left_side);
-  uint64_t right_side = mask & _all_pieces & (sq - 1);
-  uint64_t right_blocker = leftmost_square(right_side);
-  uint64_t other_color_blockers = (left_blocker | right_blocker) & _other->pieces;
-  if (right_blocker)
-    return (((left_blocker - one) ^ ((right_blocker << 1) - one)) | other_color_blockers) & mask;
-  else
-    return ((left_blocker - one) | other_color_blockers) & mask;
-}
-
-
 
 } // End namespace C2_chess

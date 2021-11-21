@@ -471,10 +471,5 @@ uint64_t Bitboard_with_utils::to_anti_diagonal(uint64_t square)
   return Bitboard::to_anti_diagonal(square);
 }
 
-uint64_t Bitboard_with_utils::popright_square(uint64_t &squares)
-{
-  return Bitboard::popright_square(squares);
-}
-
 } // End namespace C2_chess
 
