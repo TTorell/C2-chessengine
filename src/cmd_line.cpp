@@ -3,7 +3,7 @@
 #include "chessfuncs.hpp"
 #include "piece.hpp"
 #include "square.hpp"
-#include "board.hpp"
+#include "bitboard.hpp"
 #include "game.hpp"
 #include "current_time.hpp"
 #include "position_reader.hpp"
@@ -162,6 +162,41 @@ void play_on_cmd_line(Config_params& config_params)
   }
 }
 
+int Player::make_a_move(uint8_t& move_no, float& score, const uint8_t& max_search_level)
+{
+  if (_type == playertype::human)
+  {
+    return _chessboard.make_move(playertype::human, move_no);
+  }
+  else // _type == computer
+  {
+    int8_t best_move_index;
+    float alpha = -100, beta = 100;
+    _chessboard.clear_hash();
+    _chessboard.init_material_evaluation();
+    if (_color == col::white)
+    {
+      score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level);
+      if (best_move_index == -1 && score == -100.0)
+      {
+        std::cout << "White was check mated." << std::endl; // TODO
+        return 0;
+      }
+    }
+    else
+    {
+      score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level);
+      if (best_move_index == -1 && score == 100.0)
+      {
+        std::cout << "Black was check mated." << std::endl; // TODO
+        return 0;
+      }
+    }
+    _chessboard.make_move(static_cast<uint8_t>(best_move_index), move_no);
+    return 0;
+  }
+}
+
 // This method is for the cmd-line interface only
 void Game::start()
 {
@@ -208,7 +243,7 @@ void Game::start()
 }
 
 // This method is only for the cmd-line interface
-int Board::make_move(playertype player, int &move_no, col col_to_move)
+int Bitboard::make_move(playertype player, int &move_no, col col_to_move)
 {
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
 

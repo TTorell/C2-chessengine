@@ -189,62 +189,62 @@ TEST_CASE("Castling_wrights")
 TEST_CASE("Bitboard between")
 {
   Bitboard_with_utils chessboard;
-  uint64_t squares = chessboard.between(e8_square, e1_square, e_file | row_8);
+  uint64_t squares = between(e8_square, e1_square, e_file | row_8);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (e_file ^ (e8_square | e1_square)));
-  squares = chessboard.between(e1_square, e8_square, e_file | row_1);
+  squares = between(e1_square, e8_square, e_file | row_1);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (e_file ^ (e8_square | e1_square)));
-  squares = chessboard.between(a1_square, a8_square, a_file | row_1);
+  squares = between(a1_square, a8_square, a_file | row_1);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (a_file ^ (a8_square | a1_square)));
-  squares = chessboard.between(a8_square, a1_square, a_file | row_8);
+  squares = between(a8_square, a1_square, a_file | row_8);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (a_file ^ (a8_square | a1_square)));
-  squares = chessboard.between(a8_square, a7_square, a_file | row_8);
+  squares = between(a8_square, a7_square, a_file | row_8);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
-  squares = chessboard.between(a7_square, a8_square, a_file | row_7);
+  squares = between(a7_square, a8_square, a_file | row_7);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
-  squares = chessboard.between(a1_square, b1_square, a_file | row_1);
+  squares = between(a1_square, b1_square, a_file | row_1);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
-  squares = chessboard.between(b1_square, a1_square, b_file | row_1);
+  squares = between(b1_square, a1_square, b_file | row_1);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
-  squares = chessboard.between(a1_square, h1_square, a_file | row_1);
+  squares = between(a1_square, h1_square, a_file | row_1);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (row_1 ^ (a1_square | h1_square)));
-  squares = chessboard.between(h1_square, a1_square, h_file | row_1);
+  squares = between(h1_square, a1_square, h_file | row_1);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (row_1 ^ (a1_square | h1_square)));
-  squares = chessboard.between(c7_square, e7_square, c_file | row_7);
+  squares = between(c7_square, e7_square, c_file | row_7);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == d7_square);
-  squares = chessboard.between(e7_square, c7_square, e_file | row_7);
+  squares = between(e7_square, c7_square, e_file | row_7);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == d7_square);
-  uint64_t a1_diag = chessboard.to_diagonal(a1_square);
+  uint64_t a1_diag = to_diagonal(a1_square);
   REQUIRE(a1_diag == diagonal[7]);
-  uint64_t a1_anti_diag = chessboard.to_anti_diagonal(a1_square);
+  uint64_t a1_anti_diag = to_anti_diagonal(a1_square);
   REQUIRE(a1_anti_diag == anti_diagonal[0]);
-  squares = chessboard.between(a1_square, h8_square, chessboard.to_diagonal(a1_square) | chessboard.to_anti_diagonal(a1_square), true);
+  squares = between(a1_square, h8_square, to_diagonal(a1_square) | to_anti_diagonal(a1_square), true);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (diagonal[7] ^ (a1_square | h8_square)));
-  squares = chessboard.between(h8_square, a1_square, chessboard.to_diagonal(h8_square) | chessboard.to_anti_diagonal(h8_square), true);
+  squares = between(h8_square, a1_square, to_diagonal(h8_square) | to_anti_diagonal(h8_square), true);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (diagonal[7] ^ (a1_square | h8_square)));
-  squares = chessboard.between(a8_square, h1_square, chessboard.to_diagonal(a8_square) | chessboard.to_anti_diagonal(a8_square), true);
+  squares = between(a8_square, h1_square, to_diagonal(a8_square) | to_anti_diagonal(a8_square), true);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (anti_diagonal[7] ^ (a8_square | h1_square)));
-  squares = chessboard.between(h1_square, a8_square, chessboard.to_diagonal(h1_square) | chessboard.to_anti_diagonal(h1_square), true);
+  squares = between(h1_square, a8_square, to_diagonal(h1_square) | to_anti_diagonal(h1_square), true);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (anti_diagonal[7] ^ (a8_square | h1_square)));
-  squares = chessboard.between(h1_square, g2_square, chessboard.to_diagonal(h1_square) | chessboard.to_anti_diagonal(h1_square), true);
+  squares = between(h1_square, g2_square, to_diagonal(h1_square) | to_anti_diagonal(h1_square), true);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
-  squares = chessboard.between(g2_square, h1_square, chessboard.to_diagonal(g2_square) | chessboard.to_anti_diagonal(g2_square), true);
+  squares = between(g2_square, h1_square, to_diagonal(g2_square) | to_anti_diagonal(g2_square), true);
   // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == zero);
 }
@@ -278,10 +278,10 @@ TEST_CASE("popright_square")
 TEST_CASE("ortogonal_squares")
 {
   Bitboard_with_utils chessboard;
-  REQUIRE((chessboard.ortogonal_squares(e4_square) ^ (e_file | row_4)) == zero);
-  REQUIRE((chessboard.ortogonal_squares(a1_square) ^ (a_file | row_1)) == zero);
-  REQUIRE((chessboard.ortogonal_squares(h8_square) ^ (h_file | row_8)) == zero);
-  REQUIRE((chessboard.ortogonal_squares(a8_square) ^ (a_file | row_8)) == zero);
+  REQUIRE((ortogonal_squares(e4_square) ^ (e_file | row_4)) == zero);
+  REQUIRE((ortogonal_squares(a1_square) ^ (a_file | row_1)) == zero);
+  REQUIRE((ortogonal_squares(h8_square) ^ (h_file | row_8)) == zero);
+  REQUIRE((ortogonal_squares(a8_square) ^ (a_file | row_8)) == zero);
 }
 
 TEST_CASE("find_legal_squares")

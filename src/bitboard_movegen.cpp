@@ -704,7 +704,7 @@ void Bitboard::find_checkers_and_pinned_pieces()
   }
 }
 
-bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking)
+bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking) const
 {
   uint64_t possible_attackers;
   uint64_t attacker;

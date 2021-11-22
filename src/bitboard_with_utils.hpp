@@ -10,7 +10,6 @@
 #include <fstream>
 #include <vector>
 #include <string>
-
 #include "bitboard.hpp"
 
 namespace C2_chess
@@ -28,6 +27,8 @@ class Bitboard_with_utils: public Bitboard
     bool run_mg_test_case(int testnum, const std::string& FEN_string);
     std::vector<std::string> convert_moves_to_UCI(const std::vector<std::string>& moves, col col_to_move);
   public:
+    Bitboard_with_utils();
+//    explicit Bitboard_with_utils(const Bitboard& board){ (*dynamic_cast<Bitboard*>(this)) = board;}
     uint8_t get_castling_rights() const {return _castling_rights;}
     uint64_t get_hash_tag() const { return _hash_tag;}
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
@@ -38,11 +39,8 @@ class Bitboard_with_utils: public Bitboard
     bool bitboard_tests(const std::string& arg);
     uint64_t find_legal_squares(uint64_t sq, uint64_t mask, uint64_t all_pieces, uint64_t other_pieces);
     void make_move(const std::string& UCI_move);
-    uint64_t ortogonal_squares(uint64_t square);
-    uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diagonals = false);
-    uint64_t to_diagonal(uint64_t square);
-    uint64_t to_anti_diagonal(uint64_t square);
-    uint64_t popright_square(uint64_t &squares);
+    void init_board_hash_tag();
+    float evaluate_position(col col_to_move, outputtype ot, uint8_t level) const;
 };
 
 } // End namespace C2_chess

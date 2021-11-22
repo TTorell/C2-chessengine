@@ -2,12 +2,14 @@
 #define _GAME
 
 #include "player.hpp"
-#include "board.hpp"
+#include "bitboard_with_utils.hpp"
 #include "movelist.hpp"
 #include "pgn_info.hpp"
+#include "shared_ostream.hpp"
 
 namespace C2_chess
 {
+std::string initial_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 class Config_params;
 class Castling_state;
 
@@ -15,7 +17,7 @@ class Game {
   protected:
     bool _is_first_position;
     Movelog _move_log;
-    Board _chessboard;
+    Bitboard_with_utils _chessboard;
     Player _player1;
     Player _player2;
     Player* _player[2];
@@ -54,7 +56,7 @@ class Game {
     void set_col_to_move(col c);
     void set_move_log_col_to_start(col c);
     void set_castling_state(const Castling_state &cs);
-    void put_piece(Piece* const p, int file, int rank);
+//    void put_piece(Piece* const p, int file, int rank);
     void set_en_passant_square(int file, int rank);
     void set_half_move_counter(int half_move_counter);
     void set_moveno(int moveno);

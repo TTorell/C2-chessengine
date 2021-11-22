@@ -74,21 +74,28 @@ constexpr uint64_t queen_side = a_file | b_file | c_file | d_file;
 constexpr uint64_t lower_board_half = row_1 | row_2 | row_3 | row_4;
 constexpr uint64_t upper_board_half = row_5 | row_6 | row_7 | row_8;
 
+
 // Squares, some are only used in the unit-test program
 // and some may not be used at all.
 constexpr uint64_t a1_square = a_file & row_1;
 constexpr uint64_t a7_square = a_file & row_7;
 constexpr uint64_t a8_square = a_file & row_8;
 constexpr uint64_t b1_square = b_file & row_1;
+constexpr uint64_t b8_square = b_file & row_8;
+constexpr uint64_t c1_square = c_file & row_1;
 constexpr uint64_t c2_square = c_file & row_2;
+constexpr uint64_t c8_square = c_file & row_8;
 constexpr uint64_t c7_square = c_file & row_7;
 constexpr uint64_t d1_square = d_file & row_1;
+constexpr uint64_t d4_square = d_file & row_4;
+constexpr uint64_t d5_square = d_file & row_5;
 constexpr uint64_t d7_square = d_file & row_7;
 constexpr uint64_t d8_square = d_file & row_8;
 constexpr uint64_t e1_square = e_file & row_1;
 constexpr uint64_t e2_square = e_file & row_2;
 constexpr uint64_t e3_square = e_file & row_3;
 constexpr uint64_t e4_square = e_file & row_4;
+constexpr uint64_t e5_square = e_file & row_5;
 constexpr uint64_t e6_square = e_file & row_6;
 constexpr uint64_t e7_square = e_file & row_7;
 constexpr uint64_t e8_square = e_file & row_8;
@@ -96,9 +103,20 @@ constexpr uint64_t f1_square = f_file & row_1;
 constexpr uint64_t f2_square = f_file & row_2;
 constexpr uint64_t f7_square = f_file & row_7;
 constexpr uint64_t f8_square = f_file & row_8;
+constexpr uint64_t g1_square = g_file & row_1;
 constexpr uint64_t g2_square = g_file & row_2;
+constexpr uint64_t g8_square = g_file & row_8;
 constexpr uint64_t h1_square = h_file & row_1;
 constexpr uint64_t h8_square = h_file & row_8;
+
+constexpr uint64_t center_squares = d4_square | d5_square | e4_square| e5_square;
+
+constexpr uint64_t rook_initial_squares_white = a1_square | h1_square;
+constexpr uint64_t rook_initial_squares_black = a8_square | h8_square;
+constexpr uint64_t knight_initial_squares_white = b1_square | g1_square;
+constexpr uint64_t knight_initial_squares_black = b8_square | g8_square;
+constexpr uint64_t bishop_initial_squares_white = c1_square | f1_square;
+constexpr uint64_t bishop_initial_squares_black = c8_square | f8_square;
 
 // Square-patterns which can be shifted to a specific square:
 // King-moves, with the king placed at e4
@@ -229,6 +247,90 @@ inline uint64_t popleft_square(uint64_t& squares)
   squares ^= sq;
   return sq;
 }
+inline uint64_t to_file(uint64_t square)
+{
+  return file[file_idx(square)];
+}
+
+inline uint64_t to_rank(uint64_t square)
+{
+  return rank[rank_idx(square)];
+}
+
+inline uint64_t to_diagonal(uint64_t square)
+{
+  return diagonal[8 - rank_idx(square) + file_idx(square)];
+}
+
+inline uint64_t to_diagonal(uint8_t f_idx, uint8_t r_idx)
+{
+  assert(f_idx < 8 && r_idx <= 8 && r_idx > 0);
+  return diagonal[8 - r_idx + f_idx];
+}
+
+inline uint64_t to_anti_diagonal(uint64_t square)
+{
+  return anti_diagonal[file_idx(square) + rank_idx(square) - 1];
+}
+
+inline uint64_t to_anti_diagonal(uint8_t f_idx, uint8_t r_idx)
+{
+  assert(f_idx < 8 && r_idx <= 8 && r_idx > 0);
+  return anti_diagonal[f_idx + r_idx - 1];
+}
+
+// Precondition: sq1 and sq2 must be on the same file, rank, diagonal or antidiagonal.
+inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diagonals = false)
+{
+  assert(squares);
+  uint64_t common_squares;
+  if (diagonals)
+    common_squares = squares & (to_diagonal(sq2) | to_anti_diagonal(sq2));
+  else
+    common_squares = squares & (to_file(sq2) | to_rank(sq2));
+  if (sq1 > sq2)
+    return common_squares & ((sq1 - one) ^ ((sq2 << 1) - one));
+  else
+    return common_squares & ((sq2 - one) ^ ((sq1 << 1) - one));
+}
+
+//inline uint8_t popright_bit_idx(uint64_t& squares)
+//{
+//  assert(squares);
+//  // uint8_t idx = std::countr_zero(squares);
+//  uint8_t idx = __builtin_ctzll(squares);
+//  squares &= (squares - 1);
+//  return idx;
+//}
+
+inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
+{
+  assert(pattern && std::has_single_bit(center_square));
+  uint64_t squares;
+  int shift = bit_idx(center_square) - e4_square_idx;
+  squares = (shift >= 0) ? (pattern << shift) : (pattern >> -shift);
+  // Remove squares in the pattern which may have
+  // been shifted over to the other side of the board.
+  // (the pattern is max 5 bits wide, so we can remove
+  // two files regardless of if center_square is on a-,
+  // or b-file etc).
+  if (to_file(center_square) & a_b_files)
+    squares &= not_g_h_files;
+  else if (to_file(center_square) & g_h_files)
+    squares &= not_a_b_files;
+  return squares;
+}
+
+inline uint64_t ortogonal_squares(uint64_t square)
+{
+  uint8_t b_idx = bit_idx(square);
+  return file[file_idx(b_idx)] | rank[rank_idx(b_idx)];
+}
+
+inline uint64_t diagonal_squares(uint64_t square)
+{
+  return to_diagonal(square) | to_anti_diagonal(square);
+}
 
 // In Stockfish-style I put the essential move-info in the lowest 16 bits of move,
 // but I also use some of the higher 16 bits for extra information which can be useful
@@ -297,7 +399,7 @@ class Bitboard
 {
   protected:
     // Static declarations, incomplete type.
-    static Zobrist_bitboard_hash bb_hash_table;
+    static Zobrist_bitboard_hash transposition_table;
     static Bitboard level_boards[];
     static std::atomic<bool> time_left;
 
@@ -305,6 +407,7 @@ class Bitboard
     std::deque<BitMove> _movelist;
     col _col_to_move = col::white;
     uint8_t _castling_rights = castling_rights_none;
+    bool _has_castled[2];
     uint64_t _ep_square = zero;
     float _material_diff;
 
@@ -319,91 +422,6 @@ class Bitboard
 
     // Basic Bitboard_functions
     // ------------------------
-
-    inline uint64_t to_file(uint64_t square)
-    {
-      return file[file_idx(square)];
-    }
-
-    inline uint64_t to_rank(uint64_t square)
-    {
-      return rank[rank_idx(square)];
-    }
-
-    inline uint64_t to_diagonal(uint64_t square)
-    {
-      return diagonal[8 - rank_idx(square) + file_idx(square)];
-    }
-
-    inline uint64_t to_diagonal(uint8_t f_idx, uint8_t r_idx)
-    {
-      assert(f_idx < 8 && r_idx <= 8 && r_idx > 0);
-      return diagonal[8 - r_idx + f_idx];
-    }
-
-    inline uint64_t to_anti_diagonal(uint64_t square)
-    {
-      return anti_diagonal[file_idx(square) + rank_idx(square) - 1];
-    }
-
-    inline uint64_t to_anti_diagonal(uint8_t f_idx, uint8_t r_idx)
-    {
-      assert(f_idx < 8 && r_idx <= 8 && r_idx > 0);
-      return anti_diagonal[f_idx + r_idx - 1];
-    }
-
-    // Precondition: sq1 and sq2 must be on the same file, rank, diagonal or antidiagonal.
-    inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diagonals = false)
-    {
-      assert(squares);
-      uint64_t common_squares;
-      if (diagonals)
-        common_squares = squares & (to_diagonal(sq2) | to_anti_diagonal(sq2));
-      else
-        common_squares = squares & (to_file(sq2) | to_rank(sq2));
-      if (sq1 > sq2)
-        return common_squares & ((sq1 - one) ^ ((sq2 << 1) - one));
-      else
-        return common_squares & ((sq2 - one) ^ ((sq1 << 1) - one));
-    }
-
-    //inline uint8_t popright_bit_idx(uint64_t& squares)
-    //{
-    //  assert(squares);
-    //  // uint8_t idx = std::countr_zero(squares);
-    //  uint8_t idx = __builtin_ctzll(squares);
-    //  squares &= (squares - 1);
-    //  return idx;
-    //}
-
-    inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
-    {
-      assert(pattern && std::has_single_bit(center_square));
-      uint64_t squares;
-      int shift = bit_idx(center_square) - e4_square_idx;
-      squares = (shift >= 0) ? (pattern << shift) : (pattern >> -shift);
-      // Remove squares in the pattern which may have
-      // been shifted over to the other side of the board.
-      // (the pattern is max 5 bits wide, so we can remove
-      // two files regardless of if center_square is on a-,
-      // or b-file etc).
-      if (to_file(center_square) & a_b_files)
-        squares &= not_g_h_files;
-      else if (to_file(center_square) & g_h_files)
-        squares &= not_a_b_files;
-      return squares;
-    }
-
-    inline uint64_t ortogonal_squares(uint64_t square)
-    {
-      uint8_t b_idx = bit_idx(square);
-      return file[file_idx(b_idx)] | rank[rank_idx(b_idx)];
-    }
-
-    inline uint64_t diagonal_squares(uint64_t square)
-    {
-      return to_diagonal(square) | to_anti_diagonal(square);
-    }
 
     void init_piece_state();
 
@@ -446,7 +464,7 @@ class Bitboard
 
     void find_checkers_and_pinned_pieces();
 
-    bool square_is_threatened(uint64_t square, bool King_is_asking);
+    bool square_is_threatened(uint64_t square, bool King_is_asking) const;
 
     bool square_is_threatened2(uint64_t to_square, bool King_is_asking);
 
@@ -469,7 +487,7 @@ class Bitboard
 
     inline void place_piece(piecetype p_type, uint64_t square);
 
-//    inline int ep_file();
+    //    inline int ep_file();
 
     inline void clear_ep_square();
 
@@ -485,15 +503,49 @@ class Bitboard
 
     inline piecetype get_piece_type(uint64_t square);
 
-  public:
+    // Methods for searching for the best move
+    // ---------------------------------------
+
+    void count_pawns_in_centre(float &sum, float weight) const;
+    void count_castling(float &sum, float weight) const;
+    void count_development(float &sum, float weight) const;
+    void count_center_control(float &sum, float weight) const;
+    int count_threats_to_square(uint64_t square, col color) const;
+    float evaluate_position(col for_color, outputtype output_type, uint8_t level) const;
+    public:
 
     Bitboard();
+    Bitboard(const Bitboard& b);
+
+    float max(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
+
+    float min(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
+
+    Bitboard& operator=(const Bitboard& from);
 
     int read_position(const std::string& FEN_string);
 
+    void setup_initial_position();
+
     void find_all_legal_moves();
 
-    void make_move(int i);
+    void make_move(uint8_t i, uint8_t& move_no);
+
+    int make_move(playertype player_type, uint8_t move_no);
+
+    void make_move(const BitMove& m, uint8_t& move_no);
+
+    void set_time_left(bool value);
+
+    static void start_timer(const std::string& max_search_time);
+
+    void start_timer_thread(const std::string& max_search_time);
+
+    bool has_time_left();
+
+    void clear_hash();
+
+    void init_material_evaluation();
 
 };
 

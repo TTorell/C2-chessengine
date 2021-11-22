@@ -17,7 +17,7 @@
 namespace C2_chess
 {
 
-struct bitboard_hash_element
+struct TT_element
 {
     int best_move_index;
     float evaluation;
@@ -28,7 +28,8 @@ class Zobrist_bitboard_hash
 {
   private:
     friend class Bitboard;
-    std::unordered_map<unsigned long, bitboard_hash_element> _hash_map;
+    friend class Bitboard_with_utils;
+    std::unordered_map<unsigned long, TT_element> _hash_map;
     unsigned long _random_table[64][2][6]; // square_index, piece_color, piece_type
     unsigned long _en_passant_file[8];
     unsigned long _castling_rights[16]; // we only use index 1, 2, 4 and 8
@@ -73,7 +74,7 @@ class Zobrist_bitboard_hash
     // it returns a reference to a new empty (default allocated)
     // hash_element connected to the hash_tag.
     // So it can be used for both searching and inserting.
-    bitboard_hash_element& find(unsigned long hash_tag)
+    TT_element& find(unsigned long hash_tag)
     {
       return _hash_map[hash_tag];
     }

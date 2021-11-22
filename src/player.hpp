@@ -2,6 +2,7 @@
 #define _PLAYER
 
 #include "chesstypes.hpp"
+#include "bitboard.hpp"
 
 namespace C2_chess
 {
@@ -10,15 +11,15 @@ class Board;
 
 class Player {
   protected:
-    Board &_chessboard;
+    Bitboard& _chessboard;
     playertype _type;
-    col _colour;
+    col _color;
     col _other_col;
 
   public:
-    Player(playertype p, col c, Board &chessboard);
+    Player(playertype p, col c, Bitboard& chessboard);
     ~Player();
-    int make_a_move(int &moveno, float &score, const int &search_level);
+    int make_a_move(uint8_t& move_no, float& score, const uint8_t& max_search_level);
     col color() const;
     void color(col tc);
     playertype type() const;

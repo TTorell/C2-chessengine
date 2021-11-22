@@ -5,17 +5,14 @@
  *      Author: torsten
  */
 
-
 #include "bitboard.hpp"
 #include "chesstypes.hpp"
 #include "zobrist_bitboard_hash.hpp"
 
-
 namespace C2_chess
 {
 
-
-Zobrist_bitboard_hash Bitboard::bb_hash_table;
+Zobrist_bitboard_hash Bitboard::transposition_table;
 
 inline void Bitboard::add_promotion_piece(piecetype p_type)
 {
@@ -218,27 +215,27 @@ inline void Bitboard::remove_castling_right(uint8_t cr)
   if (_castling_rights & cr)
   {
     _castling_rights ^= cr;
-    _hash_tag ^= bb_hash_table._castling_rights[cr];
+    _hash_tag ^= transposition_table._castling_rights[cr];
   }
 }
 
 inline void Bitboard::clear_ep_square()
 {
-  _hash_tag ^= bb_hash_table._en_passant_file[to_file(_ep_square)];
+  _hash_tag ^= transposition_table._en_passant_file[to_file(_ep_square)];
   _ep_square = zero;
 }
 
 inline void Bitboard::set_ep_square(uint64_t ep_square)
 {
   _ep_square = ep_square;
-  _hash_tag ^= bb_hash_table._en_passant_file[to_file(_ep_square)];
+  _hash_tag ^= transposition_table._en_passant_file[to_file(_ep_square)];
 }
 
 // Set a "unique" hash tag for the position after
 // adding or removing one piece from a square.
 inline void Bitboard::update_hash_tag(uint64_t square, col p_color, piecetype p_type)
 {
-  _hash_tag ^= bb_hash_table._random_table[bit_idx(square)][index(p_color)][index(p_type)];
+  _hash_tag ^= transposition_table._random_table[bit_idx(square)][index(p_color)][index(p_type)];
 }
 
 // Set a "unique" hash tag for the position after
@@ -246,8 +243,8 @@ inline void Bitboard::update_hash_tag(uint64_t square, col p_color, piecetype p_
 // the same piece on an empty square.
 inline void Bitboard::update_hash_tag(uint64_t square1, uint64_t square2, col p_color, piecetype p_type)
 {
-  _hash_tag ^= (bb_hash_table._random_table[bit_idx(square1)][index(p_color)][index(p_type)] ^
-                bb_hash_table._random_table[bit_idx(square2)][index(p_color)][index(p_type)]);
+  _hash_tag ^= (transposition_table._random_table[bit_idx(square1)][index(p_color)][index(p_type)] ^
+                transposition_table._random_table[bit_idx(square2)][index(p_color)][index(p_type)]);
 }
 
 void Bitboard::update_col_to_move()
@@ -263,7 +260,7 @@ void Bitboard::update_col_to_move()
     _own = &_black_pieces;
     _other = &_white_pieces;
   }
-  _hash_tag ^= bb_hash_table._black_to_move;
+  _hash_tag ^= transposition_table._black_to_move;
 }
 
 inline void Bitboard::update_state_after_king_move(const BitMove& m)
@@ -315,13 +312,17 @@ inline void Bitboard::update_state_after_king_move(const BitMove& m)
   }
 }
 
+void Bitboard::make_move(uint8_t i, uint8_t& move_no)
+{
+  make_move(_movelist[i], move_no);
+}
+
 // Move a piece
 // Preconditions:
 //   i < movelist.size()
 //   the move must be valid
-void Bitboard::make_move(int i)
+void Bitboard::make_move(const BitMove& m, uint8_t& move_no)
 {
-  BitMove m = _movelist[i];
   uint64_t to_square = m.to();
   uint64_t from_square = m.from();
 
@@ -433,9 +434,10 @@ void Bitboard::make_move(int i)
     }
   }
   update_col_to_move();
+  move_no++;
   find_all_legal_moves();
 }
 
-} // namespace C2_chess
-
+}
+// namespace C2_chess
 

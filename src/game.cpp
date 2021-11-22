@@ -9,6 +9,7 @@
 #include "chessfuncs.hpp"
 #include "config_param.hpp"
 #include "shared_ostream.hpp"
+#include "bitboard_with_utils.hpp"
 
 namespace
 {
@@ -19,14 +20,22 @@ namespace C2_chess
 {
 
 Game::Game(Config_params& config_params):
-    _is_first_position(true), _move_log(), _chessboard(), _player1(playertype::human, col::white, _chessboard), _player2(playertype::computer, col::black, _chessboard), _moveno(1),
-    _col_to_move(col::white), _score(0), _pgn_info(), _config_params(config_params), _playing(false)
+    _is_first_position(true),
+    _move_log(),
+    _chessboard(),
+    _player1(playertype::human, col::white, _chessboard),
+    _player2(playertype::computer, col::black, _chessboard),
+    _moveno(1),
+    _col_to_move(col::white),
+    _score(0),
+    _pgn_info(),
+    _config_params(config_params),
+    _playing(false)
 {
   _player[index(col::white)] = &_player1;
   _player[index(col::black)] = &_player2;
-  _chessboard.setup_pieces();
-  _chessboard.init(_col_to_move);
-  _chessboard.calculate_moves(_col_to_move);
+  _chessboard.setup_initial_position();
+  _chessboard.find_all_legal_moves();
 }
 
 Game::Game(col color, Config_params& config_params):
@@ -55,13 +64,7 @@ Game::~Game()
 
 void Game::init()
 {
-  _chessboard.init(_col_to_move);
-  _chessboard.calculate_moves(_col_to_move);
-}
-
-void Game::clear_chessboard()
-{
-  _chessboard.clear();
+  _chessboard.find_all_legal_moves();
 }
 
 void Game::clear_move_log()
@@ -71,7 +74,8 @@ void Game::clear_move_log()
 
 void Game::setup_pieces()
 {
-  _chessboard.setup_pieces();
+
+  _chessboard.read_position(initial_position);
 }
 
 col Game::get_col_to_move() const
@@ -89,20 +93,20 @@ void Game::set_move_log_col_to_start(col color)
   _move_log.set_col_to_start(color);
 }
 
-void Game::set_castling_state(const Castling_state &cs)
-{
-  _chessboard.set_castling_state(cs);
-}
+//void Game::set_castling_state(const Castling_state &cs)
+//{
+//  _chessboard.set_castling_state(cs);
+//}
 
-void Game::put_piece(Piece *const p, int file, int rank)
-{
-  _chessboard.put_piece(p, file, rank);
-}
+//void Game::put_piece(Piece *const p, int file, int rank)
+//{
+//  _chessboard.put_piece(p, file, rank);
+//}
 
-void Game::set_en_passant_square(int file, int rank)
-{
-  _chessboard.set_enpassant_square(file, rank);
-}
+//void Game::set_en_passant_square(int file, int rank)
+//{
+//  _chessboard.set_enpassant_square(file, rank);
+//}
 
 void Game::set_half_move_counter(int half_move_counter)
 {
@@ -121,19 +125,20 @@ void Game::set_moveno(int moveno)
 
 std::ostream& Game::write_chessboard(std::ostream &os, outputtype ot, col from_perspective) const
 {
-  _chessboard.write(os, ot, from_perspective);
+  Bitboard_with_utils(_chessboard).write(os, ot, from_perspective);
   return os;
 }
 
 std::ostream& Game::write_diagram(std::ostream &os) const
 {
+  Bitboard_with_utils bwu(_chessboard);
   if (_player[index(col::white)]->type() == playertype::human)
-    _chessboard.write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
+    bwu.write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
   else if (_player[index(col::black)]->type() == playertype::human)
-    _chessboard.write(os, outputtype::cmd_line_diagram, col::black) << std::endl;
+    bwu.write(os, outputtype::cmd_line_diagram, col::black) << std::endl;
   else
     // The computer is playing itself
-    _chessboard.write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
+    bwu.write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
   return os;
 }
 
@@ -148,7 +153,7 @@ Shared_ostream& Game::write_diagram(Shared_ostream& sos) const
 
 void Game::init_board_hash_tag()
 {
-  _chessboard.init_board_hash_tag(_col_to_move);
+  _chessboard.init_board_hash_tag();
 }
 
 void Game::actions_after_a_move()
@@ -163,7 +168,7 @@ void Game::actions_after_a_move()
   write_diagram(logfile);
 
   // Change color to evaluate from opponents view.
-  _col_to_move = (_col_to_move == col::white) ? col::black : col::white;
+  _col_to_move = other_color(_col_to_move);
 
   float evaluation = _chessboard.evaluate_position(_col_to_move, outputtype::debug, 0);
   if (evaluation == eval_max || evaluation == eval_min)
