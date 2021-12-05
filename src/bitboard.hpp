@@ -9,17 +9,17 @@
 #define __BITBOARD
 
 #include <cstdint>
+#include <cstring>
+#include <cmath>
 #include <cassert>
 #include <ostream>
 #include <sstream>
 #include <bit>
 #include <bitset>
 #include <deque>
-#include <cmath>
 #include <atomic>
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
-#include "position.hpp"
 #include "zobrist_bitboard_hash.hpp"
 
 namespace C2_chess
@@ -74,7 +74,6 @@ constexpr uint64_t queen_side = a_file | b_file | c_file | d_file;
 constexpr uint64_t lower_board_half = row_1 | row_2 | row_3 | row_4;
 constexpr uint64_t upper_board_half = row_5 | row_6 | row_7 | row_8;
 
-
 // Squares, some are only used in the unit-test program
 // and some may not be used at all.
 constexpr uint64_t a1_square = a_file & row_1;
@@ -109,7 +108,7 @@ constexpr uint64_t g8_square = g_file & row_8;
 constexpr uint64_t h1_square = h_file & row_1;
 constexpr uint64_t h8_square = h_file & row_8;
 
-constexpr uint64_t center_squares = d4_square | d5_square | e4_square| e5_square;
+constexpr uint64_t center_squares = d4_square | d5_square | e4_square | e5_square;
 
 constexpr uint64_t rook_initial_squares_white = a1_square | h1_square;
 constexpr uint64_t rook_initial_squares_black = a8_square | h8_square;
@@ -332,52 +331,65 @@ inline uint64_t diagonal_squares(uint64_t square)
   return to_diagonal(square) | to_anti_diagonal(square);
 }
 
-// In Stockfish-style I put the essential move-info in the lowest 16 bits of move,
-// but I also use some of the higher 16 bits for extra information which can be useful
-// e.g. while printing a move during tests and so. Maybe I'll find out later why Stockfish
-// doesn't use those higher 16 bits. The general idea of keeping the move information
-// as packed as possible is probably for "cashing-reasons", I think. The movelist can
-// be fairly long in some positions.
 struct BitMove
 {
-    uint32_t move;
-    float evaluation;
+    uint32_t _move;
+    float _evaluation;
+    BitMove() :
+      _move(0),
+      _evaluation(0.0)
+    {
+    }
 
     BitMove(piecetype p_type,
             uint8_t move_props,
             uint64_t from_square,
             uint64_t to_square,
             piecetype promotion_pt = piecetype::Queen) :
-        move(0),
-        evaluation(0.0)
+        _move(0),
+        _evaluation(0.0)
     {
-      move = (index(p_type) << 24) + (move_props << 14) + (index(promotion_pt) << 12) + (bit_idx(from_square) << 6) + bit_idx(to_square);
+      _move = (index(p_type) << 24) | (move_props << 14) | (index(promotion_pt) << 12) | (bit_idx(from_square) << 6) | bit_idx(to_square);
+    }
+
+    bool operator==(const BitMove& move) const
+    {
+      if (from() == move.from() && to() == move.to() && piece_type() == move.piece_type())
+        return true;
+      return false;
     }
 
     uint64_t to() const
     {
-      return square(move & 0x3F);
+      return square(_move & 0x3F);
     }
 
     uint64_t from() const
     {
-      return square((move >> 6) & 0x3F);
+      return square((_move >> 6) & 0x3F);
     }
 
     piecetype promotion_piece_type() const
     {
-      return static_cast<piecetype>((move >> 12) & 0x03);
+      return static_cast<piecetype>((_move >> 12) & 0x03);
     }
 
     uint8_t properties() const
     {
-      return (move >> 14) & 0xFF;
+      return (_move >> 14) & 0xFF;
     }
 
     piecetype piece_type() const
     {
-      return static_cast<piecetype>(move >> 24);
+      return static_cast<piecetype>(_move >> 24);
     }
+
+    void add_property(uint8_t property)
+    {
+      uint32_t tmp = property;
+      _move &= tmp << 14;
+    }
+    friend std::ostream& operator<<(std::ostream& os, const BitMove& m);
 };
 
 struct Bitpieces
@@ -410,7 +422,7 @@ class Bitboard
     bool _has_castled[2];
     uint64_t _ep_square = zero;
     float _material_diff;
-
+    BitMove _last_move;
     uint64_t _checkers;
     uint64_t _pinners;
     uint64_t _pinned_pieces;
@@ -420,15 +432,15 @@ class Bitboard
     Bitpieces* _own;
     Bitpieces* _other;
 
-    // Basic Bitboard_functions
-    // ------------------------
+    // ### Protected basic Bitboard_functions ###
+    // ------------------------------------------
 
     void init_piece_state();
 
     inline void clear_movelist();
 
-    // Methods for move-generation
-    // ------------------------------
+    // ### Protected Methods for move-generation
+    // -----------------------------------------
 
     void find_long_castling();
 
@@ -470,8 +482,8 @@ class Bitboard
 
     inline void find_king_moves();
 
-    // Methods for make move
-    // ------------------------
+    // ### Protected methods for making a move ###
+    // ---------------------------------------
 
     inline void add_promotion_piece(piecetype p_type);
 
@@ -487,13 +499,11 @@ class Bitboard
 
     inline void place_piece(piecetype p_type, uint64_t square);
 
-    //    inline int ep_file();
-
     inline void clear_ep_square();
 
     inline void set_ep_square(uint64_t ep_square);
 
-    inline void update_hash_tag(uint64_t square, col p_color, piecetype type);
+    void update_hash_tag(uint64_t square, col p_color, piecetype p_type);
 
     inline void update_hash_tag(uint64_t square1, uint64_t square2, col p_color, piecetype type);
 
@@ -501,39 +511,105 @@ class Bitboard
 
     inline void update_state_after_king_move(const BitMove& m);
 
-    inline piecetype get_piece_type(uint64_t square);
+    // ### Protected methods for searching for the best move
+    // -----------------------------------------------------
 
-    // Methods for searching for the best move
-    // ---------------------------------------
-
-    void count_pawns_in_centre(float &sum, float weight) const;
-    void count_castling(float &sum, float weight) const;
-    void count_development(float &sum, float weight) const;
-    void count_center_control(float &sum, float weight) const;
+    void count_pawns_in_centre(float& sum, float weight) const;
+    void count_castling(float& sum, float weight) const;
+    void count_development(float& sum, float weight) const;
+    void count_center_control(float& sum, float weight) const;
     int count_threats_to_square(uint64_t square, col color) const;
     float evaluate_position(col for_color, outputtype output_type, uint8_t level) const;
-    public:
+
+  public:
 
     Bitboard();
     Bitboard(const Bitboard& b);
 
-    float max(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
-
-    float min(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
-
     Bitboard& operator=(const Bitboard& from);
 
+    // Clears thing which could matter when reading a new position
+    void clear()
+    {
+      std::memset(_own, 0, sizeof(Bitpieces));
+      std::memset(_other, 0, sizeof(Bitpieces));
+      std::memset(_has_castled, 0, 2*sizeof(bool));
+      _ep_square = zero;
+      _castling_rights = castling_rights_none;
+      _material_diff = 0.0;
+      _movelist.clear();
+    }
+
+    // Reads the position from a text-string, with some
+    // syntactic error-checking.
+    // Returns -1 if the text-string wasn't accepted.
     int read_position(const std::string& FEN_string);
 
-    void setup_initial_position();
-
+    // Puts all legal moves of the position in _movelist.
+    // (Naturally only the moves for the player who's in
+    // turn to make a move.)
     void find_all_legal_moves();
 
+    // ### Public methods for make move ###
+    // ------------------------------------
+
+    // Looks up the i:th move in movelist and makes it.
+    // move_no just keeps track of the full move number
+    // in the game.
     void make_move(uint8_t i, uint8_t& move_no);
 
-    int make_move(playertype player_type, uint8_t move_no);
+    // Only for the command-line interface, where the user
+    // is prompted to enter the new move on the keyboard,
+    // if he's on turn.
+    int make_move(playertype player_type, uint8_t& move_no);
 
+    // This make_move() doesn't require a defined movelist.
     void make_move(const BitMove& m, uint8_t& move_no);
+
+    // All properties of a move are not decided immediately,
+    // but some of them (check for instance) are set after the
+    // move has been made and the position has been initialized
+    // for the other player. So we save the move, until then,
+    // in _last_move. These move-properties are mostly for the
+    // presentation of the move in text, and unnecessary for
+    // other purposes.
+    BitMove last_move() const
+    {
+      return _last_move;
+    }
+
+    void set_mate()
+    {
+      _last_move.add_property(move_props_mate);
+    }
+
+    void set_stalemate()
+    {
+      _last_move.add_property(move_props_stalemate);
+    }
+
+    // The chess-engine keeps track of the game, which is
+    // not necessary, but nice to see in the log-files.
+    // For guessing the opponents last move (from the
+    // FEN-string in the "set position" UCI-command) we need
+    // to compare two positions and the following methods
+    // came in handy.
+    uint64_t all_pieces() const
+    {
+      return _all_pieces;
+    }
+
+    Bitpieces* other() const
+    {
+      return _other;
+    }
+
+    // A slow way of determining the piecetype of a piece on
+    // given square. Should not be used inside the search-loop.
+    piecetype get_piece_type(uint64_t square) const;
+
+    // ### Public methods for the search of best move. ###
+    // ---------------------------------------------------
 
     void set_time_left(bool value);
 
@@ -547,6 +623,14 @@ class Bitboard
 
     void init_material_evaluation();
 
+    // min() and max() are an attempt to implement the recursive
+    // min-max-with-alpha-beta-pruning-algorithm.
+    // They can most certainly be improved.
+    float max(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
+    float min(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
+
+    std::ostream& write_piece(std::ostream& os, uint64_t square) const;
+    std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;
 };
 
 } // namespace C2_chess

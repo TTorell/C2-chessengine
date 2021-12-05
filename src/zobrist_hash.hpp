@@ -38,11 +38,11 @@ class Zobrist_hash
       std::random_device rd;
       std::mt19937 mt(rd());
       std::uniform_real_distribution<double> dist(0, pow(2, 64));
-      for (int file = a; file <= h; file++)
-        for (int rank = 1; rank <= 8; rank++)
+      for (int file_idx = a; file_idx <= h; file_idx++)
+        for (int rank_idx = 1; rank_idx <= 8; rank_idx++)
           for (int col = index(col::white); col <= index(col::black); col++)
             for (int type = index(piecetype::King); type <= index(piecetype::Pawn); type++)
-              _random_table[file][rank][col][type] = round(dist(mt));
+              _random_table[file_idx][rank_idx][col][type] = round(dist(mt));
 
       for (int i = 0; i < 4; i++)
         _castling_rights[i] = round(dist(mt));

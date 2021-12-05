@@ -16,7 +16,7 @@ class Piece;
 class Board {
   protected:
     File _file[8];
-    Rank _rank[9];  // _rank[0] not used
+    Rank _rank[9]; // _rank[0] not used
     Move _last_move;
     Movelist _possible_moves;
     Castling_state _castling_state;
@@ -24,9 +24,10 @@ class Board {
     Square* _en_passant_square = 0;
     unsigned long _hash_tag;
     float _material_evaluation;
+
   public:
     static Zobrist_hash hash_table;
-    static Board level_boards[];  // declaration, incomplete type
+    static Board level_boards[]; // declaration, incomplete type
     Board();
     Board(const Board&);
     ~Board();
@@ -38,9 +39,9 @@ class Board {
     int init(col col_to_move);
     float evaluate_position(col col_to_move, outputtype ot, int level) const;
     std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;
-    std::ostream& write_cmdline_style(std::ostream &os, outputtype wt, col from_perspective) const;
+    std::ostream& write_cmdline_style(std::ostream& os, outputtype wt, col from_perspective) const;
     std::ostream& write_possible_moves(std::ostream& os, bool same_line = false) const;
-    void read_position(std::ifstream& positionfile, col& col_to_move);
+//    void read_position(std::ifstream& positionfile, col& col_to_move);
     void calculate_moves(col col_to_move);
     std::istream& operator>>(std::istream&);
     int make_move(int, int&, col col_to_move);
@@ -62,9 +63,9 @@ class Board {
     {
       _castling_state = cs;
     }
-    void set_enpassant_square(int file, int rank)
+    void set_enpassant_square(int file_idx, int rank_idx)
     {
-      _en_passant_square = _file[file][rank];
+      _en_passant_square = _file[file_idx][rank_idx];
     }
     void set_mate(bool is_mate)
     {
@@ -89,8 +90,8 @@ class Board {
 
     float max(int level, int move_no, float alpha, float beta, int& best_move_index, const int max_search_level) const;
     float min(int level, int move_no, float alpha, float beta, int& best_move_index, const int max_search_level) const;
-    float max_for_testing(int level, int move_no, float alpha, float beta, int &best_move_index, const int max_search_level, bool use_pruning, bool search_until_no_captures) const;
-    float min_for_testing(int level, int move_no, float alpha, float beta, int &best_move_index, const int max_search_level, bool use_pruning, bool search_until_no_captures) const;
+    float max_for_testing(int level, int move_no, float alpha, float beta, int& best_move_index, const int max_search_level, bool use_pruning, bool search_until_no_captures) const;
+    float min_for_testing(int level, int move_no, float alpha, float beta, int& best_move_index, const int max_search_level, bool use_pruning, bool search_until_no_captures) const;
 
     void set_time_diff_sum(uint64_t value);
     uint64_t get_time_diff_sum();
@@ -100,8 +101,8 @@ class Board {
     float get_material_evaluation();
     int figure_out_last_move(const Board& new_position, Move& m);
     int get_move_index(const Move& m) const;
+
   private:
-    bool read_piece_type(piecetype& pt, char c) const;
     bool en_passant(Piece*, Square*) const;
     void calculate_moves_K_not_threatened(col col_to_move);
     void fix_promotion_move(Move*);
@@ -122,7 +123,86 @@ class Board {
     void count_castling(float& sum, float weight, outputtype ot) const;
     bool is_end_node() const;
     void check_put_a_piece_on_square(int i, int j, col col_to_move);
-    void check_put_a_pawn_on_square(int file, int rank, col col_to_move);
+    void check_put_a_pawn_on_square(int file_idx, int rank_idx, col col_to_move)
+    {
+      Square* from_square;
+      Piece* piece;
+      switch (col_to_move)
+      {
+        case col::white:
+          // Check for one-square-pawn-moves
+          if (rank_idx > 2) // otherwise white can never move a pawn there.
+          {
+            from_square = _file[file_idx][rank_idx - 1];
+            piece = from_square->get_piece();
+            // Is there a piece and is it a white pawn?
+            if (piece && piece->is(col_to_move, piecetype::Pawn))
+            {
+              // Check that the pawn isn't pinned
+              if (from_square->in_movelist(_file[file_idx][rank_idx]))
+              {
+                std::unique_ptr<Move> m(new Move(from_square, _file[file_idx][rank_idx]));
+                _possible_moves.into(m.get());
+                return;
+              }
+            }
+          }
+          // White can only make two-squares-pawn-moves to rank 4
+          // and if the square in between is free.
+          if (rank_idx == 4)
+          {
+            from_square = _file[file_idx][rank_idx - 2];
+            piece = from_square->get_piece();
+            // Is there a piece and is it a white pawn?
+            if (piece && piece->is(col_to_move, piecetype::Pawn))
+            {
+              if (from_square->in_movelist(_file[file_idx][rank_idx]))
+              {
+                std::unique_ptr<Move> m(new Move(from_square, _file[file_idx][rank_idx]));
+                _possible_moves.into(m.get());
+                return;
+              }
+            }
+          }
+          break;
+        case col::black:
+          // Check for one-square-pawn-moves
+          if (rank_idx < 7) // otherwise black can never move a pawn there.
+          {
+            from_square = _file[file_idx][rank_idx + 1];
+            piece = from_square->get_piece();
+            // Is there a piece and is it a black pawn?
+            if (piece && piece->is(col_to_move, piecetype::Pawn))
+            {
+              // Check that the pawn isn't pinned
+              if (from_square->in_movelist(_file[file_idx][rank_idx]))
+              {
+                std::unique_ptr<Move> m(new Move(from_square, _file[file_idx][rank_idx]));
+                _possible_moves.into(m.get());
+                return;
+              }
+            }
+          }
+          if (rank_idx == 5)
+          {
+            // It could be that a black pawn can move two steps to this square.
+            from_square = _file[file_idx][rank_idx + 2];
+            piece = from_square->get_piece();
+            // Is there a piece and is it a black pawn?
+            if (piece && piece->is(col_to_move, piecetype::Pawn))
+            {
+              // Check that the pawn isn't pinned
+              if (from_square->in_movelist(_file[file_idx][rank_idx]))
+              {
+                std::unique_ptr<Move> m(new Move(from_square, _file[file_idx][rank_idx]));
+                _possible_moves.into(m.get());
+                return;
+              }
+            }
+          }
+          break;
+      }
+    }
     void check_rook_or_queen(Square* threat_square, Square* kings_square, col col_to_move);
     void check_bishop_or_queen(Square* threat_square, Square* kings_square, col col_to_move);
     void check_if_threat_can_be_captured_en_passant(col col_to_move, Square* threat_square);

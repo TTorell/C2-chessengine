@@ -1,7 +1,6 @@
 #include <random>
 #include "chesstypes.hpp"
 #include "player.hpp"
-#include "board.hpp"
 
 //    std::random_device rd; // obtain a random number from hardware
 //    std::mt19937 eng(rd()); // seed the generator
@@ -54,7 +53,7 @@ void Player::type(playertype t)
 }
 
 
-int Player::find_best_move_index(int& move_no, float& score, const int max_search_level, bool use_pruning, bool search_until_no_captures)
+int Player::find_best_move_index(uint8_t& move_no, float& score, const int max_search_level, bool use_pruning, bool search_until_no_captures)
 {
 // TODO: The playertype should of course have been set correctly
 // for a computer vs. computer game.

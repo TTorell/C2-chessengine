@@ -33,6 +33,7 @@ Bitboard::Bitboard() :
     _castling_rights(castling_rights_none),
     _ep_square(zero),
     _material_diff(0),
+    _last_move(),
     _checkers(zero),
     _pinners(zero),
     _pinned_pieces(zero),
@@ -51,6 +52,7 @@ Bitboard::Bitboard(const Bitboard& bb) :
     _castling_rights(bb._castling_rights),
     _ep_square(bb._ep_square),
     _material_diff(bb._material_diff),
+    _last_move(bb._last_move),
     _checkers(bb._checkers),
     _pinners(bb._pinners),
     _pinned_pieces(bb._pinned_pieces),
@@ -73,12 +75,23 @@ Bitboard& Bitboard::operator=(const Bitboard& from)
   _has_castled[1] = from._has_castled[1];
   _ep_square = from._ep_square;
   _material_diff = from._material_diff;
+  _last_move = from._last_move;
   _checkers = from._checkers;
   _pinners = from._pinners;
   _pinned_pieces = from._pinned_pieces;
   _all_pieces = from._all_pieces;
   _white_pieces = from._white_pieces;
   _black_pieces = from._black_pieces;
+  if (_col_to_move == col::white)
+  {
+    _own = &_white_pieces;
+    _other = &_black_pieces;
+  }
+  else
+  {
+    _own = &_black_pieces;
+    _other = &_white_pieces;
+  }
   return *this;
 }
 
@@ -98,6 +111,8 @@ int Bitboard::read_position(const std::string& FEN_string)
     std::cerr << "FEN-string: " << FEN_string << std::endl;
     return -1;
   }
+
+  clear();
 
   int ri = 8;
   int fi = a;
@@ -279,11 +294,12 @@ bool Bitboard::has_time_left()
 void Bitboard::set_time_left(bool value)
 {
   time_left = value;
+  std::cout << "time_left: " << time_left << std::endl;
 }
 
 void Bitboard::init_material_evaluation()
 {
-  const float weight = 0.95F;
+  const float weight = 1.0F;
   float sum = 0.0;
   sum += std::popcount(_white_pieces.Pawns) * weight;
   sum -= std::popcount(_black_pieces.Pawns) * weight;
@@ -300,7 +316,7 @@ void Bitboard::init_material_evaluation()
 
 void Bitboard::count_pawns_in_centre(float& sum, float weight) const
 {
-  sum += weight * (std::popcount(center_squares & _own->Pawns) - std::popcount(center_squares & _other->Pawns));
+  sum += weight * (std::popcount(center_squares & _white_pieces.Pawns) - std::popcount(center_squares & _black_pieces.Pawns));
 }
 
 void Bitboard::count_castling(float& sum, float weight) const
@@ -316,12 +332,12 @@ void Bitboard::count_castling(float& sum, float weight) const
 void Bitboard::count_development(float& sum, float weight) const
 {
   int counter = 0;
-  counter -= std::popcount(_own->Rooks & rook_initial_squares_white);
-  counter -= std::popcount(_own->Knights & knight_initial_squares_white);
-  counter -= std::popcount(_own->Bishops & bishop_initial_squares_white);
-  counter += std::popcount(_other->Rooks & rook_initial_squares_black);
-  counter += std::popcount(_other->Knights & knight_initial_squares_black);
-  counter += std::popcount(_other->Bishops & bishop_initial_squares_black);
+  counter -= std::popcount(_white_pieces.Rooks & rook_initial_squares_white);
+  counter -= std::popcount(_white_pieces.Knights & knight_initial_squares_white);
+  counter -= std::popcount(_white_pieces.Bishops & bishop_initial_squares_white);
+  counter += std::popcount(_black_pieces.Rooks & rook_initial_squares_black);
+  counter += std::popcount(_black_pieces.Knights & knight_initial_squares_black);
+  counter += std::popcount(_black_pieces.Bishops & bishop_initial_squares_black);
   sum += counter * weight;
 }
 
@@ -332,30 +348,30 @@ int Bitboard::count_threats_to_square(uint64_t to_square, col color) const
   uint64_t tmp_all_pieces = _all_pieces;
   uint8_t f_idx = file_idx(to_square);
 
-  const Bitpieces* piece_ptr = (color == col::white)? _own : _other;
+  const Bitpieces& pieces = (color == col::white)? _white_pieces : _black_pieces;
 
   int count = 0;
   // Check Pawn-threats
-  if (piece_ptr->Pawns)
+  if (pieces.Pawns)
   {
-    if ((f_idx != h) && (piece_ptr->Pawns & ((_col_to_move == col::white) ? to_square >> 9 : to_square << 7)))
+    if ((f_idx != h) && (pieces.Pawns & ((color == col::white) ? to_square << 7 : to_square >> 9)))
       count++;
-    if ((f_idx != a) && (piece_ptr->Pawns & ((_col_to_move == col::white) ? to_square >> 7 : to_square << 9)))
+    if ((f_idx != a) && (pieces.Pawns & ((color == col::white) ? to_square << 9 : to_square >> 7)))
       count++;
   }
 
   // Check Knight-threats
-  count += std::popcount((adjust_pattern(knight_pattern, to_square) & piece_ptr->Knights));
+  count += std::popcount((adjust_pattern(knight_pattern, to_square) & pieces.Knights));
 
-  // Check King (and adjacent Queen-threats)
-  count += std::popcount(adjust_pattern(king_pattern, to_square) & (piece_ptr->King | piece_ptr->Queens));
+  // Check King-threats
+  count += std::popcount(adjust_pattern(king_pattern, to_square) & pieces.King);
 
   // Check threats on file and rank
-  if (piece_ptr->Queens | piece_ptr->Rooks)
+  if (pieces.Queens | pieces.Rooks)
   {
     // Check threats on file and rank
     uint64_t to_ortogonal_squares = ortogonal_squares(to_square);
-    possible_attackers = to_ortogonal_squares & (piece_ptr->Queens | piece_ptr->Rooks);
+    possible_attackers = to_ortogonal_squares & (pieces.Queens | pieces.Rooks);
     while (possible_attackers)
     {
       attacker = popright_square(possible_attackers);
@@ -365,10 +381,10 @@ int Bitboard::count_threats_to_square(uint64_t to_square, col color) const
   }
 
   // Check diagonal threats
-  if (piece_ptr->Queens | piece_ptr->Bishops)
+  if (pieces.Queens | pieces.Bishops)
   {
     uint64_t to_diagonal_squares = diagonal_squares(to_square);
-    possible_attackers = to_diagonal_squares & (piece_ptr->Queens | piece_ptr->Bishops);
+    possible_attackers = to_diagonal_squares & (pieces.Queens | pieces.Bishops);
     while (possible_attackers)
     {
       attacker = popright_square(possible_attackers);
@@ -433,6 +449,9 @@ float Bitboard::max(uint8_t level, uint8_t move_no, float alpha, float beta, int
   // from min(). It doesn't matter what you put in.
   best_move_index = -1;
   level++;
+
+  std::cout << "MAX " << "_col_to_move: " << static_cast<int>(_col_to_move) << " time_left: " <<
+      time_left << " level: " << static_cast<int>(level) << std::endl;
 
   // Check if position evaluation is already in the hash_table
   TT_element& element = transposition_table.find(_hash_tag);
@@ -504,15 +523,18 @@ float Bitboard::max(uint8_t level, uint8_t move_no, float alpha, float beta, int
   }
 }
 
-// min() is naturally very similar to max, but occasionally reversed,
-// so I've not supplied any comments on this function. See max().
+// min() is naturally very similar to max, but reversed when it comes to evaluations,
+// so I've not supplied many comments on this function. See max().
 float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const
 {
   float min_value = 101.0;
   int8_t dummy_index;
   best_move_index = -1;
   level++;
-  // Check if position evaluation is already in the hash_table
+
+  std::cout << "MIN " << "_col_to_move: " << static_cast<int>(_col_to_move) << " time_left: " <<
+      time_left << " level: " << static_cast<int>(level) << std::endl;
+
   TT_element& element = transposition_table.find(_hash_tag);
   if (element.level != 0)
   {
@@ -533,7 +555,10 @@ float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int
   {
     for (uint8_t i = 0; i < static_cast<uint8_t>(_movelist.size()); i++)
     {
+      if (level == 5)
+        std::cout << "level 5" << std::endl;
       level_boards[level] = *this;
+      level_boards[level].write(std::cout, outputtype::cmd_line_diagram, col::white);
       level_boards[level].make_move(_movelist[i], move_no);
       float tmp_value = level_boards[level].max(level, move_no, alpha, beta, dummy_index, max_search_level);
       if (tmp_value < min_value)
@@ -558,8 +583,89 @@ float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int
     element = {best_move_index,
                min_value,
                level};
+    std::cout << "best_move_index: " << static_cast<int>(best_move_index) << " min_value: " << min_value << " level: " << static_cast<int>(level) << std::endl;
     return min_value;
   }
+}
+
+inline std::ostream& Bitboard::write_piece(std::ostream& os, uint64_t square) const
+{
+  if (square & _white_pieces.King)
+    os << "\u2654";
+  else if (square & _white_pieces.Queens)
+    os << "\u2655";
+  else if (square & _white_pieces.Rooks)
+    os << "\u2656";
+  else if (square & _white_pieces.Bishops)
+    os << "\u2657";
+  else if (square & _white_pieces.Knights)
+    os << "\u2658";
+  else if (square & _white_pieces.Pawns)
+    os << "\u2659";
+  else if (square & _black_pieces.King)
+    os << "\u265A";
+  else if (square & _black_pieces.Queens)
+    os << "\u265B";
+  else if (square & _black_pieces.Rooks)
+    os << "\u265C";
+  else if (square & _black_pieces.Bishops)
+    os << "\u265D";
+  else if (square & _black_pieces.Knights)
+    os << "\u265E";
+  else if (square & _black_pieces.Pawns)
+    os << "\u265F";
+  return os;
+}
+
+std::ostream& Bitboard::write(std::ostream& os, outputtype wt, col from_perspective) const
+{
+  uint64_t _W_pieces = _white_pieces.King | _white_pieces.Queens | _white_pieces.Rooks | _white_pieces.Bishops | _white_pieces.Knights | _white_pieces.Pawns;
+  uint64_t _B_pieces = _black_pieces.King | _black_pieces.Queens | _black_pieces.Rooks | _black_pieces.Bishops | _black_pieces.Knights | _black_pieces.Pawns;
+  uint64_t all_pieces = _W_pieces | _B_pieces;
+  switch (wt)
+  {
+    case outputtype::cmd_line_diagram:
+      if (from_perspective == col::white)
+      {
+        //os << "\n";
+        for (int i = 8; i >= 1; i--)
+        {
+          for (int j = a; j <= h; j++)
+          {
+            uint64_t square = file[j] & rank[i];
+            os << iso_8859_1_to_utf8("|");
+            if (square & all_pieces)
+              write_piece(os, square);
+            else
+              os << ("\u25a1");
+          }
+          os << iso_8859_1_to_utf8("|") << iso_8859_1_to_utf8(std::to_string(i)) << std::endl;
+        }
+        os << iso_8859_1_to_utf8(" a b c d e f g h ") << std::endl;
+      }
+      else // From blacks point of view
+      {
+        //os << "\n";
+        for (int i = 1; i <= 8; i++)
+        {
+          for (int j = h; j >= a; j--)
+          {
+            uint64_t square = file[j] & rank[i];
+            os << iso_8859_1_to_utf8("|");
+            if (square & all_pieces)
+              write_piece(os, square);
+            else
+              os << ("\u25a1");
+          }
+          os << iso_8859_1_to_utf8("|") << iso_8859_1_to_utf8(std::to_string(i)) << std::endl;
+        }
+        os << iso_8859_1_to_utf8(" h g f e d c b a ") << std::endl;
+      }
+      break;
+    default:
+      os << iso_8859_1_to_utf8("Sorry: Output type not implemented yet.") << std::endl;
+  }
+  return os;
 }
 
 } // End namespace C2_chess

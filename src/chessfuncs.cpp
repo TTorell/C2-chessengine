@@ -157,7 +157,7 @@ std::pair<std::string, int> exec(const char* cmd)
                                          return_code = close_pipe(file);
                                        };
   {
-    // scope is important, have to make sure the ptr goes out of scope first
+    // scope is important, have to make sure the pointer goes out of scope first
     const std::unique_ptr<FILE, decltype(pclose_wrapper)> pipe(open_pipe(cmd, "r"), pclose_wrapper);
     if (pipe)
     {
@@ -293,12 +293,11 @@ std::vector<std::string> split(const std::string& input, std::string& delimiter)
 {
   std::istringstream ss(input);
   std::string token;
-  std::string::iterator it;
   std::vector<std::string> tokens;
-  while (std::getline(ss, token, *(it = delimiter.begin())))
+  char rubbish[10];
+  while (std::getline(ss, token, delimiter[0]))
   {
-    while (*(++it))
-      ss.get();
+    ss.get(rubbish, delimiter.size());
     tokens.push_back(token);
   }
   return tokens;

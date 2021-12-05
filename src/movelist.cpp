@@ -6,6 +6,7 @@
 #include "move.hpp"
 #include "chessfuncs.hpp"
 #include "shared_ostream.hpp"
+#include "bitboard_with_utils.hpp"
 namespace C2_chess
 {
 
@@ -153,13 +154,6 @@ Move* Movelist::operator[](int i) const
   }
 }
 
-void Movelog::set_first_moveno(int moveno)
-{
-  Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  logfile << "Setting first_moveno to " << moveno << "\n";
-  _first_moveno = moveno;
-}
-
 std::ostream & Movelist::write(std::ostream & os, bool same_line) const
 {
   for (auto it : _list)
@@ -180,7 +174,7 @@ std::ostream & Movelog::write(std::ostream & os) const
   for (int i = 0; i < (int) _list.size(); i++)
   {
     std::ostringstream move;
-    move << *_list[i];
+    move << _list[i];
     if (i == 0 && _col_to_start == col::black)
     {
       os << moveno++ << "." << std::left << std::setw(9) << "  ...  " << move.str() << std::endl;

@@ -1,5 +1,5 @@
 /*
- * Circularfifo.h
+ * Circularfifo.hpp
  *
  *  Created on: 22 jan. 2019
  *      Author: torsten

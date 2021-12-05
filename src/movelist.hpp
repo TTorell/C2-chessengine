@@ -3,7 +3,9 @@
 
 #include <iostream>
 #include <deque>
+#include <vector>
 #include "chesstypes.hpp"
+#include "bitboard.hpp"
 
 namespace C2_chess
 {
@@ -13,14 +15,14 @@ class Square;
 
 class Movelist
 {
- protected:
-   enum
+  protected:
+    enum
     {
       _LISTMAX = 1000
     };
     std::deque<Move*> _list;
     int _listindex;
-  public:
+    public:
     Movelist();
     Movelist(const Movelist&);
     virtual ~Movelist();
@@ -33,7 +35,7 @@ class Movelist
     void out(Move* const rubbish);
     int size() const;
     bool empty() const;
-    bool in_list(const Move& m,int& index) const;
+    bool in_list(const Move& m, int& index) const;
     void clear();
     Move* operator[](int) const;
     virtual std::ostream& write(std::ostream& os, bool same_line = false) const;
@@ -44,34 +46,46 @@ class Movelist
     }
 };
 
-class Movelog: public Movelist
+class Movelog
 {
   protected:
     col _col_to_start = col::white;
     int _first_moveno = 1;
-  public:
+    std::vector<BitMove> _list;
+    public:
     Movelog() :
-        Movelist()
+        _col_to_start(col::white),
+        _first_moveno(1)
     {
-      _col_to_start = col::white;
-      _first_moveno = 1;
     }
 
     Movelog(col col_to_start, int first_moveno) :
-        Movelist()
+        _col_to_start(col_to_start),
+        _first_moveno(first_moveno)
     {
-      _col_to_start = col_to_start;
-      _first_moveno = first_moveno;
     }
-
 
     void set_col_to_start(col color)
     {
       _col_to_start = color;
     }
 
-    void set_first_moveno(int moveno);
-    virtual std::ostream& write(std::ostream& os) const;
+    void set_first_moveno(int moveno)
+    {
+      _first_moveno = moveno;
+    }
+
+    std::ostream& write(std::ostream& os) const;
+
+    void push_back(const BitMove& move)
+    {
+      _list.push_back(move);
+    }
+
+    void clear()
+    {
+      _list.clear();
+    }
 };
 }
 #endif

@@ -10,91 +10,13 @@
 #include "bitboard_with_utils.hpp"
 #include "chessfuncs.hpp"
 #include "current_time.hpp"
+#include "position.hpp"
 
 namespace C2_chess
 {
 
-inline std::ostream& Bitboard_with_utils::write_piece(std::ostream& os, uint64_t square) const
-{
-  if (square & _white_pieces.King)
-    os << "\u2654";
-  else if (square & _white_pieces.Queens)
-    os << "\u2655";
-  else if (square & _white_pieces.Rooks)
-    os << "\u2656";
-  else if (square & _white_pieces.Bishops)
-    os << "\u2657";
-  else if (square & _white_pieces.Knights)
-    os << "\u2658";
-  else if (square & _white_pieces.Pawns)
-    os << "\u2659";
-  else if (square & _black_pieces.King)
-    os << "\u265A";
-  else if (square & _black_pieces.Queens)
-    os << "\u265B";
-  else if (square & _black_pieces.Rooks)
-    os << "\u265C";
-  else if (square & _black_pieces.Bishops)
-    os << "\u265D";
-  else if (square & _black_pieces.Knights)
-    os << "\u265E";
-  else if (square & _black_pieces.Pawns)
-    os << "\u265F";
-  return os;
-}
 
-std::ostream& Bitboard_with_utils::write(std::ostream& os, outputtype wt, col from_perspective) const
-{
-  uint64_t _W_pieces = _white_pieces.King | _white_pieces.Queens | _white_pieces.Rooks | _white_pieces.Bishops | _white_pieces.Knights | _white_pieces.Pawns;
-  uint64_t _B_pieces = _black_pieces.King | _black_pieces.Queens | _black_pieces.Rooks | _black_pieces.Bishops | _black_pieces.Knights | _black_pieces.Pawns;
-  uint64_t all_pieces = _W_pieces | _B_pieces;
-  switch (wt)
-  {
-    case outputtype::cmd_line_diagram:
-      if (from_perspective == col::white)
-      {
-        //os << "\n";
-        for (int i = 8; i >= 1; i--)
-        {
-          for (int j = a; j <= h; j++)
-          {
-            uint64_t square = file[j] & rank[i];
-            os << iso_8859_1_to_utf8("|");
-            if (square & all_pieces)
-              write_piece(os, square);
-            else
-              os << ("\u25a1");
-          }
-          os << iso_8859_1_to_utf8("|") << iso_8859_1_to_utf8(std::to_string(i)) << std::endl;
-        }
-        os << iso_8859_1_to_utf8(" a b c d e f g h ") << std::endl;
-      }
-      else // From blacks point of view
-      {
-        //os << "\n";
-        for (int i = 1; i <= 8; i++)
-        {
-          for (int j = h; j >= a; j--)
-          {
-            uint64_t square = file[j] & rank[i];
-            os << iso_8859_1_to_utf8("|");
-            if (square & all_pieces)
-              write_piece(os, square);
-            else
-              os << ("\u25a1");
-          }
-          os << iso_8859_1_to_utf8("|") << iso_8859_1_to_utf8(std::to_string(i)) << std::endl;
-        }
-        os << iso_8859_1_to_utf8(" h g f e d c b a ") << std::endl;
-      }
-      break;
-    default:
-      os << iso_8859_1_to_utf8("Sorry: Output type not implemented yet.") << std::endl;
-  }
-  return os;
-}
-
-std::ostream& operator <<(std::ostream& os, const BitMove& m)
+std::ostream& operator<<(std::ostream& os, const BitMove& m)
 {
   switch (m.piece_type())
   {
@@ -237,14 +159,21 @@ void Bitboard_with_utils::make_move(const std::string& UCI_move)
   while (std::getline(out_moves, out_move))
     out_moves_vector.push_back(out_move);
   out_moves_vector = convert_moves_to_UCI(out_moves_vector, _col_to_move);
+  bool found = false;
   int i = 0;
   for (const std::string& s : out_moves_vector)
   {
     if (s == UCI_move)
+    {
+      found = true;
       break;
+    }
     i++;
   }
-  Bitboard::make_move(i, move_no);
+  if (found == true)
+    Bitboard::make_move(i, move_no);
+  else
+    assert(false);
 }
 
 void Bitboard_with_utils::add_mg_test_position(const std::string& filename)
@@ -484,6 +413,103 @@ void Bitboard_with_utils::init_board_hash_tag()
 float Bitboard_with_utils::evaluate_position(col col_to_move, outputtype ot, uint8_t level) const
 {
   return Bitboard::evaluate_position(col_to_move, ot, level);
+}
+
+int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, BitMove& m) const
+{
+  uint64_t from_square;
+  uint64_t to_square;
+  uint8_t move_props = 0;
+  piecetype p_type;
+  piecetype promotion_pt;
+  // TODO: 0-0, 0-0-0 and e.p
+  uint64_t new_all_pieces = new_position.all_pieces();
+  uint64_t piece_diff = _all_pieces ^ new_all_pieces;
+  switch (std::popcount(piece_diff))
+  {
+    case 1:
+      // Must be a capture
+      move_props |= move_props_capture;
+      from_square = piece_diff;
+      p_type = get_piece_type(from_square);
+      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_col_to_move == col::black) ? 2 : 7))))
+        move_props |= move_props_promotion;
+      to_square = _own->pieces ^ new_position.other()->pieces;
+      break;
+    case 2:
+      // not a capture
+      from_square = _all_pieces & piece_diff;
+      to_square = piece_diff ^ from_square;
+      p_type = get_piece_type(from_square);
+      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_col_to_move == col::black) ? 2 : 7))))
+        move_props |= move_props_promotion;
+      break;
+    case 3:
+      // Could be en_passant
+      if (_ep_square & piece_diff)
+      {
+        to_square = _ep_square;
+        if (_own->Pawns & piece_diff)
+          from_square = _own->Pawns & piece_diff;
+        else
+          return -1;
+        p_type = piecetype::Pawn;
+        move_props |= move_props_capture | move_props_en_passant;
+      }
+      else
+        return -1;
+      break;
+    case 4:
+      // Could be 0-0 or 0-0-0
+      if (_col_to_move == col::black)
+      {
+        if (_own->King & e8_square & piece_diff)
+        {
+          from_square = e8_square;
+          if (_own->Rooks & a8_square & piece_diff)
+            to_square = c8_square;
+          else if (_own->Rooks & h8_square & piece_diff)
+            to_square = g8_square;
+          else
+            return -1;
+          p_type = piecetype::King;
+          move_props |= move_props_castling;
+        }
+        else
+          return -1;
+      }
+      else
+      {
+        if (_own->King & e1_square & piece_diff)
+        {
+          from_square = e1_square;
+          if (_own->Rooks & a1_square & piece_diff)
+            to_square = c1_square;
+          else if (_own->Rooks & h1_square & piece_diff)
+            to_square = g1_square;
+          else
+            return -1;
+          p_type = piecetype::King;
+          move_props |= move_props_castling;
+        }
+        else
+          return -1;
+      }
+      break;
+    default:
+      return -1;
+  }
+  promotion_pt = new_position.get_piece_type(to_square);
+  if (move_props & move_props_promotion)
+  {
+    promotion_pt = new_position.get_piece_type(to_square);
+    m = BitMove(p_type, move_props, from_square, to_square, promotion_pt);
+  }
+  else
+  {
+    m = BitMove(p_type, move_props, from_square, to_square);
+  }
+  return 0;
 }
 
 } // End namespace C2_chess

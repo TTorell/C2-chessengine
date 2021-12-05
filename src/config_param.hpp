@@ -10,7 +10,6 @@
 
 #include <string>
 #include <map>
-//#include "shared_ostream.hpp"
 
 namespace C2_chess
 {

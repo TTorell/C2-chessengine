@@ -22,7 +22,7 @@ void Bitboard::find_long_castling()
       return;
     while (castling_empty_squares)
     {
-      if (square_is_threatened2(popright_square(castling_empty_squares), false))
+      if (square_is_threatened(popright_square(castling_empty_squares), false))
         return;
     }
     _movelist.push_front(BitMove(piecetype::King, move_props_castling, King_initial_square, King_initial_square << 2));
@@ -39,7 +39,7 @@ void Bitboard::find_short_castling()
       return;
     while (castling_empty_squares)
     {
-      if (square_is_threatened2(popright_square(castling_empty_squares), false))
+      if (square_is_threatened(popright_square(castling_empty_squares), false))
         return;
     }
     _movelist.push_front(BitMove(piecetype::King, move_props_castling, King_initial_square, King_initial_square >> 2));

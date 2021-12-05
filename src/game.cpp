@@ -13,7 +13,8 @@
 
 namespace
 {
-C2_chess::CurrentTime current_time;
+//C2_chess::CurrentTime current_time;
+
 }
 
 namespace C2_chess
@@ -28,23 +29,22 @@ Game::Game(Config_params& config_params):
     _moveno(1),
     _col_to_move(col::white),
     _score(0),
-    _pgn_info(),
     _config_params(config_params),
     _playing(false)
 {
   _player[index(col::white)] = &_player1;
   _player[index(col::black)] = &_player2;
-  _chessboard.setup_initial_position();
+  _chessboard.read_position(initial_position);
   _chessboard.find_all_legal_moves();
 }
 
 Game::Game(col color, Config_params& config_params):
     _is_first_position(true), _move_log(), _chessboard(), _player1(playertype::human, color, _chessboard),
     _player2(playertype::computer, color == col::white ? col::black : col::white, _chessboard), _moveno(1),
-    _col_to_move(col::white), _score(0), _pgn_info(), _config_params(config_params), _playing(false)
+    _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
 {
   _player[index(color)] = &_player1;
-  _player[index(color == col::white ? col::black : col::white)] = &_player2;
+  _player[index(other_color(color))] = &_player2;
 }
 
 Game::Game(col color,
@@ -52,7 +52,7 @@ Game::Game(col color,
            playertype pt2,
            Config_params& config_params):
     _is_first_position(true), _move_log(), _chessboard(), _player1(pt1, color, _chessboard), _player2(pt2, color == col::white ? col::black : col::white, _chessboard), _moveno(1),
-    _col_to_move(col::white), _score(0), _pgn_info(), _config_params(config_params), _playing(false)
+    _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
 {
   _player[index(color)] = &_player1;
   _player[index(color == col::white ? col::black : col::white)] = &_player2;
@@ -74,7 +74,6 @@ void Game::clear_move_log()
 
 void Game::setup_pieces()
 {
-
   _chessboard.read_position(initial_position);
 }
 
@@ -173,14 +172,14 @@ void Game::actions_after_a_move()
   float evaluation = _chessboard.evaluate_position(_col_to_move, outputtype::debug, 0);
   if (evaluation == eval_max || evaluation == eval_min)
   {
-    _chessboard.set_mate(true);
+    _chessboard.set_mate();
     cmdline << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n" << "\n";
     logfile << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
     _playing = false;
   }
-  else if (evaluation == 0 && _chessboard.no_of_moves() == 0)
+  else if (evaluation == 0.0 && _chessboard.no_of_moves() == 0)
   {
-    _chessboard.set_stalemate(true);
+    _chessboard.set_stalemate();
     cmdline << "1/2 - 1/2 draw by stalemate" << "\n";
     logfile << "1/2 - 1/2 draw by stalemate" << "\n";
     _playing = false;
@@ -190,8 +189,8 @@ void Game::actions_after_a_move()
     cmdline << "current postion evaluation: " << evaluation << "\n";
     logfile << "current postion evaluation: " << evaluation << "\n";
     // Update half-move coubter for the 50-moves-rule.
-    Move last_move = _chessboard.get_last_move();
-    if (last_move.get_capture() || last_move.get_piece_type() == piecetype::Pawn)
+    BitMove last_move = _chessboard.last_move();
+    if ((last_move.properties() & move_props_capture) || (last_move.piece_type() == piecetype::Pawn))
       _half_move_counter = 0;
     else
       _half_move_counter++;
@@ -206,7 +205,7 @@ void Game::actions_after_a_move()
   // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
 }
 
-Move Game::engine_go(const Config_params& config_params, const std::string& max_search_time)
+BitMove Game::engine_go(const Config_params& config_params, const std::string& max_search_time)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
 
@@ -216,7 +215,7 @@ Move Game::engine_go(const Config_params& config_params, const std::string& max_
   bool use_pruning = true;
   bool search_until_no_captures = false;
 
-  _chessboard.set_time_diff_sum(0);
+//  _chessboard.set_time_diff_sum(0);
 
   // Read some configuration parameters
   std::string s = config_params.get_config_param("max_search_level");
@@ -245,10 +244,10 @@ Move Game::engine_go(const Config_params& config_params, const std::string& max_
     }
     else
       _chessboard.set_time_left(true);
-    int best_move_index = -1;
+    int8_t best_move_index = -1;
     for (int i = 2; i <= max_search_level; i++)
     {
-      uint64_t nsec_start = current_time.nanoseconds();
+//      uint64_t nsec_start = current_time.nanoseconds();
 
       //bool test = (use_pruning == false || search_until_no_captures == true);
       int move_index = _player[index(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning, search_until_no_captures);
@@ -286,11 +285,11 @@ Move Game::engine_go(const Config_params& config_params, const std::string& max_
       }
       best_move_index = move_index;
       _chessboard.clear_hash();
-      uint64_t nsec_stop = current_time.nanoseconds();
-      logfile.log_time_diff(nsec_stop, nsec_start, i, _chessboard.get_possible_move(best_move_index), _score);
+//      uint64_t nsec_stop = current_time.nanoseconds();
+//      logfile.log_time_diff(nsec_stop, nsec_start, i, _chessboard.get_possible_move(best_move_index), _score);
     }
-    _chessboard.make_move(best_move_index, _moveno, _col_to_move);
-    _move_log.into_as_last(new Move(_chessboard.get_last_move()));
+    _chessboard.make_move(best_move_index, _moveno);
+    _move_log.push_back(_chessboard.last_move());
   }
   else
   {
@@ -298,7 +297,6 @@ Move Game::engine_go(const Config_params& config_params, const std::string& max_
     // level and stop when finished. Ignore max_search_time.
     _chessboard.set_time_left(true);
     int best_move_index = -1;
-    uint64_t nsec_start = current_time.nanoseconds();
     int move_index = _player[index(_col_to_move)]->find_best_move_index(_moveno, _score, max_search_level, use_pruning, search_until_no_captures);
     if (move_index == -1)
     {
@@ -312,17 +310,17 @@ Move Game::engine_go(const Config_params& config_params, const std::string& max_
       move_index = 0;
     }
     best_move_index = move_index;
-    uint64_t nsec_stop = current_time.nanoseconds();
-    logfile.log_time_diff(nsec_stop, nsec_start, max_search_level, _chessboard.get_possible_move(best_move_index), _score);
-    _chessboard.make_move(best_move_index, _moveno, _col_to_move);
-    _move_log.into_as_last(new Move(_chessboard.get_last_move()));
+//    uint64_t nsec_stop = current_time.nanoseconds();
+//    logfile.log_time_diff(nsec_stop, nsec_start, max_search_level, _chessboard.get_possible_move(best_move_index), _score);
+    _chessboard.make_move(best_move_index, _moveno);
+    _move_log.push_back(_chessboard.last_move());
   }
 
   // Stop possibly running timer by setting time_left to false.
   _chessboard.set_time_left(false);
 
   actions_after_a_move();
-  return _chessboard.get_last_move();
+  return _chessboard.last_move();
 }
 
 void Game::start_timer_thread(const std::string& max_search_time)
@@ -363,22 +361,20 @@ void Game::start_new_game(col col_to_move, int half_move_counter, int moveno)
   write_diagram(logfile) << "\n";
 }
 
-void Game::figure_out_last_move(const Board& new_position, col col_to_move, int half_move_counter, int moveno)
+void Game::figure_out_last_move(const Bitboard& new_position, col col_to_move, int half_move_counter, int moveno)
 {
   // new_position.write(cout, outputtype::cmd_line_diagram, col_to_move);
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  Move m;
+  BitMove m;
   if (_chessboard.figure_out_last_move(new_position,m))
   {
     logfile << "Could not figure out last move, must be a new game." << "\n";
-    _chessboard = new_position;
-//    write_diagram(cout);
+    (*dynamic_cast<Bitboard*>(&_chessboard)) = new_position;
     start_new_game(col_to_move, half_move_counter, moveno);
   }
-  else // OK move could be found out
+  else // OK move has been found out
   {
     logfile << "Opponents move was " << m << "\n";
-    logfile << _chessboard.get_possible_moves() << "\n";
     int moveindex = _chessboard.get_move_index(m);
     if (moveindex == -1)
     {
@@ -386,10 +382,78 @@ void Game::figure_out_last_move(const Board& new_position, col col_to_move, int 
       start_new_game(col_to_move, half_move_counter, moveno);
       return;
     }
-    _chessboard.make_move(moveindex, _moveno, _col_to_move);
-    _move_log.into_as_last(new Move(_chessboard.get_last_move()));
+    _chessboard.make_move(moveindex, _moveno);
+    _move_log.push_back(_chessboard.last_move());
     actions_after_a_move();
   }
+}
+
+int Game::read_position(const std::string& filename)
+{
+  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+
+  std::ifstream is(filename);
+  std::string rubbish;
+  bool FEN_found = false;
+  for (std::string line; std::getline(is, line);)
+  {
+    if (regexp_match(line, "^[[]Event.*"))
+    {
+      //pgn_info.set_event(get_infotext(line));
+      continue;
+    }
+    if (regexp_match(line, "^[[]Site.*"))
+    {
+      //pgn_info.set_site(get_infotext(line));
+      continue;
+    }
+    if (regexp_match(line, "^[[]Date.*"))
+    {
+      //pgn_info.set_date(get_infotext(line));
+      continue;
+    }
+    if (regexp_match(line, "^[[]Round.*"))
+    {
+      //pgn_info.set_round(get_infotext(line));
+      continue;
+    }
+    if (regexp_match(line, "^[[]White.*"))
+    {
+      //pgn_info.set_white(get_infotext(line));
+      continue;
+    }
+    if (regexp_match(line, "^[[]Black.*"))
+    {
+      //pgn_info.set_black(get_infotext(line));
+      continue;
+    }
+    if (regexp_match(line, "^[[]Result.*"))
+    {
+      //pgn_info.set_result(get_infotext(line));
+      continue;
+    }
+
+    if (regexp_match(line, "^[[]FEN.*"))
+    {
+      FEN_found = true;
+      cmdline << "\n" << "Position: " << line << "\n";
+      std::istringstream fen_line(line);
+      std::string fen_string;
+      std::getline(fen_line, rubbish, '"');
+      std::getline(fen_line, fen_string, '"');
+      int status = _chessboard.read_position(fen_string);
+      if (status != 0)
+      {
+        cmdline << "Read error: [FEN-string could not be parsed" << "\n";
+        return -1;
+      }
+      continue;
+    }
+  }
+  if (!FEN_found)
+    return -1;
+  return 0;
+//  return _chessboard.read_position(filename);
 }
 
 } // namespace C2_chess

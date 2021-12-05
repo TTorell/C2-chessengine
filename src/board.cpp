@@ -26,21 +26,21 @@ Board::Board() :
     _last_move(), _possible_moves(), _castling_state(), _en_passant_square(0), _hash_tag(0),
     _material_evaluation(0)
 {
-  for (int file = a; file <= h; file++)
+  for (int file_idx = a; file_idx <= h; file_idx++)
   {
-    _file[a].name('a' + (char) file);
-    for (int rank = 1; rank <= 8; rank++)
+    _file[a].name('a' + (char) file_idx);
+    for (int rank_idx = 1; rank_idx <= 8; rank_idx++)
     {
-      _file[file][rank] = new Square(file, rank);
+      _file[file_idx][rank_idx] = new Square(file_idx, rank_idx);
     }
   }
   // fix the ranks
-  for (int rank = 1; rank <= 8; rank++)
+  for (int rank_idx = 1; rank_idx <= 8; rank_idx++)
   {
-    _rank[rank].set_name('0' + (char) rank);
-    for (int file = a; file <= h; file++)
+    _rank[rank_idx].set_name('0' + (char) rank_idx);
+    for (int file_idx = a; file_idx <= h; file_idx++)
     {
-      _rank[rank][file] = _file[file][rank];
+      _rank[rank_idx][file_idx] = _file[file_idx][rank_idx];
     }
   }
 }
@@ -83,14 +83,14 @@ Board& Board::operator=(const Board &from)
   {
     _en_passant_square = 0;
   }
-  for (int file = a; file <= h; file++)
+  for (int file_idx = a; file_idx <= h; file_idx++)
   {
-    for (int rank = 1; rank <= 8; rank++)
+    for (int rank_idx = 1; rank_idx <= 8; rank_idx++)
     {
-      Piece *p = from._file[file][rank]->get_piece();
+      Piece *p = from._file[file_idx][rank_idx]->get_piece();
       if (p)
       {
-        _file[file][rank]->contain_piece(new Piece(*p));
+        _file[file_idx][rank_idx]->contain_piece(new Piece(*p));
       }
     }
   }
@@ -111,10 +111,10 @@ void Board::setup_pieces()
   _file[f][1]->contain_piece(new Piece(piecetype::Bishop, col::white));
   _file[g][1]->contain_piece(new Piece(piecetype::Knight, col::white));
   _file[h][1]->contain_piece(new Piece(piecetype::Rook, col::white));
-  for (int file = a; file <= h; file++)
-    _file[file][2]->contain_piece(new Piece(piecetype::Pawn, col::white));
-  for (int file = a; file <= h; file++)
-    _file[file][7]->contain_piece(new Piece(piecetype::Pawn, col::black));
+  for (int file_idx = a; file_idx <= h; file_idx++)
+    _file[file_idx][2]->contain_piece(new Piece(piecetype::Pawn, col::white));
+  for (int file_idx = a; file_idx <= h; file_idx++)
+    _file[file_idx][7]->contain_piece(new Piece(piecetype::Pawn, col::black));
   _file[a][8]->contain_piece(new Piece(piecetype::Rook, col::black));
   _file[b][8]->contain_piece(new Piece(piecetype::Knight, col::black));
   _file[c][8]->contain_piece(new Piece(piecetype::Bishop, col::black));
@@ -125,11 +125,11 @@ void Board::setup_pieces()
   _file[h][8]->contain_piece(new Piece(piecetype::Rook, col::black));
 }
 
-void Board::put_piece(Piece *const p, int file, int rank)
+void Board::put_piece(Piece *const p, int file_idx, int rank_idx)
 {
-  _file[file][rank]->contain_piece(p);
+  _file[file_idx][rank_idx]->contain_piece(p);
   if (p->get_type() == piecetype::King)
-    _king_square[index(p->get_color())] = _file[file][rank];
+    _king_square[index(p->get_color())] = _file[file_idx][rank_idx];
 }
 
 Move Board::get_possible_move(int index) const
@@ -142,34 +142,6 @@ Movelist Board::get_possible_moves() const
   return _possible_moves;
 }
 
-bool Board::read_piece_type(piecetype &pt, char ch) const
-{
-  // method not important for efficiency
-  switch (ch)
-  {
-    case 'P':
-      pt = piecetype::Pawn;
-      break;
-    case 'K':
-      pt = piecetype::King;
-      break;
-    case 'N':
-      pt = piecetype::Knight;
-      break;
-    case 'B':
-      pt = piecetype::Bishop;
-      break;
-    case 'Q':
-      pt = piecetype::Queen;
-      break;
-    case 'R':
-      pt = piecetype::Rook;
-      break;
-    default:
-      return false;
-  }
-  return true;
-}
 
 std::ostream& Board::write(std::ostream &os, outputtype wt, col from_perspective) const
 {
@@ -291,34 +263,34 @@ void Board::init_castling(col this_col)
   }
 }
 
-void Board::init_rook_or_queen(int file, int rank, Square *s, Piece *p)
+void Board::init_rook_or_queen(int file_idx, int rank_idx, Square *s, Piece *p)
 {
-  int tf = file;
-  int tr = rank;
+  int tf = file_idx;
+  int tr = rank_idx;
   while (allowed_index(++tf, tr))
   {
     fix_threat_prot(tf, tr, p, s);
     if (_file[tf][tr]->get_piece())
       break;
   }
-  tf = file;
-  tr = rank;
+  tf = file_idx;
+  tr = rank_idx;
   while (allowed_index(--tf, tr))
   {
     fix_threat_prot(tf, tr, p, s);
     if (_file[tf][tr]->get_piece())
       break;
   }
-  tf = file;
-  tr = rank;
+  tf = file_idx;
+  tr = rank_idx;
   while (allowed_index(tf, ++tr))
   {
     fix_threat_prot(tf, tr, p, s);
     if (_file[tf][tr]->get_piece())
       break;
   }
-  tf = file;
-  tr = rank;
+  tf = file_idx;
+  tr = rank_idx;
   while (allowed_index(tf, --tr))
   {
     fix_threat_prot(tf, tr, p, s);
@@ -327,34 +299,34 @@ void Board::init_rook_or_queen(int file, int rank, Square *s, Piece *p)
   }
 }
 
-void Board::init_bishop_or_queen(int file, int rank, Square *s, Piece *p)
+void Board::init_bishop_or_queen(int file_idx, int rank_idx, Square *s, Piece *p)
 {
-  int tf = file;
-  int tr = rank;
+  int tf = file_idx;
+  int tr = rank_idx;
   while (allowed_index(++tf, ++tr))
   {
     fix_threat_prot(tf, tr, p, s);
     if (_file[tf][tr]->get_piece())
       break;
   }
-  tf = file;
-  tr = rank;
+  tf = file_idx;
+  tr = rank_idx;
   while (allowed_index(--tf, --tr))
   {
     fix_threat_prot(tf, tr, p, s);
     if (_file[tf][tr]->get_piece())
       break;
   }
-  tf = file;
-  tr = rank;
+  tf = file_idx;
+  tr = rank_idx;
   while (allowed_index(--tf, ++tr))
   {
     fix_threat_prot(tf, tr, p, s);
     if (_file[tf][tr]->get_piece())
       break;
   }
-  tf = file;
-  tr = rank;
+  tf = file_idx;
+  tr = rank_idx;
   while (allowed_index(++tf, --tr))
   {
     fix_threat_prot(tf, tr, p, s);
@@ -372,117 +344,117 @@ int Board::init(col col_to_move)
   int tf;
   int tr;
   bool stop;
-  for (int rank = 1; rank <= 8; rank++)
+  for (int rank_idx = 1; rank_idx <= 8; rank_idx++)
   {
-    for (int file = a; file <= h; file++)
+    for (int file_idx = a; file_idx <= h; file_idx++)
     {
-      Piece *p = _file[file][rank]->get_piece();
+      Piece *p = _file[file_idx][rank_idx]->get_piece();
       if (p)
       {
         pieces_found = true;
-        Square *s = _file[file][rank];
+        Square *s = _file[file_idx][rank_idx];
         piecetype pt = p->get_type();
         switch (pt)
         {
           case piecetype::King:
           {
             _king_square[index(p->get_color())] = s;
-            if (allowed_index(file + 1, rank))
-              fix_threat_prot(file + 1, rank, p, s);
-            if (allowed_index(file + 1, rank + 1))
-              fix_threat_prot(file + 1, rank + 1, p, s);
-            if (allowed_index(file, rank + 1))
-              fix_threat_prot(file, rank + 1, p, s);
-            if (allowed_index(file - 1, rank + 1))
-              fix_threat_prot(file - 1, rank + 1, p, s);
-            if (allowed_index(file - 1, rank))
-              fix_threat_prot(file - 1, rank, p, s);
-            if (allowed_index(file - 1, rank - 1))
-              fix_threat_prot(file - 1, rank - 1, p, s);
-            if (allowed_index(file, rank - 1))
-              fix_threat_prot(file, rank - 1, p, s);
-            if (allowed_index(file + 1, rank - 1))
-              fix_threat_prot(file + 1, rank - 1, p, s);
+            if (allowed_index(file_idx + 1, rank_idx))
+              fix_threat_prot(file_idx + 1, rank_idx, p, s);
+            if (allowed_index(file_idx + 1, rank_idx + 1))
+              fix_threat_prot(file_idx + 1, rank_idx + 1, p, s);
+            if (allowed_index(file_idx, rank_idx + 1))
+              fix_threat_prot(file_idx, rank_idx + 1, p, s);
+            if (allowed_index(file_idx - 1, rank_idx + 1))
+              fix_threat_prot(file_idx - 1, rank_idx + 1, p, s);
+            if (allowed_index(file_idx - 1, rank_idx))
+              fix_threat_prot(file_idx - 1, rank_idx, p, s);
+            if (allowed_index(file_idx - 1, rank_idx - 1))
+              fix_threat_prot(file_idx - 1, rank_idx - 1, p, s);
+            if (allowed_index(file_idx, rank_idx - 1))
+              fix_threat_prot(file_idx, rank_idx - 1, p, s);
+            if (allowed_index(file_idx + 1, rank_idx - 1))
+              fix_threat_prot(file_idx + 1, rank_idx - 1, p, s);
             break;
           }
           case piecetype::Queen:
-            init_bishop_or_queen(file, rank, s, p);
-            init_rook_or_queen(file, rank, s, p);
+            init_bishop_or_queen(file_idx, rank_idx, s, p);
+            init_rook_or_queen(file_idx, rank_idx, s, p);
             break;
 
           case piecetype::Rook:
-            init_rook_or_queen(file, rank, s, p);
+            init_rook_or_queen(file_idx, rank_idx, s, p);
             break;
 
           case piecetype::Bishop:
-            init_bishop_or_queen(file, rank, s, p);
+            init_bishop_or_queen(file_idx, rank_idx, s, p);
             break;
 
           case piecetype::Knight:
-            if (allowed_index(file + 2, rank + 1))
-              fix_threat_prot(file + 2, rank + 1, p, s);
-            if (allowed_index(file + 2, rank - 1))
-              fix_threat_prot(file + 2, rank - 1, p, s);
-            if (allowed_index(file + 1, rank - 2))
-              fix_threat_prot(file + 1, rank - 2, p, s);
-            if (allowed_index(file - 1, rank - 2))
-              fix_threat_prot(file - 1, rank - 2, p, s);
-            if (allowed_index(file - 2, rank - 1))
-              fix_threat_prot(file - 2, rank - 1, p, s);
-            if (allowed_index(file - 2, rank + 1))
-              fix_threat_prot(file - 2, rank + 1, p, s);
-            if (allowed_index(file - 1, rank + 2))
-              fix_threat_prot(file - 1, rank + 2, p, s);
-            if (allowed_index(file + 1, rank + 2))
-              fix_threat_prot(file + 1, rank + 2, p, s);
+            if (allowed_index(file_idx + 2, rank_idx + 1))
+              fix_threat_prot(file_idx + 2, rank_idx + 1, p, s);
+            if (allowed_index(file_idx + 2, rank_idx - 1))
+              fix_threat_prot(file_idx + 2, rank_idx - 1, p, s);
+            if (allowed_index(file_idx + 1, rank_idx - 2))
+              fix_threat_prot(file_idx + 1, rank_idx - 2, p, s);
+            if (allowed_index(file_idx - 1, rank_idx - 2))
+              fix_threat_prot(file_idx - 1, rank_idx - 2, p, s);
+            if (allowed_index(file_idx - 2, rank_idx - 1))
+              fix_threat_prot(file_idx - 2, rank_idx - 1, p, s);
+            if (allowed_index(file_idx - 2, rank_idx + 1))
+              fix_threat_prot(file_idx - 2, rank_idx + 1, p, s);
+            if (allowed_index(file_idx - 1, rank_idx + 2))
+              fix_threat_prot(file_idx - 1, rank_idx + 2, p, s);
+            if (allowed_index(file_idx + 1, rank_idx + 2))
+              fix_threat_prot(file_idx + 1, rank_idx + 2, p, s);
             break;
 
           case piecetype::Pawn:
             stop = false;
             if (p->get_color() == col::white)
             {
-              if (allowed_index(file, rank + 1))
+              if (allowed_index(file_idx, rank_idx + 1))
               {
-                if (!_file[file][rank + 1]->get_piece())
-                  s->into_move(_file[file][rank + 1]);
+                if (!_file[file_idx][rank_idx + 1]->get_piece())
+                  s->into_move(_file[file_idx][rank_idx + 1]);
                 else
                   stop = true;
-                if ((rank == 2) && !stop)
-                  if (!_file[file][rank + 2]->get_piece())
-                    s->into_move(_file[file][rank + 2]);
+                if ((rank_idx == 2) && !stop)
+                  if (!_file[file_idx][rank_idx + 2]->get_piece())
+                    s->into_move(_file[file_idx][rank_idx + 2]);
               }
-              if (allowed_index(file - 1, rank + 1))
+              if (allowed_index(file_idx - 1, rank_idx + 1))
               {
-                fix_pawn_tp(file - 1, rank + 1, p, s);
-                fix_en_passant(s, _file[file - 1][rank + 1]);
+                fix_pawn_tp(file_idx - 1, rank_idx + 1, p, s);
+                fix_en_passant(s, _file[file_idx - 1][rank_idx + 1]);
               }
-              if (allowed_index(file + 1, rank + 1))
+              if (allowed_index(file_idx + 1, rank_idx + 1))
               {
-                fix_pawn_tp(file + 1, rank + 1, p, s);
-                fix_en_passant(s, _file[file + 1][rank + 1]);
+                fix_pawn_tp(file_idx + 1, rank_idx + 1, p, s);
+                fix_en_passant(s, _file[file_idx + 1][rank_idx + 1]);
               }
             }
             else // p->get_color() == col::black
             {
-              if (allowed_index(file, rank - 1))
+              if (allowed_index(file_idx, rank_idx - 1))
               {
-                if (!(_file[file][rank - 1]->get_piece()))
-                  s->into_move(_file[file][rank - 1]);
+                if (!(_file[file_idx][rank_idx - 1]->get_piece()))
+                  s->into_move(_file[file_idx][rank_idx - 1]);
                 else
                   stop = true;
-                if ((rank == 7) && !stop)
-                  if (!_file[file][rank - 2]->get_piece())
-                    s->into_move(_file[file][rank - 2]);
+                if ((rank_idx == 7) && !stop)
+                  if (!_file[file_idx][rank_idx - 2]->get_piece())
+                    s->into_move(_file[file_idx][rank_idx - 2]);
               }
-              if (allowed_index(file - 1, rank - 1))
+              if (allowed_index(file_idx - 1, rank_idx - 1))
               {
-                fix_pawn_tp(file - 1, rank - 1, p, s);
-                fix_en_passant(s, _file[file - 1][rank - 1]);
+                fix_pawn_tp(file_idx - 1, rank_idx - 1, p, s);
+                fix_en_passant(s, _file[file_idx - 1][rank_idx - 1]);
               }
-              if (allowed_index(file + 1, rank - 1))
+              if (allowed_index(file_idx + 1, rank_idx - 1))
               {
-                fix_pawn_tp(file + 1, rank - 1, p, s);
-                fix_en_passant(s, _file[file + 1][rank - 1]);
+                fix_pawn_tp(file_idx + 1, rank_idx - 1, p, s);
+                fix_en_passant(s, _file[file_idx + 1][rank_idx - 1]);
               }
             }
             break;
@@ -797,9 +769,9 @@ int Board::init(col col_to_move)
   return 0;
 }
 
-void Board::fix_threat_prot(int file, int rank, Piece *p, Square *s)
+void Board::fix_threat_prot(int file_idx, int rank_idx, Piece *p, Square *s)
 {
-  Square *temp_square = _file[file][rank];
+  Square *temp_square = _file[file_idx][rank_idx];
   if (temp_square->get_piece())
   {
     if (temp_square->get_piece()->get_color() == p->get_color())
@@ -954,9 +926,9 @@ void Board::fix_bound_piece_diagonal(const Square *king_square, Square *own_piec
   }
 }
 
-void Board::fix_pawn_tp(int file, int rank, Piece *p, Square *s)
+void Board::fix_pawn_tp(int file_idx, int rank_idx, Piece *p, Square *s)
 {
-  Square *temp_square = _file[file][rank];
+  Square *temp_square = _file[file_idx][rank_idx];
   if (temp_square->get_piece())
   {
     if (temp_square->get_piece()->is(p->get_color()))
@@ -1013,87 +985,6 @@ int Board::max(int i, int j)
     return i;
   else
     return j;
-}
-
-void Board::check_put_a_pawn_on_square(int file, int rank, col col_to_move)
-{
-  Square *from_square;
-  Piece *piece;
-  switch (col_to_move)
-  {
-    case col::white:
-      // Check for one-square-pawn-moves
-      if (rank > 2) // otherwise white can never move a pawn there.
-      {
-        from_square = _file[file][rank - 1];
-        piece = from_square->get_piece();
-        // Is there a piece and is it a white pawn?
-        if (piece && piece->is(col_to_move, piecetype::Pawn))
-        {
-          // Check that the pawn isn't pinned
-          if (from_square->in_movelist(_file[file][rank]))
-          {
-            std::unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
-            _possible_moves.into(m.get());
-            return;
-          }
-        }
-      }
-      // White can only make two-squares-pawn-moves to rank 4
-      // and if the square in between is free.
-      if (rank == 4)
-      {
-        from_square = _file[file][rank - 2];
-        piece = from_square->get_piece();
-        // Is there a piece and is it a white pawn?
-        if (piece && piece->is(col_to_move, piecetype::Pawn))
-        {
-          if (from_square->in_movelist(_file[file][rank]))
-          {
-            std::unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
-            _possible_moves.into(m.get());
-            return;
-          }
-        }
-      }
-      break;
-    case col::black:
-      // Check for one-square-pawn-moves
-      if (rank < 7) // otherwise black can never move a pawn there.
-      {
-        from_square = _file[file][rank + 1];
-        piece = from_square->get_piece();
-        // Is there a piece and is it a black pawn?
-        if (piece && piece->is(col_to_move, piecetype::Pawn))
-        {
-          // Check that the pawn isn't pinned
-          if (from_square->in_movelist(_file[file][rank]))
-          {
-            std::unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
-            _possible_moves.into(m.get());
-            return;
-          }
-        }
-      }
-      if (rank == 5)
-      {
-        // It could be that a black pawn can move two steps to this square.
-        from_square = _file[file][rank + 2];
-        piece = from_square->get_piece();
-        // Is there a piece and is it a black pawn?
-        if (piece && piece->is(col_to_move, piecetype::Pawn))
-        {
-          // Check that the pawn isn't pinned
-          if (from_square->in_movelist(_file[file][rank]))
-          {
-            std::unique_ptr<Move> m(new Move(from_square, _file[file][rank]));
-            _possible_moves.into(m.get());
-            return;
-          }
-        }
-      }
-      break;
-  }
 }
 
 void Board::calculate_moves_K_not_threatened(col col_to_move)
@@ -1193,23 +1084,23 @@ void Board::check_rook_or_queen(Square *threat_square, Square *kings_square, col
 {
   if (threat_square->same_rank(kings_square))
   {
-    int rank = kings_square->get_rankindex();
+    int rank_idx = kings_square->get_rankindex();
     int from = min(kings_square->get_fileindex(), threat_square->get_fileindex());
     int to = max(kings_square->get_fileindex(), threat_square->get_fileindex());
     for (int i = from + 1; i < to; i++)
     {
-      check_put_a_piece_on_square(i, rank, col_to_move);
-      check_put_a_pawn_on_square(i, rank, col_to_move);
+      check_put_a_piece_on_square(i, rank_idx, col_to_move);
+      check_put_a_pawn_on_square(i, rank_idx, col_to_move);
     }
   }
   else if (threat_square->same_file(kings_square))
   {
-    int file = kings_square->get_fileindex();
+    int file_idx = kings_square->get_fileindex();
     int from = min(kings_square->get_rankindex(), threat_square->get_rankindex());
     int to = max(kings_square->get_rankindex(), threat_square->get_rankindex());
     for (int i = from + 1; i < to; i++)
     {
-      check_put_a_piece_on_square(file, i, col_to_move);
+      check_put_a_piece_on_square(file_idx, i, col_to_move);
       // No need to check for pawns, not even en passants,
       // because the king is on the same file as the threatening piece.
     }
@@ -1228,29 +1119,29 @@ void Board::check_if_threat_can_be_captured_en_passant(col col_to_move, Square *
   {
     if (ep_file == thr_file && ep_rank == thr_rank + rank_increment)
     {
-      int file = thr_file - 1;
-      if (allowed_index(file, thr_rank))
+      int file_idx = thr_file - 1;
+      if (allowed_index(file_idx, thr_rank))
       {
-        Square *s = _file[file][thr_rank];
+        Square *s = _file[file_idx][thr_rank];
         if (s->contains(col_to_move, piecetype::Pawn))
         {
           // Check that the pawn isn't pinned
           if (s->in_movelist(_en_passant_square))
           {
-            std::unique_ptr<Move> move(new Move(_file[file][thr_rank], _en_passant_square));
+            std::unique_ptr<Move> move(new Move(_file[file_idx][thr_rank], _en_passant_square));
             _possible_moves.into_as_first(move.get());
           }
         }
       }
-      file = thr_file + 1;
-      if (allowed_index(file, thr_rank))
+      file_idx = thr_file + 1;
+      if (allowed_index(file_idx, thr_rank))
       {
-        Square *s = _file[file][thr_rank];
+        Square *s = _file[file_idx][thr_rank];
         if (s->contains(col_to_move, piecetype::Pawn))
         {
           if (s->in_movelist(_en_passant_square))
           {
-            m.reset(new Move(_file[file][thr_rank], _en_passant_square));
+            m.reset(new Move(_file[file_idx][thr_rank], _en_passant_square));
             _possible_moves.into_as_first(m.get());
           }
         }
@@ -2134,16 +2025,16 @@ uint64_t Board::get_time_diff_sum()
 void Board::init_board_hash_tag(col col_to_move)
 {
   _hash_tag = 0;
-  for (int file = a; file <= h; file++)
+  for (int file_idx = a; file_idx <= h; file_idx++)
   {
-    for (int rank = 1; rank <= 8; rank++)
+    for (int rank_idx = 1; rank_idx <= 8; rank_idx++)
     {
-      Piece* p = _file[file][rank]->get_piece();
+      Piece* p = _file[file_idx][rank_idx]->get_piece();
       if (p)
       {
         col color = p->get_color();
         piecetype type = p->get_type();
-        _hash_tag ^= hash_table._random_table[file][rank][index(color)][index(type)];
+        _hash_tag ^= hash_table._random_table[file_idx][rank_idx][index(color)][index(type)];
       }
     }
   }

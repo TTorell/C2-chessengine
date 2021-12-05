@@ -9,6 +9,7 @@
 #include "catch.hpp"
 #include <iostream>
 #include <string>
+#include <cmath>
 #include "../src/bitboard_with_utils.hpp"
 #include "../src/chessfuncs.hpp"
 #include "../src/current_time.hpp"
@@ -17,6 +18,7 @@ using namespace C2_chess;
 
 namespace // file private namespace
 {
+std::string initial_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 std::string get_FEN_test_position(unsigned int n)
 {
@@ -358,6 +360,30 @@ TEST_CASE("find_legal_squares")
     legal_squares = chessboard.find_legal_squares(sq, my_rank, all_pieces, other_pieces);
     REQUIRE(legal_squares == (row_1 ^ e1_square)); // @suppress("C-Style cast instead of C++ cast")
   }
+}
+
+TEST_CASE("evaluation")
+{
+  uint64_t start, stop;
+  CurrentTime now;
+  start = now.nanoseconds();
+  Bitboard_with_utils chessboard;
+  chessboard.read_position(initial_position);
+  chessboard.find_all_legal_moves();
+  REQUIRE(fabs(chessboard.evaluate_position(col::white, outputtype::silent, 7)) < 0.01);
+  chessboard.make_move("e2e4");
+  float evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  REQUIRE(fabs(evaluation - 0.05) < 0.01);
+  chessboard.make_move("e7e5");
+  REQUIRE(fabs(chessboard.evaluate_position(col::white, outputtype::silent, 7)) < 0.01);
+  chessboard.make_move("g1f3");
+  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  REQUIRE(fabs(evaluation - 0.09) < 0.01);
+  chessboard.make_move("b8c6");
+  REQUIRE(fabs(chessboard.evaluate_position(col::white, outputtype::silent, 7)) < 0.01);
+
+  stop = now.nanoseconds();
+  std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
 }
 
 //TEST_CASE("timing basic functions")

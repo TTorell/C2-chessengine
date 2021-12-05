@@ -10,6 +10,7 @@ namespace C2_chess
 class Bitboard;
 
 class Game;
+class Board;
 
 class Position_reader {
   protected:
@@ -35,6 +36,8 @@ class FEN_reader: public Position_reader {
     int parse_FEN_string(const std::string& FEN_string, Bitboard& board) const;
     int read_position(const std::string& inputfile);
     std::istream& read_position(std::istream& is);
+    int parse_FEN_string(const std::string& FEN_string, Board& b) const;
+
   private:
     const std::string get_infotext(const std::string& line);
     void parse_string();

@@ -29,8 +29,8 @@ class Square {
     }
 
   public:
-    Square(int file, int rank) :
-        _piece(0), _position(file, rank), _moves(), _threats(), _protections()
+    Square(int file_idx, int rank_idx) :
+        _piece(0), _position(file_idx, rank_idx), _moves(), _threats(), _protections()
     {
     }
 

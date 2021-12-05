@@ -9,13 +9,15 @@
 #include <cstring>
 #include <cstdio>
 
+#include "board.hpp"
 #include "bitboard_with_utils.hpp"
 #include "chessfuncs.hpp"
 #include "chesstypes.hpp"
 #include "config_param.hpp"
 #include "game.hpp"
-#include "position_reader.hpp"
+#include "circular_fifo.hpp"
 #include "current_time.hpp"
+#include "position_reader.hpp"
 
 namespace C2_chess
 {
@@ -49,7 +51,6 @@ std::string parse_go_command(const std::vector<std::string>& command_tokens, con
 
 std::atomic<bool> input_thread_running(true);
 std::atomic<bool> output_thread_running(true);
-std::atomic<bool> xtime_left(false);
 
 // Method for parsing input-commands from a chess-GUI (some commands are taken care of already in ḿain().
 int parse_command(const std::string& command,
@@ -108,15 +109,13 @@ int parse_command(const std::string& command,
   }
   if (tokens[0] == "position")
   {
-    FEN_reader reader(game);
-    Board dummy_board;
     // Discard the first 13 characters, "position fen ", from the command.
     std::string fen_string = command.substr(13, command.size() - 12);
     // The information about the new requested position comes in
     // Forsyth–Edwards Notation.
     // Read the FEN-coded position from the GUI command and set up
     // the board accordingly.
-    reader.parse_FEN_string(fen_string, dummy_board);
+    game.read_position_FEN(fen_string);
     // print the position to the logfile
     // game.write_diagram(logfile) << "\n";
   }
@@ -244,13 +243,13 @@ bool run_old_mg_test_case(int testnum, const std::string& FEN_string)
   // followed by a list of all legal moves in the position at the end.
   std::vector<std::string> ref_moves_vector = split(FEN_string, ' ');
   // Erase the actual FEN_string tokens from the vector.
-  ref_moves_vector.erase(ref_moves_vector.begin(), ref_moves_vector.begin() + 6);
+  ref_moves_vector.erase(ref_moves_vector.begin(),static_cast<std::vector<std::string>::iterator>(ref_moves_vector.begin() + 6));
   // fix that "e.p." has been treated as a separate token.
   for (unsigned int i = 0; i < ref_moves_vector.size(); i++)
     if (ref_moves_vector[i] == "e.p.")
     {
       ref_moves_vector[i - 1] += " e.p.";
-      ref_moves_vector.erase(ref_moves_vector.begin() + i);
+      ref_moves_vector.erase(static_cast<std::vector<std::string>::iterator>(ref_moves_vector.begin() + i));
     }
   if (!compare_move_lists(out_moves_vector, ref_moves_vector))
   {
@@ -321,6 +320,34 @@ int old_mg_tests(unsigned int single_testnum)
   ifs.close();
   return 0;
 
+}
+
+std::string bestmove_engine_style(const BitMove& move)
+{
+  std::stringstream ss;
+  ss << "bestmove " << 'a' + file_idx(move.from()) << rank_idx(move.from()) <<
+     'a' + file_idx(move.to()) << rank_idx(move.to());
+  if (move.properties() & move_props_promotion)
+  {
+    switch (move.promotion_piece_type())
+    {
+      case piecetype::Queen:
+        ss << "q";
+        break;
+      case piecetype::Rook:
+        ss << "r";
+        break;
+      case piecetype::Knight:
+        ss << "n";
+        break;
+      case piecetype::Bishop:
+        ss << "b" << std::endl;
+        break;
+      default:
+        assert(false);
+    }
+  }
+  return ss.str();
 }
 
 } // End of namespace C2_chess
@@ -476,8 +503,8 @@ int main(int argc, char* argv[])
         }
 
         // Find the best move
-        Move bestmove = game.engine_go(config_params, max_search_time);
-        output_buffer.put(bestmove.bestmove_engine_style());
+        BitMove bestmove = game.engine_go(config_params, max_search_time);
+        output_buffer.put(bestmove_engine_style(bestmove));
       }
     }
     //this_thread::sleep_for(milliseconds(3));
