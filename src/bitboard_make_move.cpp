@@ -293,12 +293,14 @@ inline void Bitboard::update_state_after_king_move(const BitMove& m)
       {
         _white_pieces.Rooks ^= (h1_square | f1_square);
         update_hash_tag(h1_square, f1_square, _col_to_move, piecetype::Rook);
+        _has_castled[index(col::white)] = true;
       }
       else
       {
         _black_pieces.Rooks ^= (h8_square | f8_square);
         update_hash_tag(h8_square, f8_square, _col_to_move, piecetype::Rook);
-      }
+        _has_castled[index(col::black)] = true;
+     }
     }
     else
     {
@@ -307,11 +309,13 @@ inline void Bitboard::update_state_after_king_move(const BitMove& m)
       {
         _white_pieces.Rooks ^= (a1_square | d1_square);
         update_hash_tag(a1_square, d1_square, _col_to_move, piecetype::Rook);
+        _has_castled[index(col::white)] = true;
       }
       else
       {
         _black_pieces.Rooks ^= (a8_square | d8_square);
         update_hash_tag(a8_square, d8_square, _col_to_move, piecetype::Rook);
+        _has_castled[index(col::black)] = true;
       }
     }
   }
