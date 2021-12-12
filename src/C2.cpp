@@ -9,7 +9,6 @@
 #include <cstring>
 #include <cstdio>
 
-#include "board.hpp"
 #include "bitboard_with_utils.hpp"
 #include "chessfuncs.hpp"
 #include "chesstypes.hpp"
@@ -17,7 +16,6 @@
 #include "game.hpp"
 #include "circular_fifo.hpp"
 #include "current_time.hpp"
-#include "position_reader.hpp"
 
 namespace C2_chess
 {
@@ -202,125 +200,6 @@ void print_help_txt()
           "C2 Without arguments will start the chess-engine" << "\n" << "\n";
 }
 
-bool run_old_mg_test_case(int testnum, const std::string& FEN_string)
-{
-  CurrentTime now;
-  std::cout << "-- Test " << testnum << " --" << std::endl;
-  //std::cout << "FEN_string = " << FEN_string << std::endl;
-  Config_params config_params;
-  Game game(config_params);
-  FEN_reader reader(game);
-  Board chessboard;
-  std::vector<std::string> matches;
-  regexp_grep(FEN_string, "^([^\\s]+\\s){5}[^\\s]+", matches); // Matches the first 6 "words" in the string.
-  //std::cout << "matches: " << std::endl;
-  //for (unsigned int i = 0; i < matches.size(); i++)
-  //std::cout << "match[" << i << "] = " << "\"" << matches[i] << "\"" << std::endl;
-  if (reader.parse_FEN_string(matches[0], chessboard) != 0)
-  {
-    std::cerr << "Couldn't read FEN string." << std::endl;
-    return false;
-  }
-  uint64_t start = now.nanoseconds();
-  chessboard.init(game.get_col_to_move());
-  chessboard.calculate_moves(game.get_col_to_move());
-  uint64_t stop = now.nanoseconds();
-  std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
-
-  // Compare output and reference moves
-  std::stringstream out_moves;
-  chessboard.write_possible_moves(out_moves);
-  // In this case The FEN_string also contains a list of
-  // all legal moves in the position.
-  std::vector<std::string> out_moves_vector;
-  std::string out_move = "";
-  while (std::getline(out_moves, out_move))
-  {
-    if (!out_move.empty())
-      out_moves_vector.push_back(out_move);
-  }
-  // In this case the "lines" in FEN_test_positions.txt contains the FEN_string
-  // followed by a list of all legal moves in the position at the end.
-  std::vector<std::string> ref_moves_vector = split(FEN_string, ' ');
-  // Erase the actual FEN_string tokens from the vector.
-  ref_moves_vector.erase(ref_moves_vector.begin(),static_cast<std::vector<std::string>::iterator>(ref_moves_vector.begin() + 6));
-  // fix that "e.p." has been treated as a separate token.
-  for (unsigned int i = 0; i < ref_moves_vector.size(); i++)
-    if (ref_moves_vector[i] == "e.p.")
-    {
-      ref_moves_vector[i - 1] += " e.p.";
-      ref_moves_vector.erase(static_cast<std::vector<std::string>::iterator>(ref_moves_vector.begin() + i));
-    }
-  if (!compare_move_lists(out_moves_vector, ref_moves_vector))
-  {
-    std::cout << "ERROR: Test " << testnum << " failed!" << std::endl;
-    chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
-    std::cout << "Comparing program output with test case reference:" << std::endl;
-    chessboard.write_possible_moves(std::cout, true);
-    bool first = true;
-    for (const std::string& Move : ref_moves_vector)
-    {
-      if (first)
-        first = false;
-      else
-        std::cout << " ";
-      std::cout << Move;
-    }
-    std::cout << std::endl;
-    return false;
-  }
-  return true;
-}
-
-int old_mg_tests(unsigned int single_testnum)
-{
-  std::string FEN_string;
-  std::string filename = "test_positions/FEN_test_positions.txt";
-  std::ifstream ifs(filename);
-  if (!ifs.is_open())
-  {
-    std::cerr << "Couldn't open file " << filename << std::endl;
-    return -1;
-  }
-  std::vector<unsigned int> failed_testcases;
-  unsigned int testnum = 1;
-  while (getline(ifs, FEN_string))
-  {
-    // Skip empty lines and lines starting with a blank.
-    //std::cout << "single_testnum: " << single_testnum << ", " << "testnum: " << testnum << std::endl;
-    if (single_testnum == 0 || single_testnum == testnum)
-    {
-      if ((FEN_string.empty()) || FEN_string[0] == ' ')
-        continue;
-
-      if (!run_old_mg_test_case(testnum, FEN_string))
-        failed_testcases.push_back(testnum);
-    }
-    testnum++;
-  }
-  if (failed_testcases.size() > 1)
-  {
-    std::cout << "FAILURE: The following " << failed_testcases.size() << " test cases failed:";
-    for (unsigned int tn : failed_testcases)
-      std::cout << " " << tn;
-    std::cout << std::endl;
-  }
-  else if (failed_testcases.size() == 1)
-  {
-    std::cout << "FAILURE: Test case " << failed_testcases[0] << " failed." << std::endl;
-  }
-  else
-  {
-    std::cout << "SUCCES: ";
-    if (single_testnum == 0)
-      std::cout << "All test cases passed!" << std::endl;
-    else
-      std::cout << "Test case " << single_testnum << " passed!" << std::endl;
-  }
-  ifs.close();
-  return 0;
-
-}
 
 std::string bestmove_engine_style(const BitMove& move)
 {

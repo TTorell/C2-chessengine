@@ -10,41 +10,41 @@
 namespace C2_chess
 {
 
-class Move;
+class BitMove;
 class Square;
 
-class Movelist
-{
-  protected:
-    enum
-    {
-      _LISTMAX = 1000
-    };
-    std::deque<Move*> _list;
-    int _listindex;
-    public:
-    Movelist();
-    Movelist(const Movelist&);
-    virtual ~Movelist();
-    Movelist& operator=(const Movelist&);
-    Move* first() const;
-    Move* next() const;
-    void into(Move* const newmove);
-    void into_as_first(Move* const newmove);
-    void into_as_last(Move* const newmove);
-    void out(Move* const rubbish);
-    int size() const;
-    bool empty() const;
-    bool in_list(const Move& m, int& index) const;
-    void clear();
-    Move* operator[](int) const;
-    virtual std::ostream& write(std::ostream& os, bool same_line = false) const;
-    friend std::ostream& operator<<(std::ostream& os, const Movelist& ml)
-    {
-      ml.write(os);
-      return os;
-    }
-};
+//class Movelist
+//{
+//  protected:
+//    enum
+//    {
+//      _LISTMAX = 1000
+//    };
+//    std::deque<Move*> _list;
+//    int _listindex;
+//    public:
+//    Movelist();
+//    Movelist(const Movelist&);
+//    virtual ~Movelist();
+//    Movelist& operator=(const Movelist&);
+//    Move* first() const;
+//    Move* next() const;
+//    void into(Move* const newmove);
+//    void into_as_first(Move* const newmove);
+//    void into_as_last(Move* const newmove);
+//    void out(Move* const rubbish);
+//    int size() const;
+//    bool empty() const;
+//    bool in_list(const Move& m, int& index) const;
+//    void clear();
+//    Move* operator[](int) const;
+//    virtual std::ostream& write(std::ostream& os, bool same_line = false) const;
+//    friend std::ostream& operator<<(std::ostream& os, const Movelist& ml)
+//    {
+//      ml.write(os);
+//      return os;
+//    }
+//};
 
 class Movelog
 {

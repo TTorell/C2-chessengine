@@ -43,7 +43,7 @@ class Zobrist_bitboard_hash
       for (int square_index = 0; square_index < 64; square_index++)
         for (int rank = 1; rank <= 8; rank++)
           for (int col = index(col::white); col <= index(col::black); col++)
-            for (int type = index(piecetype::King); type <= index(piecetype::Pawn); type++)
+            for (int type = index(piecetype::Queen); type <= index(piecetype::King); type++)
               _random_table[square_index][col][type] = round(dist(mt));
 
       _castling_rights[1] = round(dist(mt));

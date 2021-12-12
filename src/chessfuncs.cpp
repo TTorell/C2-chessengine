@@ -9,7 +9,6 @@
 #include <filesystem>
 #include <iostream>
 #include <sstream>
-//#include <iomanip>
 #include <regex>
 #include <vector>
 //#include <memory>
@@ -23,7 +22,7 @@
 //#include <sys/stat.h>
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
-#include "move.hpp"
+#include "bitboard.hpp"
 
 // Redefining a namespace to something shorter.
 namespace fs = std::filesystem;
@@ -98,7 +97,7 @@ void require(bool bo, std::string file, std::string method, int line)
   }
 }
 
-void require_m(bool bo, std::string file, std::string method, int line, const Move& m)
+void require_m(bool bo, std::string file, std::string method, int line, const BitMove& m)
 {
   if (!bo)
   {

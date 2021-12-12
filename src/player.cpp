@@ -62,7 +62,7 @@ int Player::find_best_move_index(uint8_t& move_no, float& score, const int max_s
 //   return -1;
 
   _chessboard.clear_hash();
-  _chessboard.init_material_evaluation();
+  _chessboard.init_material_evaluation(); // TODO: Necessary?
 
 // _type == computer
   int8_t best_move_index = -1;

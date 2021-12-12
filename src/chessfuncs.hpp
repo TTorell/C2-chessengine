@@ -54,13 +54,14 @@ std::string to_binary(const T& x)
 
 class Move;
 class Config_params;
+class BitMove;
 
 col other_color(const col& c);
 inline col& operator++(col& c);
 col col_from_string(const std::string& s);
 std::string get_logfile_name();
 void require(bool b, std::string file, std::string method, int line);
-void require_m(bool b, std::string file, std::string method, int line, const Move &m);
+void require_m(bool b, std::string file, std::string method, int line, const BitMove& m);
 std::ostream& print_backtrace(std::ostream &os);
 std::string get_stdout_from_cmd(std::string cmd);
 std::pair<std::string, int> exec(const char* cmd);

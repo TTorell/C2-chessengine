@@ -43,10 +43,15 @@ class Game {
          Config_params& config_params);
     ~Game();
     Game operator=(const C2_chess::Game&) = delete;
+
     int read_position_FEN(const std::string& FEN_string)
     {
-      return _chessboard.read_position(FEN_string);
+      if (_chessboard.read_position(FEN_string))
+        return -1;
+      _chessboard.find_all_legal_moves();
+      return 0;
     }
+
     void init();
     void clear_chessboard();
     void clear_move_log();

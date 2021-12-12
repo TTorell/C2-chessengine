@@ -387,7 +387,7 @@ struct BitMove
     void add_property(uint8_t property)
     {
       uint32_t tmp = property;
-      _move &= tmp << 14;
+      _move |= tmp << 14;
     }
     friend std::ostream& operator<<(std::ostream& os, const BitMove& m);
 };
@@ -519,7 +519,7 @@ class Bitboard
     void count_development(float& sum, float weight) const;
     void count_center_control(float& sum, float weight) const;
     int count_threats_to_square(uint64_t square, col color) const;
-    float evaluate_position(col for_color, outputtype output_type, uint8_t level) const;
+    float evaluate_position(col for_color, uint8_t level) const;
 
   public:
 

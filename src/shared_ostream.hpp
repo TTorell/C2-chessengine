@@ -4,7 +4,7 @@
 #include <thread>
 #include <mutex>
 #include <iostream>
-#include "move.hpp"
+//#include "move.hpp"
 #include "movelist.hpp"
 #include "chessfuncs.hpp"
 #include "config_param.hpp"
@@ -66,7 +66,7 @@ namespace C2_chess
 // TODO: Maybe something to check dynamically in the class.
 // instead of checking _is_open. Didn,t think of that,
 // but all ostreams doesn't have an is_open() method.
-
+class BitMove;
 std::ostream& operator<<(std::ostream& os, const BitMove& m);
 
 class Shared_ostream {
@@ -201,18 +201,6 @@ class Shared_ostream {
 //      return *this;
 //    }
 
-    Shared_ostream& operator<<(const Movelist& ml)
-    {
-      std::lock_guard < std::mutex > locker(static_mutex);
-      if (_is_open)
-      {
-        std::stringstream ss;
-        ml.write(ss);
-        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
-      }
-      return *this;
-    }
-
     Shared_ostream& operator<<(const Movelog& ml)
     {
       std::lock_guard < std::mutex > locker(static_mutex);
@@ -237,18 +225,6 @@ class Shared_ostream {
 //      return *this;
 //    }
 
-    Shared_ostream& operator<<(const Move& m)
-    {
-      std::lock_guard < std::mutex > locker(static_mutex);
-      if (_is_open)
-      {
-        std::stringstream ss;
-        ss << m;
-        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
-      }
-      return *this;
-    }
-
     Shared_ostream& operator<<(const BitMove& m)
     {
       std::lock_guard < std::mutex > locker(static_mutex);
@@ -261,19 +237,19 @@ class Shared_ostream {
       return *this;
     }
 
-    void log_time_diff(uint64_t nsec_stop,
-                       uint64_t nsec_start,
-                       int search_level,
-                       const Move& best_move,
-                       float score)
-    {
-      std::lock_guard < std::mutex > locker(static_mutex);
-      uint64_t timediff = (nsec_stop - nsec_start);
-      // Log the time it took;
-      std::string s = "time spent by C2 on search level " + std::to_string(search_level) + " " + std::to_string(timediff/1.0e6) +
-          " " + best_move.bestmove_engine_style() + " score = " + std::to_string(score);
-      _os << iso_8859_1_to_utf8(s) << "\n";
-    }
+//    void log_time_diff(uint64_t nsec_stop,
+//                       uint64_t nsec_start,
+//                       int search_level,
+//                       const BitMove& best_move,
+//                       float score)
+//    {
+//      std::lock_guard < std::mutex > locker(static_mutex);
+//      uint64_t timediff = (nsec_stop - nsec_start);
+//      // Log the time it took;
+//      std::string s = "time spent by C2 on search level " + std::to_string(search_level) + " " + std::to_string(timediff/1.0e6) +
+//          " " + best_move.bestmove_engine_style() + " score = " + std::to_string(score);
+//      _os << iso_8859_1_to_utf8(s) << "\n";
+//    }
 
     // Method for a string which is already UTF-8 coded.
     void write_UTF8_string(std::string s)

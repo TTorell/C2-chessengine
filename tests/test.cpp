@@ -13,12 +13,13 @@
 #include "../src/bitboard_with_utils.hpp"
 #include "../src/chessfuncs.hpp"
 #include "../src/current_time.hpp"
+#include "../src/game.hpp"
 
 using namespace C2_chess;
 
 namespace // file private namespace
 {
-std::string initial_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+// std::string initial_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 std::string get_FEN_test_position(unsigned int n)
 {
@@ -364,120 +365,165 @@ TEST_CASE("find_legal_squares")
 
 TEST_CASE("evaluation")
 {
-  uint64_t start, stop;
+  uint64_t time_taken;
+  float evaluation;
   CurrentTime now;
-  start = now.nanoseconds();
   Bitboard_with_utils chessboard;
   chessboard.read_position(initial_position);
   chessboard.find_all_legal_moves();
-  REQUIRE(fabs(chessboard.evaluate_position(col::white, outputtype::silent, 7)) < 0.01);
+  REQUIRE(fabs(chessboard.evaluate_position(col::white, 7)) < 0.01);
   chessboard.make_move("e2e4");
-  float evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  now.tic();
+  evaluation = chessboard.evaluate_position(col::black, 7);
+  time_taken = now.toc_ns();
+  std::cout << "evaluation-time: " << time_taken << " nanoseconds." << std::endl;
   REQUIRE(fabs(evaluation - 0.05) < 0.01);
   chessboard.make_move("e7e5");
-  REQUIRE(fabs(chessboard.evaluate_position(col::white, outputtype::silent, 7)) < 0.01);
+  REQUIRE(fabs(chessboard.evaluate_position(col::white, 7)) < 0.01);
   chessboard.make_move("g1f3");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  now.tic();
+  evaluation = chessboard.evaluate_position(col::black, 7);
+  time_taken = now.toc_ns();
+  std::cout << "evaluation-time: " << time_taken << " nanoseconds." << std::endl;
   REQUIRE(fabs(evaluation - 0.09) < 0.01);
   chessboard.make_move("b8c6");
-  REQUIRE(fabs(chessboard.evaluate_position(col::white, outputtype::silent, 7)) < 0.01);
+  REQUIRE(fabs(chessboard.evaluate_position(col::white, 7)) < 0.01);
   chessboard.make_move("d2d4");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  now.tic();
+  evaluation = chessboard.evaluate_position(col::black, 7);
+  time_taken = now.toc_ns();
+  std::cout << "evaluation-time: " << time_taken << " nanoseconds." << std::endl;
   REQUIRE(fabs(evaluation - 0.07) < 0.01);
   chessboard.make_move("d7d5");
-  REQUIRE(fabs(chessboard.evaluate_position(col::white, outputtype::silent, 7)) < 0.01);
+  REQUIRE(fabs(chessboard.evaluate_position(col::white, 7)) < 0.01);
   chessboard.make_move("e4d5");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation - 1.03) < 0.01);
   chessboard.make_move("e5d4");
-  REQUIRE(fabs(chessboard.evaluate_position(col::white, outputtype::silent, 7)) < 0.01);
+  REQUIRE(fabs(chessboard.evaluate_position(col::white, 7)) < 0.01);
   chessboard.make_move("d5c6");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation - 2.99) < 0.01);
   chessboard.make_move("b7c6");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation - 1.97) < 0.01);
   chessboard.make_move("d1d4");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation - 3.03) < 0.01);
   chessboard.make_move("d8d4");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation + 6.04) < 0.01);
   chessboard.make_move("f3d4");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation - 2.98) < 0.01);
   chessboard.make_move("c8h3");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation - 2.93) < 0.01);
   chessboard.make_move("f1c4");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation - 3.0) < 0.01);
   chessboard.make_move("e8c8");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation - 2.81) < 0.01);
   chessboard.make_move("e1g1");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation - 2.96) < 0.01);
   chessboard.make_move("d8d4");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation + 0.04) < 0.01);
   chessboard.make_move("g2h3");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation - 2.96) < 0.01);
   chessboard.make_move("d4c4");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation + 0.06) < 0.01);
   chessboard.make_move("f1e1");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation + 0.02) < 0.01);
   chessboard.make_move("g8f6");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation + 0.11) < 0.01);
   chessboard.make_move("c1g5");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation + 0.06) < 0.01);
   chessboard.make_move("c4c2");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation + 1.02) < 0.01);
   chessboard.make_move("b1c3");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation + 0.93) < 0.01);
   chessboard.make_move("c2f2");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation + 1.93) < 0.01);
   chessboard.make_move("g1f2");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation - 3.07) < 0.01);
   chessboard.make_move("h7h6");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation - 3.07) < 0.01);
   chessboard.make_move("g5f6");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation - 6.15) < 0.01);
   chessboard.make_move("g7f6");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation - 3.09) < 0.01);
   chessboard.make_move("c3e4");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation - 3.03) < 0.01);
   chessboard.make_move("h6h5");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation - 3.03) < 0.01);
   chessboard.make_move("e4c5");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(fabs(evaluation - 3.07) < 0.01);
   chessboard.make_move("h8g8");
-  evaluation = chessboard.evaluate_position(col::white, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::white, 7);
   REQUIRE(fabs(evaluation - 3.02) < 0.01);
   chessboard.make_move("e1e8");
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 7);
+  evaluation = chessboard.evaluate_position(col::black, 7);
   REQUIRE(evaluation == 93.0F);
-  evaluation = chessboard.evaluate_position(col::black, outputtype::silent, 1);
+  evaluation = chessboard.evaluate_position(col::black, 1);
   REQUIRE(evaluation == 99.0F);
+}
+
+TEST_CASE("evaluation, mate and stalemate")
+{
+  float evaluation;
+  // Load test position 72
+  std::string FEN_string = get_FEN_test_position(72);
+  Bitboard_with_utils chessboard;
+  REQUIRE(chessboard.read_position(FEN_string) == 0);
+  chessboard.find_all_legal_moves();
+
+  SECTION("mate")
+  {
+    chessboard.make_move("c8c1");
+    evaluation = chessboard.evaluate_position(col::white, 7);
+    REQUIRE(evaluation == Approx(-93.0F).margin(0.0001).epsilon(1e-12));
+    evaluation = chessboard.evaluate_position(col::white, 1);
+    REQUIRE(evaluation == Approx(-99.0F).margin(0.0001).epsilon(1e-12));
+  }
+
+  SECTION("stalemate")
+  {
+    chessboard.make_move("c8g8");
+    evaluation = chessboard.evaluate_position(col::white, 7);
+    REQUIRE(evaluation == Approx(0.0F).margin(0.0001).epsilon(1e-12));
+  }
+}
 
 
-  stop = now.nanoseconds();
-  std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
+TEST_CASE("find best_move")
+{
+  std::ofstream ofs(get_logfile_name());
+  Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
+  logfile << "TEST STARTED" << "\n";
+  Config_params config_params;
+  Game game(config_params);
+  std::string FEN_string = get_FEN_test_position(73);
+  game.read_position_FEN(FEN_string);
+  BitMove bestmove = game.engine_go(config_params, "");
+  std::cout << "Best move: " << bestmove << std::endl;
 }
 
 //TEST_CASE("timing basic functions")

@@ -183,7 +183,7 @@ void Bitboard_with_utils::add_mg_test_position(const std::string& filename)
   while (!ifs.is_open())
   {
     if (regexp_match(filename, "^testpos[0-9]+.pgn$")) // matches e.g. testpos23.pgn
-      ifs.open("test_positions/" + filename);
+      ifs.open("tests/test_positions/" + filename);
     else
     {
       ifs.open(user_input("Enter the name of the new test position file: "));
@@ -209,7 +209,7 @@ void Bitboard_with_utils::add_mg_test_position(const std::string& filename)
   if (question_to_user("Is this correct?\nIf so, would you like to add the position\nas a new test case? [y/n]: ", "^[yY].*$"))
   {
     std::ofstream ofs;
-    ofs.open("test_positions/FEN_test_positions.txt", std::ios::app);
+    ofs.open("tests/test_positions/FEN_test_positions.txt", std::ios::app);
     if (!ofs.is_open())
     {
       std::cerr << "ERROR: Couldn't open file FEN_test_positions.txt" << std::endl;
@@ -410,9 +410,9 @@ void Bitboard_with_utils::init_board_hash_tag()
     _hash_tag ^= transposition_table._black_to_move;
 }
 
-float Bitboard_with_utils::evaluate_position(col col_to_move, outputtype ot, uint8_t level) const
+float Bitboard_with_utils::evaluate_position(col col_to_move, uint8_t level) const
 {
-  return Bitboard::evaluate_position(col_to_move, ot, level);
+  return Bitboard::evaluate_position(col_to_move, level);
 }
 
 int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, BitMove& m) const

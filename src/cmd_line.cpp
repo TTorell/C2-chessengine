@@ -2,11 +2,11 @@
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 #include "piece.hpp"
-#include "square.hpp"
 #include "bitboard_with_utils.hpp"
 #include "game.hpp"
 #include "current_time.hpp"
-//#include "position_reader.hpp"
+#include "position.hpp"
+
 
 namespace// fileprivate namespace
 {

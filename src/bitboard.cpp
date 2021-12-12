@@ -409,13 +409,12 @@ void Bitboard::count_center_control(float& sum, float weight) const
   sum += counter * weight;
 }
 
-float Bitboard::evaluate_position(col col_to_move, outputtype ot, uint8_t level) const
+float Bitboard::evaluate_position(col col_to_move, uint8_t level) const
 {
-  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
-
   if (_movelist.size() == 0)
   {
-    if (square_is_threatened(_own->King, false))
+    // if (square_is_threatened(_own->King, false))
+    if (_last_move.properties() & move_props_check) // TODO: Check it this always has been set?
     {
       // This is checkmate, we want to evaluate the quickest way to mate higher
       // so we add/subtract level.
@@ -431,8 +430,6 @@ float Bitboard::evaluate_position(col col_to_move, outputtype ot, uint8_t level)
   // equal position. 0.0 is reserved for stalemate.
   float sum = epsilon;
   sum += _material_diff;
-  if (ot == outputtype::debug)
-    cmdline << "Material evaluation: " << _material_diff << "\n";
   //count_material(sum, 0.95F, ot);
   count_center_control(sum, 0.02F);
   //count_possible_moves(sum, 0.01F, col_to_move); // of doubtful value.
@@ -444,14 +441,15 @@ float Bitboard::evaluate_position(col col_to_move, outputtype ot, uint8_t level)
 
 float Bitboard::max(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const
 {
+  //std::cout << static_cast<int>(max_search_level) << std::endl;
   float max_value = -101.0; // Must be lower than lowest evaluation
   int8_t dummy_index; // best_move_index is only an output parameter,
   // from min(). It doesn't matter what you put in.
   best_move_index = -1;
   level++;
 
-  std::cout << "MAX " << "_col_to_move: " << static_cast<int>(_col_to_move) << " time_left: " <<
-      time_left << " level: " << static_cast<int>(level) << std::endl;
+//  std::cout << "MAX " << "_col_to_move: " << static_cast<int>(_col_to_move) << " time_left: " <<
+//      time_left << " level: " << static_cast<int>(level) << std::endl;
 
   // Check if position evaluation is already in the hash_table
   TT_element& element = transposition_table.find(_hash_tag);
@@ -474,7 +472,7 @@ float Bitboard::max(uint8_t level, uint8_t move_no, float alpha, float beta, int
     // search level) or it is a reference to  a new hash_element, already
     // in the cash, but only default-allocated. Fill it with values;
     element = {best_move_index, // -1, TODO: will this mess up things?
-        evaluate_position(col::white, outputtype::silent, level),
+        evaluate_position(col::white, level),
         level};
     return element.evaluation;
   }
@@ -532,8 +530,8 @@ float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int
   best_move_index = -1;
   level++;
 
-  std::cout << "MIN " << "_col_to_move: " << static_cast<int>(_col_to_move) << " time_left: " <<
-      time_left << " level: " << static_cast<int>(level) << std::endl;
+//  std::cout << "MIN " << "_col_to_move: " << static_cast<int>(_col_to_move) << " time_left: " <<
+//      time_left << " level: " << static_cast<int>(level) << std::endl;
 
   TT_element& element = transposition_table.find(_hash_tag);
   if (element.level != 0)
@@ -547,7 +545,7 @@ float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int
   if (level >= max_search_level || _movelist.size() == 0)
   {
     element = {best_move_index, // -1, TODO: will this mess up things?
-        evaluate_position(col::black, outputtype::silent, level),
+        evaluate_position(col::black, level),
         level};
     return element.evaluation;
   }
@@ -555,10 +553,8 @@ float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int
   {
     for (uint8_t i = 0; i < static_cast<uint8_t>(_movelist.size()); i++)
     {
-      if (level == 5)
-        std::cout << "level 5" << std::endl;
       level_boards[level] = *this;
-      level_boards[level].write(std::cout, outputtype::cmd_line_diagram, col::white);
+//      level_boards[level].write(std::cout, outputtype::cmd_line_diagram, col::white);
       level_boards[level].make_move(_movelist[i], move_no);
       float tmp_value = level_boards[level].max(level, move_no, alpha, beta, dummy_index, max_search_level);
       if (tmp_value < min_value)
@@ -583,7 +579,7 @@ float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int
     element = {best_move_index,
                min_value,
                level};
-    std::cout << "best_move_index: " << static_cast<int>(best_move_index) << " min_value: " << min_value << " level: " << static_cast<int>(level) << std::endl;
+//    std::cout << "best_move_index: " << static_cast<int>(best_move_index) << " min_value: " << min_value << " level: " << static_cast<int>(level) << std::endl;
     return min_value;
   }
 }

@@ -169,7 +169,7 @@ void Game::actions_after_a_move()
   // Change color to evaluate from opponents view.
   _col_to_move = other_color(_col_to_move);
 
-  float evaluation = _chessboard.evaluate_position(_col_to_move, outputtype::debug, 0);
+  float evaluation = _chessboard.evaluate_position(_col_to_move, 0);
   if (evaluation == eval_max || evaluation == eval_min)
   {
     _chessboard.set_mate();

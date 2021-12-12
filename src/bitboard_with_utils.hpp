@@ -45,7 +45,7 @@ class Bitboard_with_utils: public Bitboard
     uint64_t find_legal_squares(uint64_t sq, uint64_t mask, uint64_t all_pieces, uint64_t other_pieces);
     void make_move(const std::string& UCI_move);
     void init_board_hash_tag();
-    float evaluate_position(col col_to_move, outputtype ot, uint8_t level) const;
+    float evaluate_position(col col_to_move, uint8_t level) const;
     int no_of_moves()
     {
       return _movelist.size();

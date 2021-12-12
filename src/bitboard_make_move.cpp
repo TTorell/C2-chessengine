@@ -132,7 +132,6 @@ inline void Bitboard::remove_other_piece(uint64_t square)
       _white_pieces.Queens ^= square, _material_diff -= 9, pt = piecetype::Queen;
     else if (_white_pieces.Pawns & square)
     {
-      std::cout << to_binary_board(square) << std::endl;
       _white_pieces.Pawns ^= square, _material_diff -= 1, pt = piecetype::Pawn;
     }
     else if (_white_pieces.Rooks & square)
@@ -252,9 +251,7 @@ inline void Bitboard::update_hash_tag(uint64_t square1, uint64_t square2, col p_
 
 void Bitboard::update_col_to_move()
 {
-  std::cout << "update_col_to_move_before: " << static_cast<int>(_col_to_move) << std::endl;
   _col_to_move = other_color(_col_to_move);
-  std::cout << "update_col_to_move after: " << static_cast<int>(_col_to_move) << std::endl;
   if (_col_to_move == col::white)
   {
     _own = &_white_pieces;
