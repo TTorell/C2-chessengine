@@ -35,9 +35,9 @@ if(MSVC)
     # applicable to everyone anyway.
 
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a -O3 -m64 -march=native -mpopcnt -msse2 -DNDEBUG -pedantic -pedantic-errors -Wall -Wextra -Werror -Wcast-qual -Wshadow -c -fmessage-length=0 -Wabi-tag -D_GLIBCXX_USE_CXX11_ABI=0 -pthread")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -std=c++2a -m64 -march=native -mpopcnt -msse2 -pedantic -pedantic-errors -Wall -Wextra -Werror -Wcast-qual -Wshadow -c -fmessage-length=0 -pthread")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++2a -O3 -m64 -march=native -mpopcnt -msse2 -DNDEBUG -pedantic -pedantic-errors -Wall -Wextra -Werror -Wcast-qual -Wshadow -c -fmessage-length=0 -Wabi-tag -D_GLIBCXX_USE_CXX11_ABI=0 -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a -m64 -march=native -mpopcnt -msse2 -DNDEBUG -pedantic -pedantic-errors -Wall -Wextra -Werror -Wcast-qual -Wshadow -fmessage-length=0 -Wabi-tag -D_GLIBCXX_USE_CXX11_ABI=0 -pthread")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -g0")
 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
