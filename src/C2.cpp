@@ -201,7 +201,7 @@ void print_help_txt()
 }
 
 
-std::string bestmove_engine_style(const BitMove& move)
+std::string engine_style(const BitMove& move)
 {
   std::stringstream ss;
   ss << "bestmove " << 'a' + file_idx(move.from()) << rank_idx(move.from()) <<
@@ -383,7 +383,7 @@ int main(int argc, char* argv[])
 
         // Find the best move
         BitMove bestmove = game.engine_go(config_params, max_search_time);
-        output_buffer.put(bestmove_engine_style(bestmove));
+        output_buffer.put("bestmove " + engine_style(bestmove));
       }
     }
     //this_thread::sleep_for(milliseconds(3));

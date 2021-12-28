@@ -84,11 +84,11 @@ std::ostream& print_backtrace(std::ostream& os)
 }
 #endif // linux
 
-void require(bool bo, std::string file, std::string method, int line)
+void require(bool bo, std::string File, std::string method, int line)
 {
   if (!bo)
   {
-    std::cerr << "Requirement error in " << file << ":" << method << " at line " << line << std::endl;
+    std::cerr << "Requirement error in " << File << ":" << method << " at line " << line << std::endl;
 #ifdef __linux
     print_backtrace(std::cerr) << std::endl;
 #endif // linux
@@ -97,11 +97,11 @@ void require(bool bo, std::string file, std::string method, int line)
   }
 }
 
-void require_m(bool bo, std::string file, std::string method, int line, const BitMove& m)
+void require_m(bool bo, std::string File, std::string method, int line, const BitMove& m)
 {
   if (!bo)
   {
-    std::cerr << "Move:: requirement error in " << file << ":" << method << " at line " << line << std::endl;
+    std::cerr << "Move:: requirement error in " << File << ":" << method << " at line " << line << std::endl;
     std::cerr << "Move = " << m << std::endl << std::endl;
 #ifdef __linux__
     print_backtrace(std::cerr) << std::endl;
@@ -151,9 +151,9 @@ std::pair<std::string, int> exec(const char* cmd)
   std::array<char, 128> buffer;
   std::string result;
   int return_code = -1;
-  auto pclose_wrapper = [&return_code](FILE* file)
+  auto pclose_wrapper = [&return_code](FILE* File)
                                        {
-                                         return_code = close_pipe(file);
+                                         return_code = close_pipe(File);
                                        };
   {
     // scope is important, have to make sure the pointer goes out of scope first

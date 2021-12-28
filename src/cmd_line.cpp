@@ -1,39 +1,30 @@
 #include <cstring>
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
-#include "piece.hpp"
 #include "bitboard_with_utils.hpp"
 #include "game.hpp"
 #include "current_time.hpp"
-#include "position.hpp"
 
-
-namespace// fileprivate namespace
+namespace // fileprivate namespace
 {
 C2_chess::CurrentTime current_time;
 
-bool read_piece_type(C2_chess::piecetype& pt, char ch)
+bool read_promotion_piecetype(C2_chess::piecetype& pt, char ch)
 {
   // method not important for efficiency
   switch (ch)
   {
-    case 'P':
-      pt = C2_chess::piecetype::Pawn;
+    case 'Q':
+      pt = C2_chess::piecetype::Queen;
       break;
-    case 'K':
-      pt = C2_chess::piecetype::King;
+    case 'R':
+      pt = C2_chess::piecetype::Rook;
       break;
     case 'N':
       pt = C2_chess::piecetype::Knight;
       break;
     case 'B':
       pt = C2_chess::piecetype::Bishop;
-      break;
-    case 'Q':
-      pt = C2_chess::piecetype::Queen;
-      break;
-    case 'R':
-      pt = C2_chess::piecetype::Rook;
       break;
     default:
       return false;
@@ -69,14 +60,9 @@ std::ostream& write_piece_diagram_style(std::ostream& os, C2_chess::piecetype p_
   return os;
 }
 
-} // End fileprivate namespace
-
-namespace C2_chess
+int write_menue_get_choice()
 {
-// Method for the cmdline-interface
-static int write_menue_get_choice()
-{
-  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+  C2_chess::Shared_ostream& cmdline = *(C2_chess::Shared_ostream::get_cout_instance());
 
   cmdline << "\n";
   cmdline << "----------------------------" << "\n";
@@ -111,6 +97,11 @@ static int write_menue_get_choice()
     }
   }
 }
+
+} // End fileprivate namespace
+
+namespace C2_chess
+{
 
 // Method for the cmdline-interface
 static int back_to_main_menu()
@@ -301,169 +292,84 @@ void Game::start()
 
 int Bitboard::make_move(playertype player, uint8_t& move_no)
 {
+  assert(player == playertype::human); // This method is only for humans playing on the cmd-line.
+  if (player != playertype::human)
+    return -1;
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
 
-  if (player != playertype::human)
-  {
-    Shared_ostream& logfile = *(Shared_ostream::get_instance());
-    logfile << "Error: Using wrong make_move() method for computer." << "\n";
-    return -1;
-  }
-  Position from;
-  Position to;
+  uint8_t from_file_idx;
+  uint8_t from_rank_idx;
+  uint8_t to_file_idx;
+  uint8_t to_rank_idx;
+  piecetype p_type;
+  piecetype promotion_piecetype = piecetype::Undefined;
   uint8_t move_props = 0;
-  char st[100];
+  std::string move_string;
+
   bool first = true;
   while (true)
   {
     if (!first)
       cmdline << "The Move you entered is impossible!" << "\n\n";
     first = false;
+    cmdline << "(Just enter from-square and to-square, like:" <<
+            "e2e4, or g7g8Q if it's a propmotion.)" << "\n";
     cmdline << "Your move: ";
-    std::cin >> st;
-    bool from_file_read = false;
-    bool from_rank_read = false;
-    bool to_file_read = false;
-    bool to_rank_read = false;
-    bool ep_checked = false;
-    bool en_passant = false;
-    bool check = false;
-    bool take = false;
-    piecetype pt = piecetype::Pawn;
-    bool promotion = false;
-    piecetype promotion_pt = piecetype::Queen;
-    int i;
-    for (i = 0; i < (int) strlen(st); i++)
-    {
-      if (!from_file_read)
-      {
-        if (from.set_file(st[i]))
-          from_file_read = true;
-        else if (!read_piece_type(pt, st[i]))
-          break;
-        continue;
-      };
-      if (!from_rank_read)
-      {
-        if (from.set_rank(st[i]))
-          from_rank_read = true;
-        else
-          break;
-        continue;
-      }
-      if (!to_file_read)
-      {
-        if (to.set_file(st[i]))
-          to_file_read = true;
-        else if (st[i] != '-' && st[i] != 'x')
-          break;
-        else if (st[i] == 'x')
-          take = true;
-        continue;
-      }
-      if (!to_rank_read)
-      {
-        if (to.set_rank(st[i]))
-          to_rank_read = true;
-        else
-          break;
-        continue;
-      }
-      if (!ep_checked)
-      {
-        if (st[i] == 'e')
-        {
-          en_passant = true;
-          move_props |= move_props_en_passant;
-        }
-        else if (read_piece_type(promotion_pt, st[i]))
-        {
-
-        }
-        else if (st[i] == '+')
-        {
-          check = true;
-          move_props |= move_props_check;
-        }
-        else
-          break;
-        ep_checked = true;
-        continue;
-      }
-      if (en_passant)
-        if (st[i] == '.' || st[i] == 'p')
-          continue;
-      if (!check)
-      {
-        if (st[i] == '+')
-        {
-          check = true;
-          move_props |= move_props_check;
-        }
-      }
-    } // end of for loop
-    if (i < (int) strlen(st))
+    std::cin >> move_string;
+    if (move_string.size() < 4 || move_string.size() > 5)
       continue;
-    uint64_t from_square = file[from.get_file()] & rank[from.get_rank()];
+    if (move_string[0] < 'a' || move_string[0] > 'h')
+      continue;
+    if (move_string[1] < '1' || move_string[1] > '8')
+      continue;
+    if (move_string[2] < 'a' || move_string[2] > 'h')
+      continue;
+    if (move_string[3] < '1' || move_string[3] > '8')
+      continue;
+    from_file_idx = move_string[0] - a;
+    from_rank_idx = move_string[1];
+    to_file_idx = move_string[2] - a;
+    to_rank_idx = move_string[3];
+    if (move_string.size() == 5)
+    {
+      if (!read_promotion_piecetype(promotion_piecetype, move_string[4]))
+        continue;
+      move_props |= move_props_promotion;
+    }
+    if (move_props & move_props_promotion)
+      if ((_col_to_move == col::white) ? from_rank_idx != 7 : from_rank_idx != 2)
+        continue;
+    uint64_t from_square = file[from_file_idx] & rank[from_rank_idx];
+    uint64_t to_square = file[to_file_idx] & rank[to_rank_idx];
     if ((from_square & _own->pieces) == zero)
       continue;
-
-    // Check take
-    uint64_t to_square = file[to.get_file()] & rank[to.get_rank()];
-
-    if ((to_square & _other->pieces) == zero)
+    p_type = get_piece_type(from_square);
+    switch (p_type)
     {
-      if (take == true)
+      case piecetype::Undefined:
         continue;
-    }
-    else
-    {
-      take = true;
-      move_props |= move_props_capture;
-    }
-    // Check piece_type
-    if (pt != piecetype::Pawn)
-      if (get_piece_type(from_square) != pt)
-        continue;
-    pt = get_piece_type(from_square);
-    // Check promotion
-    if (promotion) //It is supposed to be a promotion
-    {
-      if (_col_to_move == col::white)
-      {
-        if (from.get_rank() != 7)
-          continue;
-        else if (get_piece_type(from_square) != piecetype::Pawn)
-          continue;
-      }
-      else //col_to_move==col::black
-      {
-        if (from.get_rank() != 2)
-          continue;
-        else if (get_piece_type(from_square) != piecetype::Pawn)
-          continue;
-      }
-    }
-    if (pt == piecetype::Pawn)
-    {
-      if (_ep_square)
-        if (_ep_square & to_square)
-        {
-          en_passant = true;
+      case piecetype::Pawn:
+        if (to_square & _ep_square)
           move_props |= move_props_en_passant;
+        break;
+      case piecetype::King:
+        if (_col_to_move == col::white)
+        {
+          if ((from_square & e1_square) && (to_square & (g1_square | c1_square)))
+            move_props |= move_props_castling;
         }
+        else
+        {
+          if ((from_square & e8_square) && (to_square & (g8_square | c8_square)))
+            move_props |= move_props_castling;
+        }
+        break;
+      default:
+        ;
     }
-    if (pt == piecetype::King && _col_to_move == col::white)
-    {
-      if ((from_square & e1_square) && (to_square & (g1_square | c1_square)))
-        move_props |= move_props_castling;
-    }
-    else if (pt == piecetype::King && _col_to_move == col::black)
-    {
-      if ((from_square & e8_square) && (to_square & (g8_square | c8_square)))
-        move_props |= move_props_castling;
-    }
-    BitMove m(pt, move_props, from_square, to_square, promotion_pt);
+    if (to_square & _other->pieces)
+      move_props = move_props_capture;
+    BitMove m(p_type, move_props, from_square, to_square, promotion_piecetype);
     //  Move is OK,make it
     make_move(m, move_no);
     return 0;

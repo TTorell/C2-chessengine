@@ -10,7 +10,6 @@
 #include "bitboard_with_utils.hpp"
 #include "chessfuncs.hpp"
 #include "current_time.hpp"
-#include "position.hpp"
 
 namespace C2_chess
 {
@@ -18,6 +17,7 @@ namespace C2_chess
 
 std::ostream& operator<<(std::ostream& os, const BitMove& m)
 {
+  std::stringstream ss;
   switch (m.piece_type())
   {
     case piecetype::King:
@@ -25,65 +25,65 @@ std::ostream& operator<<(std::ostream& os, const BitMove& m)
       if (abs(static_cast<int64_t>(file_idx(m.from()) - file_idx(m.to()))) == 2)
       {
         if (file_idx(m.to()) == g)
-          os << "0-0";
+          ss << "0-0";
         else
-          os << "0-0-0";
+          ss << "0-0-0";
+        os << ss.str();
         return os;
       }
-      os << "K";
+      ss << "K";
       break;
     }
     case piecetype::Queen:
-      os << "Q";
+      ss << "Q";
       break;
     case piecetype::Rook:
-      os << "R";
+      ss << "R";
       break;
     case piecetype::Bishop:
-      os << "B";
+      ss << "B";
       break;
     case piecetype::Knight:
-      os << "N";
+      ss << "N";
       break;
     default:
       break;
   }
-  Position from(file_idx(m.from()), rank_idx(m.from()));
-  Position to(file_idx(m.to()), rank_idx(m.to()));
-  os << from;
+  ss << 'a' + file_idx(m.from()) << rank_idx(m.from());
   if (m.properties() & move_props_capture)
-    os << "x";
+    ss << "x";
   else
-    os << "-";
-  os << to;
+    ss << "-";
+  ss << 'a' + file_idx(m.to()) << rank_idx(m.to());
   if (m.properties() & move_props_en_passant)
-    os << " " << "e.p.";
+    ss << " " << "e.p.";
   if (m.properties() & move_props_promotion)
   {
     switch (m.promotion_piece_type())
     {
       case piecetype::Queen:
-        os << "=Q";
+        ss << "=Q";
         break;
       case piecetype::Rook:
-        os << "=R";
+        ss << "=R";
         break;
       case piecetype::Bishop:
-        os << "=B";
+        ss << "=B";
         break;
       case piecetype::Knight:
-        os << "=N";
+        ss << "=N";
         break;
       default:
         break;
     }
   }
   if (m.properties() & move_props_check)
-    os << "+";
+    ss << "+";
   if (m.properties() & move_props_mate)
-    os << " mate";
+    ss << " mate";
   if (m.properties() & move_props_stalemate)
-    os << " stalemate";
+    ss << " stalemate";
+  os << ss.str();
   return os;
 }
 
