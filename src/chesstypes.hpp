@@ -39,6 +39,11 @@ enum class playertype {
   human
 };
 
+enum class gentype {
+    all,
+    captures
+};
+
 enum class outputtype {
   verbose,
   silent,
@@ -67,6 +72,8 @@ constexpr uint8_t move_props_capture = 0x04;
 constexpr uint8_t move_props_check = 0x08;
 constexpr uint8_t move_props_mate = 0x10;
 constexpr uint8_t move_props_stalemate = 0x20;
+
+constexpr bool SAME_LINE = true;
 
 } // namespace
 #endif

@@ -448,17 +448,19 @@ class Bitboard
 
     uint64_t find_blockers(uint64_t sq, uint64_t mask, uint64_t all_pieces);
 
+    inline uint64_t find_other_color_blockers(uint64_t sq, uint64_t mask);
+
     uint64_t find_legal_squares(uint64_t sq, uint64_t mask);
 
-    void find_Queen_Rook_and_Bishop_moves();
+    void find_Queen_Rook_and_Bishop_moves(gentype gt);
 
-    void find_legal_moves_for_pinned_pieces();
+    void find_legal_moves_for_pinned_pieces(gentype gt);
 
-    void find_Knight_moves();
+    void find_Knight_moves(gentype gt);
 
-    void find_Pawn_moves();
+    void find_Pawn_moves(gentype gt);
 
-    void find_normal_legal_moves();
+    void find_normal_legal_moves(gentype gt);
 
     void find_Knight_moves_to_square(const uint64_t to_square);
 
@@ -468,11 +470,11 @@ class Bitboard
 
     void add_pawn_move_check_promotion(uint64_t from_square, uint64_t to_square);
 
-    void find_pawn_moves_to_empty_square(uint64_t to_square);
+    void find_pawn_moves_to_empty_square(uint64_t to_square, gentype gt);
 
-    void find_moves_to_square(uint64_t to_square);
+    void find_moves_to_square(uint64_t to_square, gentype gt);
 
-    void find_moves_after_check(uint64_t checker);
+    void find_moves_after_check(gentype gt);
 
     void find_checkers_and_pinned_pieces();
 
@@ -480,7 +482,7 @@ class Bitboard
 
     bool square_is_threatened2(uint64_t to_square, bool King_is_asking);
 
-    inline void find_king_moves();
+    inline void find_king_moves(gentype gt);
 
     // ### Protected methods for making a move ###
     // ---------------------------------------
@@ -548,7 +550,7 @@ class Bitboard
     // Puts all legal moves of the position in _movelist.
     // (Naturally only the moves for the player who's in
     // turn to make a move.)
-    void find_all_legal_moves();
+    void find_legal_moves(gentype gt);
 
     // ### Public methods for make move ###
     // ------------------------------------

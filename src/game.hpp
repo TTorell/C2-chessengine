@@ -48,7 +48,7 @@ class Game {
     {
       if (_chessboard.read_position(FEN_string))
         return -1;
-      _chessboard.find_all_legal_moves();
+      _chessboard.find_legal_moves(gentype::all);
       return 0;
     }
 

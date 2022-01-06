@@ -73,7 +73,7 @@ TEST_CASE("Castling_wrights")
   Bitboard_with_utils chessboard;
   REQUIRE(chessboard.read_position(FEN_string) == 0);
   REQUIRE(chessboard.get_castling_rights() == castling_rights_all);
-  chessboard.find_all_legal_moves();
+  chessboard.find_legal_moves(gentype::all);
   chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
   chessboard.write_movelist(std::cout, true) << std::endl;
 
@@ -370,7 +370,7 @@ TEST_CASE("evaluation")
   CurrentTime now;
   Bitboard_with_utils chessboard;
   chessboard.read_position(initial_position);
-  chessboard.find_all_legal_moves();
+  chessboard.find_legal_moves(gentype::all);
   REQUIRE(fabs(chessboard.evaluate_position(col::white, 7)) < 0.01);
   chessboard.make_move("e2e4");
   now.tic();
@@ -493,7 +493,7 @@ TEST_CASE("evaluation, mate and stalemate")
   std::string FEN_string = get_FEN_test_position(72);
   Bitboard_with_utils chessboard;
   REQUIRE(chessboard.read_position(FEN_string) == 0);
-  chessboard.find_all_legal_moves();
+  chessboard.find_legal_moves(gentype::all);
 
   SECTION("mate")
   {

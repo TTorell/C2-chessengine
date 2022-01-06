@@ -441,7 +441,7 @@ void Bitboard::make_move(const BitMove& m, uint8_t& move_no)
     move_no++;
   if (square_is_threatened(_own->King, false))
     _last_move.add_property(move_props_check);
-  find_all_legal_moves();
+  find_legal_moves(gentype::all);
 }
 
 }

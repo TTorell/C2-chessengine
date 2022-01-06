@@ -14,10 +14,9 @@
 namespace C2_chess
 {
 
-
 std::ostream& operator<<(std::ostream& os, const BitMove& m)
 {
-  std::stringstream ss;
+  std::stringstream sstr;
   switch (m.piece_type())
   {
     case piecetype::King:
@@ -25,65 +24,65 @@ std::ostream& operator<<(std::ostream& os, const BitMove& m)
       if (abs(static_cast<int64_t>(file_idx(m.from()) - file_idx(m.to()))) == 2)
       {
         if (file_idx(m.to()) == g)
-          ss << "0-0";
+          sstr << "0-0";
         else
-          ss << "0-0-0";
-        os << ss.str();
+          sstr << "0-0-0";
+        os << sstr.str();
         return os;
       }
-      ss << "K";
+      sstr << "K";
       break;
     }
     case piecetype::Queen:
-      ss << "Q";
+      sstr << "Q";
       break;
     case piecetype::Rook:
-      ss << "R";
+      sstr << "R";
       break;
     case piecetype::Bishop:
-      ss << "B";
+      sstr << "B";
       break;
     case piecetype::Knight:
-      ss << "N";
+      sstr << "N";
       break;
     default:
       break;
   }
-  ss << 'a' + file_idx(m.from()) << rank_idx(m.from());
+  sstr << static_cast<char>('a' + file_idx(m.from())) << static_cast<int>(rank_idx(m.from()));
   if (m.properties() & move_props_capture)
-    ss << "x";
+    sstr << "x";
   else
-    ss << "-";
-  ss << 'a' + file_idx(m.to()) << rank_idx(m.to());
+    sstr << "-";
+  sstr << static_cast<char>('a' + file_idx(m.to())) << static_cast<int>(rank_idx(m.to()));
   if (m.properties() & move_props_en_passant)
-    ss << " " << "e.p.";
+    sstr << " " << "e.p.";
   if (m.properties() & move_props_promotion)
   {
     switch (m.promotion_piece_type())
     {
       case piecetype::Queen:
-        ss << "=Q";
+        sstr << "=Q";
         break;
       case piecetype::Rook:
-        ss << "=R";
+        sstr << "=R";
         break;
       case piecetype::Bishop:
-        ss << "=B";
+        sstr << "=B";
         break;
       case piecetype::Knight:
-        ss << "=N";
+        sstr << "=N";
         break;
       default:
         break;
     }
   }
   if (m.properties() & move_props_check)
-    ss << "+";
+    sstr << "+";
   if (m.properties() & move_props_mate)
-    ss << " mate";
+    sstr << " mate";
   if (m.properties() & move_props_stalemate)
-    ss << " stalemate";
-  os << ss.str();
+    sstr << " stalemate";
+  os << sstr.str();
   return os;
 }
 
@@ -203,7 +202,7 @@ void Bitboard_with_utils::add_mg_test_position(const std::string& filename)
 
   read_position(FEN_string);
   write(std::cout, outputtype::cmd_line_diagram, col::white);
-  find_all_legal_moves();
+  find_legal_moves(gentype::all);
   std::cout << "Possible moves are:" << std::endl;
   write_movelist(std::cout);
   if (question_to_user("Is this correct?\nIf so, would you like to add the position\nas a new test case? [y/n]: ", "^[yY].*$"))
@@ -224,13 +223,12 @@ void Bitboard_with_utils::add_mg_test_position(const std::string& filename)
 bool Bitboard_with_utils::run_mg_test_case(int testnum,
                                            const std::string& FEN_string,
                                            const std::vector<std::string>& ref_moves_vector,
-                                           const std::string& testcase_info)
+                                           const std::string& testcase_info,
+                                           const gentype gt)
 {
   CurrentTime now;
   std::cout << "-- Test " << testnum << " " << testcase_info << " --" << std::endl;
 
-  if (testnum == 1)
-    std::cout << "1" << std::endl;
   if (read_position(FEN_string) != 0)
   {
     std::cerr << "Couldn't read FEN string." << std::endl;
@@ -240,7 +238,7 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum,
 
   uint64_t start = now.nanoseconds();
 
-  find_all_legal_moves();
+  find_legal_moves(gt);
 
   uint64_t stop = now.nanoseconds();
   std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
@@ -252,20 +250,36 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum,
   std::string out_move = "";
   while (std::getline(out_moves, out_move))
     out_moves_vector.push_back(out_move);
-  if (!compare_move_lists(out_moves_vector, ref_moves_vector))
+  std::vector<std::string> filtered_ref_moves_vector;
+  switch (gt)
+  {
+    case gentype::captures:
+      for (const std::string& m : ref_moves_vector)
+        if (m.find("x") != std::string::npos)
+          filtered_ref_moves_vector.push_back(m);
+      break;
+    case gentype::all:
+      filtered_ref_moves_vector = ref_moves_vector;
+      break;
+    default:
+      assert(false); // Unsupported gentype;
+  }
+  if (!compare_move_lists(out_moves_vector, filtered_ref_moves_vector))
   {
     std::cout << "ERROR: Test " << testnum << " " << testcase_info << " failed!" << std::endl;
     write(std::cout, outputtype::cmd_line_diagram, col::white);
     std::cout << "Comparing program output with test case reference:" << std::endl;
+    std::cout << "OUT: " << std::endl;
     write_movelist(std::cout, true);
+    std::cout << "REF: " << std::endl;
     bool first = true;
-    for (const std::string& Move : ref_moves_vector)
+    for (const std::string& m : filtered_ref_moves_vector)
     {
       if (first)
         first = false;
       else
         std::cout << " ";
-      std::cout << Move;
+      std::cout << m;
     }
     std::cout << std::endl;
     return false;
@@ -316,14 +330,24 @@ int Bitboard_with_utils::test_move_generation(unsigned int single_testnum)
         }
 
       // Run the testcase for the position:
-      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "for inital color"))
+      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "for inital color", gentype::all))
         failed_testcases.push_back(testnum);
 
       // Run the same test-case with reversed colors.
       std::string reversed_FEN_string = reverse_FEN_string(matches[0]);
       //std::cout << "FEN_string2: " << reversed_FEN_string << std::endl;
       std::vector<std::string> reversed_ref_moves_vector = reverse_moves(ref_moves_vector);
-      if (!run_mg_test_case(testnum, reversed_FEN_string, reversed_ref_moves_vector, "for other color"))
+      if (!run_mg_test_case(testnum, reversed_FEN_string, reversed_ref_moves_vector, "for other color", gentype::all))
+        failed_testcases.push_back(testnum);
+
+      // Run the above two testcases, but generate only captures
+      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "inital color only captures", gentype::captures))
+        failed_testcases.push_back(testnum);
+
+      if (!run_mg_test_case(testnum, reversed_FEN_string,
+                            reversed_ref_moves_vector,
+                            "other color only captures",
+                            gentype::captures))
         failed_testcases.push_back(testnum);
 
     }

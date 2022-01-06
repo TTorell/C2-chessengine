@@ -35,7 +35,7 @@ Game::Game(Config_params& config_params):
   _player[index(col::white)] = &_player1;
   _player[index(col::black)] = &_player2;
   _chessboard.read_position(initial_position);
-  _chessboard.find_all_legal_moves();
+  _chessboard.find_legal_moves(gentype::all);
 }
 
 Game::Game(col color, Config_params& config_params):
@@ -64,7 +64,7 @@ Game::~Game()
 
 void Game::init()
 {
-  _chessboard.find_all_legal_moves();
+  _chessboard.find_legal_moves(gentype::all);
 }
 
 void Game::clear_move_log()

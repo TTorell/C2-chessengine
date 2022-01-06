@@ -20,10 +20,11 @@ std::ostream& operator <<(std::ostream& os, const BitMove& m);
 class Bitboard_with_utils: public Bitboard
 {
   protected:
-    bool run_mg_test_case(int testnum,
+    bool run_mg_test_case(const int testnum,
                           const std::string& FEN_string,
                           const std::vector<std::string>& reference_moves,
-                          const std::string& testcase_info);
+                          const std::string& testcase_info,
+                          const gentype gt);
     bool run_mg_test_case(int testnum, const std::string& FEN_string);
     std::vector<std::string> convert_moves_to_UCI(const std::vector<std::string>& moves, col col_to_move);
     public:
