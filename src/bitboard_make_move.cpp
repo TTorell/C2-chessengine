@@ -98,6 +98,7 @@ piecetype Bitboard::get_piece_type(uint64_t square) const
   return piecetype::Undefined;
 }
 
+
 inline void Bitboard::remove_other_piece(uint64_t square)
 {
   piecetype pt = piecetype::Undefined;

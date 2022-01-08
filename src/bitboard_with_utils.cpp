@@ -175,7 +175,7 @@ void Bitboard_with_utils::make_move(const std::string& UCI_move)
     assert(false);
 }
 
-void Bitboard_with_utils::add_mg_test_position(const std::string& filename)
+int Bitboard_with_utils::add_mg_test_position(const std::string& filename)
 {
   std::string line, FEN_string;
   std::ifstream ifs;
@@ -188,7 +188,10 @@ void Bitboard_with_utils::add_mg_test_position(const std::string& filename)
       ifs.open(user_input("Enter the name of the new test position file: "));
     }
     if (!ifs.is_open())
-      std::cerr << "ERROR: Couldn't open file " << filename << std::endl;
+    {
+      std::cerr << "ERROR: Couldn't open file " << "tests/test_positions/" + filename << std::endl;
+      return -1;
+    }
   }
   while (getline(ifs, line))
   {
@@ -212,12 +215,13 @@ void Bitboard_with_utils::add_mg_test_position(const std::string& filename)
     if (!ofs.is_open())
     {
       std::cerr << "ERROR: Couldn't open file FEN_test_positions.txt" << std::endl;
-      return;
+      return -1;
     }
     ofs << FEN_string << " ";
     write_movelist(ofs, true);
     ofs.close();
   }
+  return 0;
 }
 
 bool Bitboard_with_utils::run_mg_test_case(int testnum,
@@ -381,10 +385,13 @@ int Bitboard_with_utils::test_move_generation(unsigned int single_testnum)
 bool Bitboard_with_utils::bitboard_tests(const std::string& arg)
 {
   unsigned int single_testnum = 0;
-  if (arg != "")
+  if (arg != "" && arg != "all")
   {
     if (regexp_match(arg, "^testpos[0-9]+.pgn$")) // matches e.g. testpos23.pgn
-      add_mg_test_position(arg);
+    {
+      if (add_mg_test_position(arg) != 0)
+        return false;
+    }
     else if (regexp_match(arg, "^[0-9]+$")) // matches e.g 23
       single_testnum = std::stoi(arg);
     else
@@ -393,7 +400,7 @@ bool Bitboard_with_utils::bitboard_tests(const std::string& arg)
       return false;
     }
   }
-  return test_move_generation(single_testnum);
+  return test_move_generation(single_testnum) == 0;
 }
 
 uint64_t Bitboard_with_utils::find_legal_squares(uint64_t sq, uint64_t mask, uint64_t all_pieces, uint64_t other_pieces)

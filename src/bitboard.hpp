@@ -336,8 +336,8 @@ struct BitMove
     uint32_t _move;
     float _evaluation;
     BitMove() :
-      _move(0),
-      _evaluation(0.0)
+        _move(0),
+        _evaluation(0.0)
     {
     }
 
@@ -389,6 +389,17 @@ struct BitMove
       uint32_t tmp = property;
       _move |= tmp << 14;
     }
+
+    void evaluation(float val)
+    {
+      _evaluation = val;
+    }
+
+    float evaluation() const
+    {
+      return _evaluation;
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const BitMove& m);
 };
 
@@ -439,9 +450,18 @@ class Bitboard
 
     inline void clear_movelist();
 
+    inline void add_move(piecetype p_type,
+                         uint8_t move_props,
+                         uint64_t from_square,
+                         uint64_t to_square,
+                         piecetype promotion_p_type = piecetype::Queen);
+
+    inline float get_piece_value(piecetype p_type) const;
+
+    inline float get_piece_value(uint64_t square) const;
+
     // ### Protected Methods for move-generation
     // -----------------------------------------
-
     void find_long_castling();
 
     void find_short_castling();
@@ -535,7 +555,7 @@ class Bitboard
     {
       std::memset(_own, 0, sizeof(Bitpieces));
       std::memset(_other, 0, sizeof(Bitpieces));
-      std::memset(_has_castled, 0, 2*sizeof(bool));
+      std::memset(_has_castled, 0, 2 * sizeof(bool));
       _ep_square = zero;
       _castling_rights = castling_rights_none;
       _material_diff = 0.0;

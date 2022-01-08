@@ -40,7 +40,7 @@ class Bitboard_with_utils: public Bitboard
     }
     std::ostream& write_movelist(std::ostream& os, bool same_line = false);
     std::ostream& write_cmdline_style(std::ostream& os, outputtype ot, col from_perspective) const;
-    void add_mg_test_position(const std::string& filename);
+    int add_mg_test_position(const std::string& filename);
     int test_move_generation(unsigned int single_testnum);
     bool bitboard_tests(const std::string& arg);
     uint64_t find_legal_squares(uint64_t sq, uint64_t mask, uint64_t all_pieces, uint64_t other_pieces);

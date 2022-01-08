@@ -53,14 +53,40 @@ std::string get_FEN_test_position(unsigned int n)
 TEST_CASE("Move_generation")
 {
   uint64_t start, stop;
+  std::string arg = "";
+  std::cout << "Please enter an argument to the Move_generation_test." << std::endl;
+  std::cout << "You can enter the number of a specific testposition," << std::endl;
+  std::cout << "or you can a add a new testposition by entering its" << std::endl;
+  std::cout << "filename, testpos72.pgn for instance." << std::endl;
+  std::cout << "Entering all will test all testpositions. " << std::endl;
+  std::cout << "Your choice: ";
+  std::cin >> arg;
   CurrentTime now;
   start = now.nanoseconds();
   const char* const preferred_test_exec_dir = "/home/torsten/eclipse-workspace/C2-chessengine";
   REQUIRE(check_execution_dir(preferred_test_exec_dir));
   Bitboard_with_utils chessboard;
-  int result = chessboard.bitboard_tests("");
-  if (result != 0)
+//  bool result = chessboard.bitboard_tests(arg);
+  unsigned int single_testnum = 0;
+  if (arg != "" && arg != "all")
+  {
+    if (regexp_match(arg, "^testpos[0-9]+.pgn$")) // matches e.g. testpos23.pgn
+    {
+        REQUIRE(chessboard.add_mg_test_position(arg) == 0);
+    }
+    else if (regexp_match(arg, "^[0-9]+$")) // matches e.g 23
+      single_testnum = std::stoi(arg);
+    else
+    {
+      std::cerr << "ERROR: Unknown input argument: " << arg << std::endl;
+      exit(-1);
+    }
+  }
+  int result = chessboard.test_move_generation(single_testnum);
+  if (result)
+  {
     std::cout << "TESTS FAILED!" << std::endl;
+  }
   REQUIRE(result == 0);
   stop = now.nanoseconds();
   std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
@@ -511,7 +537,6 @@ TEST_CASE("evaluation, mate and stalemate")
     REQUIRE(evaluation == Approx(0.0F).margin(0.0001).epsilon(1e-12));
   }
 }
-
 
 TEST_CASE("find best_move")
 {
