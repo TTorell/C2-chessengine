@@ -44,10 +44,23 @@ class Game {
     ~Game();
     Game operator=(const C2_chess::Game&) = delete;
 
+    void update_players()
+    {
+      _col_to_move = _chessboard.get_col_to_move();
+      _player2.color(_col_to_move);
+      _player[index(_col_to_move)] = &_player2; // Computer
+      _player1.color(other_color(_col_to_move));
+      _player[index(index(other_color(_col_to_move)))] = &_player1;
+    }
+
     int read_position_FEN(const std::string& FEN_string)
     {
+      // TODO: read new position to temporary board, so
+      // we can call figure_out_last_move().
       if (_chessboard.read_position(FEN_string))
         return -1;
+      _col_to_move = _chessboard.get_col_to_move();
+      update_players();
       _chessboard.find_legal_moves(gentype::all);
       return 0;
     }
@@ -59,6 +72,7 @@ class Game {
     void init_board_hash_tag();
     void actions_after_a_move();
     void start();
+    BitMove incremental_search(const Config_params& config_params, const std::string& max_search_time);
     BitMove engine_go(const Config_params& config_params, const std::string& max_search_time);
     void start_timer_thread(const std::string& max_search_time);
     bool has_time_left();

@@ -352,11 +352,17 @@ struct BitMove
       _move = (index(p_type) << 24) | (move_props << 14) | (index(promotion_pt) << 12) | (bit_idx(from_square) << 6) | bit_idx(to_square);
     }
 
-    bool operator==(const BitMove& move) const
+    bool operator==(const BitMove& m) const
     {
-      if (from() == move.from() && to() == move.to() && piece_type() == move.piece_type())
+      if (from() == m.from() && to() == m.to() && piece_type() == m.piece_type())
         return true;
       return false;
+    }
+
+    bool operator < (const BitMove& m) const
+    {
+      // Sort in descending order
+      return m._evaluation < _evaluation;
     }
 
     uint64_t to() const
@@ -450,11 +456,15 @@ class Bitboard
 
     inline void clear_movelist();
 
+    inline void sort_moves(std::deque<BitMove>&  movelist);
+
     inline void add_move(piecetype p_type,
                          uint8_t move_props,
                          uint64_t from_square,
                          uint64_t to_square,
                          piecetype promotion_p_type = piecetype::Queen);
+
+    bool is_in_movelist(const BitMove& m) const;
 
     inline float get_piece_value(piecetype p_type) const;
 
@@ -578,7 +588,7 @@ class Bitboard
     // Looks up the i:th move in movelist and makes it.
     // move_no just keeps track of the full move number
     // in the game.
-    void make_move(uint8_t i, uint8_t& move_no);
+    void make_move(uint8_t i, uint8_t& move_no, gentype gt = gentype::all);
 
     // Only for the command-line interface, where the user
     // is prompted to enter the new move on the keyboard,
@@ -586,7 +596,7 @@ class Bitboard
     int make_move(playertype player_type, uint8_t& move_no);
 
     // This make_move() doesn't require a defined movelist.
-    void make_move(const BitMove& m, uint8_t& move_no);
+    void make_move(const BitMove& m, uint8_t& move_no, gentype gt = gentype::all);
 
     // All properties of a move are not decided immediately,
     // but some of them (check for instance) are set after the
@@ -641,7 +651,7 @@ class Bitboard
 
     bool has_time_left();
 
-    void clear_hash();
+    void clear_transposition_table();
 
     void init_material_evaluation();
 

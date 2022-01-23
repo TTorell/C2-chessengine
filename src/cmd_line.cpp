@@ -219,7 +219,7 @@ int Player::make_a_move(uint8_t& move_no, float& score, const uint8_t& max_searc
   {
     int8_t best_move_index;
     float alpha = -100, beta = 100;
-    _chessboard.clear_hash();
+    _chessboard.clear_transposition_table();
     _chessboard.init_material_evaluation();
     if (_color == col::white)
     {
@@ -290,6 +290,16 @@ void Game::start()
   }
 }
 
+bool Bitboard::is_in_movelist(const BitMove& m) const
+{
+  for (const BitMove& move:_movelist)
+  {
+    if (m == move)
+      return true;
+  }
+  return false;
+}
+
 int Bitboard::make_move(playertype player, uint8_t& move_no)
 {
   assert(player == playertype::human); // This method is only for humans playing on the cmd-line.
@@ -302,8 +312,8 @@ int Bitboard::make_move(playertype player, uint8_t& move_no)
   uint8_t to_file_idx;
   uint8_t to_rank_idx;
   piecetype p_type;
-  piecetype promotion_piecetype = piecetype::Undefined;
-  uint8_t move_props = 0;
+  piecetype promotion_piecetype = piecetype::Queen; // Default
+  uint8_t move_props = move_props_none;
   std::string move_string;
 
   bool first = true;
@@ -312,8 +322,8 @@ int Bitboard::make_move(playertype player, uint8_t& move_no)
     if (!first)
       cmdline << "The Move you entered is impossible!" << "\n\n";
     first = false;
-    cmdline << "(Just enter from-square and to-square, like:" <<
-            "e2e4, or g7g8Q if it's a propmotion.)" << "\n";
+    cmdline << "(Just enter from-square and to-square," << "\n" <<
+        "like: " << "e2e4, or g7g8Q if it's a propmotion.)" << "\n";
     cmdline << "Your move: ";
     std::cin >> move_string;
     if (move_string.size() < 4 || move_string.size() > 5)
@@ -326,10 +336,10 @@ int Bitboard::make_move(playertype player, uint8_t& move_no)
       continue;
     if (move_string[3] < '1' || move_string[3] > '8')
       continue;
-    from_file_idx = move_string[0] - a;
-    from_rank_idx = move_string[1];
-    to_file_idx = move_string[2] - a;
-    to_rank_idx = move_string[3];
+    from_file_idx = move_string[0] - 'a';
+    from_rank_idx = move_string[1] - '0';
+    to_file_idx = move_string[2] - 'a';
+    to_rank_idx = move_string[3] - '0';
     if (move_string.size() == 5)
     {
       if (!read_promotion_piecetype(promotion_piecetype, move_string[4]))
@@ -370,6 +380,8 @@ int Bitboard::make_move(playertype player, uint8_t& move_no)
     if (to_square & _other->pieces)
       move_props = move_props_capture;
     BitMove m(p_type, move_props, from_square, to_square, promotion_piecetype);
+    if (!is_in_movelist(m))
+      continue;
     //  Move is OK,make it
     make_move(m, move_no);
     return 0;

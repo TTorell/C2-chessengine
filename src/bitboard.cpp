@@ -249,7 +249,7 @@ void Bitboard::init_piece_state()
   _all_pieces = _own->pieces | _other->pieces;
 }
 
-void Bitboard::clear_hash()
+void Bitboard::clear_transposition_table()
 {
   transposition_table.clear();
 }
@@ -441,6 +441,7 @@ float Bitboard::evaluate_position(col col_to_move, uint8_t level) const
 
 float Bitboard::max(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const
 {
+  assert(_col_to_move == col::white);
   //std::cout << static_cast<int>(max_search_level) << std::endl;
   float max_value = -101.0; // Must be lower than lowest evaluation
   int8_t dummy_index; // best_move_index is only an output parameter,
@@ -525,6 +526,7 @@ float Bitboard::max(uint8_t level, uint8_t move_no, float alpha, float beta, int
 // so I've not supplied many comments on this function. See max().
 float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const
 {
+  assert(_col_to_move == col::black);
   float min_value = 101.0;
   int8_t dummy_index;
   best_move_index = -1;
@@ -615,9 +617,6 @@ inline std::ostream& Bitboard::write_piece(std::ostream& os, uint64_t square) co
 
 std::ostream& Bitboard::write(std::ostream& os, outputtype wt, col from_perspective) const
 {
-  uint64_t _W_pieces = _white_pieces.King | _white_pieces.Queens | _white_pieces.Rooks | _white_pieces.Bishops | _white_pieces.Knights | _white_pieces.Pawns;
-  uint64_t _B_pieces = _black_pieces.King | _black_pieces.Queens | _black_pieces.Rooks | _black_pieces.Bishops | _black_pieces.Knights | _black_pieces.Pawns;
-  uint64_t all_pieces = _W_pieces | _B_pieces;
   switch (wt)
   {
     case outputtype::cmd_line_diagram:
@@ -630,7 +629,7 @@ std::ostream& Bitboard::write(std::ostream& os, outputtype wt, col from_perspect
           {
             uint64_t square = file[j] & rank[i];
             os << iso_8859_1_to_utf8("|");
-            if (square & all_pieces)
+            if (square & _all_pieces)
               write_piece(os, square);
             else
               os << ("\u25a1");
@@ -648,7 +647,7 @@ std::ostream& Bitboard::write(std::ostream& os, outputtype wt, col from_perspect
           {
             uint64_t square = file[j] & rank[i];
             os << iso_8859_1_to_utf8("|");
-            if (square & all_pieces)
+            if (square & _all_pieces)
               write_piece(os, square);
             else
               os << ("\u25a1");
@@ -663,6 +662,7 @@ std::ostream& Bitboard::write(std::ostream& os, outputtype wt, col from_perspect
   }
   return os;
 }
+
 
 } // End namespace C2_chess
 

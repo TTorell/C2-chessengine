@@ -101,7 +101,6 @@ void Bitboard::find_Queen_Rook_and_Bishop_moves(gentype gt)
         legal_squares |= find_other_color_blockers(from_square, file[file_idx(from_square)]);
         legal_squares |= find_other_color_blockers(from_square, rank[rank_idx(from_square)]);
       }
-
     }
     if (p_type != piecetype::Rook)
     {
@@ -235,12 +234,12 @@ void Bitboard::find_Pawn_moves(gentype gt)
   uint64_t King_diagonal = to_diagonal(King_file_idx, King_rank_idx);
   uint64_t King_anti_diagonal = to_anti_diagonal(King_file_idx, King_rank_idx);
 
+  // A pinned pawn on the King-file can possibly move.
+  uint64_t pawns = _own->Pawns & ~(_pinned_pieces & ~King_file);
+  // Shift chosen pawns one square ahead. Check if the new square is empty:
+  pawns = ((_col_to_move == col::white) ? pawns >> 8 : pawns << 8) & ~_all_pieces;
   if (gt == gentype::all)
   {
-    // A pinned pawn on the King-file can possibly move.
-    uint64_t pawns = _own->Pawns & ~(_pinned_pieces & ~King_file);
-    // Shift chosen pawns one square ahead. Check if the new square is empty:
-    pawns = ((_col_to_move == col::white) ? pawns >> 8 : pawns << 8) & ~_all_pieces;
     // save moved pieces
     moved_pawns = pawns;
     while (pawns)
@@ -263,10 +262,20 @@ void Bitboard::find_Pawn_moves(gentype gt)
       }
     }
   }
+  if (gt == gentype::captures)
+  {
+    // Include normal promotions in the "capture"-category
+    pawns = pawns & ((_col_to_move == col::white) ? rank[8] : rank[1]);
+    while (pawns)
+    {
+      to_square = popright_square(pawns);
+      add_pawn_move_check_promotion((_col_to_move == col::white) ? to_square << 8 : to_square >> 8, to_square);
+    }
+  }
 
   // Check for pawn captures and ep.
   // Pinned pawns along King-diagonal may still be able to capture the pinning piece
-  uint64_t pawns = _own->Pawns & ~(_pinned_pieces & ~King_diagonal);
+  pawns = _own->Pawns & ~(_pinned_pieces & ~King_diagonal);
   moved_pawns = (_col_to_move == col::white) ? (pawns >> 9) & not_a_file : (pawns << 9) & not_h_file;
   while (moved_pawns)
   {
@@ -580,7 +589,7 @@ void Bitboard::find_moves_to_square(uint64_t to_square, gentype gt)
           between_squares = between(to_square, move_candidate, to_ortogonal_squares);
           if ((between_squares & _all_pieces) == zero)
           {
-            piecetype p_type = (to_square & _own->Queens) ? piecetype::Queen : piecetype::Rook;
+            piecetype p_type = (move_candidate & _own->Queens) ? piecetype::Queen : piecetype::Rook;
             if (to_square & ~_all_pieces)
               _movelist.push_back(BitMove(p_type, move_props_none, move_candidate, to_square));
             else if (to_square & _other->pieces)
@@ -604,7 +613,7 @@ void Bitboard::find_moves_to_square(uint64_t to_square, gentype gt)
           between_squares = between(to_square, move_candidate, to_diagonal_squares, true); // true = diagonal
           if ((between_squares & _all_pieces) == zero)
           {
-            piecetype p_type = (to_square & _own->Queens) ? piecetype::Queen : piecetype::Bishop;
+            piecetype p_type = (move_candidate & _own->Queens) ? piecetype::Queen : piecetype::Bishop;
             if (to_square & ~_all_pieces)
               _movelist.push_back(BitMove(p_type, move_props_none, move_candidate, to_square));
             else if (to_square & _other->pieces)
@@ -619,7 +628,7 @@ void Bitboard::find_moves_to_square(uint64_t to_square, gentype gt)
 void Bitboard::find_moves_after_check(gentype gt)
 {
   assert(std::has_single_bit(_checkers));
-// All possible King-moves have already been found.
+  // All possible King-moves have already been found.
   uint64_t between_squares;
   uint64_t between_square;
 
@@ -652,10 +661,10 @@ void Bitboard::find_moves_after_check(gentype gt)
     }
   }
 
-// Can we take the checking piece?
+   // Can we take the checking piece?
   find_moves_to_square(_checkers, gt);
 
-// Also check if the checker is a Pawn which can be taken e.p.
+  // Also check if the checker is a Pawn which can be taken e.p.
   if (_ep_square & ((_col_to_move == col::white) ? _checkers >> 8 : _checkers << 8))
   {
     if (_ep_square & not_a_file)
@@ -925,10 +934,10 @@ inline void Bitboard::find_king_moves(gentype gt)
   }
 }
 
-
 void Bitboard::find_legal_moves(gentype gt)
 {
   init_piece_state();
+  assert((_own->pieces & _other->pieces) == zero);
   find_king_moves(gt);
   find_checkers_and_pinned_pieces();
   int n_checkers = std::popcount(_checkers);
@@ -937,6 +946,7 @@ void Bitboard::find_legal_moves(gentype gt)
     // It's a double-check. We're finished.
     // Only King-moves are possible and we've
     // already figured them out.
+    sort_moves(_movelist);
     return;
   }
   else if (n_checkers == 1)
@@ -946,6 +956,7 @@ void Bitboard::find_legal_moves(gentype gt)
     // can put a piece in between that piece
     // and the King.
     find_moves_after_check(gt);
+    sort_moves(_movelist);
     return;
   }
   else
@@ -955,6 +966,7 @@ void Bitboard::find_legal_moves(gentype gt)
     // of course.
     find_normal_legal_moves(gt);
   }
+  sort_moves(_movelist);
 }
 
 inline float Bitboard::get_piece_value(piecetype p_type) const
@@ -1006,6 +1018,19 @@ inline float Bitboard::get_piece_value(uint64_t square) const
   return 0.0F;
 }
 
+// Moves which are captures or promotions get sorted according to
+// a move-ordering scheme. (The evaluation-field is used for keeping
+// the value, even if that field was intentionally thought for the
+// searh-rutine). The reason is to gain time by bigger cut-offs in
+// the search algorithm's pruning function.
+// A pawn taking a queen evaluates higher than a Queen taking a pawn.
+// ..................................................................
+// I add the value of a Queen (just to get a positive number),
+// then subtract the value of my own piece and add the value of the
+// victim. And I do about the same thing for promotions.
+// Lowest value will be one, to distinguish the moves from other
+// normal moves with value zero.
+// ..................................................................
 inline void Bitboard::add_move(piecetype p_type,
                                uint8_t move_props,
                                uint64_t from_square,
@@ -1024,19 +1049,60 @@ inline void Bitboard::add_move(piecetype p_type,
     BitMove move(p_type, move_props, from_square, to_square, promotion_p_type);
     if (move_props & move_props_promotion)
     {
-      eval = 9 + get_piece_value(promotion_p_type) - 1.0F;
-      move.evaluation(9 - get_piece_value(p_type) + get_piece_value(to_square));
+      eval = 9.0F + get_piece_value(promotion_p_type) - 1.0F;
     }
     if (move_props & move_props_capture)
     {
       if (move_props & move_props_en_passant)
-        eval = 9;
+        eval = 9.0F;
       else
-        eval = 9 - get_piece_value(p_type) + get_piece_value(to_square);
+        eval = 9.0F - get_piece_value(p_type) + get_piece_value(to_square);
     }
     move.evaluation(eval);
     _movelist.push_front(move);
   }
 }
 
-} // End namespace C2_chess
+inline void Bitboard::sort_moves(std::deque<BitMove>& movelist)
+{
+  std::deque<BitMove>::iterator end_it;
+  for (end_it = movelist.begin(); end_it != movelist.end(); end_it++)
+  {
+    if (std::abs(end_it->_evaluation) < 0.000000001)
+      break;
+  }
+  if (end_it != movelist.begin())
+    std::stable_sort(movelist.begin(), end_it);
+}
+
+//inline void Bitboard::sort_moves(std::deque<BitMove>& movelist)
+//{
+//  unsigned int stop_idx;
+//  BitMove tmp_move;
+//  for (stop_idx = 0; stop_idx < movelist.size(); stop_idx++)
+//  {
+//    if (std::abs(movelist[stop_idx]._evaluation) < 0.000000001)
+//      break;
+//  }
+//  unsigned int start_idx = 0;
+//  while (true)
+//  {
+//    bool sorted = true;
+//    for (unsigned int i = start_idx; i < stop_idx - 1; i++)
+//    {
+//      if (movelist[i + 1]._evaluation > movelist[i]._evaluation)
+//      {
+//        tmp_move = movelist[i];
+//        movelist[i] = movelist[i + 1];
+//        movelist[i + 1] = tmp_move;
+//        sorted = false;
+//      }
+//    }
+//    if (sorted)
+//      break;
+//    else
+//      start_idx++;
+//  }
+//}
+
+}// End namespace C2_chess

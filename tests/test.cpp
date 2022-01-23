@@ -66,13 +66,12 @@ TEST_CASE("Move_generation")
   const char* const preferred_test_exec_dir = "/home/torsten/eclipse-workspace/C2-chessengine";
   REQUIRE(check_execution_dir(preferred_test_exec_dir));
   Bitboard_with_utils chessboard;
-//  bool result = chessboard.bitboard_tests(arg);
   unsigned int single_testnum = 0;
   if (arg != "" && arg != "all")
   {
     if (regexp_match(arg, "^testpos[0-9]+.pgn$")) // matches e.g. testpos23.pgn
     {
-        REQUIRE(chessboard.add_mg_test_position(arg) == 0);
+      REQUIRE(chessboard.add_mg_test_position(arg) == 0);
     }
     else if (regexp_match(arg, "^[0-9]+$")) // matches e.g 23
       single_testnum = std::stoi(arg);
@@ -545,10 +544,39 @@ TEST_CASE("find best_move")
   logfile << "TEST STARTED" << "\n";
   Config_params config_params;
   Game game(config_params);
-  std::string FEN_string = get_FEN_test_position(73);
-  game.read_position_FEN(FEN_string);
-  BitMove bestmove = game.engine_go(config_params, "");
-  std::cout << "Best move: " << bestmove << std::endl;
+
+//  SECTION("strangulation mate")
+//  {
+//    std::string FEN_string = get_FEN_test_position(73);
+//    game.read_position_FEN(FEN_string);
+//    BitMove bestmove = game.engine_go(config_params, "");
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    std::stringstream ss;
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Nc7-a6+");
+//  }
+
+  SECTION("strange queen-move")
+  {
+    std::string FEN_string = get_FEN_test_position(78);
+    game.read_position_FEN(FEN_string);
+    BitMove bestmove = game.engine_go(config_params, "");
+    std::cout << "Best move: " << bestmove << std::endl;
+    std::stringstream ss;
+    ss << bestmove;
+    REQUIRE(ss.str() == "Bc8-b7");
+  }
+}
+
+TEST_CASE("move-ordering")
+{
+// Load test position 71
+  std::string FEN_string = get_FEN_test_position(75);
+  Bitboard_with_utils chessboard;
+  REQUIRE(chessboard.read_position(FEN_string) == 0);
+  chessboard.find_legal_moves(gentype::all);
+  chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
+  chessboard.write_movelist(std::cout, true) << std::endl;
 }
 
 //TEST_CASE("timing basic functions")

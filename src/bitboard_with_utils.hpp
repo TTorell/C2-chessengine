@@ -47,10 +47,14 @@ class Bitboard_with_utils: public Bitboard
     void make_move(const std::string& UCI_move);
     void init_board_hash_tag();
     float evaluate_position(col col_to_move, uint8_t level) const;
+
+    col get_col_to_move() {return _col_to_move;}
+
     int no_of_moves()
     {
       return _movelist.size();
     }
+
     void make_move(uint8_t move_index, uint8_t& moveno)
     {
       Bitboard::make_move(move_index, moveno);

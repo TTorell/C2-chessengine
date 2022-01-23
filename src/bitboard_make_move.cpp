@@ -71,6 +71,7 @@ inline void Bitboard::touch_piece(uint64_t square)
 
 piecetype Bitboard::get_piece_type(uint64_t square) const
 {
+  assert(square & _all_pieces);
   if ((_white_pieces.Pawns & square) || (_black_pieces.Pawns & square))
   {
     return piecetype::Pawn;
@@ -148,6 +149,7 @@ inline void Bitboard::remove_other_piece(uint64_t square)
       _white_pieces.Bishops ^= square, _material_diff -= 3, pt = piecetype::Bishop;
     else if (_white_pieces.Knights & square)
       _white_pieces.Knights ^= square, _material_diff -= 3, pt = piecetype::Knight;
+    assert(pt != piecetype::Undefined);
     update_hash_tag(square, col::white, pt);
   }
 }
@@ -319,16 +321,17 @@ inline void Bitboard::update_state_after_king_move(const BitMove& m)
   }
 }
 
-void Bitboard::make_move(uint8_t i, uint8_t& move_no)
+void Bitboard::make_move(uint8_t i, uint8_t& move_no, gentype gt)
 {
   assert(i < _movelist.size());
-  make_move(_movelist[i], move_no);
+  make_move(_movelist[i], move_no, gt);
 }
 
 // The move must be valid, but doesn't have to be in _movelist.
 // _movelist may be empty.
-void Bitboard::make_move(const BitMove& m, uint8_t& move_no)
+void Bitboard::make_move(const BitMove& m, uint8_t& move_no, gentype gt)
 {
+  assert((_own->pieces & _other->pieces) == zero);
   uint64_t to_square = m.to();
   uint64_t from_square = m.from();
 
@@ -383,23 +386,23 @@ void Bitboard::make_move(const BitMove& m, uint8_t& move_no)
       switch (m.promotion_piece_type())
       {
         case piecetype::Queen:
-          (_col_to_move == col::white) ? _material_diff += 8.0, _white_pieces.Queens |= to_square :
-                                         _material_diff -= 8.0, _black_pieces.Queens |= to_square;
+          (_col_to_move == col::white) ? (_material_diff += 8.0, _white_pieces.Queens |= to_square) :
+                                         (_material_diff -= 8.0, _black_pieces.Queens |= to_square);
           update_hash_tag(to_square, _col_to_move, piecetype::Queen);
           break;
         case piecetype::Rook:
-          (_col_to_move == col::white) ? _material_diff += 4.0, _white_pieces.Rooks |= to_square :
-                                         _material_diff -= 4.0, _black_pieces.Rooks |= to_square;
+          (_col_to_move == col::white) ? (_material_diff += 4.0, _white_pieces.Rooks |= to_square) :
+                                         (_material_diff -= 4.0, _black_pieces.Rooks |= to_square);
           update_hash_tag(to_square, _col_to_move, piecetype::Rook);
           break;
         case piecetype::Knight:
-          (_col_to_move == col::white) ? _material_diff += 2.0, _white_pieces.Knights |= to_square :
-                                         _material_diff -= 2.0, _black_pieces.Knights |= to_square;
+          (_col_to_move == col::white) ? (_material_diff += 2.0, _white_pieces.Knights |= to_square) :
+                                         (_material_diff -= 2.0, _black_pieces.Knights |= to_square);
           update_hash_tag(to_square, _col_to_move, piecetype::Knight);
           break;
         case piecetype::Bishop:
-          (_col_to_move == col::white) ? _material_diff += 2.0, _white_pieces.Bishops |= to_square :
-                                         _material_diff -= 2.0, _black_pieces.Bishops |= to_square;
+          (_col_to_move == col::white) ? (_material_diff += 2.0, _white_pieces.Bishops |= to_square) :
+                                         (_material_diff -= 2.0, _black_pieces.Bishops |= to_square);
           update_hash_tag(to_square, _col_to_move, piecetype::Bishop);
           break;
         default:
@@ -442,7 +445,10 @@ void Bitboard::make_move(const BitMove& m, uint8_t& move_no)
     move_no++;
   if (square_is_threatened(_own->King, false))
     _last_move.add_property(move_props_check);
-  find_legal_moves(gentype::all);
+  // TODO: Must be possible to change to gentype::captures.
+  if ((_own->Queens & _other->Queens) != zero)
+    std::cout << m << std::endl;
+  find_legal_moves(gt);
 }
 
 }

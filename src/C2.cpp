@@ -50,7 +50,8 @@ std::string parse_go_command(const std::vector<std::string>& command_tokens, con
 std::atomic<bool> input_thread_running(true);
 std::atomic<bool> output_thread_running(true);
 
-// Method for parsing input-commands from a chess-GUI (some commands are taken care of already in ḿain().
+// function for parsing input-commands from a chess-GUI
+// (some commands are taken care of already in ḿain().
 int parse_command(const std::string& command,
                   Circular_fifo& output_buffer,
                   Game& game,
@@ -200,12 +201,11 @@ void print_help_txt()
           "C2 Without arguments will start the chess-engine" << "\n" << "\n";
 }
 
-
 std::string engine_style(const BitMove& move)
 {
   std::stringstream ss;
-  ss << "bestmove " << 'a' + file_idx(move.from()) << rank_idx(move.from()) <<
-     'a' + file_idx(move.to()) << rank_idx(move.to());
+  ss << static_cast<char>('a' + file_idx(move.from())) << static_cast<int>(rank_idx(move.from())) <<
+     static_cast<char>('a' + file_idx(move.to())) << static_cast<int>(rank_idx(move.to()));
   if (move.properties() & move_props_promotion)
   {
     switch (move.promotion_piece_type())
@@ -380,7 +380,6 @@ int main(int argc, char* argv[])
         {
           logfile << "max_search_time = " << max_search_time << " milliseconds\n";
         }
-
         // Find the best move
         BitMove bestmove = game.engine_go(config_params, max_search_time);
         output_buffer.put("bestmove " + engine_style(bestmove));

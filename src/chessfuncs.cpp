@@ -488,7 +488,7 @@ bool question_to_user(const std::string& question, std::string regexp_correct_an
 {
   std::string answer;
   std::cout << question;
-  getline(std::cin, answer);
+  std::cin >> answer;
   return regexp_match(answer, regexp_correct_answer);
 }
 

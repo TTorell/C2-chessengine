@@ -204,6 +204,7 @@ int Bitboard_with_utils::add_mg_test_position(const std::string& filename)
   std::cout << FEN_string << std::endl;
 
   read_position(FEN_string);
+  init_piece_state();
   write(std::cout, outputtype::cmd_line_diagram, col::white);
   find_legal_moves(gentype::all);
   std::cout << "Possible moves are:" << std::endl;
@@ -259,7 +260,7 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum,
   {
     case gentype::captures:
       for (const std::string& m : ref_moves_vector)
-        if (m.find("x") != std::string::npos)
+        if (m.find("x") != std::string::npos || m.find("=") != std::string::npos)
           filtered_ref_moves_vector.push_back(m);
       break;
     case gentype::all:

@@ -61,8 +61,7 @@ int Player::find_best_move_index(uint8_t& move_no, float& score, const int max_s
 // if (_type == playertype::human)
 //   return -1;
 
-  _chessboard.clear_hash();
-  _chessboard.init_material_evaluation(); // TODO: Necessary?
+  _chessboard.clear_transposition_table();
 
 // _type == computer
   int8_t best_move_index = -1;
@@ -89,5 +88,5 @@ int Player::find_best_move_index(uint8_t& move_no, float& score, const int max_s
   }
   return best_move_index;
 }
-}
+} // namespace C2_chess
 

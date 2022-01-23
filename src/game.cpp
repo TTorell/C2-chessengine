@@ -35,6 +35,7 @@ Game::Game(Config_params& config_params):
   _player[index(col::white)] = &_player1;
   _player[index(col::black)] = &_player2;
   _chessboard.read_position(initial_position);
+  update_players();
   _chessboard.find_legal_moves(gentype::all);
 }
 
@@ -51,11 +52,20 @@ Game::Game(col color,
            playertype pt1,
            playertype pt2,
            Config_params& config_params):
-    _is_first_position(true), _move_log(), _chessboard(), _player1(pt1, color, _chessboard), _player2(pt2, color == col::white ? col::black : col::white, _chessboard), _moveno(1),
-    _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
+    _is_first_position(true),
+    _move_log(),
+    _chessboard(),
+    _player1(pt1, color, _chessboard),
+    _player2(pt2, other_color(color),
+    _chessboard),
+    _moveno(1),
+    _col_to_move(col::white),
+    _score(0),
+    _config_params(config_params),
+    _playing(false)
 {
   _player[index(color)] = &_player1;
-  _player[index(color == col::white ? col::black : col::white)] = &_player2;
+  _player[index(other_color(color))] = &_player2;
 }
 
 Game::~Game()
@@ -205,6 +215,90 @@ void Game::actions_after_a_move()
   // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
 }
 
+BitMove Game::incremental_search(const Config_params& config_params, const std::string& max_search_time)
+{
+  // Incremental search, to have a best-move available as quickly as possible.
+  // When searching incrementally we consider max_search_time.
+
+  // These values are just default values
+  int max_search_level = 7;
+  bool use_pruning = true;
+  bool search_until_no_captures = false;
+
+//  _chessboard.set_time_diff_sum(0);
+
+  // Read some configuration parameters
+  std::string s = config_params.get_config_param("max_search_level");
+  if (!s.empty())
+    max_search_level = atoi(s.c_str());
+  s = config_params.get_config_param("use_pruning");
+  if (!s.empty())
+    use_pruning = (s == "true");
+  s = config_params.get_config_param("search_until_no_captures");
+  if (!s.empty())
+    search_until_no_captures = (s == "true");
+  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  if (!max_search_time.empty())
+  {
+    _chessboard.start_timer_thread(max_search_time);
+    std::this_thread::sleep_for(std::chrono::microseconds(20));
+  }
+  else
+    _chessboard.set_time_left(true);
+  int8_t best_move_index = -1;
+  for (int i = 2; i <= max_search_level; i++)
+  {
+    // uint64_t nsec_start = current_time.nanoseconds();
+    _chessboard.clear_transposition_table();
+    //bool test = (use_pruning == false || search_until_no_captures == true);
+    int move_index = _player[index(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning, search_until_no_captures);
+    // Has the search on this level been aborted by time limit?
+    if (move_index == -1)
+    {
+      // This happens when max_search_level has been set to 1
+      // or when the search has been interrupted by the time limit.
+      // (Or possibly when something else has gone wrong.)
+      // My min() or max() will just evaluate the current position
+      // then and wont be able to choose best move.
+      // So, searching with level 1 is completely pointless.
+      if (has_time_left())
+      {
+        logfile << "Error: find_best_move() returned -1." << "\n";
+        // We can't choose. Just set it to the first move.
+        // (TODO: Choose randomly maybe.)
+        if (best_move_index == -1)
+          best_move_index = 0;
+      }
+      else
+      {
+        // Time is out.
+        logfile << "Time is out!\n";
+        if (i == 2)
+        {
+          // The search has been interrupted on lowest level.
+          // No best move has been found at all, so just choose
+          // the first move (TODO: Choose randomly maybe.)
+          logfile << i << "interrupted on level 2" << "\n";
+          best_move_index = 0;
+        }
+      }
+      break;
+    }
+    best_move_index = move_index;
+//      uint64_t nsec_stop = current_time.nanoseconds();
+//      logfile.log_time_diff(nsec_stop, nsec_start, i, _chessboard.get_possible_move(best_move_index), _score);
+  }
+  _chessboard.make_move(best_move_index, _moveno);
+  _move_log.push_back(_chessboard.last_move());
+
+  // Stop possibly running timer by setting time_left to false.
+  _chessboard.set_time_left(false);
+
+  actions_after_a_move();
+  return _chessboard.last_move();
+
+}
+
 BitMove Game::engine_go(const Config_params& config_params, const std::string& max_search_time)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
@@ -231,65 +325,12 @@ BitMove Game::engine_go(const Config_params& config_params, const std::string& m
   if (!s.empty())
     search_until_no_captures = (s == "true");
 
+  _chessboard.init_material_evaluation(); // TODO: Should this be placed somewhere else, init_piece_state()?
+
   // Search for best move
   if (use_incremental_search)
   {
-    // Incremental search, to have a best-move available as quickly
-    // as possible. When searching incrementally we consider
-    // max_search_time.
-    if (!max_search_time.empty())
-    {
-      _chessboard.start_timer_thread(max_search_time);
-      std::this_thread::sleep_for(std::chrono::microseconds(100));
-    }
-    else
-      _chessboard.set_time_left(true);
-    int8_t best_move_index = -1;
-    for (int i = 2; i <= max_search_level; i++)
-    {
-//      uint64_t nsec_start = current_time.nanoseconds();
-
-      //bool test = (use_pruning == false || search_until_no_captures == true);
-      int move_index = _player[index(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning, search_until_no_captures);
-      // Has the search on this level been aborted by time limit?
-      if (move_index == -1)
-      {
-        // This happens when max_search_level has been set to 1
-        // or when the search has been interrupted by the time limit.
-        // (Or possibly when something else has gone wrong.)
-        // My min() or max() will just evaluate the current position
-        // then and wont be able to choose best move.
-        // So, searching with level 1 is completely pointless.
-        if (has_time_left())
-        {
-          logfile << "Error: find_best_move() returned -1." << "\n";
-          // We can't choose. Just set it to the first move.
-          // (TODO: Choose randomly maybe.)
-          if (best_move_index == -1)
-            best_move_index = 0;
-        }
-        else
-        {
-          // Time is out.
-          logfile << "Time is out!\n";
-          if (i == 2)
-          {
-            // The search has been interrupted on lowest level.
-            // No best move has been found at all, so just choose
-            // the first move (TODO: Choose randomly maybe.)
-            logfile << i << "interrupted on level 2" << "\n";
-            best_move_index = 0;
-          }
-        }
-        break;
-      }
-      best_move_index = move_index;
-      _chessboard.clear_hash();
-//      uint64_t nsec_stop = current_time.nanoseconds();
-//      logfile.log_time_diff(nsec_stop, nsec_start, i, _chessboard.get_possible_move(best_move_index), _score);
-    }
-    _chessboard.make_move(best_move_index, _moveno);
-    _move_log.push_back(_chessboard.last_move());
+    return incremental_search(config_params, max_search_time);
   }
   else
   {
@@ -347,10 +388,11 @@ void Game::start_new_game(col col_to_move, int half_move_counter, int moveno)
 {
   clear_move_log();
   _col_to_move = col_to_move;
-  _half_move_counter = half_move_counter;  clear_move_log();
+  _half_move_counter = half_move_counter;
   clear_move_log();
   set_moveno(moveno);
   set_move_log_col_to_start(col_to_move);
+  update_players();
   init();
   init_board_hash_tag();
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
@@ -444,7 +486,7 @@ int Game::read_position(const std::string& filename)
       int status = _chessboard.read_position(fen_string);
       if (status != 0)
       {
-        cmdline << "Read error: [FEN-string could not be parsed" << "\n";
+        cmdline << "Read error: FEN-string could not be parsed" << "\n";
         return -1;
       }
       continue;
@@ -453,7 +495,6 @@ int Game::read_position(const std::string& filename)
   if (!FEN_found)
     return -1;
   return 0;
-//  return _chessboard.read_position(filename);
 }
 
 } // namespace C2_chess
