@@ -446,8 +446,6 @@ void Bitboard::make_move(const BitMove& m, uint8_t& move_no, gentype gt)
   if (square_is_threatened(_own->King, false))
     _last_move.add_property(move_props_check);
   // TODO: Must be possible to change to gentype::captures.
-  if ((_own->Queens & _other->Queens) != zero)
-    std::cout << m << std::endl;
   find_legal_moves(gt);
 }
 

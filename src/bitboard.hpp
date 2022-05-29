@@ -575,7 +575,7 @@ class Bitboard
     // Reads the position from a text-string, with some
     // syntactic error-checking.
     // Returns -1 if the text-string wasn't accepted.
-    int read_position(const std::string& FEN_string);
+    int read_position(const std::string& FEN_string, bool init_pieces = false);
 
     // Puts all legal moves of the position in _movelist.
     // (Naturally only the moves for the player who's in
@@ -663,6 +663,10 @@ class Bitboard
 
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
     std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;
+    void clear_node_counter();
+    int get_node_counter() const;
+    void clear_hash_hits();
+    int get_hash_hits() const;
 };
 
 } // namespace C2_chess

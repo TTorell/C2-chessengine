@@ -48,7 +48,7 @@ class Bitboard_with_utils: public Bitboard
     void init_board_hash_tag();
     float evaluate_position(col col_to_move, uint8_t level) const;
 
-    col get_col_to_move() {return _col_to_move;}
+    col get_col_to_move() const {return _col_to_move;}
 
     int no_of_moves()
     {

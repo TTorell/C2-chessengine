@@ -13,59 +13,54 @@
 
 namespace
 {
-//C2_chess::CurrentTime current_time;
-
+C2_chess::CurrentTime now;
 }
 
 namespace C2_chess
 {
 
-Game::Game(Config_params& config_params):
+Game::Game(Config_params& config_params) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player1(playertype::human, col::white, _chessboard),
-    _player2(playertype::computer, col::black, _chessboard),
+    _player_type {playertype::human, playertype::computer},
     _moveno(1),
-    _col_to_move(col::white),
     _score(0),
+    _half_move_counter(0),
     _config_params(config_params),
     _playing(false)
 {
-  _player[index(col::white)] = &_player1;
-  _player[index(col::black)] = &_player2;
   _chessboard.read_position(initial_position);
-  update_players();
   _chessboard.find_legal_moves(gentype::all);
 }
 
-Game::Game(col color, Config_params& config_params):
-    _is_first_position(true), _move_log(), _chessboard(), _player1(playertype::human, color, _chessboard),
-    _player2(playertype::computer, color == col::white ? col::black : col::white, _chessboard), _moveno(1),
-    _col_to_move(col::white), _score(0), _config_params(config_params), _playing(false)
-{
-  _player[index(color)] = &_player1;
-  _player[index(other_color(color))] = &_player2;
-}
-
-Game::Game(col color,
-           playertype pt1,
-           playertype pt2,
-           Config_params& config_params):
+Game::Game(col color, Config_params& config_params) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player1(pt1, color, _chessboard),
-    _player2(pt2, other_color(color),
-    _chessboard),
+    _player_type {playertype::human, playertype::computer},
     _moveno(1),
-    _col_to_move(col::white),
+    _score(0),
+    _half_move_counter(0),
+    _config_params(config_params),
+    _playing(false)
+{
+  _player_type[index(color)] = playertype::human;
+  _player_type[index(other_color(color))] = playertype::computer;
+}
+
+Game::Game(playertype pt1,
+           playertype pt2,
+           Config_params& config_params) :
+    _is_first_position(true),
+    _move_log(),
+    _chessboard(),
+    _player_type {pt1, pt2},
+    _moveno(1),
     _score(0),
     _config_params(config_params),
     _playing(false)
 {
-  _player[index(color)] = &_player1;
-  _player[index(other_color(color))] = &_player2;
 }
 
 Game::~Game()
@@ -89,12 +84,7 @@ void Game::setup_pieces()
 
 col Game::get_col_to_move() const
 {
-  return _col_to_move;
-}
-
-void Game::set_col_to_move(col color)
-{
-  _col_to_move = color;
+  return _chessboard.get_col_to_move();
 }
 
 void Game::set_move_log_col_to_start(col color)
@@ -132,18 +122,18 @@ void Game::set_moveno(int moveno)
   }
 }
 
-std::ostream& Game::write_chessboard(std::ostream &os, outputtype ot, col from_perspective) const
+std::ostream& Game::write_chessboard(std::ostream& os, outputtype ot, col from_perspective) const
 {
   Bitboard_with_utils(_chessboard).write(os, ot, from_perspective);
   return os;
 }
 
-std::ostream& Game::write_diagram(std::ostream &os) const
+std::ostream& Game::write_diagram(std::ostream& os) const
 {
   Bitboard_with_utils bwu(_chessboard);
-  if (_player[index(col::white)]->type() == playertype::human)
+  if (_player_type[index(col::white)] == playertype::human)
     bwu.write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
-  else if (_player[index(col::black)]->type() == playertype::human)
+  else if (_player_type[index(col::black)] == playertype::human)
     bwu.write(os, outputtype::cmd_line_diagram, col::black) << std::endl;
   else
     // The computer is playing itself
@@ -176,10 +166,7 @@ void Game::actions_after_a_move()
   write_diagram(cmdline);
   write_diagram(logfile);
 
-  // Change color to evaluate from opponents view.
-  _col_to_move = other_color(_col_to_move);
-
-  float evaluation = _chessboard.evaluate_position(_col_to_move, 0);
+  float evaluation = _chessboard.evaluate_position(_chessboard.get_col_to_move(), 0);
   if (evaluation == eval_max || evaluation == eval_min)
   {
     _chessboard.set_mate();
@@ -215,28 +202,47 @@ void Game::actions_after_a_move()
   // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
 }
 
-BitMove Game::incremental_search(const Config_params& config_params, const std::string& max_search_time)
+int Game::find_best_move_index(uint8_t& move_no, float& score, int max_search_level)
+{
+  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  _chessboard.clear_node_counter();
+  _chessboard.clear_hash_hits();
+  _chessboard.clear_transposition_table();
+  uint64_t nsec_start = now.nanoseconds();
+
+  int8_t best_move_index = -1;
+  float alpha = -100, beta = 100;
+  if (_chessboard.get_col_to_move() == col::white)
+  {
+    score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level);
+    if (best_move_index == -1 && score == -100.0)
+    {
+      // logfile << "White was check mated." << "\n"; // TODO
+      return 0;
+    }
+  }
+  else // col::black
+  {
+    score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level);
+    if (best_move_index == -1 && score == 100.0)
+    {
+      // logfile << "Black was check mated." << "\n"; // TODO
+      return 0;
+    }
+  }
+  if (has_time_left())
+  {
+    logfile << "Evaluated on level:" << max_search_level << " " << _chessboard.get_node_counter() <<
+      " nodes in " << (now.nanoseconds() - nsec_start)/1.0e6 << " milliseconds, hash_hits: " << _chessboard.get_hash_hits() << "\n";
+  }
+  return best_move_index;
+}
+
+BitMove Game::incremental_search(const std::string& max_search_time, int max_search_level)
 {
   // Incremental search, to have a best-move available as quickly as possible.
   // When searching incrementally we consider max_search_time.
 
-  // These values are just default values
-  int max_search_level = 7;
-  bool use_pruning = true;
-  bool search_until_no_captures = false;
-
-//  _chessboard.set_time_diff_sum(0);
-
-  // Read some configuration parameters
-  std::string s = config_params.get_config_param("max_search_level");
-  if (!s.empty())
-    max_search_level = atoi(s.c_str());
-  s = config_params.get_config_param("use_pruning");
-  if (!s.empty())
-    use_pruning = (s == "true");
-  s = config_params.get_config_param("search_until_no_captures");
-  if (!s.empty())
-    search_until_no_captures = (s == "true");
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   if (!max_search_time.empty())
   {
@@ -248,10 +254,9 @@ BitMove Game::incremental_search(const Config_params& config_params, const std::
   int8_t best_move_index = -1;
   for (int i = 2; i <= max_search_level; i++)
   {
-    // uint64_t nsec_start = current_time.nanoseconds();
     _chessboard.clear_transposition_table();
     //bool test = (use_pruning == false || search_until_no_captures == true);
-    int move_index = _player[index(_col_to_move)]->find_best_move_index(_moveno, _score, i, use_pruning, search_until_no_captures);
+    int move_index = find_best_move_index(_moveno, _score, i);
     // Has the search on this level been aborted by time limit?
     if (move_index == -1)
     {
@@ -285,8 +290,6 @@ BitMove Game::incremental_search(const Config_params& config_params, const std::
       break;
     }
     best_move_index = move_index;
-//      uint64_t nsec_stop = current_time.nanoseconds();
-//      logfile.log_time_diff(nsec_stop, nsec_start, i, _chessboard.get_possible_move(best_move_index), _score);
   }
   _chessboard.make_move(best_move_index, _moveno);
   _move_log.push_back(_chessboard.last_move());
@@ -303,34 +306,24 @@ BitMove Game::engine_go(const Config_params& config_params, const std::string& m
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
 
-  // These values are just default values
-  int max_search_level = 7;
+  // This values is just a default value;
   bool use_incremental_search = true;
-  bool use_pruning = true;
-  bool search_until_no_captures = false;
-
-//  _chessboard.set_time_diff_sum(0);
+  int max_search_level = 7;
 
   // Read some configuration parameters
   std::string s = config_params.get_config_param("max_search_level");
   if (!s.empty())
-    max_search_level = atoi(s.c_str());
+    max_search_level = std::atoi(s.c_str());
   s = config_params.get_config_param("use_incremental_search");
   if (!s.empty())
     use_incremental_search = (s == "true");
-  s = config_params.get_config_param("use_pruning");
-  if (!s.empty())
-    use_pruning = (s == "true");
-  s = config_params.get_config_param("search_until_no_captures");
-  if (!s.empty())
-    search_until_no_captures = (s == "true");
 
   _chessboard.init_material_evaluation(); // TODO: Should this be placed somewhere else, init_piece_state()?
 
   // Search for best move
   if (use_incremental_search)
   {
-    return incremental_search(config_params, max_search_time);
+    return incremental_search(max_search_time, max_search_level);
   }
   else
   {
@@ -338,7 +331,7 @@ BitMove Game::engine_go(const Config_params& config_params, const std::string& m
     // level and stop when finished. Ignore max_search_time.
     _chessboard.set_time_left(true);
     int best_move_index = -1;
-    int move_index = _player[index(_col_to_move)]->find_best_move_index(_moveno, _score, max_search_level, use_pruning, search_until_no_captures);
+    int move_index = find_best_move_index(_moveno, _score, max_search_level);
     if (move_index == -1)
     {
       // This happens when max_search_level has been set to 1.
@@ -381,18 +374,15 @@ void Game::set_time_left(bool value)
 
 playertype Game::get_playertype(const col& color) const
 {
-  return _player[index(color)]->type();
+  return _player_type[index(color)];
 }
 
 void Game::start_new_game(col col_to_move, int half_move_counter, int moveno)
 {
   clear_move_log();
-  _col_to_move = col_to_move;
   _half_move_counter = half_move_counter;
-  clear_move_log();
   set_moveno(moveno);
   set_move_log_col_to_start(col_to_move);
-  update_players();
   init();
   init_board_hash_tag();
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
@@ -408,7 +398,7 @@ void Game::figure_out_last_move(const Bitboard& new_position, col col_to_move, i
   // new_position.write(cout, outputtype::cmd_line_diagram, col_to_move);
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   BitMove m;
-  if (_chessboard.figure_out_last_move(new_position,m))
+  if (_chessboard.figure_out_last_move(new_position, m))
   {
     logfile << "Could not figure out last move, must be a new game." << "\n";
     (*dynamic_cast<Bitboard*>(&_chessboard)) = new_position;

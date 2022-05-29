@@ -545,16 +545,16 @@ TEST_CASE("find best_move")
   Config_params config_params;
   Game game(config_params);
 
-//  SECTION("strangulation mate")
-//  {
-//    std::string FEN_string = get_FEN_test_position(73);
-//    game.read_position_FEN(FEN_string);
-//    BitMove bestmove = game.engine_go(config_params, "");
-//    std::cout << "Best move: " << bestmove << std::endl;
-//    std::stringstream ss;
-//    ss << bestmove;
-//    REQUIRE(ss.str() == "Nc7-a6+");
-//  }
+  SECTION("strangulation mate")
+  {
+    std::string FEN_string = get_FEN_test_position(73);
+    game.read_position_FEN(FEN_string);
+    BitMove bestmove = game.engine_go(config_params, "");
+    std::cout << "Best move: " << bestmove << std::endl;
+    std::stringstream ss;
+    ss << bestmove;
+    REQUIRE(ss.str() == "Nc7-a6+");
+  }
 
   SECTION("strange queen-move")
   {
@@ -565,6 +565,17 @@ TEST_CASE("find best_move")
     std::stringstream ss;
     ss << bestmove;
     REQUIRE(ss.str() == "Bc8-b7");
+  }
+
+  SECTION("strange rook-move")
+  {
+    std::string FEN_string = get_FEN_test_position(80);
+    game.read_position_FEN(FEN_string);
+    BitMove bestmove = game.engine_go(config_params, "");
+    std::cout << "Best move: " << bestmove << std::endl;
+    std::stringstream ss;
+    ss << bestmove;
+    REQUIRE(ss.str() == "Nd3-c1+");
   }
 }
 

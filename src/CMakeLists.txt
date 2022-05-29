@@ -18,7 +18,6 @@ set(SOURCE_FILES
     ${PROJECT_SOURCE_DIR}/cmd_line.cpp
     ${PROJECT_SOURCE_DIR}/game.cpp
     ${PROJECT_SOURCE_DIR}/movelist.cpp
-    ${PROJECT_SOURCE_DIR}/player.cpp
     ${PROJECT_SOURCE_DIR}/shared_ostream.cpp
 )
 

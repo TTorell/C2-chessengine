@@ -19,10 +19,17 @@
 #include "shared_ostream.hpp"
 #include "current_time.hpp"
 
+namespace
+{
+
+int node_counter = 0;
+int hash_hits = 0;
+}
+
 namespace C2_chess
 {
 
-CurrentTime current_time;
+CurrentTime now;
 std::atomic<bool> Bitboard::time_left(false);
 Bitboard Bitboard::level_boards[38];
 
@@ -60,8 +67,16 @@ Bitboard::Bitboard(const Bitboard& bb) :
     _white_pieces(bb._white_pieces),
     _black_pieces(bb._black_pieces)
 {
-  _own = &_white_pieces;
-  _other = &_black_pieces;
+  if(_col_to_move == col::white)
+  {
+    _own = &_white_pieces;
+    _other = &_black_pieces;
+  }
+  else
+  {
+    _own = &_black_pieces;
+    _other = &_white_pieces;
+  }
 }
 
 Bitboard& Bitboard::operator=(const Bitboard& from)
@@ -101,7 +116,7 @@ inline void Bitboard::clear_movelist()
 }
 
 // Initializes the Bitboard position from a text string (Forsyth-Edwards Notation)
-int Bitboard::read_position(const std::string& FEN_string)
+int Bitboard::read_position(const std::string& FEN_string, bool init_pieces)
 {
   //std::cout << "\"" << FEN_string << "\"" << std::endl;
   std::vector<std::string> FEN_tokens = split(FEN_string, ' ');
@@ -235,6 +250,8 @@ int Bitboard::read_position(const std::string& FEN_string)
   {
     _ep_square = file[ep_string[0] - 'a'] & rank[ep_string[1] - '0'];
   }
+  if (init_pieces)
+    init_piece_state();
   return 0;
 }
 
@@ -264,9 +281,9 @@ void Bitboard::start_timer(const std::string& max_search_time)
   Bitboard::time_left = true;
   while (Bitboard::time_left)
   {
-    uint64_t nsec_start = current_time.nanoseconds();
+    uint64_t nsec_start = now.nanoseconds();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    uint64_t nsec_stop = current_time.nanoseconds();
+    uint64_t nsec_stop = now.nanoseconds();
     uint64_t timediff = nsec_stop - nsec_start;
     time -= (double) timediff / 1e6;
     if (time <= 0.0)
@@ -282,7 +299,7 @@ void Bitboard::start_timer_thread(const std::string& max_search_time)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   std::thread timer_thread(start_timer, max_search_time);
-  logfile << "Timer Thread Started: " << max_search_time << "\n";
+  logfile << "Timer Thread Started: " << max_search_time << " milliseconds.\n";
   timer_thread.detach();
 }
 
@@ -294,7 +311,6 @@ bool Bitboard::has_time_left()
 void Bitboard::set_time_left(bool value)
 {
   time_left = value;
-  std::cout << "time_left: " << time_left << std::endl;
 }
 
 void Bitboard::init_material_evaluation()
@@ -348,7 +364,7 @@ int Bitboard::count_threats_to_square(uint64_t to_square, col color) const
   uint64_t tmp_all_pieces = _all_pieces;
   uint8_t f_idx = file_idx(to_square);
 
-  const Bitpieces& pieces = (color == col::white)? _white_pieces : _black_pieces;
+  const Bitpieces& pieces = (color == col::white) ? _white_pieces : _black_pieces;
 
   int count = 0;
   // Check Pawn-threats
@@ -448,9 +464,8 @@ float Bitboard::max(uint8_t level, uint8_t move_no, float alpha, float beta, int
   // from min(). It doesn't matter what you put in.
   best_move_index = -1;
   level++;
-
-//  std::cout << "MAX " << "_col_to_move: " << static_cast<int>(_col_to_move) << " time_left: " <<
-//      time_left << " level: " << static_cast<int>(level) << std::endl;
+  //  std::cout << "MAX " << "_col_to_move: " << static_cast<int>(_col_to_move) << " time_left: " <<
+  //      time_left << " level: " << static_cast<int>(level) << std::endl;
 
   // Check if position evaluation is already in the hash_table
   TT_element& element = transposition_table.find(_hash_tag);
@@ -460,14 +475,18 @@ float Bitboard::max(uint8_t level, uint8_t move_no, float alpha, float beta, int
     // but is the evaluation good enough?
     if (element.level <= level)
     {
+      hash_hits++;
       best_move_index = element.best_move_index;
       return element.evaluation;
     }
   }
   // If there are no possible moves, the evaluation will check for such things as
   // mate or stalemate which may happen before max_search_level has been reached.
-  if (level >= max_search_level || _movelist.size() == 0)
+  if (_movelist.size() == 0 || level >= max_search_level)
   {
+    if (level >= max_search_level)
+      node_counter++;
+
     // element is a reference to a worse evaluation of this position (don't
     // know if that can happen here because here we are usually at the highest
     // search level) or it is a reference to  a new hash_element, already
@@ -477,49 +496,46 @@ float Bitboard::max(uint8_t level, uint8_t move_no, float alpha, float beta, int
         level};
     return element.evaluation;
   }
-  else
+  // Collect the best value from all possible moves
+  for (uint8_t i = 0; i < static_cast<uint8_t>(_movelist.size()); i++)
   {
-    // Collect the best value from all possible moves
-    for (uint8_t i = 0; i < static_cast<uint8_t>(_movelist.size()); i++)
+    // Copy current board into the preallocated board for this level.
+    Bitboard::level_boards[level] = *this;
+    // Make the selected move on the "level-board" and ask min() to evaluate it further.
+    level_boards[level].make_move(_movelist[i], move_no, (level < max_search_level) ? gentype::all : gentype::captures);
+    float tmp_value = level_boards[level].min(level, move_no, alpha, beta, dummy_index, max_search_level);
+    // Save the value if it is the "best", so far, from max() point of view.
+    if (tmp_value > max_value)
     {
-      // Copy current board into the preallocated board for this level.
-      Bitboard::level_boards[level] = *this;
-      // Make the selected move on the "level-board" and ask min() to evaluate it further.
-      level_boards[level].make_move(_movelist[i], move_no);
-      float tmp_value = level_boards[level].min(level, move_no, alpha, beta, dummy_index, max_search_level);
-      // Save the value if it is the "best", so far, from max() point of view.
-      if (tmp_value > max_value)
-      {
-        max_value = tmp_value;
-        best_move_index = i;
-      }
-      // Pruning:
-      if (tmp_value >= beta)
-      {
-        // Look no further. Skip the rest of the branches.
-        // They wont produce a better result.
-        return max_value;
-      }
-      if (tmp_value > alpha)
-      {
-        // Update alpha value for min();
-        alpha = tmp_value;
-      }
-      // Somewhere we have to check if time is up, to interrupt the search.
-      // Why not do it here?
-      if (!time_left)
-      {
-        best_move_index = -1;
-        return 0.0;
-      }
+      max_value = tmp_value;
+      best_move_index = i;
     }
-    // Save evaluation of the position to the cash and return
-    // the best value among the possible moves.
-    element = {best_move_index,
-               max_value,
-               level};
-    return max_value;
+    // Pruning:
+    if (tmp_value >= beta)
+    {
+      // Look no further. Skip the rest of the branches.
+      // They wont produce a better result.
+      return max_value;
+    }
+    if (tmp_value > alpha)
+    {
+      // Update alpha value for min();
+      alpha = tmp_value;
+    }
+    // Somewhere we have to check if time is up, to interrupt the search.
+    // Why not do it here?
+    if (!time_left)
+    {
+      best_move_index = -1;
+      return 0.0;
+    }
   }
+  // Save evaluation of the position to the cash and return
+  // the best value among the possible moves.
+  element = {best_move_index,
+             max_value,
+             level};
+  return max_value;
 }
 
 // min() is naturally very similar to max, but reversed when it comes to evaluations,
@@ -531,7 +547,6 @@ float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int
   int8_t dummy_index;
   best_move_index = -1;
   level++;
-
 //  std::cout << "MIN " << "_col_to_move: " << static_cast<int>(_col_to_move) << " time_left: " <<
 //      time_left << " level: " << static_cast<int>(level) << std::endl;
 
@@ -540,12 +555,15 @@ float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int
   {
     if (element.level <= level)
     {
+      hash_hits++;
       best_move_index = element.best_move_index;
       return element.evaluation;
     }
   }
-  if (level >= max_search_level || _movelist.size() == 0)
+  if (_movelist.size() == 0 || level >= max_search_level)
   {
+    if (level >= max_search_level)
+      node_counter++;
     element = {best_move_index, // -1, TODO: will this mess up things?
         evaluate_position(col::black, level),
         level};
@@ -557,7 +575,7 @@ float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int
     {
       level_boards[level] = *this;
 //      level_boards[level].write(std::cout, outputtype::cmd_line_diagram, col::white);
-      level_boards[level].make_move(_movelist[i], move_no);
+      level_boards[level].make_move(_movelist[i], move_no, (level < max_search_level) ? gentype::all : gentype::captures);
       float tmp_value = level_boards[level].max(level, move_no, alpha, beta, dummy_index, max_search_level);
       if (tmp_value < min_value)
       {
@@ -663,6 +681,10 @@ std::ostream& Bitboard::write(std::ostream& os, outputtype wt, col from_perspect
   return os;
 }
 
+void Bitboard::clear_node_counter() { node_counter = 0;}
+int Bitboard::get_node_counter() const {return node_counter;}
+void Bitboard::clear_hash_hits() { hash_hits = 0;}
+int Bitboard::get_hash_hits() const {return hash_hits;}
 
 } // End namespace C2_chess
 

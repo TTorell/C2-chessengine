@@ -190,8 +190,7 @@ void play_on_cmd_line(Config_params& config_params)
       }
       case 3:
         {
-        Game game(col::white,
-                  playertype::human,
+        Game game(playertype::human,
                   playertype::human,
                   config_params);
         game.setup_pieces();
@@ -202,18 +201,18 @@ void play_on_cmd_line(Config_params& config_params)
         continue;
       }
       default:
-        cmdline << "Sorry, 1, 2 or 3 was the options" << "\n" << "\n";
+        cmdline << "Sorry, 1, 2 or 3 were the options" << "\n" << "\n";
         std::this_thread::sleep_for(std::chrono::seconds(3));
         continue;
     }
   }
 }
 
-int Player::make_a_move(uint8_t& move_no, float& score, const uint8_t& max_search_level)
+int Game::make_a_move(uint8_t& move_no, float& score, const uint8_t max_search_level)
 {
-  if (_type == playertype::human)
+  if (_player_type[index(_chessboard.get_col_to_move())] == playertype::human)
   {
-    return _chessboard.make_move(playertype::human, move_no);
+    return dynamic_cast<Bitboard*>(&_chessboard)->make_move(playertype::human, move_no);
   }
   else // _type == computer
   {
@@ -221,7 +220,7 @@ int Player::make_a_move(uint8_t& move_no, float& score, const uint8_t& max_searc
     float alpha = -100, beta = 100;
     _chessboard.clear_transposition_table();
     _chessboard.init_material_evaluation();
-    if (_color == col::white)
+    if (_chessboard.get_col_to_move() == col::white)
     {
       score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level);
       if (best_move_index == -1 && score == -100.0)
@@ -256,6 +255,8 @@ void Game::start()
   // Init the hash tag for the initial board-position to
   // use in the Zobrist hash transposition-table.
   init_board_hash_tag();
+  // Generate all moves.
+  _chessboard.find_legal_moves(gentype::all);
   // Tell the engine that there are no time limits.
   // The time it takes is defined by the max_searh_level
   _chessboard.set_time_left(true);
@@ -265,11 +266,11 @@ void Game::start()
   while (_playing)
   {
     uint64_t nsec_start = current_time.nanoseconds();
-    if (get_playertype(_col_to_move) == playertype::human)
+    if (_player_type[index(_chessboard.get_col_to_move())] == playertype::human)
     {
 //      cmdline << "Hashtag: " << _chessboard.get_hash_tag() << "\n";
 //      cmdline << "Material evaluation: " << _chessboard.get_material_evaluation() << "\n";
-      if (_player[index(_col_to_move)]->make_a_move(_moveno, _score, max_search_level) != 0)
+      if (make_a_move(_moveno, _score, max_search_level) != 0)
       {
         cmdline << "Stopped playing" << "\n";
         _playing = false;

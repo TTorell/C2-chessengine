@@ -2,7 +2,6 @@
 #define _GAME_HPP
 
 #include "chesstypes.hpp"
-#include "player.hpp"
 #include "bitboard_with_utils.hpp"
 #include "movelist.hpp"
 #include "pgn_info.hpp"
@@ -23,13 +22,10 @@ class Game {
     bool _is_first_position;
     Movelog _move_log;
     Bitboard_with_utils _chessboard;
-    Player _player1;
-    Player _player2;
-    Player* _player[2];
+    playertype _player_type[2];
     uint8_t _moveno = 0;
-    col _col_to_move;
     float _score = 0.0;
-    int _half_move_counter = 0;
+    int _half_move_counter;
     //    PGN_info _pgn_info;
     Config_params& _config_params;
     bool _playing;
@@ -37,30 +33,26 @@ class Game {
     Game(Config_params& config_params);
     Game(col c, Config_params& config_params);
     Game(const Game&) = delete;
-    Game(col c,
-         playertype pt1,
+    Game(playertype pt1,
          playertype pt2,
          Config_params& config_params);
     ~Game();
     Game operator=(const C2_chess::Game&) = delete;
 
-    void update_players()
-    {
-      _col_to_move = _chessboard.get_col_to_move();
-      _player2.color(_col_to_move);
-      _player[index(_col_to_move)] = &_player2; // Computer
-      _player1.color(other_color(_col_to_move));
-      _player[index(index(other_color(_col_to_move)))] = &_player1;
-    }
+    int find_best_move_index(uint8_t& move_no,
+                             float& score,
+                             int max_search_level);
 
     int read_position_FEN(const std::string& FEN_string)
     {
       // TODO: read new position to temporary board, so
       // we can call figure_out_last_move().
-      if (_chessboard.read_position(FEN_string))
-        return -1;
-      _col_to_move = _chessboard.get_col_to_move();
-      update_players();
+//      Bitboard new_position;
+//      if (new_position.read_position(FEN_string, true)) // true means init_piece_state().
+//        return -1;
+//      if (!_is_first_position)
+//        figure_out_last_move(new_position, _chessboard.get_col_to_move(), _half_move_counter, _moveno);
+      _chessboard.read_position(FEN_string, true);
       _chessboard.find_legal_moves(gentype::all);
       return 0;
     }
@@ -72,7 +64,7 @@ class Game {
     void init_board_hash_tag();
     void actions_after_a_move();
     void start();
-    BitMove incremental_search(const Config_params& config_params, const std::string& max_search_time);
+    BitMove incremental_search(const std::string& max_search_time, int max_search_level);
     BitMove engine_go(const Config_params& config_params, const std::string& max_search_time);
     void start_timer_thread(const std::string& max_search_time);
     bool has_time_left();
@@ -80,7 +72,6 @@ class Game {
     void save() const;
     col get_col_to_move() const;
     playertype get_playertype(const col& color) const;
-    void set_col_to_move(col c);
     void set_move_log_col_to_start(col c);
     void set_castling_state(const Castling_state& cs);
     void set_en_passant_square(int file, int rank);
@@ -93,6 +84,7 @@ class Game {
     void figure_out_last_move(const Bitboard& new_position, col col_to_move, int half_move_counter, int moveno);
     void start_new_game(col col_to_move, int half_move_counter, int move_no);
     int read_position(const std::string& filename);
+    int make_a_move(uint8_t& move_no, float& score, const uint8_t max_search_level);
 };
 
 } // namespace C2_chess
