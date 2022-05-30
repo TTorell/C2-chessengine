@@ -18,6 +18,7 @@
 #include "zobrist_bitboard_hash.hpp"
 #include "shared_ostream.hpp"
 #include "current_time.hpp"
+#include "pv_table.hpp"
 
 namespace
 {
@@ -32,8 +33,9 @@ namespace C2_chess
 CurrentTime now;
 std::atomic<bool> Bitboard::time_left(false);
 Bitboard Bitboard::level_boards[38];
+PV_table Bitboard::pv_table(50000);
 
-Bitboard::Bitboard() :
+Bitboard::Bitboard():
     _hash_tag(zero),
     _movelist(),
     _col_to_move(col::white),
@@ -46,13 +48,15 @@ Bitboard::Bitboard() :
     _pinned_pieces(zero),
     _all_pieces(zero),
     _white_pieces(),
-    _black_pieces()
+    _black_pieces(),
+    _own(nullptr),
+    _other(nullptr)
 {
   _own = &_white_pieces;
   _other = &_black_pieces;
 }
 
-Bitboard::Bitboard(const Bitboard& bb) :
+Bitboard::Bitboard(const Bitboard& bb):
     _hash_tag(bb._hash_tag),
     _movelist(bb._movelist),
     _col_to_move(bb._col_to_move),
@@ -65,7 +69,9 @@ Bitboard::Bitboard(const Bitboard& bb) :
     _pinned_pieces(bb._pinned_pieces),
     _all_pieces(bb._all_pieces),
     _white_pieces(bb._white_pieces),
-    _black_pieces(bb._black_pieces)
+    _black_pieces(bb._black_pieces),
+    _own(nullptr),
+    _other(nullptr)
 {
   if(_col_to_move == col::white)
   {
@@ -271,6 +277,11 @@ void Bitboard::clear_transposition_table()
   transposition_table.clear();
 }
 
+void Bitboard::clear_PV_table()
+{
+  pv_table.clear();
+}
+
 // This method will run in the timer_thread.
 void Bitboard::start_timer(const std::string& max_search_time)
 {
@@ -285,7 +296,7 @@ void Bitboard::start_timer(const std::string& max_search_time)
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     uint64_t nsec_stop = now.nanoseconds();
     uint64_t timediff = nsec_stop - nsec_start;
-    time -= (double) timediff / 1e6;
+    time -= (double)timediff / 1e6;
     if (time <= 0.0)
     {
       Bitboard::time_left = false;
@@ -521,6 +532,7 @@ float Bitboard::max(uint8_t level, uint8_t move_no, float alpha, float beta, int
     {
       // Update alpha value for min();
       alpha = tmp_value;
+      pv_table.store_move(_hash_tag, _movelist[i]._move);
     }
     // Somewhere we have to check if time is up, to interrupt the search.
     // Why not do it here?
@@ -589,6 +601,7 @@ float Bitboard::min(uint8_t level, uint8_t move_no, float alpha, float beta, int
       if (tmp_value < beta)
       {
         beta = tmp_value;
+        pv_table.store_move(_hash_tag, _movelist[i]._move);
       }
       if (!time_left)
       {

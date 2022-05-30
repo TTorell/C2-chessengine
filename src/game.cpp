@@ -255,6 +255,7 @@ BitMove Game::incremental_search(const std::string& max_search_time, int max_sea
   for (int i = 2; i <= max_search_level; i++)
   {
     _chessboard.clear_transposition_table();
+    _chessboard.clear_PV_table();
     //bool test = (use_pruning == false || search_until_no_captures == true);
     int move_index = find_best_move_index(_moveno, _score, i);
     // Has the search on this level been aborted by time limit?

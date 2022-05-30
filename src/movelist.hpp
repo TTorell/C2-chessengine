@@ -19,13 +19,15 @@ class Movelog
     public:
     Movelog() :
         _col_to_start(col::white),
-        _first_moveno(1)
+        _first_moveno(1),
+        _list { }
     {
     }
 
-    Movelog(col col_to_start, int first_moveno) :
+    Movelog(col col_to_start, int first_moveno):
         _col_to_start(col_to_start),
-        _first_moveno(first_moveno)
+        _first_moveno(first_moveno),
+        _list { }
     {
     }
 

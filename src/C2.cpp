@@ -81,7 +81,8 @@ int parse_command(const std::string& command,
   if (tokens[0] == "setoption")
   {
     // All my config-parameters have names which are only one token long.
-    std::string name = "", value = "";
+    std::string name = "";
+    std::string value = "";
     bool read_name = false;
     bool read_value = false;
     for (auto token : tokens)

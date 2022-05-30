@@ -21,6 +21,7 @@
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 #include "zobrist_bitboard_hash.hpp"
+#include "pv_table.hpp"
 
 namespace C2_chess
 {
@@ -359,7 +360,7 @@ struct BitMove
       return false;
     }
 
-    bool operator < (const BitMove& m) const
+    bool operator <(const BitMove& m) const
     {
       // Sort in descending order
       return m._evaluation < _evaluation;
@@ -429,6 +430,7 @@ class Bitboard
   protected:
     // Static declarations, incomplete type.
     static Zobrist_bitboard_hash transposition_table;
+    static PV_table pv_table;
     static Bitboard level_boards[];
     static std::atomic<bool> time_left;
 
@@ -456,7 +458,7 @@ class Bitboard
 
     inline void clear_movelist();
 
-    inline void sort_moves(std::deque<BitMove>&  movelist);
+    inline void sort_moves(std::deque<BitMove>& movelist);
 
     inline void add_move(piecetype p_type,
                          uint8_t move_props,
@@ -652,6 +654,8 @@ class Bitboard
     bool has_time_left();
 
     void clear_transposition_table();
+
+    void clear_PV_table();
 
     void init_material_evaluation();
 

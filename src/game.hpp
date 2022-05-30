@@ -17,7 +17,8 @@ namespace C2_chess
 class Config_params;
 class Castling_state;
 
-class Game {
+class Game
+{
   protected:
     bool _is_first_position;
     Movelog _move_log;

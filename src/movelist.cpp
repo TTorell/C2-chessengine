@@ -9,11 +9,11 @@
 namespace C2_chess
 {
 
-std::ostream & Movelog::write(std::ostream & os) const
+std::ostream& Movelog::write(std::ostream& os) const
 {
   int moveno = _first_moveno;
   int increment = 0;
-  for (int i = 0; i < (int) _list.size(); i++)
+  for (int i = 0; i < static_cast<int>(_list.size()); i++)
   {
     std::ostringstream move;
     move << _list[i];
@@ -27,7 +27,7 @@ std::ostream & Movelog::write(std::ostream & os) const
     if ((i + increment) % 2 == 0)
     {
       os << moveno++ << "." << std::left << std::setw(9) << move.str();
-      if (i == (int) (_list.size() - 1))      // last move
+      if (i == static_cast<int>(_list.size() - 1))      // last move
         os << std::endl;
     }
     else
@@ -37,4 +37,4 @@ std::ostream & Movelog::write(std::ostream & os) const
   }
   return os;
 }
-}
+} // namespace C2_chess
