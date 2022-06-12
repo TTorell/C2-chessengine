@@ -55,9 +55,9 @@ class Bitboard_with_utils: public Bitboard
       return _movelist.size();
     }
 
-    void make_move(uint8_t move_index, uint8_t& moveno)
+    void make_move(uint8_t move_index)
     {
-      Bitboard::make_move(move_index, moveno);
+      Bitboard::make_move(move_index);
     }
 
     int figure_out_last_move(const Bitboard& new_position, BitMove& m) const;
@@ -73,6 +73,12 @@ class Bitboard_with_utils: public Bitboard
       }
       return -1;
     }
+
+    void clear_game_history()
+    {
+      history.clear();
+    }
+
 };
 
 } // End namespace C2_chess

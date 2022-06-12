@@ -1032,7 +1032,7 @@ inline float Bitboard::get_piece_value(uint64_t square) const
 // normal moves with value zero.
 // ..................................................................
 inline void Bitboard::add_move(piecetype p_type,
-                               uint8_t move_props,
+                               uint16_t move_props,
                                uint64_t from_square,
                                uint64_t to_square,
                                piecetype promotion_p_type)

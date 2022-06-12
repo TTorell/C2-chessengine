@@ -78,3 +78,5 @@ rnb2rk1/4bppp/p2p1n2/1p2pP1N/4P3/1BN5/PPP3PP/R1BQ1RqK w - - 8 15 Kh1xg1 Rf1xg1
 rnb2rk1/4bppp/pq1p1n2/1p2pP1N/4P3/1BN5/PPP3PP/R1BQ1R1K b - - 7 14 Nf6xh5 Bc8xf5 Nf6xe4 Kg8-h8 h7-h6 g7-g6 d6-d5 a6-a5 b5-b4 g7-g5 Nb8-d7 Nb8-c6 Nf6-e8 Nf6-d7 Nf6-d5 Nf6-g4 Rf8-e8 Rf8-d8 Bc8-d7 Bc8-b7 Bc8-e6 Ra8-a7 Be7-d8 Qb6-d8 Qb6-c7 Qb6-b7 Qb6-a7 Qb6-c6 Qb6-c5 Qb6-a5 Qb6-d4 Qb6-e3 Qb6-f2 Qb6-g1
 r1k2b1r/p2bp3/2p2p1p/7B/5B2/2N4P/P3NPP1/3RK2R b K - 0 22 Bd7xh3 Kc8-d8 Kc8-b7 e7-e6 a7-a6 f6-f5 c6-c5 e7-e5 a7-a5 Rh8-g8 Rh8-h7 Bf8-g7 Ra8-b8 Bd7-e8 Bd7-e6 Bd7-f5 Bd7-g4
 2r5/kp1N4/6R1/p4pP1/B7/P2n1P2/K5P1/8 b - - 0 35 Ka7-a8 b7-b6 f5-f4 b7-b5 Nd3-e5 Nd3-c5 Nd3-f4 Nd3-b4 Nd3-f2 Nd3-b2 Nd3-e1 Nd3-c1 Rc8-h8 Rc8-g8 Rc8-f8 Rc8-e8 Rc8-d8 Rc8-b8 Rc8-a8 Rc8-c7 Rc8-c6 Rc8-c5 Rc8-c4 Rc8-c3 Rc8-c2 Rc8-c1
+rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKB1R w KQkq - 0 1 Ke1-e2 e4-e5 h2-h3 g2-g3 f2-f3 d2-d3 c2-c3 b2-b3 a2-a3 h2-h4 g2-g4 f2-f4 d2-d4 c2-c4 b2-b4 a2-a4 Nb1-c3 Nb1-a3 Rh1-g1 Bf1-a6 Bf1-b5 Bf1-c4 Bf1-d3 Bf1-e2 Qd1-h5 Qd1-g4 Qd1-f3 Qd1-e2
+k7/7N/K3b3/6p1/8/7P/8/8 w - - 49 1 Nh7xg5 Ka6-b6 Ka6-b5 Ka6-a5 h3-h4 Nh7-f8 Nh7-f6

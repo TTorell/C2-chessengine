@@ -24,14 +24,12 @@ Game::Game(Config_params& config_params) :
     _move_log(),
     _chessboard(),
     _player_type {playertype::human, playertype::computer},
-    _moveno(1),
     _score(0),
-    _half_move_counter(0),
     _config_params(config_params),
     _playing(false)
 {
   _chessboard.read_position(initial_position);
-  _chessboard.find_legal_moves(gentype::all);
+  init();
 }
 
 Game::Game(col color, Config_params& config_params) :
@@ -39,14 +37,14 @@ Game::Game(col color, Config_params& config_params) :
     _move_log(),
     _chessboard(),
     _player_type {playertype::human, playertype::computer},
-    _moveno(1),
     _score(0),
-    _half_move_counter(0),
     _config_params(config_params),
     _playing(false)
 {
   _player_type[index(color)] = playertype::human;
   _player_type[index(other_color(color))] = playertype::computer;
+  _chessboard.read_position(initial_position);
+  init();
 }
 
 Game::Game(playertype pt1,
@@ -56,11 +54,12 @@ Game::Game(playertype pt1,
     _move_log(),
     _chessboard(),
     _player_type {pt1, pt2},
-    _moveno(1),
     _score(0),
     _config_params(config_params),
     _playing(false)
 {
+  _chessboard.read_position(initial_position);
+  init();
 }
 
 Game::~Game()
@@ -69,6 +68,8 @@ Game::~Game()
 
 void Game::init()
 {
+  _chessboard.clear_game_history();
+  _chessboard.add_position_to_game_history();
   _chessboard.find_legal_moves(gentype::all);
 }
 
@@ -107,14 +108,8 @@ void Game::set_move_log_col_to_start(col color)
 //  _chessboard.set_enpassant_square(file, rank);
 //}
 
-void Game::set_half_move_counter(int half_move_counter)
-{
-  _half_move_counter = half_move_counter;
-}
-
 void Game::set_moveno(int moveno)
 {
-  _moveno = moveno;
   if (_is_first_position)
   {
     _move_log.set_first_moveno(moveno);
@@ -181,18 +176,20 @@ void Game::actions_after_a_move()
     logfile << "1/2 - 1/2 draw by stalemate" << "\n";
     _playing = false;
   }
+  else if (evaluation == 0.0 && _chessboard.is_threefold_repetition())
+  {
+    _chessboard.set_draw_by_repetition();
+    cmdline << "1/2 - 1/2 draw by repetition" << "\n";
+    logfile << "1/2 - 1/2 draw by repetition" << "\n";
+    _playing = false;
+  }
   else // Normal position
   {
-    cmdline << "current postion evaluation: " << evaluation << "\n";
-    logfile << "current postion evaluation: " << evaluation << "\n";
-    // Update half-move coubter for the 50-moves-rule.
-    BitMove last_move = _chessboard.last_move();
-    if ((last_move.properties() & move_props_capture) || (last_move.piece_type() == piecetype::Pawn))
-      _half_move_counter = 0;
-    else
-      _half_move_counter++;
-    if (_half_move_counter > 50)
+    cmdline << "current position evaluation: " << evaluation << "\n";
+    logfile << "current position evaluation: " << evaluation << "\n";
+    if (_chessboard.is_draw_by_50_moves())
     {
+      _chessboard.set_draw_by_50_moves();
       cmdline << "1/2 - 1/2 draw by the fifty-move rule" << "\n";
       logfile << "1/2 - 1/2 draw by the fifty-move rule" << "\n";
       _playing = false;
@@ -202,7 +199,7 @@ void Game::actions_after_a_move()
   // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
 }
 
-int Game::find_best_move_index(uint8_t& move_no, float& score, int max_search_level)
+int Game::find_best_move_index(float& score, int max_search_level)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   _chessboard.clear_node_counter();
@@ -214,7 +211,7 @@ int Game::find_best_move_index(uint8_t& move_no, float& score, int max_search_le
   float alpha = -100, beta = 100;
   if (_chessboard.get_col_to_move() == col::white)
   {
-    score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level);
+    score = _chessboard.max(0, alpha, beta, best_move_index, max_search_level);
     if (best_move_index == -1 && score == -100.0)
     {
       // logfile << "White was check mated." << "\n"; // TODO
@@ -223,7 +220,7 @@ int Game::find_best_move_index(uint8_t& move_no, float& score, int max_search_le
   }
   else // col::black
   {
-    score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level);
+    score = _chessboard.min(0, alpha, beta, best_move_index, max_search_level);
     if (best_move_index == -1 && score == 100.0)
     {
       // logfile << "Black was check mated." << "\n"; // TODO
@@ -233,7 +230,7 @@ int Game::find_best_move_index(uint8_t& move_no, float& score, int max_search_le
   if (has_time_left())
   {
     logfile << "Evaluated on level:" << max_search_level << " " << _chessboard.get_node_counter() <<
-      " nodes in " << (now.nanoseconds() - nsec_start)/1.0e6 << " milliseconds, hash_hits: " << _chessboard.get_hash_hits() << "\n";
+            " nodes in " << (now.nanoseconds() - nsec_start) / 1.0e6 << " milliseconds, hash_hits: " << _chessboard.get_hash_hits() << "\n";
   }
   return best_move_index;
 }
@@ -257,7 +254,7 @@ BitMove Game::incremental_search(const std::string& max_search_time, int max_sea
     _chessboard.clear_transposition_table();
     _chessboard.clear_PV_table();
     //bool test = (use_pruning == false || search_until_no_captures == true);
-    int move_index = find_best_move_index(_moveno, _score, i);
+    int move_index = find_best_move_index(_score, i);
     // Has the search on this level been aborted by time limit?
     if (move_index == -1)
     {
@@ -292,7 +289,7 @@ BitMove Game::incremental_search(const std::string& max_search_time, int max_sea
     }
     best_move_index = move_index;
   }
-  _chessboard.make_move(best_move_index, _moveno);
+  _chessboard.make_move(best_move_index);
   _move_log.push_back(_chessboard.last_move());
 
   // Stop possibly running timer by setting time_left to false.
@@ -307,7 +304,7 @@ BitMove Game::engine_go(const Config_params& config_params, const std::string& m
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
 
-  // This values is just a default value;
+  // This value is just a default value;
   bool use_incremental_search = true;
   int max_search_level = 7;
 
@@ -332,7 +329,7 @@ BitMove Game::engine_go(const Config_params& config_params, const std::string& m
     // level and stop when finished. Ignore max_search_time.
     _chessboard.set_time_left(true);
     int best_move_index = -1;
-    int move_index = find_best_move_index(_moveno, _score, max_search_level);
+    int move_index = find_best_move_index(_score, max_search_level);
     if (move_index == -1)
     {
       // This happens when max_search_level has been set to 1.
@@ -347,7 +344,7 @@ BitMove Game::engine_go(const Config_params& config_params, const std::string& m
     best_move_index = move_index;
 //    uint64_t nsec_stop = current_time.nanoseconds();
 //    logfile.log_time_diff(nsec_stop, nsec_start, max_search_level, _chessboard.get_possible_move(best_move_index), _score);
-    _chessboard.make_move(best_move_index, _moveno);
+    _chessboard.make_move(best_move_index);
     _move_log.push_back(_chessboard.last_move());
   }
 
@@ -378,32 +375,54 @@ playertype Game::get_playertype(const col& color) const
   return _player_type[index(color)];
 }
 
-void Game::start_new_game(col col_to_move, int half_move_counter, int moveno)
+void Game::start_new_game(col col_to_move)
 {
   clear_move_log();
-  _half_move_counter = half_move_counter;
-  set_moveno(moveno);
+  set_moveno(_chessboard.get_move_number());
   set_move_log_col_to_start(col_to_move);
   init();
   init_board_hash_tag();
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   logfile << "\nNew Game started\n";
   logfile << "----------------\n";
-  logfile << "moveno = " << moveno << "\n";
+  logfile << "move number = " << _chessboard.get_move_number() << "\n";
   logfile.write_config_params(_config_params);
   write_diagram(logfile) << "\n";
 }
 
-void Game::figure_out_last_move(const Bitboard& new_position, col col_to_move, int half_move_counter, int moveno)
+void Game::figure_out_last_move(const Bitboard& new_position)
 {
   // new_position.write(cout, outputtype::cmd_line_diagram, col_to_move);
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   BitMove m;
-  if (_chessboard.figure_out_last_move(new_position, m))
+  int return_value = _chessboard.figure_out_last_move(new_position, m);
+  if (return_value != 0)
   {
-    logfile << "Could not figure out last move, must be a new game." << "\n";
+    logfile << "Couldn't figure out last move, must be a new game." << "\n";
+    switch (return_value)
+    {
+      case -1:
+        logfile << "_half_move_counter values didn't match." << "\n";
+        break;
+      case -2:
+        case -3:
+        logfile << "En passant problems." << "\n";
+        break;
+      case -4:
+        case -5:
+        case -6:
+        case -7:
+        logfile << "Castling problems." << "\n";
+        break;
+      case -8:
+        logfile << "Piece-diff is too big." << "\n";
+        break;
+      default:
+        logfile << "Unexpected return value." << "\n";
+    }
     (*dynamic_cast<Bitboard*>(&_chessboard)) = new_position;
-    start_new_game(col_to_move, half_move_counter, moveno);
+    start_new_game(_chessboard.get_col_to_move());
+    return;
   }
   else // OK move has been found out
   {
@@ -412,10 +431,11 @@ void Game::figure_out_last_move(const Bitboard& new_position, col col_to_move, i
     if (moveindex == -1)
     {
       logfile << "Coldn't find index of " << m << "\n";
-      start_new_game(col_to_move, half_move_counter, moveno);
+      start_new_game(_chessboard.get_col_to_move());
+      (*dynamic_cast<Bitboard*>(&_chessboard)) = new_position;
       return;
     }
-    _chessboard.make_move(moveindex, _moveno);
+    _chessboard.make_move(moveindex);
     _move_log.push_back(_chessboard.last_move());
     actions_after_a_move();
   }

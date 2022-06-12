@@ -24,9 +24,8 @@ class Game
     Movelog _move_log;
     Bitboard_with_utils _chessboard;
     playertype _player_type[2];
-    uint8_t _moveno = 0;
+//    uint8_t _moveno = 0;
     float _score = 0.0;
-    int _half_move_counter;
     //    PGN_info _pgn_info;
     Config_params& _config_params;
     bool _playing;
@@ -40,20 +39,20 @@ class Game
     ~Game();
     Game operator=(const C2_chess::Game&) = delete;
 
-    int find_best_move_index(uint8_t& move_no,
-                             float& score,
+    int find_best_move_index(float& score,
                              int max_search_level);
 
     int read_position_FEN(const std::string& FEN_string)
     {
       // TODO: read new position to temporary board, so
       // we can call figure_out_last_move().
-//      Bitboard new_position;
-//      if (new_position.read_position(FEN_string, true)) // true means init_piece_state().
-//        return -1;
-//      if (!_is_first_position)
-//        figure_out_last_move(new_position, _chessboard.get_col_to_move(), _half_move_counter, _moveno);
-      _chessboard.read_position(FEN_string, true);
+      Bitboard new_position;
+      if (new_position.read_position(FEN_string, true)) // true means init_piece_state().
+        return -1;
+      if (!_is_first_position)
+        figure_out_last_move(new_position);
+      else
+        _chessboard.read_position(FEN_string, true);
       _chessboard.find_legal_moves(gentype::all);
       return 0;
     }
@@ -82,10 +81,10 @@ class Game
     std::ostream& write_diagram(std::ostream& os) const;
     Shared_ostream& write_diagram(Shared_ostream& sos) const;
     void play_on_cmd_line(Config_params& config_params);
-    void figure_out_last_move(const Bitboard& new_position, col col_to_move, int half_move_counter, int moveno);
-    void start_new_game(col col_to_move, int half_move_counter, int move_no);
+    void figure_out_last_move(const Bitboard& new_position);
+    void start_new_game(col col_to_move);
     int read_position(const std::string& filename);
-    int make_a_move(uint8_t& move_no, float& score, const uint8_t max_search_level);
+    int make_a_move(float& score, const uint8_t max_search_level);
 };
 
 } // namespace C2_chess

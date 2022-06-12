@@ -22,6 +22,7 @@
 #include "chessfuncs.hpp"
 #include "zobrist_bitboard_hash.hpp"
 #include "pv_table.hpp"
+#include "game_history.hpp"
 
 namespace C2_chess
 {
@@ -336,17 +337,18 @@ struct BitMove
 {
     uint32_t _move;
     float _evaluation;
+
     BitMove() :
         _move(0),
         _evaluation(0.0)
     {
     }
 
-    BitMove(piecetype p_type,
-            uint8_t move_props,
-            uint64_t from_square,
-            uint64_t to_square,
-            piecetype promotion_pt = piecetype::Queen) :
+    BitMove(piecetype p_type, // bit 25-32
+            uint16_t move_props, // bit 15-24
+            uint64_t from_square, // bit 7-12
+            uint64_t to_square, // bit 1-6
+            piecetype promotion_pt = piecetype::Queen) : // bit 13-14
         _move(0),
         _evaluation(0.0)
     {
@@ -381,9 +383,9 @@ struct BitMove
       return static_cast<piecetype>((_move >> 12) & 0x03);
     }
 
-    uint8_t properties() const
+    uint16_t properties() const
     {
-      return (_move >> 14) & 0xFF;
+      return (_move >> 14) & 0x03FF;
     }
 
     piecetype piece_type() const
@@ -391,7 +393,7 @@ struct BitMove
       return static_cast<piecetype>(_move >> 24);
     }
 
-    void add_property(uint8_t property)
+    void add_property(uint16_t property)
     {
       uint32_t tmp = property;
       _move |= tmp << 14;
@@ -419,6 +421,7 @@ struct Bitpieces
     uint64_t Knights;
     uint64_t Pawns;
     uint64_t pieces;
+
     void assemble_pieces()
     {
       pieces = King | Queens | Rooks | Bishops | Knights | Pawns;
@@ -430,6 +433,7 @@ class Bitboard
   protected:
     // Static declarations, incomplete type.
     static Zobrist_bitboard_hash transposition_table;
+    static Game_history history;
     static PV_table pv_table;
     static Bitboard level_boards[];
     static std::atomic<bool> time_left;
@@ -437,6 +441,7 @@ class Bitboard
     uint64_t _hash_tag;
     std::deque<BitMove> _movelist;
     col _col_to_move = col::white;
+    uint16_t _move_number;
     uint8_t _castling_rights = castling_rights_none;
     bool _has_castled[2];
     uint64_t _ep_square = zero;
@@ -450,18 +455,17 @@ class Bitboard
     Bitpieces _black_pieces;
     Bitpieces* _own;
     Bitpieces* _other;
+    uint8_t _half_move_counter;
 
     // ### Protected basic Bitboard_functions ###
     // ------------------------------------------
 
     void init_piece_state();
 
-    inline void clear_movelist();
-
     inline void sort_moves(std::deque<BitMove>& movelist);
 
     inline void add_move(piecetype p_type,
-                         uint8_t move_props,
+                         uint16_t move_props,
                          uint64_t from_square,
                          uint64_t to_square,
                          piecetype promotion_p_type = piecetype::Queen);
@@ -562,7 +566,7 @@ class Bitboard
 
     Bitboard& operator=(const Bitboard& from);
 
-    // Clears thing which could matter when reading a new position
+    // Clears things which could matter when reading a new position.
     void clear()
     {
       std::memset(_own, 0, sizeof(Bitpieces));
@@ -590,15 +594,15 @@ class Bitboard
     // Looks up the i:th move in movelist and makes it.
     // move_no just keeps track of the full move number
     // in the game.
-    void make_move(uint8_t i, uint8_t& move_no, gentype gt = gentype::all);
+    void make_move(uint8_t i, gentype gt = gentype::all);
 
     // Only for the command-line interface, where the user
     // is prompted to enter the new move on the keyboard,
     // if he's on turn.
-    int make_move(playertype player_type, uint8_t& move_no);
+    int make_move(playertype player_type);
 
     // This make_move() doesn't require a defined movelist.
-    void make_move(const BitMove& m, uint8_t& move_no, gentype gt = gentype::all);
+    void make_move(const BitMove& m, gentype gt = gentype::all);
 
     // All properties of a move are not decided immediately,
     // but some of them (check for instance) are set after the
@@ -622,6 +626,16 @@ class Bitboard
       _last_move.add_property(move_props_stalemate);
     }
 
+    void set_draw_by_repetition()
+    {
+      _last_move.add_property(move_props_draw_by_repetition);
+    }
+
+    void set_draw_by_50_moves()
+    {
+      _last_move.add_property(move_props_draw_by_50_moves);
+    }
+
     // The chess-engine keeps track of the game, which is
     // not necessary, but nice to see in the log-files.
     // For guessing the opponents last move (from the
@@ -642,6 +656,16 @@ class Bitboard
     // given square. Should not be used inside the search-loop.
     piecetype get_piece_type(uint64_t square) const;
 
+    uint16_t get_move_number() const
+    {
+      return _move_number;
+    }
+
+    void set_move_number(uint16_t move_number)
+    {
+      _move_number = move_number;
+    }
+
     // ### Public methods for the search of best move. ###
     // ---------------------------------------------------
 
@@ -657,13 +681,36 @@ class Bitboard
 
     void clear_PV_table();
 
+    inline void clear_movelist();
+
+    void update_half_move_counter();
+
+    void set_half_move_counter(uint8_t half_move_counter);
+
+    uint8_t get_half_move_counter() const
+    {
+      return _half_move_counter;
+    }
+
+    bool is_draw_by_50_moves() const;
+
+    void add_position_to_game_history()
+    {
+      history.add_position(_hash_tag);
+    }
+
+    inline bool is_threefold_repetition() const
+    {
+      return history.is_threefold_repetition();
+    }
+
     void init_material_evaluation();
 
     // min() and max() are an attempt to implement the recursive
     // min-max-with-alpha-beta-pruning-algorithm.
     // They can most certainly be improved.
-    float max(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
-    float min(uint8_t level, uint8_t move_no, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
+    float max(uint8_t level, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
+    float min(uint8_t level, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
 
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
     std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;

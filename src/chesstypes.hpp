@@ -64,15 +64,17 @@ constexpr uint8_t castling_right_BQ = 0B00000001;
 constexpr uint8_t castling_rights_B = 0B00000011;
 
 // BitMove properties
-constexpr uint8_t move_props_none = 0x00;
-constexpr uint8_t move_props_en_passant = 0x01;
-constexpr uint8_t move_props_promotion = 0x02;
-constexpr uint8_t move_props_castling = 0x40;
-constexpr uint8_t move_props_capture = 0x04;
-constexpr uint8_t move_props_check = 0x08;
-constexpr uint8_t move_props_mate = 0x10;
-constexpr uint8_t move_props_stalemate = 0x20;
-
+// Note: only the ten least significant bytes may be used.
+constexpr uint16_t move_props_none = 0x0000;
+constexpr uint16_t move_props_en_passant = 0x0001;
+constexpr uint16_t move_props_promotion = 0x0002;
+constexpr uint16_t move_props_capture = 0x0004;
+constexpr uint16_t move_props_check = 0x0008;
+constexpr uint16_t move_props_mate = 0x0010;
+constexpr uint16_t move_props_stalemate = 0x0020;
+constexpr uint16_t move_props_castling = 0x0040;
+constexpr uint16_t move_props_draw_by_repetition = 0x0080;
+constexpr uint16_t move_props_draw_by_50_moves = 0x0100;
 constexpr bool SAME_LINE = true;
 
 } // namespace

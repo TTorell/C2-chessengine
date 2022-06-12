@@ -8,6 +8,7 @@
 #include "bitboard.hpp"
 #include "chesstypes.hpp"
 #include "zobrist_bitboard_hash.hpp"
+#include "game_history.hpp"
 
 namespace C2_chess
 {
@@ -321,15 +322,15 @@ inline void Bitboard::update_state_after_king_move(const BitMove& m)
   }
 }
 
-void Bitboard::make_move(uint8_t i, uint8_t& move_no, gentype gt)
+void Bitboard::make_move(uint8_t i, gentype gt)
 {
   assert(i < _movelist.size());
-  make_move(_movelist[i], move_no, gt);
+  make_move(_movelist[i], gt);
 }
 
 // The move must be valid, but doesn't have to be in _movelist.
 // _movelist may be empty.
-void Bitboard::make_move(const BitMove& m, uint8_t& move_no, gentype gt)
+void Bitboard::make_move(const BitMove& m, gentype gt)
 {
   assert((_own->pieces & _other->pieces) == zero);
   uint64_t to_square = m.to();
@@ -442,9 +443,12 @@ void Bitboard::make_move(const BitMove& m, uint8_t& move_no, gentype gt)
   _last_move = m;
   update_col_to_move();
   if (_col_to_move == col::white)
-    move_no++;
+    _move_number++;
   if (square_is_threatened(_own->King, false))
     _last_move.add_property(move_props_check);
+  // add_position to game_history
+  history.add_position(_hash_tag);
+  update_half_move_counter();
   // TODO: Must be possible to change to gentype::captures.
   find_legal_moves(gt);
 }

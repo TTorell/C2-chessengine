@@ -208,11 +208,11 @@ void play_on_cmd_line(Config_params& config_params)
   }
 }
 
-int Game::make_a_move(uint8_t& move_no, float& score, const uint8_t max_search_level)
+int Game::make_a_move(float& score, const uint8_t max_search_level)
 {
   if (_player_type[index(_chessboard.get_col_to_move())] == playertype::human)
   {
-    return dynamic_cast<Bitboard*>(&_chessboard)->make_move(playertype::human, move_no);
+    return dynamic_cast<Bitboard*>(&_chessboard)->make_move(playertype::human);
   }
   else // _type == computer
   {
@@ -222,7 +222,7 @@ int Game::make_a_move(uint8_t& move_no, float& score, const uint8_t max_search_l
     _chessboard.init_material_evaluation();
     if (_chessboard.get_col_to_move() == col::white)
     {
-      score = _chessboard.max(0, move_no, alpha, beta, best_move_index, max_search_level);
+      score = _chessboard.max(0, alpha, beta, best_move_index, max_search_level);
       if (best_move_index == -1 && score == -100.0)
       {
         std::cout << "White was check mated." << std::endl; // TODO
@@ -231,14 +231,14 @@ int Game::make_a_move(uint8_t& move_no, float& score, const uint8_t max_search_l
     }
     else
     {
-      score = _chessboard.min(0, move_no, alpha, beta, best_move_index, max_search_level);
+      score = _chessboard.min(0, alpha, beta, best_move_index, max_search_level);
       if (best_move_index == -1 && score == 100.0)
       {
         std::cout << "Black was check mated." << std::endl; // TODO
         return 0;
       }
     }
-    _chessboard.make_move(static_cast<uint8_t>(best_move_index), move_no);
+    _chessboard.make_move(static_cast<uint8_t>(best_move_index));
     return 0;
   }
 }
@@ -270,7 +270,7 @@ void Game::start()
     {
 //      cmdline << "Hashtag: " << _chessboard.get_hash_tag() << "\n";
 //      cmdline << "Material evaluation: " << _chessboard.get_material_evaluation() << "\n";
-      if (make_a_move(_moveno, _score, max_search_level) != 0)
+      if (make_a_move(_score, max_search_level) != 0)
       {
         cmdline << "Stopped playing" << "\n";
         _playing = false;
@@ -301,7 +301,7 @@ bool Bitboard::is_in_movelist(const BitMove& m) const
   return false;
 }
 
-int Bitboard::make_move(playertype player, uint8_t& move_no)
+int Bitboard::make_move(playertype player)
 {
   assert(player == playertype::human); // This method is only for humans playing on the cmd-line.
   if (player != playertype::human)
@@ -384,7 +384,7 @@ int Bitboard::make_move(playertype player, uint8_t& move_no)
     if (!is_in_movelist(m))
       continue;
     //  Move is OK,make it
-    make_move(m, move_no);
+    make_move(m);
     return 0;
   } // while not read
 }

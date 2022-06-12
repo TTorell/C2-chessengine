@@ -581,13 +581,76 @@ TEST_CASE("find best_move")
 
 TEST_CASE("move-ordering")
 {
-// Load test position 71
   std::string FEN_string = get_FEN_test_position(75);
   Bitboard_with_utils chessboard;
   REQUIRE(chessboard.read_position(FEN_string) == 0);
   chessboard.find_legal_moves(gentype::all);
   chessboard.write(std::cout, outputtype::cmd_line_diagram, col::white);
   chessboard.write_movelist(std::cout, true) << std::endl;
+}
+
+TEST_CASE("50-moves-rule")
+{
+  std::string FEN_string = get_FEN_test_position(82);
+  Bitboard_with_utils chessboard;
+  REQUIRE(chessboard.read_position(FEN_string) == 0);
+  REQUIRE(chessboard.get_half_move_counter() == 49);
+  REQUIRE(chessboard.is_draw_by_50_moves() == false);
+  chessboard.find_legal_moves(gentype::all);
+
+  SECTION("pawn move")
+  {
+    chessboard.make_move("h3h4");
+    REQUIRE(chessboard.get_half_move_counter() == 0);
+    REQUIRE(chessboard.is_draw_by_50_moves() == false);
+  }
+
+  SECTION("capture")
+  {
+    chessboard.make_move("h7g5");
+    REQUIRE(chessboard.get_half_move_counter() == 0);
+    REQUIRE(chessboard.is_draw_by_50_moves() == false);
+  }
+
+  SECTION("other move")
+  {
+    chessboard.make_move("a6b6");
+    REQUIRE(chessboard.get_half_move_counter() == 50);
+    REQUIRE(chessboard.is_draw_by_50_moves() == true);
+  }
+
+  SECTION("some moves")
+  {
+    chessboard.make_move("a6b6");
+    chessboard.make_move("a8b8");
+    chessboard.make_move("b6a6");
+    chessboard.make_move("b8a8");
+    REQUIRE(chessboard.get_half_move_counter() == 53);
+    REQUIRE(chessboard.is_draw_by_50_moves() == true);
+  }
+
+}
+
+TEST_CASE("three-fold repetition")
+{
+  std::string FEN_string = get_FEN_test_position(82);
+  Bitboard_with_utils chessboard;
+  REQUIRE(chessboard.read_position(FEN_string) == 0);
+  chessboard.clear_game_history();
+  chessboard.add_position_to_game_history();
+  chessboard.find_legal_moves(gentype::all);
+  chessboard.make_move("a6b6");
+  chessboard.make_move("a8b8");
+  REQUIRE(chessboard.is_threefold_repetition() == false);
+  chessboard.make_move("b6a6");
+  chessboard.make_move("b8a8");
+  REQUIRE(chessboard.is_threefold_repetition() == false);
+  chessboard.make_move("a6b6");
+  chessboard.make_move("a8b8");
+  REQUIRE(chessboard.is_threefold_repetition() == false);
+  chessboard.make_move("b6a6");
+  chessboard.make_move("b8a8");
+  REQUIRE(chessboard.is_threefold_repetition() == true);
 }
 
 //TEST_CASE("timing basic functions")
