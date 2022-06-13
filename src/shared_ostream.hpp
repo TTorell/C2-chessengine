@@ -5,9 +5,10 @@
 #include <mutex>
 #include <iostream>
 //#include "move.hpp"
-#include "movelist.hpp"
 #include "chessfuncs.hpp"
 #include "config_param.hpp"
+#include "movelog.hpp"
+#include "bitboard.hpp"
 #include "pgn_info.hpp"
 
 namespace C2_chess

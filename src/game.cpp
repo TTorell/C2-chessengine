@@ -68,14 +68,15 @@ Game::~Game()
 
 void Game::init()
 {
+  _is_first_position = true;
   _chessboard.clear_game_history();
   _chessboard.add_position_to_game_history();
   _chessboard.find_legal_moves(gentype::all);
 }
 
-void Game::clear_move_log()
+void Game::clear_move_log(col col_to_start, uint16_t move_number)
 {
-  _move_log.clear();
+  _move_log.clear_and_init(col_to_start, move_number);
 }
 
 void Game::setup_pieces()
@@ -88,10 +89,10 @@ col Game::get_col_to_move() const
   return _chessboard.get_col_to_move();
 }
 
-void Game::set_move_log_col_to_start(col color)
-{
-  _move_log.set_col_to_start(color);
-}
+//void Game::set_move_log_col_to_start(col color)
+//{
+//  _move_log.set_col_to_start(color);
+//}
 
 //void Game::set_castling_state(const Castling_state &cs)
 //{
@@ -108,14 +109,14 @@ void Game::set_move_log_col_to_start(col color)
 //  _chessboard.set_enpassant_square(file, rank);
 //}
 
-void Game::set_moveno(int moveno)
-{
-  if (_is_first_position)
-  {
-    _move_log.set_first_moveno(moveno);
-    _is_first_position = false;
-  }
-}
+//void Game::set_moveno(int moveno)
+//{
+//  if (_is_first_position)
+//  {
+//    _move_log.set_first_moveno(moveno);
+//    _is_first_position = false;
+//  }
+//}
 
 std::ostream& Game::write_chessboard(std::ostream& os, outputtype ot, col from_perspective) const
 {
@@ -375,11 +376,9 @@ playertype Game::get_playertype(const col& color) const
   return _player_type[index(color)];
 }
 
-void Game::start_new_game(col col_to_move)
+void Game::start_new_game()
 {
-  clear_move_log();
-  set_moveno(_chessboard.get_move_number());
-  set_move_log_col_to_start(col_to_move);
+  clear_move_log(_chessboard.get_col_to_move(),_chessboard.get_move_number());
   init();
   init_board_hash_tag();
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
@@ -395,6 +394,8 @@ void Game::figure_out_last_move(const Bitboard& new_position)
   // new_position.write(cout, outputtype::cmd_line_diagram, col_to_move);
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   BitMove m;
+
+  logfile << "inside figure_out_last_move()" << "\n";
   int return_value = _chessboard.figure_out_last_move(new_position, m);
   if (return_value != 0)
   {
@@ -421,7 +422,7 @@ void Game::figure_out_last_move(const Bitboard& new_position)
         logfile << "Unexpected return value." << "\n";
     }
     (*dynamic_cast<Bitboard*>(&_chessboard)) = new_position;
-    start_new_game(_chessboard.get_col_to_move());
+    start_new_game();
     return;
   }
   else // OK move has been found out
@@ -431,7 +432,7 @@ void Game::figure_out_last_move(const Bitboard& new_position)
     if (moveindex == -1)
     {
       logfile << "Coldn't find index of " << m << "\n";
-      start_new_game(_chessboard.get_col_to_move());
+      start_new_game();
       (*dynamic_cast<Bitboard*>(&_chessboard)) = new_position;
       return;
     }
@@ -505,6 +506,18 @@ int Game::read_position(const std::string& filename)
   }
   if (!FEN_found)
     return -1;
+  return 0;
+}
+
+int Game::read_position_FEN(const std::string& FEN_string)
+{
+  // TODO: read new position to temporary board, so
+  // we can call figure_out_last_move().
+  Bitboard new_position;
+  if (new_position.read_position(FEN_string, true) != 0) // true means init_piece_state().
+    return -1;
+  figure_out_last_move(new_position);
+//  _chessboard.find_legal_moves(gentype::all);
   return 0;
 }
 

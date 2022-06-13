@@ -6,8 +6,8 @@
  */
 
 #include "bitboard.hpp"
-#include "movelist.hpp"
 #include "chesstypes.hpp"
+#include "movelog.hpp"
 
 #ifndef SRC_PV_TABLE_HPP_
 #define SRC_PV_TABLE_HPP_

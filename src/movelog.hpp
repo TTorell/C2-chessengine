@@ -5,7 +5,6 @@
 #include <deque>
 #include <vector>
 #include "chesstypes.hpp"
-#include "bitboard.hpp"
 
 namespace C2_chess
 {
@@ -13,9 +12,10 @@ namespace C2_chess
 class Movelog
 {
   protected:
-    col _col_to_start = col::white;
-    int _first_moveno = 1;
+    col _col_to_start;
+    uint16_t _first_moveno;
     std::vector<BitMove> _list;
+
     public:
     Movelog() :
         _col_to_start(col::white),
@@ -24,34 +24,27 @@ class Movelog
     {
     }
 
-    Movelog(col col_to_start, int first_moveno):
+    Movelog(col col_to_start, uint16_t first_moveno):
         _col_to_start(col_to_start),
         _first_moveno(first_moveno),
         _list { }
     {
     }
 
-    void set_col_to_start(col color)
-    {
-      _col_to_start = color;
-    }
-
-    void set_first_moveno(int moveno)
-    {
-      _first_moveno = moveno;
-    }
-
-    std::ostream& write(std::ostream& os) const;
-
     void push_back(const BitMove& move)
     {
       _list.push_back(move);
     }
 
-    void clear()
+    void clear_and_init(col col_to_start, uint16_t first_moveno)
     {
+      _col_to_start = col_to_start;
+      _first_moveno = first_moveno;
       _list.clear();
     }
+
+    std::ostream& write(std::ostream& os) const;
+
 };
 }
 #endif

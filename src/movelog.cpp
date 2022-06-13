@@ -2,10 +2,10 @@
 #include <deque>
 #include <iterator>
 #include <sstream>
-#include "movelist.hpp"
 #include "chessfuncs.hpp"
-#include "shared_ostream.hpp"
-#include "bitboard_with_utils.hpp"
+#include "movelog.hpp"
+#include "bitboard.hpp"
+
 namespace C2_chess
 {
 
@@ -27,7 +27,7 @@ std::ostream& Movelog::write(std::ostream& os) const
     if ((i + increment) % 2 == 0)
     {
       os << moveno++ << "." << std::left << std::setw(9) << move.str();
-      if (i == static_cast<int>(_list.size() - 1))      // last move
+      if (i == static_cast<int>(_list.size() - 1)) // last move
         os << std::endl;
     }
     else

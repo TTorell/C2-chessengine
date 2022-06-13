@@ -3,7 +3,7 @@
 
 #include "chesstypes.hpp"
 #include "bitboard_with_utils.hpp"
-#include "movelist.hpp"
+#include "movelog.hpp"
 #include "pgn_info.hpp"
 #include "shared_ostream.hpp"
 
@@ -24,7 +24,6 @@ class Game
     Movelog _move_log;
     Bitboard_with_utils _chessboard;
     playertype _player_type[2];
-//    uint8_t _moveno = 0;
     float _score = 0.0;
     //    PGN_info _pgn_info;
     Config_params& _config_params;
@@ -42,24 +41,11 @@ class Game
     int find_best_move_index(float& score,
                              int max_search_level);
 
-    int read_position_FEN(const std::string& FEN_string)
-    {
-      // TODO: read new position to temporary board, so
-      // we can call figure_out_last_move().
-      Bitboard new_position;
-      if (new_position.read_position(FEN_string, true)) // true means init_piece_state().
-        return -1;
-      if (!_is_first_position)
-        figure_out_last_move(new_position);
-      else
-        _chessboard.read_position(FEN_string, true);
-      _chessboard.find_legal_moves(gentype::all);
-      return 0;
-    }
+    int read_position_FEN(const std::string& FEN_string);
 
     void init();
     void clear_chessboard();
-    void clear_move_log();
+    void clear_move_log(col col_to_move, uint16_t move_number);
     void setup_pieces();
     void init_board_hash_tag();
     void actions_after_a_move();
@@ -82,7 +68,7 @@ class Game
     Shared_ostream& write_diagram(Shared_ostream& sos) const;
     void play_on_cmd_line(Config_params& config_params);
     void figure_out_last_move(const Bitboard& new_position);
-    void start_new_game(col col_to_move);
+    void start_new_game();
     int read_position(const std::string& filename);
     int make_a_move(float& score, const uint8_t max_search_level);
 };
