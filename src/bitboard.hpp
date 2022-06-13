@@ -652,6 +652,11 @@ class Bitboard
       return _other;
     }
 
+    Bitpieces* own() const
+    {
+      return _own;
+    }
+
     // A slow way of determining the piecetype of a piece on
     // given square. Should not be used inside the search-loop.
     piecetype get_piece_type(uint64_t square) const;
@@ -690,6 +695,11 @@ class Bitboard
     uint8_t get_half_move_counter() const
     {
       return _half_move_counter;
+    }
+
+    col get_color_to_move() const
+    {
+      return _col_to_move;
     }
 
     bool is_draw_by_50_moves() const;

@@ -457,9 +457,20 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, BitM
   uint64_t new_all_pieces = new_position.all_pieces();
   uint64_t piece_diff = _all_pieces ^ new_all_pieces;
 
-  if(new_position.get_half_move_counter() != 0 && new_position.get_half_move_counter() != get_half_move_counter() + 1)
+  if (new_position.get_half_move_counter() != 0 && new_position.get_half_move_counter() != get_half_move_counter() + 1)
   {
     return -1;
+  }
+
+  if (new_position.get_move_number() < get_move_number() ||
+      new_position.get_move_number() - get_move_number() > 1)
+  {
+    return -2;
+  }
+
+  if (new_position.get_color_to_move() == get_color_to_move())
+  {
+    return -3;
   }
 
   // TODO: Check move_number (if it is moved here from the Game class.
@@ -473,7 +484,8 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, BitM
       p_type = get_piece_type(from_square);
       if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_col_to_move == col::black) ? 2 : 7))))
         move_props |= move_props_promotion;
-      to_square = _own->pieces ^ new_position.other()->pieces;
+      //to_square = _own->pieces ^ new_position.other()->pieces; // TODO: _other->pieces ^ new_position.own()->pieces ?
+      to_square =_other->pieces ^ new_position.own()->pieces;
       break;
     case 2:
       // not a capture
@@ -491,12 +503,12 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, BitM
         if (_own->Pawns & piece_diff)
           from_square = _own->Pawns & piece_diff;
         else
-          return -2;
+          return -4;
         p_type = piecetype::Pawn;
         move_props |= move_props_capture | move_props_en_passant;
       }
       else
-        return -3;
+        return -5;
       break;
     case 4:
       // Could be 0-0 or 0-0-0
@@ -510,12 +522,12 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, BitM
           else if (_own->Rooks & h8_square & piece_diff)
             to_square = g8_square;
           else
-            return -4;
+            return -6;
           p_type = piecetype::King;
           move_props |= move_props_castling;
         }
         else
-          return -5;
+          return -7;
       }
       else
       {
@@ -527,16 +539,16 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, BitM
           else if (_own->Rooks & h1_square & piece_diff)
             to_square = g1_square;
           else
-            return -6;
+            return -8;
           p_type = piecetype::King;
           move_props |= move_props_castling;
         }
         else
-          return -7;
+          return -9;
       }
       break;
     default:
-      return -8;
+      return -10;
   }
   promotion_pt = new_position.get_piece_type(to_square);
   if (move_props & move_props_promotion)

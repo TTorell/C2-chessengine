@@ -378,7 +378,7 @@ playertype Game::get_playertype(const col& color) const
 
 void Game::start_new_game()
 {
-  clear_move_log(_chessboard.get_col_to_move(),_chessboard.get_move_number());
+  clear_move_log(_chessboard.get_col_to_move(), _chessboard.get_move_number());
   init();
   init_board_hash_tag();
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
@@ -406,16 +406,22 @@ void Game::figure_out_last_move(const Bitboard& new_position)
         logfile << "_half_move_counter values didn't match." << "\n";
         break;
       case -2:
-        case -3:
-        logfile << "En passant problems." << "\n";
+        logfile << "Move numbers didn't match." << "\n";
+        break;
+      case -3:
+        logfile << "Move-colors doesn't match." << "\n";
         break;
       case -4:
-        case -5:
-        case -6:
+      case -5:
+        logfile << "En passant problems." << "\n";
+        break;
+      case -6:
         case -7:
+        case -8:
+        case -9:
         logfile << "Castling problems." << "\n";
         break;
-      case -8:
+      case -10:
         logfile << "Piece-diff is too big." << "\n";
         break;
       default:
