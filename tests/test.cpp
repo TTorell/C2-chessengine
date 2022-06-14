@@ -653,6 +653,39 @@ TEST_CASE("three-fold repetition")
   REQUIRE(chessboard.is_threefold_repetition() == true);
 }
 
+TEST_CASE("figure_out_last_move")
+{
+  std::ofstream ofs(get_logfile_name());
+  Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
+  logfile << "TEST STARTED" << "\n";
+  Config_params config_params;
+  Game game(config_params);
+  std::string FEN_string = get_FEN_test_position(62);
+  REQUIRE(game.read_position_FEN(FEN_string) == 0);
+  game.write_diagram(std::cout);
+  game.write_movelist(std::cout);
+
+  SECTION("En passant")
+  {
+    FEN_string = get_FEN_test_position(83);
+    REQUIRE(game.read_position_FEN(FEN_string) == 0);
+    std::stringstream ss;
+    game.write_movelog(ss);
+    REQUIRE(ss.str().starts_with("1.e5xf6 e.p."));
+  }
+
+  SECTION("Normal move")
+  {
+    FEN_string = get_FEN_test_position(84);
+    REQUIRE(game.read_position_FEN(FEN_string) == 0);
+    std::stringstream ss;
+    game.write_movelog(ss);
+    REQUIRE(ss.str().starts_with("1.Kd4-d5"));
+  }
+
+}
+
+
 //TEST_CASE("timing basic functions")
 //{
 //  CurrentTime now;

@@ -146,6 +146,18 @@ Shared_ostream& Game::write_diagram(Shared_ostream& sos) const
   return sos;
 }
 
+std::ostream& Game::write_movelog(std::ostream& os) const
+{
+   os << _move_log;
+   return os;
+}
+
+std::ostream& Game::write_movelist(std::ostream& os) const
+{
+   _chessboard.write_movelist(os, true);
+   return os;
+}
+
 void Game::init_board_hash_tag()
 {
   _chessboard.init_board_hash_tag();
@@ -525,6 +537,12 @@ int Game::read_position_FEN(const std::string& FEN_string)
   figure_out_last_move(new_position);
 //  _chessboard.find_legal_moves(gentype::all);
   return 0;
+}
+
+void Game::make_move(const std::string& move)
+{
+  _chessboard.make_move(move);
+  _move_log.push_back(_chessboard.last_move());
 }
 
 } // namespace C2_chess

@@ -86,7 +86,7 @@ std::ostream& operator<<(std::ostream& os, const BitMove& m)
   return os;
 }
 
-std::ostream& Bitboard_with_utils::write_movelist(std::ostream& os, bool same_line)
+std::ostream& Bitboard_with_utils::write_movelist(std::ostream& os, bool same_line) const
 {
   if (_movelist.size() > 0)
   {

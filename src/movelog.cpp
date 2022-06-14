@@ -37,4 +37,10 @@ std::ostream& Movelog::write(std::ostream& os) const
   }
   return os;
 }
+
+std::ostream& operator <<(std::ostream& os, const Movelog& ml)
+{
+  return ml.write(os);
+}
+
 } // namespace C2_chess

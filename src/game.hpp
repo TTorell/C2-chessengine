@@ -66,11 +66,14 @@ class Game
     std::ostream& write_chessboard(std::ostream& os, outputtype ot, col from_perspective) const;
     std::ostream& write_diagram(std::ostream& os) const;
     Shared_ostream& write_diagram(Shared_ostream& sos) const;
+    std::ostream& write_movelog(std::ostream& os) const;
+    std::ostream& write_movelist(std::ostream& os) const;
     void play_on_cmd_line(Config_params& config_params);
     void figure_out_last_move(const Bitboard& new_position);
     void start_new_game();
     int read_position(const std::string& filename);
     int make_a_move(float& score, const uint8_t max_search_level);
+    void make_move(const std::string& move);
 };
 
 } // namespace C2_chess
