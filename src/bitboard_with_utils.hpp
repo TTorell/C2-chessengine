@@ -39,6 +39,8 @@ class Bitboard_with_utils: public Bitboard
       return _hash_tag;
     }
     std::ostream& write_movelist(std::ostream& os, bool same_line = false) const;
+    std::ostream& write_movelist(const std::deque<BitMove>& list, std::ostream& os, bool same_line = false) const;
+
     std::ostream& write_cmdline_style(std::ostream& os, outputtype ot, col from_perspective) const;
     int add_mg_test_position(const std::string& filename);
     int test_move_generation(unsigned int single_testnum);

@@ -254,6 +254,7 @@ BitMove Game::incremental_search(const std::string& max_search_time, int max_sea
   // When searching incrementally we consider max_search_time.
 
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  std::vector<BitMove> pv_list;
   if (!max_search_time.empty())
   {
     _chessboard.start_timer_thread(max_search_time);
@@ -301,6 +302,10 @@ BitMove Game::incremental_search(const std::string& max_search_time, int max_sea
       break;
     }
     best_move_index = move_index;
+//    _chessboard.get_pv_list(pv_list);
+//    logfile << "PV_list: " << pv_list;
+//    pv_list.clear();
+
   }
   _chessboard.make_move(best_move_index);
   _move_log.push_back(_chessboard.last_move());

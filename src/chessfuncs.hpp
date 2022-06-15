@@ -32,7 +32,7 @@ inline int index(const T& val)
 }
 
 // A fast log2 function for integer types.
-// Uses a gcc-functio
+// Uses a gcc-function
 #ifdef __linux__
 template<typename T>
 inline unsigned int LOG2(const T& val)
@@ -40,6 +40,27 @@ inline unsigned int LOG2(const T& val)
   return (64 - __builtin_clzl((static_cast<long unsigned int>(val))) - 1);
 }
 #endif
+
+template<typename T>
+std::ostream& write_vector(const std::vector<T>& list, std::ostream& os, bool same_line = false)
+{
+  bool first = true;
+  for (const T& element:list)
+  {
+    if (!first && same_line)
+      os << " ";
+    os << element;
+    if (!same_line)
+      os << std::endl;
+    first = false;
+  }
+  os << std::endl;
+  return os;
+}
+
+
+
+
 
 namespace C2_chess
 {

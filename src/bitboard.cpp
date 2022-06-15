@@ -771,21 +771,37 @@ std::ostream& Bitboard::write(std::ostream& os, outputtype wt, col from_perspect
   return os;
 }
 
+void Bitboard::get_pv_list(std::vector<BitMove>& pv_list) const
+{
+  Bitboard bb = *this;
+  uint64_t hash_tag = _hash_tag;
+  while (true)
+  {
+    uint32_t move = pv_table.get_move(hash_tag);
+    if (move == 0)
+      break;
+    BitMove bitmove(move);
+    bb.make_move(bitmove, gentype::all);
+    pv_list.push_back(move);
+    hash_tag = bb._hash_tag;
+  }
+}
+
 void Bitboard::clear_node_counter()
 {
-  node_counter = 0;
+node_counter = 0;
 }
 int Bitboard::get_node_counter() const
 {
-  return node_counter;
+return node_counter;
 }
 void Bitboard::clear_hash_hits()
 {
-  hash_hits = 0;
+hash_hits = 0;
 }
 int Bitboard::get_hash_hits() const
 {
-  return hash_hits;
+return hash_hits;
 }
 
 } // End namespace C2_chess

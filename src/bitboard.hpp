@@ -344,6 +344,12 @@ struct BitMove
     {
     }
 
+    BitMove(uint32_t move) :
+        _move(move),
+        _evaluation(0.0)
+    {
+    }
+
     BitMove(piecetype p_type, // bit 25-32
             uint16_t move_props, // bit 15-24
             uint64_t from_square, // bit 7-12
@@ -715,6 +721,8 @@ class Bitboard
     }
 
     void init_material_evaluation();
+
+    void get_pv_list(std::vector<BitMove>& pv_list) const;
 
     // min() and max() are an attempt to implement the recursive
     // min-max-with-alpha-beta-pruning-algorithm.

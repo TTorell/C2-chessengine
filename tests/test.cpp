@@ -653,11 +653,11 @@ TEST_CASE("three-fold repetition")
   REQUIRE(chessboard.is_threefold_repetition() == true);
 }
 
-TEST_CASE("figure_out_last_move")
+TEST_CASE("figure_out_last_move_1")
 {
   std::ofstream ofs(get_logfile_name());
   Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
-  logfile << "TEST STARTED" << "\n";
+  logfile << "\n";
   Config_params config_params;
   Game game(config_params);
   std::string FEN_string = get_FEN_test_position(62);
@@ -681,6 +681,47 @@ TEST_CASE("figure_out_last_move")
     std::stringstream ss;
     game.write_movelog(ss);
     REQUIRE(ss.str().starts_with("1.Kd4-d5"));
+  }
+
+}
+
+TEST_CASE("figure_out_last_move_2")
+{
+  std::ofstream ofs(get_logfile_name());
+  Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
+  logfile << "\n";
+  Config_params config_params;
+  Game game(config_params);
+  std::string FEN_string = get_FEN_test_position(85);
+  REQUIRE(game.read_position_FEN(FEN_string) == 0);
+  game.write_diagram(std::cout);
+  game.write_movelist(std::cout);
+
+  SECTION("Capture")
+  {
+    FEN_string = get_FEN_test_position(86);
+    REQUIRE(game.read_position_FEN(FEN_string) == 0);
+    std::stringstream ss;
+    game.write_movelog(ss);
+    REQUIRE(ss.str().starts_with("1.Rh1xh7+"));
+  }
+
+  SECTION("Short castling")
+  {
+    FEN_string = get_FEN_test_position(87);
+    REQUIRE(game.read_position_FEN(FEN_string) == 0);
+    std::stringstream ss;
+    game.write_movelog(ss);
+    REQUIRE(ss.str().starts_with("1.0-0"));
+  }
+
+  SECTION("long castling")
+  {
+    FEN_string = get_FEN_test_position(88);
+    REQUIRE(game.read_position_FEN(FEN_string) == 0);
+    std::stringstream ss;
+    game.write_movelog(ss);
+    REQUIRE(ss.str().starts_with("1.0-0-0"));
   }
 
 }

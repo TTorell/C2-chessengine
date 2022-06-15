@@ -78,6 +78,20 @@ class PV_table
       _table[idx]._move = move;
     }
 
+
+    uint32_t get_move(uint64_t hash_key)
+    {
+      const int idx = hash_key % _size;
+      if (_table[idx]._hash_key == hash_key)
+      {
+        return _table[idx]._move;
+      }
+      else
+      {
+        return 0;
+      }
+    }
+
     bool is_PV_move(uint64_t hash_key)
     {
       const int idx = hash_key % _size;

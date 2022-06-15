@@ -214,6 +214,19 @@ class Shared_ostream {
       return *this;
     }
 
+    template<typename T>
+    Shared_ostream& operator<<(const std::vector<T>& v)
+    {
+      std::lock_guard < std::mutex > locker(static_mutex);
+      if (_is_open)
+      {
+        std::stringstream ss;
+        write_vector(v, ss, true);
+        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
+      }
+      return *this;
+    }
+
 //    Shared_ostream& operator<<(const PGN_info& PGN_info)
 //    {
 //      std::lock_guard < std::mutex > locker(static_mutex);
