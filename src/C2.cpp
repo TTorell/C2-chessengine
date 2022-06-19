@@ -119,8 +119,8 @@ int parse_command(const std::string& command,
     // print the position to the logfile
     // game.write_diagram(logfile) << "\n";
   }
-  // To implement go I think I needed some variables not available here,
-  // So I took care of it in main instead.
+  // To implement go I needed some variables not available here,
+  // So I took care of it in main() instead.
   if (tokens[0] == "go")
   {
     returned_tokens = tokens;
@@ -355,9 +355,9 @@ int main(int argc, char* argv[])
         // to clean up before starting a new game. Maybe we could
         // close the logfile and start a new one, but for now everything
         // is logged until the GUI closes the engine down by a quit command.
-//        game.clear_move_log();
-//        logfile << "New game started\n";
-//        logfile.write_config_params(config_params);
+        // game.clear_move_log();
+        // logfile << "New game started\n";
+        // logfile.write_config_params(config_params);
         continue;
       }
 
@@ -369,7 +369,7 @@ int main(int argc, char* argv[])
       {
         // Init the main chess board with preserved position
         // and calculate all possible moves.
-//        game.init();
+        // game.init();
 
         // logfile << "go command_tokens:" << "\n";
         // for (std::string token:command_tokens)

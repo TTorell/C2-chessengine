@@ -6,8 +6,8 @@
  */
 #include "bitboard.hpp"
 #include "chesstypes.hpp"
-#include "zobrist_bitboard_hash.hpp"
 #include "current_time.hpp"
+#include "transposition_table.hpp"
 
 namespace C2_chess
 {

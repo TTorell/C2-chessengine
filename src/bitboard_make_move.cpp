@@ -7,13 +7,13 @@
 
 #include "bitboard.hpp"
 #include "chesstypes.hpp"
-#include "zobrist_bitboard_hash.hpp"
 #include "game_history.hpp"
+#include "transposition_table.hpp"
 
 namespace C2_chess
 {
 
-Zobrist_bitboard_hash Bitboard::transposition_table;
+Transposition_table Bitboard::transposition_table;
 
 inline void Bitboard::add_promotion_piece(piecetype p_type)
 {
@@ -330,7 +330,7 @@ void Bitboard::make_move(uint8_t i, gentype gt)
 
 // The move must be valid, but doesn't have to be in _movelist.
 // _movelist may be empty.
-void Bitboard::make_move(const BitMove& m, gentype gt)
+void Bitboard::make_move(const BitMove& m, gentype gt, bool add_to_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
   uint64_t to_square = m.to();
@@ -447,7 +447,10 @@ void Bitboard::make_move(const BitMove& m, gentype gt)
   if (square_is_threatened(_own->King, false))
     _last_move.add_property(move_props_check);
   // add_position to game_history
-  history.add_position(_hash_tag);
+  if (add_to_history)
+  {
+    history.add_position(_hash_tag);
+  }
   update_half_move_counter();
   // TODO: Must be possible to change to gentype::captures.
   find_legal_moves(gt);

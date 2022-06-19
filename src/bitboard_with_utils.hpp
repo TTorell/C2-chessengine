@@ -25,32 +25,43 @@ class Bitboard_with_utils: public Bitboard
                           const std::vector<std::string>& reference_moves,
                           const std::string& testcase_info,
                           const gentype gt);
+
     bool run_mg_test_case(int testnum, const std::string& FEN_string);
+
     std::vector<std::string> convert_moves_to_UCI(const std::vector<std::string>& moves, col col_to_move);
-    public:
-    //   Bitboard_with_utils();
-    //    explicit Bitboard_with_utils(const Bitboard& board){ (*dynamic_cast<Bitboard*>(this)) = board;}
+
+  public:
+
     uint8_t get_castling_rights() const
     {
       return _castling_rights;
     }
+
     uint64_t get_hash_tag() const
     {
       return _hash_tag;
     }
+
     std::ostream& write_movelist(std::ostream& os, bool same_line = false) const;
-    std::ostream& write_movelist(const std::deque<BitMove>& list, std::ostream& os, bool same_line = false) const;
 
     std::ostream& write_cmdline_style(std::ostream& os, outputtype ot, col from_perspective) const;
+
     int add_mg_test_position(const std::string& filename);
+
     int test_move_generation(unsigned int single_testnum);
+
     bool bitboard_tests(const std::string& arg);
+
     uint64_t find_legal_squares(uint64_t sq, uint64_t mask, uint64_t all_pieces, uint64_t other_pieces);
+
     void make_move(const std::string& UCI_move);
-    void init_board_hash_tag();
+
     float evaluate_position(col col_to_move, uint8_t level) const;
 
-    col get_col_to_move() const {return _col_to_move;}
+    col get_col_to_move() const
+    {
+      return _col_to_move;
+    }
 
     int no_of_moves()
     {

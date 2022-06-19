@@ -1,4 +1,5 @@
 /*
+
  * Bitboard.hpp
  *
  *  Created on: Apr 3, 2021
@@ -20,7 +21,7 @@
 #include <atomic>
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
-#include "zobrist_bitboard_hash.hpp"
+#include "transposition_table.hpp"
 #include "pv_table.hpp"
 #include "game_history.hpp"
 
@@ -438,7 +439,7 @@ class Bitboard
 {
   protected:
     // Static declarations, incomplete type.
-    static Zobrist_bitboard_hash transposition_table;
+    static Transposition_table transposition_table;
     static Game_history history;
     static PV_table pv_table;
     static Bitboard level_boards[];
@@ -572,6 +573,10 @@ class Bitboard
 
     Bitboard& operator=(const Bitboard& from);
 
+    void init_board_hash_tag();
+
+    void init();
+
     // Clears things which could matter when reading a new position.
     void clear()
     {
@@ -608,7 +613,7 @@ class Bitboard
     int make_move(playertype player_type);
 
     // This make_move() doesn't require a defined movelist.
-    void make_move(const BitMove& m, gentype gt = gentype::all);
+    void make_move(const BitMove& m, gentype gt = gentype::all, bool update_history = true);
 
     // All properties of a move are not decided immediately,
     // but some of them (check for instance) are set after the
@@ -724,11 +729,16 @@ class Bitboard
 
     void get_pv_list(std::vector<BitMove>& pv_list) const;
 
+    History_state get_history_state()
+    {
+      return history.get_state();
+    }
+
     // min() and max() are an attempt to implement the recursive
     // min-max-with-alpha-beta-pruning-algorithm.
     // They can most certainly be improved.
-    float max(uint8_t level, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
-    float min(uint8_t level, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_level) const;
+    float max(uint8_t level, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_ply) const;
+    float min(uint8_t level, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_ply) const;
 
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
     std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;

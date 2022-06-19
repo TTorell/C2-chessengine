@@ -6,6 +6,7 @@
 #include "movelog.hpp"
 #include "pgn_info.hpp"
 #include "shared_ostream.hpp"
+#include "game_history.hpp"
 
 namespace // fileprivate namespace
 {
@@ -74,6 +75,10 @@ class Game
     int read_position(const std::string& filename);
     int make_a_move(float& score, const uint8_t max_search_level);
     void make_move(const std::string& move);
+    History_state get_game_history_state()
+    {
+      return _chessboard.get_history_state();
+    }
 };
 
 } // namespace C2_chess

@@ -260,7 +260,7 @@ void Game::start()
   // Tell the engine that there are no time limits.
   // The time it takes is defined by the max_searh_level
   _chessboard.set_time_left(true);
-  const int max_search_level = 7;
+  const int max_search_ply = 7;
   write_diagram(cmdline);
   _playing = true;
   while (_playing)
@@ -270,7 +270,7 @@ void Game::start()
     {
 //      cmdline << "Hashtag: " << _chessboard.get_hash_tag() << "\n";
 //      cmdline << "Material evaluation: " << _chessboard.get_material_evaluation() << "\n";
-      if (make_a_move(_score, max_search_level) != 0)
+      if (make_a_move(_score, max_search_ply) != 0)
       {
         cmdline << "Stopped playing" << "\n";
         _playing = false;

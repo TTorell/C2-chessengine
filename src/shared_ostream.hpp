@@ -260,7 +260,7 @@ class Shared_ostream {
 //      std::lock_guard < std::mutex > locker(static_mutex);
 //      uint64_t timediff = (nsec_stop - nsec_start);
 //      // Log the time it took;
-//      std::string s = "time spent by C2 on search level " + std::to_string(search_level) + " " + std::to_string(timediff/1.0e6) +
+//      std::string s = "time spent by C2 on search ply " + std::to_string(search_level) + " " + std::to_string(timediff/1.0e6) +
 //          " " + best_move.bestmove_engine_style() + " score = " + std::to_string(score);
 //      _os << iso_8859_1_to_utf8(s) << "\n";
 //    }

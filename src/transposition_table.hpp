@@ -21,10 +21,10 @@ struct TT_element
 {
     int best_move_index;
     float evaluation;
-    int level;
+    int search_ply;
 };
 
-class Zobrist_bitboard_hash
+class Transposition_table
 {
   private:
     friend class Bitboard;
@@ -58,14 +58,14 @@ class Zobrist_bitboard_hash
 
   public:
 
-    Zobrist_bitboard_hash() :
+    Transposition_table() :
         _hash_map(),
         _black_to_move(0L)
     {
       init_random_numbers();
     }
 
-    ~Zobrist_bitboard_hash()
+    ~Transposition_table()
     {
     }
 

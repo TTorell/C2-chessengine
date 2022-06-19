@@ -410,37 +410,6 @@ uint64_t Bitboard_with_utils::find_legal_squares(uint64_t sq, uint64_t mask, uin
   return Bitboard::find_legal_squares(sq, mask);
 }
 
-void Bitboard_with_utils::init_board_hash_tag()
-{
-  uint64_t pieces, piece;
-
-  transposition_table.clear();
-  _hash_tag = zero;
-  pieces = _all_pieces;
-  while (pieces)
-  {
-    piece = popright_square(pieces);
-    piecetype p_type = get_piece_type(piece);
-    col p_color = (piece & _own->pieces) ? _col_to_move : other_color(_col_to_move);
-    update_hash_tag(piece, p_color, p_type);
-  }
-
-  if ((_castling_rights & castling_right_WK) == 0)
-    _hash_tag ^= transposition_table._castling_rights[castling_right_WK];
-  if ((_castling_rights & castling_right_WQ) == 0)
-    _hash_tag ^= transposition_table._castling_rights[castling_right_WQ];
-  if ((_castling_rights & castling_right_BK) == 0)
-    _hash_tag ^= transposition_table._castling_rights[castling_right_BK];
-  if ((_castling_rights & castling_right_BQ) == 0)
-    _hash_tag ^= transposition_table._castling_rights[castling_right_BQ];
-
-  if (_ep_square)
-    _hash_tag ^= transposition_table._en_passant_file[file_idx(_ep_square)];
-
-  if (_col_to_move == col::black)
-    _hash_tag ^= transposition_table._black_to_move;
-}
-
 float Bitboard_with_utils::evaluate_position(col col_to_move, uint8_t level) const
 {
   return Bitboard::evaluate_position(col_to_move, level);

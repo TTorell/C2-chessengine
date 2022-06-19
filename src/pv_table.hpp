@@ -73,6 +73,7 @@ class PV_table
     void store_move(uint64_t hash_key, uint32_t move)
     {
       const int idx = hash_key % _size;
+      // std::cerr << hash_key << " : " << move << std::endl;
       assert(idx >= 0 && idx < _size);
       _table[idx]._hash_key = hash_key;
       _table[idx]._move = move;
