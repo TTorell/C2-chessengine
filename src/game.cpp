@@ -281,8 +281,9 @@ BitMove Game::incremental_search(const std::string& max_search_time, int max_sea
       break;
     }
     best_move_index = move_index;
-      _chessboard.get_pv_list(pv_list);
-    logfile << "PV_list: " << pv_list;
+    _chessboard.get_pv_line(pv_list);
+    logfile << _chessboard.get_pv_statistics() << "\n";
+    logfile << "PV_list: " << pv_list << "\n";
   }
 
   if (best_move_index >= 0)
@@ -517,7 +518,7 @@ int Game::read_position_FEN(const std::string& FEN_string)
   if (new_position.read_position(FEN_string, true) != 0) // true means init_piece_state().
     return -1;
   figure_out_last_move(new_position);
-//  _chessboard.find_legal_moves(gentype::all);
+  //  _chessboard.find_legal_moves(gentype::all);
   return 0;
 }
 

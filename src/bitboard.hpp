@@ -89,6 +89,7 @@ constexpr uint64_t c2_square = c_file & row_2;
 constexpr uint64_t c8_square = c_file & row_8;
 constexpr uint64_t c7_square = c_file & row_7;
 constexpr uint64_t d1_square = d_file & row_1;
+constexpr uint64_t d2_square = d_file & row_2;
 constexpr uint64_t d4_square = d_file & row_4;
 constexpr uint64_t d5_square = d_file & row_5;
 constexpr uint64_t d7_square = d_file & row_7;
@@ -148,6 +149,7 @@ constexpr uint64_t di(int i)
   }
   return val;
 }
+
 constexpr uint64_t diagonal[15] = {di(0), di(1), di(2), di(3), di(4), di(5), di(6), di(7), di(8), di(9), di(10), di(11), di(12), di(13), di(14)};
 
 constexpr uint64_t ad(const int i)
@@ -167,6 +169,7 @@ constexpr uint64_t ad(const int i)
   }
   return val;
 }
+
 constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14)};
 
 inline uint8_t bit_idx(uint64_t square)
@@ -727,9 +730,11 @@ class Bitboard
 
     void init_material_evaluation();
 
-    void get_pv_list(std::vector<BitMove>& pv_list) const;
+    void get_pv_line(std::vector<BitMove>& pv_list) const;
 
-    History_state get_history_state()
+    PV_statistics get_pv_statistics(const PV_table& pvt = pv_table) const;
+
+    History_state get_history_state() const
     {
       return history.get_state();
     }

@@ -45,7 +45,7 @@ template<typename T>
 std::ostream& write_vector(const std::vector<T>& list, std::ostream& os, bool same_line = false)
 {
   bool first = true;
-  for (const T& element:list)
+  for (const T& element : list)
   {
     if (!first && same_line)
       os << " ";
@@ -58,9 +58,15 @@ std::ostream& write_vector(const std::vector<T>& list, std::ostream& os, bool sa
   return os;
 }
 
-
-
-
+template<typename T>
+T size_align(T base, T number)
+{
+  static_assert( std::is_integral<T>());
+  if (number % base != 0)
+    return (number / base + 1) * base;
+  else
+    return number;
+}
 
 namespace C2_chess
 {
@@ -83,19 +89,19 @@ col col_from_string(const std::string& s);
 std::string get_logfile_name();
 void require(bool b, std::string file, std::string method, int line);
 void require_m(bool b, std::string file, std::string method, int line, const BitMove& m);
-std::ostream& print_backtrace(std::ostream &os);
+std::ostream& print_backtrace(std::ostream& os);
 std::string get_stdout_from_cmd(std::string cmd);
 std::pair<std::string, int> exec(const char* cmd);
 bool check_execution_dir(const std::string& preferred_exec_dir);
-bool regexp_match(const std::string &line, const std::string &regexp_string);
-bool regexp_grep(const std::string &line, const std::string &regexp_string);
+bool regexp_match(const std::string& line, const std::string& regexp_string);
+bool regexp_grep(const std::string& line, const std::string& regexp_string);
 bool regexp_grep(const std::string& line, const std::string& regexp_string, std::vector<std::string>& matches);
 std::string rexexp_sed(const std::string& line, const std::string& regexp_string, const std::string& replacement_string);
 std::vector<std::string> split(const std::string& s, char delim);
 std::vector<std::string> split(const std::string& input, std::string& delimiter);
 std::string cut(const std::string& s, char delim, int field_number);
 std::string iso_8859_1_to_utf8(const std::string& str);
-std::string iso_8859_1_to_utf8(const char *c_string);
+std::string iso_8859_1_to_utf8(const char* c_string);
 void play_on_cmd_line(Config_params& config_params);
 void print_filetype(std::ostream& os, fs::file_status& s);
 void print_filepermissions(fs::perms p);

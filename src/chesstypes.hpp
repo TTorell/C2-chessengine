@@ -18,6 +18,8 @@ const float eval_max = 100.0F;
 const float eval_min = -eval_max;
 const float epsilon = 0.00000001F;
 
+const int PV_TABLE_SIZE_DEFAULT = 50000;
+const int N_SEARCH_BOARDS_DEFAULT = 38;
 
 enum class piecetype {
   Queen,

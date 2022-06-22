@@ -32,9 +32,9 @@ namespace C2_chess
 
 CurrentTime now;
 std::atomic<bool> Bitboard::time_left(false);
-Bitboard Bitboard::level_boards[38];
+Bitboard Bitboard::level_boards[N_SEARCH_BOARDS_DEFAULT];
 Game_history Bitboard::history;
-PV_table Bitboard::pv_table(50000);
+PV_table Bitboard::pv_table(PV_TABLE_SIZE_DEFAULT);
 
 Bitboard::Bitboard() :
     _hash_tag(zero),
@@ -848,21 +848,24 @@ std::ostream& Bitboard::write(std::ostream& os, outputtype wt, col from_perspect
   return os;
 }
 
-void Bitboard::get_pv_list(std::vector<BitMove>& pv_list) const
+void Bitboard::get_pv_line(std::vector<BitMove>& pv_line) const
 {
+  pv_line.clear();
   Bitboard bb = *this;
   const bool dont_update_history = false;
-  uint64_t hash_tag = _hash_tag;
   while (true)
   {
-    uint32_t move = pv_table.get_move(hash_tag);
-    if (move == 0)
+    TT_element& tte = transposition_table.find(bb._hash_tag);
+    if (tte.best_move_index == 0)
       break;
-    BitMove bitmove(move);
-    bb.make_move(bitmove, gentype::all, dont_update_history);
-    pv_list.push_back(move);
-    hash_tag = bb._hash_tag;
+    bb.make_move(tte.best_move_index, gentype::all, dont_update_history);
+    pv_line.push_back(bb._last_move);
   }
+}
+
+PV_statistics Bitboard::get_pv_statistics(const PV_table& pvt) const
+{
+  return pvt.get_statistics();
 }
 
 void Bitboard::clear_node_counter()

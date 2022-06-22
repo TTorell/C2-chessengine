@@ -198,7 +198,7 @@ class Shared_ostream {
 //      os << "\n";
 //      std::lock_guard < std::mutex > locker(static_mutex);
 //      if (_is_open)
-//        _os << endl << std::flush;
+//        _os << std::endl << std::flush;
 //      return *this;
 //    }
 
@@ -209,6 +209,18 @@ class Shared_ostream {
       {
         std::stringstream ss;
         ml.write(ss);
+        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
+      }
+      return *this;
+    }
+
+    Shared_ostream& operator<<(const PV_statistics& ps)
+    {
+      std::lock_guard < std::mutex > locker(static_mutex);
+      if (_is_open)
+      {
+        std::stringstream ss;
+        ss << ps;
         _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
       return *this;

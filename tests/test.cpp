@@ -551,7 +551,7 @@ TEST_CASE("find best_move")
     game.read_position_FEN(FEN_string);
     game.init();
     BitMove bestmove = game.engine_go(config_params, "");
-    REQUIRE(game.get_game_history_state() == History_state{2,0,0});
+    REQUIRE(game.get_game_history_state() == History_state{2, 0, 0});
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
@@ -686,7 +686,6 @@ TEST_CASE("figure_out_last_move_1")
     game.write_movelog(ss);
     REQUIRE(ss.str().starts_with("1.Kd4-d5"));
   }
-
 }
 
 TEST_CASE("figure_out_last_move_2")
@@ -727,9 +726,63 @@ TEST_CASE("figure_out_last_move_2")
     game.write_movelog(ss);
     REQUIRE(ss.str().starts_with("1.0-0-0"));
   }
+}
+
+TEST_CASE("PV_table")
+{
+  PV_table pv_table(PV_TABLE_SIZE_DEFAULT);
+  std::vector<BitMove> ref_vector;
+  REQUIRE(sizeof(pv_table) == size_align(8, static_cast<int>(sizeof(PV_entry*) + sizeof(int) + sizeof(PV_statistics))));
+  REQUIRE(pv_table.get_size() == PV_TABLE_SIZE_DEFAULT);
+  Bitboard_with_utils chessboard;
+  chessboard.read_position(initial_position, true);
+  chessboard.init();
+  Bitboard_with_utils initial_board = chessboard;
+  REQUIRE(initial_board.get_hash_tag() == chessboard.get_hash_tag());
+  uint64_t hash_tag = chessboard.get_hash_tag();
+  chessboard.make_move("e2e4");
+  pv_table.store_move(hash_tag, chessboard.last_move()._move);
+  ref_vector.push_back(chessboard.last_move());
+  hash_tag = chessboard.get_hash_tag();
+  chessboard.make_move("e7e5");
+  pv_table.store_move(hash_tag, chessboard.last_move()._move);
+  ref_vector.push_back(chessboard.last_move());
+  hash_tag = chessboard.get_hash_tag();
+  chessboard.make_move("f2f4");
+  pv_table.store_move(hash_tag, chessboard.last_move()._move);
+  ref_vector.push_back(chessboard.last_move());
+  hash_tag = chessboard.get_hash_tag();
+  chessboard.make_move("e5f4");
+  pv_table.store_move(hash_tag, chessboard.last_move()._move);
+  ref_vector.push_back(chessboard.last_move());
+  hash_tag = chessboard.get_hash_tag();
+  chessboard.make_move("g1f3");
+  pv_table.store_move(hash_tag, chessboard.last_move()._move);
+  ref_vector.push_back(chessboard.last_move());
+  REQUIRE(pv_table.get_statistics()._n_insertions == 5);
+  REQUIRE(pv_table.get_statistics()._n_hash_conflicts == 0);
+  std::vector<BitMove> pv_line;
+  initial_board.get_pv_line(pv_line, pv_table);
+  REQUIRE(pv_line.size() == 5);
+  write_vector(pv_line, std::cout, true);
+  REQUIRE(pv_line == ref_vector);
+  BitMove move_d2_d4(piecetype::Pawn, move_props_none, d2_square, d4_square);
+  pv_table.store_move(initial_board.get_hash_tag(), move_d2_d4._move);
+  REQUIRE(pv_table.get_statistics()._n_hash_conflicts == 0);
+  pv_line.clear();
+  ref_vector.clear();
+  ref_vector.push_back(move_d2_d4);
+  initial_board.get_pv_line(pv_line, pv_table);
+  REQUIRE(pv_line == ref_vector);
 
 }
 
+TEST_CASE("size_align")
+{
+  REQUIRE(size_align(8, 17) == 24);
+  REQUIRE(size_align(8, 23) == 24);
+  REQUIRE(size_align(8, 16) == 16);
+}
 
 //TEST_CASE("timing basic functions")
 //{
