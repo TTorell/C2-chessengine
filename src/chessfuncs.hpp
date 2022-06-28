@@ -17,9 +17,26 @@
 #include <string>
 //#include <utility>
 #include <bitset>
+#include <cmath>
 #include "chesstypes.hpp"
 
 namespace fs = std::filesystem;
+
+// templates for comparing float and double
+template<typename T>
+inline bool is_close(T val1, T val2, T marginal)
+{
+  if (fabs(val1 - val2) <= marginal)
+    return true;
+  return false;
+}
+
+template<typename T>
+inline bool is_close(T val1, T val2)
+{
+  const T marginal = 1e-10;
+  return is_close(val1, val2, marginal);
+}
 
 // template for enum class
 // So the enum-value can be used as an int-index
@@ -103,7 +120,7 @@ std::string cut(const std::string& s, char delim, uint64_t field_number);
 std::string iso_8859_1_to_utf8(const std::string& str);
 std::string iso_8859_1_to_utf8(const char* c_string);
 void play_on_cmd_line(Config_params& config_params);
-void print_filetype(std::ostream& os, fs::file_status& s);
+void print_filetype(std::ostream& os, const fs::file_status& s);
 void print_filepermissions(fs::perms p);
 bool is_regular_read_OK(const fs::path& filepath);
 bool is_regular_write_OK(const fs::path& filepath);

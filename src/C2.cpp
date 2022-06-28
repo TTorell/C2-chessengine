@@ -20,6 +20,24 @@
 namespace C2_chess
 {
 
+std::string parse_go_command(const std::vector<std::string>& command_tokens, const std::string& var_name);
+
+int parse_command(const std::string& command,
+                  Circular_fifo& output_buffer,
+                  Game& game,
+                  Config_params& config_params,
+                  std::vector<std::string>& returned_tokens);
+
+void read_input(Circular_fifo* input_buffer, Game* game);
+
+void write_output(Circular_fifo* output_buffer);
+
+void close_threads(std::thread& input_thread, std::thread& output_thread);
+
+void print_help_txt();
+
+std::string engine_style(const BitMove& move);
+
 // This method finds the token in the go-command following var_name.
 // Returns an empty string if not found.
 std::string parse_go_command(const std::vector<std::string>& command_tokens, const std::string& var_name)

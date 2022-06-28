@@ -145,21 +145,21 @@ void Game::actions_after_a_move()
   write_diagram(logfile);
 
   float evaluation = _chessboard.evaluate_position(_chessboard.get_col_to_move(), 0);
-  if (evaluation == eval_max || evaluation == eval_min)
+  if (is_close(evaluation, eval_max) || is_close(evaluation, eval_min))
   {
     _chessboard.set_mate();
-    cmdline << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n" << "\n";
-    logfile << ((evaluation == eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
+    cmdline << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n" << "\n";
+    logfile << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
     _playing = false;
   }
-  else if (evaluation == 0.0 && _chessboard.no_of_moves() == 0)
+  else if (is_close(evaluation, 0.0F) && _chessboard.no_of_moves() == 0)
   {
     _chessboard.set_stalemate();
     cmdline << "1/2 - 1/2 draw by stalemate" << "\n";
     logfile << "1/2 - 1/2 draw by stalemate" << "\n";
     _playing = false;
   }
-  else if (evaluation == 0.0 && _chessboard.is_threefold_repetition())
+  else if (is_close(evaluation, 0.0F) && _chessboard.is_threefold_repetition())
   {
     _chessboard.set_draw_by_repetition();
     cmdline << "1/2 - 1/2 draw by repetition" << "\n";
@@ -195,7 +195,7 @@ int Game::find_best_move_index(float& score, int max_search_ply)
   if (_chessboard.get_col_to_move() == col::white)
   {
     score = _chessboard.max(0, alpha, beta, best_move_index, max_search_ply);
-    if (best_move_index == -1 && score == -100.0)
+    if (best_move_index == -1 && is_close(score, -100.0F))
     {
       logfile << "White was check mated." << "\n"; // TODO
       return 0;
@@ -204,7 +204,7 @@ int Game::find_best_move_index(float& score, int max_search_ply)
   else // col::black
   {
     score = _chessboard.min(0, alpha, beta, best_move_index, max_search_ply);
-    if (best_move_index == -1 && score == 100.0)
+    if (best_move_index == -1 && is_close(score, 100.0F))
     {
       logfile << "Black was check mated." << "\n"; // TODO
       return 0;

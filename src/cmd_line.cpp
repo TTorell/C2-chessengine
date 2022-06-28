@@ -223,7 +223,7 @@ int Game::make_a_move(float& score, const uint8_t max_search_level)
     if (_chessboard.get_col_to_move() == col::white)
     {
       score = _chessboard.max(0, alpha, beta, best_move_index, max_search_level);
-      if (best_move_index == -1 && score == -100.0)
+      if (best_move_index == -1 && is_close(score, -100.0F))
       {
         std::cout << "White was check mated." << std::endl; // TODO
         return 0;
@@ -232,7 +232,7 @@ int Game::make_a_move(float& score, const uint8_t max_search_level)
     else
     {
       score = _chessboard.min(0, alpha, beta, best_move_index, max_search_level);
-      if (best_move_index == -1 && score == 100.0)
+      if (best_move_index == -1 && is_close(score, 100.0F))
       {
         std::cout << "Black was check mated." << std::endl; // TODO
         return 0;

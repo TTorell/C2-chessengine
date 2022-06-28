@@ -328,7 +328,7 @@ std::string iso_8859_1_to_utf8(const char* c_string)
   return iso_8859_1_to_utf8(str_out);
 }
 
-void print_filetype(std::ostream& os, fs::file_status s)
+void print_filetype(std::ostream& os, const fs::file_status& s)
 {
   os << "It";
   // alternative: switch(s.type()) { case fs::file_type::regular: ...}

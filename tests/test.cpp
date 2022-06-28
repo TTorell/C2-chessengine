@@ -506,9 +506,9 @@ TEST_CASE("evaluation")
   REQUIRE(fabs(evaluation - 3.02) < 0.01);
   chessboard.make_move("e1e8");
   evaluation = chessboard.evaluate_position(col::black, 7);
-  REQUIRE(evaluation == 93.0F);
+  REQUIRE(is_close(evaluation, 93.0F));
   evaluation = chessboard.evaluate_position(col::black, 1);
-  REQUIRE(evaluation == 99.0F);
+  REQUIRE(is_close(evaluation, 99.0F));
 }
 
 TEST_CASE("evaluation, mate and stalemate")
