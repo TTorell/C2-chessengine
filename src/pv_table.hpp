@@ -38,13 +38,13 @@ class PV_table
 {
   private:
     PV_entry *_table;
-    int _size;
+    uint64_t _size;
     PV_statistics _statistics;
 
     PV_table();
 
   public:
-    PV_table(const int size):
+    PV_table(long unsigned int size):
         _table(nullptr),
         _size(size),
         _statistics{0,0}
@@ -101,9 +101,9 @@ class PV_table
 
     void store_move(uint64_t hash_key, uint32_t move)
     {
-      const int idx = hash_key % _size;
+      const uint64_t idx = hash_key % _size;
       // std::cerr << hash_key << " : " << move << std::endl;
-      assert(idx >= 0 && idx < _size);
+      assert( idx < _size);
       if (_table[idx]._hash_key != 0 && _table[idx]._hash_key != hash_key)
         _statistics._n_hash_conflicts++;
       _table[idx] = {hash_key, move};
@@ -112,7 +112,7 @@ class PV_table
 
     uint32_t get_move(uint64_t hash_key) const
     {
-      const int idx = hash_key % _size;
+      const uint64_t idx = hash_key % _size;
       if (_table[idx]._hash_key == hash_key)
       {
         return _table[idx]._move;
@@ -130,8 +130,8 @@ class PV_table
 
     bool is_PV_move(uint64_t hash_key, uint32_t move) const
     {
-      const int idx = hash_key % _size;
-      assert(idx >= 0 && idx < _size);
+      const uint64_t idx = hash_key % _size;
+      assert(idx < _size);
       if (_table[idx]._hash_key == hash_key)
         return _table[idx]._move == move;
       return false;

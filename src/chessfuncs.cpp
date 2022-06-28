@@ -282,7 +282,7 @@ std::vector<std::string> split(const std::string& s, char delim)
   return result;
 }
 
-std::string cut(const std::string& s, char delim, int field_number)
+std::string cut(const std::string& s, char delim, uint64_t field_number)
 {
   std::vector<std::string> tokens = split(s, delim);
   return tokens[field_number - 1];
@@ -297,7 +297,7 @@ std::vector<std::string> split(const std::string& input, std::string& delimiter)
   char rubbish[10];
   while (std::getline(ss, token, delimiter[0]))
   {
-    ss.get(rubbish, delimiter.size());
+    ss.get(rubbish, static_cast<int64_t>(delimiter.size()));
     tokens.push_back(token);
   }
   return tokens;
@@ -306,16 +306,17 @@ std::vector<std::string> split(const std::string& input, std::string& delimiter)
 std::string iso_8859_1_to_utf8(const std::string& str)
 {
   std::string str_out;
-  for (uint8_t ch : str)
+  for (const char ch : str)
   {
-    if (ch < 0x80)
+    uint8_t byte = static_cast<uint8_t>(ch);
+    if (byte < 0x80)
     {
-      str_out.push_back(ch);
+      str_out.push_back(static_cast<char>(byte));
     }
     else
     {
-      str_out.push_back(0xc0 | ch >> 6);
-      str_out.push_back(0x80 | (ch & 0x3f));
+      str_out.push_back(static_cast<char>(0xc0 | (byte >> 6)));
+      str_out.push_back(static_cast<char>(0x80 | (byte & 0x3f)));
     }
   }
   return str_out;
@@ -422,13 +423,17 @@ bool is_regular_write_OK(const fs::path& filepath)
 bool has_duplicates(const std::vector<std::string>& vector, const std::string& move_kind)
 {
   bool has_duplicates = false;
-  for (int i = 0; i < (int) vector.size() - 1; i++)
-    for (int j = i + 1; j < (int) vector.size(); j++)
+  for (unsigned long int i = 0; i < vector.size() - 1; i++)
+  {
+    for (unsigned long int j = i + 1; j < vector.size(); j++)
+    {
       if (vector[i] == vector[j])
       {
         std::cout << "ERROR: " << move_kind << vector[i] << " is a duplicate." << std::endl;
         has_duplicates = true;
       }
+    }
+  }
   return has_duplicates;
 }
 
@@ -522,7 +527,7 @@ std::string reverse_FEN_string(const std::string& FEN_string)
   std::vector<std::string> rank_vector = split(reversed_position, '/');
   for (int i = 7; i >= 0; i--)
   {
-    reversed_FEN_string += rank_vector[i];
+    reversed_FEN_string += rank_vector[static_cast<unsigned long>(i)];
     if (i > 0)
       reversed_FEN_string += "/";
   }
@@ -593,8 +598,8 @@ std::ostream& operator <<(std::ostream& os, const Movelog& ml)
 std::ostream& Movelog::write(std::ostream& os) const
 {
   int moveno = _first_moveno;
-  int increment = 0;
-  for (int i = 0; i < static_cast<int>(_list.size()); i++)
+  unsigned long int increment = 0;
+  for (unsigned long i = 0; i < _list.size(); i++)
   {
     std::ostringstream move;
     move << _list[i];
@@ -608,7 +613,7 @@ std::ostream& Movelog::write(std::ostream& os) const
     if ((i + increment) % 2 == 0)
     {
       os << moveno++ << "." << std::left << std::setw(9) << move.str();
-      if (i == static_cast<int>(_list.size() - 1)) // last move
+      if (i == _list.size() - 1) // last move
         os << std::endl;
     }
     else

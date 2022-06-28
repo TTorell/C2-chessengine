@@ -86,31 +86,6 @@ std::ostream& operator<<(std::ostream& os, const BitMove& m)
   return os;
 }
 
-std::ostream& Bitboard_with_utils::write_movelist(std::ostream& os, bool same_line) const
-{
-  if (_movelist.size() > 0)
-  {
-    bool first = true;
-    for (const BitMove& m : _movelist)
-    {
-      if (same_line)
-      {
-        if (!first)
-          os << " ";
-        first = false;
-      }
-      else
-      {
-        if (!first)
-          os << std::endl;
-        first = false;
-      }
-      os << m;
-    }
-    os << std::endl;
-  }
-  return os;
-}
 
 std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::vector<std::string>& moves, col col_to_move)
 {
@@ -224,7 +199,7 @@ int Bitboard_with_utils::add_mg_test_position(const std::string& filename)
   return 0;
 }
 
-bool Bitboard_with_utils::run_mg_test_case(int testnum,
+bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum,
                                            const std::string& FEN_string,
                                            const std::vector<std::string>& ref_moves_vector,
                                            const std::string& testcase_info,
@@ -291,7 +266,7 @@ bool Bitboard_with_utils::run_mg_test_case(int testnum,
   return true;
 }
 
-int Bitboard_with_utils::test_move_generation(unsigned int single_testnum)
+int Bitboard_with_utils::test_move_generation(uint32_t single_testnum)
 {
   std::string line;
   std::string filename = "tests/test_positions/FEN_test_positions.txt";
@@ -393,7 +368,7 @@ bool Bitboard_with_utils::bitboard_tests(const std::string& arg)
         return false;
     }
     else if (regexp_match(arg, "^[0-9]+$")) // matches e.g 23
-      single_testnum = std::stoi(arg);
+      single_testnum = static_cast<uint32_t>(std::stoi(arg));
     else
     {
       std::cerr << "ERROR: Unknown input argument: " << arg << std::endl;

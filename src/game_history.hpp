@@ -9,12 +9,11 @@
 #define SRC_GAME_HISTORY_HPP_
 
 #include <cstdint>
-//#include "bitboard.hpp"
 
 namespace
 {
-  const uint32_t MAX_HISTORY_PLIES = 1024;
-  const uint32_t MAX_REPEATED_POSITIONS = 50;
+  const uint64_t MAX_HISTORY_PLIES = 1024;
+  const uint64_t MAX_REPEATED_POSITIONS = 50;
 }
 
 namespace C2_chess
@@ -30,6 +29,20 @@ struct History_state
     uint32_t _n_plies;
     uint32_t _n_repeated_positions;
     bool _is_threefold_repetiotion;
+
+    History_state():
+      _n_plies(0),
+      _n_repeated_positions(0),
+      _is_threefold_repetiotion(false)
+    {
+    }
+
+    History_state(uint32_t n_plies, uint32_t n_repeated_positions, bool is_threefold_repetiotion):
+      _n_plies(n_plies),
+      _n_repeated_positions(n_repeated_positions),
+      _is_threefold_repetiotion(is_threefold_repetiotion)
+    {
+    }
 
     void clear()
     {
@@ -57,7 +70,7 @@ class Game_history
 
   public:
     Game_history() :
-        _state{0, 0, false},
+        _state(),
         _moves_played{0},
         _repeated_positions{0}
     {
@@ -79,7 +92,7 @@ class Game_history
       if (_state._n_plies < MAX_HISTORY_PLIES)
       {
         _moves_played[_state._n_plies].position_key = position_key;
-        for (int idx = _state._n_repeated_positions -1; idx >= 0; idx--)
+        for (int idx = static_cast<int>(_state._n_repeated_positions) -1; idx >= 0; idx--)
         {
           if (_repeated_positions[idx] == position_key)
           {
@@ -88,7 +101,7 @@ class Game_history
             return;
           }
         }
-        for (int idx = _state._n_plies - 1; idx >= 0; idx--)
+        for (int idx = static_cast<int>(_state._n_plies) - 1; idx >= 0; idx--)
         {
           if (_moves_played[idx].position_key == position_key)
           {

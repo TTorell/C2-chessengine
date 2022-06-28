@@ -22,39 +22,39 @@ class CurrentTime
   public:
     inline uint64_t milliseconds()
     {
-      return std::chrono::duration_cast<std::chrono::milliseconds>(_clock.now().time_since_epoch()).count();
+      return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(_clock.now().time_since_epoch()).count());
     }
 
     inline uint64_t microseconds()
     {
-      return std::chrono::duration_cast<std::chrono::microseconds>(_clock.now().time_since_epoch()).count();
+      return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(_clock.now().time_since_epoch()).count());
     }
 
     inline uint64_t nanoseconds()
     {
-      return std::chrono::duration_cast<std::chrono::nanoseconds>(_clock.now().time_since_epoch()).count();
+      return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(_clock.now().time_since_epoch()).count());
     }
 
     inline void tic()
     {
-      _start_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_clock.now().time_since_epoch()).count();
+      _start_time_ns = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(_clock.now().time_since_epoch()).count());
     }
 
     inline uint64_t toc_ns()
     {
-      _stop_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_clock.now().time_since_epoch()).count();
+      _stop_time_ns = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(_clock.now().time_since_epoch()).count());
       return _stop_time_ns - _start_time_ns;
     }
 
     inline uint64_t toc_us()
     {
-      _stop_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_clock.now().time_since_epoch()).count();
+      _stop_time_ns = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(_clock.now().time_since_epoch()).count());
       return (_stop_time_ns - _start_time_ns)/1000;
     }
 
     inline uint64_t toc_ms()
     {
-      _stop_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_clock.now().time_since_epoch()).count();
+      _stop_time_ns = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(_clock.now().time_since_epoch()).count());
       return (_stop_time_ns - _start_time_ns)/1000000;
     }
 };

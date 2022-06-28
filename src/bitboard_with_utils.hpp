@@ -20,13 +20,13 @@ std::ostream& operator <<(std::ostream& os, const BitMove& m);
 class Bitboard_with_utils: public Bitboard
 {
   protected:
-    bool run_mg_test_case(const int testnum,
+    bool run_mg_test_case(const uint32_t testnum,
                           const std::string& FEN_string,
                           const std::vector<std::string>& reference_moves,
                           const std::string& testcase_info,
                           const gentype gt);
 
-    bool run_mg_test_case(int testnum, const std::string& FEN_string);
+    bool run_mg_test_case(uint32_t testnum, const std::string& FEN_string);
 
     std::vector<std::string> convert_moves_to_UCI(const std::vector<std::string>& moves, col col_to_move);
 
@@ -42,13 +42,11 @@ class Bitboard_with_utils: public Bitboard
       return _hash_tag;
     }
 
-    std::ostream& write_movelist(std::ostream& os, bool same_line = false) const;
-
     std::ostream& write_cmdline_style(std::ostream& os, outputtype ot, col from_perspective) const;
 
     int add_mg_test_position(const std::string& filename);
 
-    int test_move_generation(unsigned int single_testnum);
+    int test_move_generation(uint32_t single_testnum);
 
     bool bitboard_tests(const std::string& arg);
 

@@ -362,7 +362,7 @@ struct BitMove
         _move(0),
         _evaluation(0.0)
     {
-      _move = (index(p_type) << 24) | (move_props << 14) | (index(promotion_pt) << 12) | (bit_idx(from_square) << 6) | bit_idx(to_square);
+      _move = (static_cast<uint32_t>(index(p_type)) << 24) | (move_props << 14) | static_cast<uint32_t>(index(promotion_pt) << 12) | static_cast<uint32_t>(bit_idx(from_square)) << 6 | static_cast<uint32_t>(bit_idx(to_square));
     }
 
     bool operator==(const BitMove& m) const
@@ -747,6 +747,8 @@ class Bitboard
 
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
     std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;
+    std::ostream& write_movelist(std::ostream& os, bool same_line = false) const;
+
     void clear_node_counter();
     int get_node_counter() const;
     void clear_hash_hits();

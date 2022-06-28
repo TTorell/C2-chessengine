@@ -395,7 +395,7 @@ void Bitboard::start_timer(const std::string& max_search_time)
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     uint64_t nsec_stop = now.nanoseconds();
     uint64_t timediff = nsec_stop - nsec_start;
-    time -= (double) timediff / 1e6;
+    time -= static_cast<double>(timediff) / 1e6;
     if (time <= 0.0)
     {
       Bitboard::time_left = false;
@@ -647,7 +647,7 @@ float Bitboard::max(uint8_t search_ply, float alpha, float beta, int8_t& best_mo
     if (tmp_value > max_value)
     {
       max_value = tmp_value;
-      best_move_index = i;
+      best_move_index = static_cast<int8_t>(i);
     }
 
     // Pruning:
@@ -746,7 +746,7 @@ float Bitboard::min(uint8_t search_ply, float alpha, float beta, int8_t& best_mo
       if (tmp_value < min_value)
       {
         min_value = tmp_value;
-        best_move_index = i;
+        best_move_index = static_cast<int8_t>(i);
       }
       if (tmp_value <= alpha)
       {
@@ -848,17 +848,45 @@ std::ostream& Bitboard::write(std::ostream& os, outputtype wt, col from_perspect
   return os;
 }
 
+std::ostream& Bitboard::write_movelist(std::ostream& os, bool same_line) const
+{
+  if (_movelist.size() > 0)
+  {
+    bool first = true;
+    for (const BitMove& m : _movelist)
+    {
+      if (same_line)
+      {
+        if (!first)
+          os << " ";
+        first = false;
+      }
+      else
+      {
+        if (!first)
+          os << std::endl;
+        first = false;
+      }
+      os << m;
+    }
+    os << std::endl;
+  }
+  return os;
+}
+
 void Bitboard::get_pv_line(std::vector<BitMove>& pv_line) const
 {
   pv_line.clear();
   Bitboard bb = *this;
+  std::cerr << "movelist:" << std::endl;
+  bb.write_movelist(std::cerr, true);
   const bool dont_update_history = false;
   while (true)
   {
     TT_element& tte = transposition_table.find(bb._hash_tag);
     if (tte.best_move_index == 0)
       break;
-    bb.make_move(tte.best_move_index, gentype::all, dont_update_history);
+    bb.make_move(static_cast<uint8_t>(tte.best_move_index), gentype::all, dont_update_history);
     pv_line.push_back(bb._last_move);
   }
 }

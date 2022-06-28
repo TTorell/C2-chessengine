@@ -931,6 +931,8 @@ inline void Bitboard::find_king_moves(gentype gt)
           add_move(piecetype::King, move_props_capture, _own->King, to_square);
       }
       break;
+    default:
+      std::cerr << "Error: unknown unknown move generation type." << std::endl;
   }
 }
 

@@ -99,7 +99,7 @@ bool regexp_grep(const std::string& line, const std::string& regexp_string, std:
 std::string rexexp_sed(const std::string& line, const std::string& regexp_string, const std::string& replacement_string);
 std::vector<std::string> split(const std::string& s, char delim);
 std::vector<std::string> split(const std::string& input, std::string& delimiter);
-std::string cut(const std::string& s, char delim, int field_number);
+std::string cut(const std::string& s, char delim, uint64_t field_number);
 std::string iso_8859_1_to_utf8(const std::string& str);
 std::string iso_8859_1_to_utf8(const char* c_string);
 void play_on_cmd_line(Config_params& config_params);

@@ -288,7 +288,7 @@ BitMove Game::incremental_search(const std::string& max_search_time, int max_sea
 
   if (best_move_index >= 0)
   {
-    _chessboard.make_move(best_move_index);
+    _chessboard.make_move(static_cast<uint8_t>(best_move_index));
     _move_log.push_back(_chessboard.last_move());
   }
   actions_after_a_move();
