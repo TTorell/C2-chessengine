@@ -74,7 +74,7 @@ TEST_CASE("Move_generation")
       REQUIRE(chessboard.add_mg_test_position(arg) == 0);
     }
     else if (regexp_match(arg, "^[0-9]+$")) // matches e.g 23
-      single_testnum = std::stoi(arg);
+      single_testnum = static_cast<unsigned int>(std::stoi(arg));
     else
     {
       std::cerr << "ERROR: Unknown input argument: " << arg << std::endl;
@@ -281,7 +281,7 @@ TEST_CASE("popright_square")
 {
   uint64_t squares = whole_board;
   uint64_t saved_squares = squares;
-  for (int8_t bit_idx = 0; bit_idx < 64; bit_idx++)
+  for (uint8_t bit_idx = 0; bit_idx < 64; bit_idx++)
   {
     //    std::cout << to_binary(squares) << std::endl;
     //    std::cout << to_binary(square(bit_idx)) << std::endl;
