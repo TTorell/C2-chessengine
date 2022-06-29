@@ -214,18 +214,6 @@ class Shared_ostream {
       return *this;
     }
 
-    Shared_ostream& operator<<(const PV_statistics& ps)
-    {
-      std::lock_guard < std::mutex > locker(static_mutex);
-      if (_is_open)
-      {
-        std::stringstream ss;
-        ss << ps;
-        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
-      }
-      return *this;
-    }
-
     template<typename T>
     Shared_ostream& operator<<(const std::vector<T>& v)
     {
@@ -238,18 +226,6 @@ class Shared_ostream {
       }
       return *this;
     }
-
-//    Shared_ostream& operator<<(const PGN_info& PGN_info)
-//    {
-//      std::lock_guard < std::mutex > locker(static_mutex);
-//      if (_is_open)
-//      {
-//        std::stringstream ss;
-//        ss << PGN_info;
-//        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
-//      }
-//      return *this;
-//    }
 
     Shared_ostream& operator<<(const BitMove& m)
     {

@@ -19,9 +19,17 @@ namespace C2_chess
 
 struct TT_element
 {
-    int best_move_index;
+    int best_move_index = -99;
     float evaluation;
     int search_ply;
+
+//    // An unused element will have best_move_index = -99
+//    TT_element() :
+//        best_move_index(-99),
+//        evaluation(0.0F),
+//        search_ply(0)
+//    {
+//    }
 };
 
 class Transposition_table

@@ -322,10 +322,10 @@ inline void Bitboard::update_state_after_king_move(const BitMove& m)
   }
 }
 
-void Bitboard::make_move(uint8_t i, gentype gt)
+void Bitboard::make_move(uint8_t i, gentype gt, bool add_to_history)
 {
   assert(i < _movelist.size());
-  make_move(_movelist[i], gt);
+  make_move(_movelist[i], gt, add_to_history);
 }
 
 // The move must be valid, but doesn't have to be in _movelist.

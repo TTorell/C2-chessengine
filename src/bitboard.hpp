@@ -22,7 +22,6 @@
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 #include "transposition_table.hpp"
-#include "pv_table.hpp"
 #include "game_history.hpp"
 
 namespace C2_chess
@@ -348,7 +347,7 @@ struct BitMove
     {
     }
 
-    BitMove(uint32_t move) :
+    explicit BitMove(uint32_t move) :
         _move(move),
         _evaluation(0.0)
     {
@@ -444,7 +443,6 @@ class Bitboard
     // Static declarations, incomplete type.
     static Transposition_table transposition_table;
     static Game_history history;
-    static PV_table pv_table;
     static Bitboard level_boards[];
     static std::atomic<bool> time_left;
 
@@ -608,7 +606,7 @@ class Bitboard
     // Looks up the i:th move in movelist and makes it.
     // move_no just keeps track of the full move number
     // in the game.
-    void make_move(uint8_t i, gentype gt = gentype::all);
+    void make_move(uint8_t i, gentype gt = gentype::all, bool update_history = true);
 
     // Only for the command-line interface, where the user
     // is prompted to enter the new move on the keyboard,
@@ -731,8 +729,6 @@ class Bitboard
     void init_material_evaluation();
 
     void get_pv_line(std::vector<BitMove>& pv_list) const;
-
-    PV_statistics get_pv_statistics(const PV_table& pvt = pv_table) const;
 
     History_state get_history_state() const
     {

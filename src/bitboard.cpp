@@ -17,7 +17,6 @@
 #include "chesstypes.hpp"
 #include "shared_ostream.hpp"
 #include "current_time.hpp"
-#include "pv_table.hpp"
 #include "transposition_table.hpp"
 
 namespace
@@ -34,7 +33,6 @@ CurrentTime now;
 std::atomic<bool> Bitboard::time_left(false);
 Bitboard Bitboard::level_boards[N_SEARCH_BOARDS_DEFAULT];
 Game_history Bitboard::history;
-PV_table Bitboard::pv_table(PV_TABLE_SIZE_DEFAULT);
 
 Bitboard::Bitboard() :
     _hash_tag(zero),
@@ -156,7 +154,6 @@ void Bitboard::init_board_hash_tag()
 
 void Bitboard::init()
 {
-  clear_PV_table();
   history.clear();
   init_board_hash_tag();
   add_position_to_game_history();
@@ -350,11 +347,6 @@ void Bitboard::init_piece_state()
 void Bitboard::clear_transposition_table()
 {
   transposition_table.clear();
-}
-
-void Bitboard::clear_PV_table()
-{
-  pv_table.clear();
 }
 
 inline void Bitboard::clear_movelist()
@@ -636,6 +628,7 @@ float Bitboard::max(uint8_t search_ply, float alpha, float beta, int8_t& best_mo
 
     // Save history state for current position.
     History_state saved_history_state = history.get_state();
+
     // Make the selected move on the "level-board" and ask min() to evaluate it further.
     level_boards[search_ply].make_move(_movelist[i], (search_ply < max_search_ply) ? gentype::all : gentype::captures);
     float tmp_value = level_boards[search_ply].min(search_ply, alpha, beta, dummy_index, max_search_ply);
@@ -662,7 +655,6 @@ float Bitboard::max(uint8_t search_ply, float alpha, float beta, int8_t& best_mo
     {
       // Update alpha value for min();
       alpha = tmp_value;
-      pv_table.store_move(_hash_tag, _movelist[i]._move);
     }
 
     // Somewhere we have to check if time is up, to interrupt the search.
@@ -682,7 +674,7 @@ float Bitboard::max(uint8_t search_ply, float alpha, float beta, int8_t& best_mo
 }
 
 // min() is naturally very similar to max, but reversed when it comes to evaluations,
-// so I've not supplied many comments on this function. See max().
+// so I haven't supplied many comments on this function. See max().
 float Bitboard::min(uint8_t search_ply, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_ply) const
 {
   assert(_col_to_move == col::black);
@@ -755,7 +747,6 @@ float Bitboard::min(uint8_t search_ply, float alpha, float beta, int8_t& best_mo
       if (tmp_value < beta)
       {
         beta = tmp_value;
-        pv_table.store_move(_hash_tag, _movelist[i]._move);
       }
       if (!time_left)
       {
@@ -878,22 +869,14 @@ void Bitboard::get_pv_line(std::vector<BitMove>& pv_line) const
 {
   pv_line.clear();
   Bitboard bb = *this;
-  std::cerr << "movelist:" << std::endl;
-  bb.write_movelist(std::cerr, true);
-  const bool dont_update_history = false;
   while (true)
   {
     TT_element& tte = transposition_table.find(bb._hash_tag);
-    if (tte.best_move_index == 0)
+    if (tte.best_move_index == -1 || tte.best_move_index == -99)
       break;
     bb.make_move(static_cast<uint8_t>(tte.best_move_index), gentype::all, dont_update_history);
     pv_line.push_back(bb._last_move);
   }
-}
-
-PV_statistics Bitboard::get_pv_statistics(const PV_table& pvt) const
-{
-  return pvt.get_statistics();
 }
 
 void Bitboard::clear_node_counter()

@@ -24,6 +24,7 @@
 #include "chessfuncs.hpp"
 #include "bitboard.hpp"
 #include "game_history.hpp"
+#include "movelog.hpp"
 
 // Redefining a namespace to something shorter.
 namespace fs = std::filesystem;
