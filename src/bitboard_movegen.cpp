@@ -18,8 +18,12 @@ void Bitboard::find_long_castling()
   if (_castling_rights & ((_col_to_move == col::white) ? castling_right_WQ : castling_right_BQ))
   {
     uint64_t castling_empty_squares = (castling_empty_squares_Q & ((_col_to_move == col::white) ? lower_board_half : upper_board_half));
+    // The squares between king and rook must be empty.
     if (castling_empty_squares & _all_pieces)
       return;
+    // The squares between king and rook on d- and c-file must not be threatened,
+    // but the square on the b-file may be.
+    castling_empty_squares &= ~b_file;
     while (castling_empty_squares)
     {
       if (square_is_threatened(popright_square(castling_empty_squares), false))

@@ -19,17 +19,26 @@ namespace C2_chess
 
 struct TT_element
 {
-    int best_move_index = -99;
+    int best_move_index;
     float evaluation;
     int search_ply;
 
-//    // An unused element will have best_move_index = -99
-//    TT_element() :
-//        best_move_index(-99),
-//        evaluation(0.0F),
-//        search_ply(0)
-//    {
-//    }
+    // An unused element will have best_move_index = -99
+    TT_element() :
+        best_move_index(-99),
+        evaluation(0.0F),
+        search_ply(0)
+    {
+    }
+
+    TT_element& operator=(const std::initializer_list<float>& il)
+    {
+      std::initializer_list<float>::const_iterator it = il.begin();
+      best_move_index = static_cast<int>(*it);
+      evaluation = *++it;
+      search_ply = static_cast<int>(*++it);
+      return *this;
+    }
 };
 
 class Transposition_table

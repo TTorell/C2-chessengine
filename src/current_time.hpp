@@ -13,7 +13,7 @@
 namespace C2_chess
 {
 
-class CurrentTime
+class Current_time
 {
   private:
     std::chrono::steady_clock _clock;

@@ -205,7 +205,7 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum,
                                            const std::string& testcase_info,
                                            const gentype gt)
 {
-  CurrentTime now;
+  Current_time now;
   std::cout << "-- Test " << testnum << " " << testcase_info << " --" << std::endl;
 
   if (read_position(FEN_string) != 0)
@@ -220,7 +220,7 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum,
   find_legal_moves(gt);
 
   uint64_t stop = now.nanoseconds();
-  std::cout << "It took " << stop - start << " nanoseconds." << std::endl;
+  std::cout << "Move genertion took " << stop - start << " nanoseconds." << std::endl;
 
 // Compare output and reference moves, first build a vector of "output-moves".
   std::stringstream out_moves;

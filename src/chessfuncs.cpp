@@ -11,6 +11,7 @@
 #include <sstream>
 #include <regex>
 #include <vector>
+#include <thread>
 //#include <memory>
 //#include <array>
 //#include <utility>
@@ -42,24 +43,28 @@ namespace C2_chess
 
 col other_color(const col& color)
 {
-  return (color == col::white) ? col::black : col::white;
+  return (color == col::white)? col::black:col::white;
 }
 
 inline col& operator++(col& color)
 {
-  return color = (color == col::white) ? col::black : col::white;
+  return color = (color == col::white)? col::black:col::white;
 }
 
 col col_from_string(const std::string& s)
 {
-  return (s == "w") ? col::white : col::black;
+  return (s == "w")? col::white:col::black;
 }
 
 std::string get_logfile_name()
 {
   auto time = std::time(nullptr);
   std::stringstream ss;
-  ss << "C2_log_" << std::put_time(localtime(&time), "%F-%T") << ".txt"; // ISO 8601 format.
+  do
+  {
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    ss << "C2_log_" << std::put_time(localtime(&time), "%F-%T") << ".txt"; // ISO 8601 format.
+  } while (std::filesystem::exists(ss.str()));
   return ss.str();
 }
 
@@ -353,15 +358,15 @@ void print_filetype(std::ostream& os, const fs::file_status& s)
 
 void print_filepermissions(fs::perms p)
 {
-  std::cerr << ((p & fs::perms::owner_read) != fs::perms::none ? "r" : "-")
-            << ((p & fs::perms::owner_write) != fs::perms::none ? "w" : "-")
-            << ((p & fs::perms::owner_exec) != fs::perms::none ? "x" : "-")
-            << ((p & fs::perms::group_read) != fs::perms::none ? "r" : "-")
-            << ((p & fs::perms::group_write) != fs::perms::none ? "w" : "-")
-            << ((p & fs::perms::group_exec) != fs::perms::none ? "x" : "-")
-            << ((p & fs::perms::others_read) != fs::perms::none ? "r" : "-")
-            << ((p & fs::perms::others_write) != fs::perms::none ? "w" : "-")
-            << ((p & fs::perms::others_exec) != fs::perms::none ? "x" : "-")
+  std::cerr << ((p & fs::perms::owner_read) != fs::perms::none? "r":"-")
+            << ((p & fs::perms::owner_write) != fs::perms::none? "w":"-")
+            << ((p & fs::perms::owner_exec) != fs::perms::none? "x":"-")
+            << ((p & fs::perms::group_read) != fs::perms::none? "r":"-")
+            << ((p & fs::perms::group_write) != fs::perms::none? "w":"-")
+            << ((p & fs::perms::group_exec) != fs::perms::none? "x":"-")
+            << ((p & fs::perms::others_read) != fs::perms::none? "r":"-")
+            << ((p & fs::perms::others_write) != fs::perms::none? "w":"-")
+            << ((p & fs::perms::others_exec) != fs::perms::none? "x":"-")
             << '\n';
 }
 
@@ -384,7 +389,8 @@ bool is_regular_read_OK(const fs::path& filepath)
   {
     perror("Error");
     std::cout << filepath << " is an existing, regular file, " << std::endl
-              << "but the program isn't permitted to read it." << std::endl;
+              << "but the program isn't permitted to read it."
+              << std::endl;
     print_filepermissions(fs::status(filepath).permissions());
 #ifdef __linux__
     std::string cmd = "ls -l " + filepath.string();
@@ -410,7 +416,8 @@ bool is_regular_write_OK(const fs::path& filepath)
     {
       perror("Error");
       std::cout << filepath << " is an existing, regular file, " << std::endl
-                << "and the program isn't permitted to write to it." << std::endl;
+                << "and the program isn't permitted to write to it."
+                << std::endl;
 #ifdef __linux__
       std::string cmd = "ls -l " + filepath.string();
       std::cout << get_stdout_from_cmd(cmd) << std::endl;
@@ -423,6 +430,8 @@ bool is_regular_write_OK(const fs::path& filepath)
 
 bool has_duplicates(const std::vector<std::string>& vector, const std::string& move_kind)
 {
+  if (vector.size() == 0)
+    return false;
   bool has_duplicates = false;
   for (unsigned long int i = 0; i < vector.size() - 1; i++)
   {
@@ -534,7 +543,7 @@ std::string reverse_FEN_string(const std::string& FEN_string)
   }
   reversed_FEN_string += " ";
   // Change color to move.
-  reversed_FEN_string += ((cut(FEN_string, ' ', 2) == "w") ? "b " : "w ");
+  reversed_FEN_string += ((cut(FEN_string, ' ', 2) == "w")? "b ":"w ");
   // Reverse castling_rights.
   std::string castling_rights = cut(FEN_string, ' ', 3);
   for (char& ch : castling_rights)
@@ -586,7 +595,7 @@ std::vector<std::string> reverse_moves(const std::vector<std::string>& moves)
   return reversed_moves;
 }
 
-std::ostream& operator << (std::ostream& os, History_state hs)
+std::ostream& operator <<(std::ostream& os, History_state hs)
 {
   os << hs._n_plies << ", " << hs._n_repeated_positions << ", " << hs._is_threefold_repetiotion << std::endl;
   return os;

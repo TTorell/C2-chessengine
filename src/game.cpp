@@ -13,7 +13,7 @@
 
 namespace
 {
-C2_chess::CurrentTime now;
+C2_chess::Current_time steady_clock;
 }
 
 namespace C2_chess
@@ -23,7 +23,7 @@ Game::Game(Config_params& config_params) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player_type {playertype::human, playertype::computer},
+    _player_type{playertype::human, playertype::computer },
     _score(0),
     _config_params(config_params),
     _playing(false)
@@ -36,7 +36,7 @@ Game::Game(col color, Config_params& config_params) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player_type {playertype::human, playertype::computer},
+    _player_type{playertype::human, playertype::computer },
     _score(0),
     _config_params(config_params),
     _playing(false)
@@ -53,7 +53,7 @@ Game::Game(playertype pt1,
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player_type {pt1, pt2},
+    _player_type{pt1, pt2 },
     _score(0),
     _config_params(config_params),
     _playing(false)
@@ -148,8 +148,8 @@ void Game::actions_after_a_move()
   if (is_close(evaluation, eval_max) || is_close(evaluation, eval_min))
   {
     _chessboard.set_mate();
-    cmdline << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n" << "\n";
-    logfile << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
+    cmdline << (is_close(evaluation, eval_max)? "1 - 0, black was mated":"0 - 1, white was mated") << "\n" << "\n";
+    logfile << (is_close(evaluation, eval_max)? "1 - 0, black was mated":"0 - 1, white was mated") << "\n";
     _playing = false;
   }
   else if (is_close(evaluation, 0.0F) && _chessboard.no_of_moves() == 0)
@@ -182,19 +182,25 @@ void Game::actions_after_a_move()
   // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
 }
 
-int Game::find_best_move_index(float& score, int max_search_ply)
+int Game::find_best_move_index(float& score, unsigned int max_search_ply)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  _chessboard.clear_node_counter();
-  _chessboard.clear_hash_hits();
+  _chessboard.clear_search_info();
+  _chessboard.get_search_info().max_search_depth = max_search_ply - 1;
   _chessboard.clear_transposition_table();
-  uint64_t nsec_start = now.nanoseconds();
 
   int8_t best_move_index = -1;
-  float alpha = -100, beta = 100;
+
+  // Set initial values of alpha and beta default from whites point of view.
+  const float infinity = std::numeric_limits<float>::infinity();
+
+  steady_clock.tic();
+  score = _chessboard.negamax_with_pruning(0, -infinity, infinity, best_move_index, max_search_ply);
+  _chessboard.get_search_info().time_taken = steady_clock.toc_ms();
+  _chessboard.get_search_info().score = score;
+
   if (_chessboard.get_col_to_move() == col::white)
   {
-    score = _chessboard.max(0, alpha, beta, best_move_index, max_search_ply);
     if (best_move_index == -1 && is_close(score, -100.0F))
     {
       logfile << "White was check mated." << "\n"; // TODO
@@ -203,8 +209,7 @@ int Game::find_best_move_index(float& score, int max_search_ply)
   }
   else // col::black
   {
-    score = _chessboard.min(0, alpha, beta, best_move_index, max_search_ply);
-    if (best_move_index == -1 && is_close(score, 100.0F))
+    if (best_move_index == -1 && is_close(score, eval_max))
     {
       logfile << "Black was check mated." << "\n"; // TODO
       return 0;
@@ -215,15 +220,10 @@ int Game::find_best_move_index(float& score, int max_search_ply)
     logfile << "The game is a draw." << "\n";
     return 0;
   }
-  if (has_time_left())
-  {
-    logfile << "Evaluated on level:" << max_search_ply << " " << _chessboard.get_node_counter() <<
-            " nodes in " << (now.nanoseconds() - nsec_start) / 1.0e6 << " milliseconds, hash_hits: " << _chessboard.get_hash_hits() << "\n";
-  }
   return best_move_index;
 }
 
-BitMove Game::incremental_search(const std::string& max_search_time, int max_search_ply)
+BitMove Game::incremental_search(const std::string& max_search_time, unsigned int max_search_ply)
 {
   // Incremental search, to have a best-move available as quickly as possible
   // and it actually saves search time due to move-ordering.
@@ -239,7 +239,7 @@ BitMove Game::incremental_search(const std::string& max_search_time, int max_sea
   else
     _chessboard.set_time_left(true);
   int8_t best_move_index = -1;
-  for (int i = 2; i <= max_search_ply; i++)
+  for (unsigned int i = 2; i <= max_search_ply; i++)
   {
     int move_index = find_best_move_index(_score, i);
 
@@ -268,16 +268,26 @@ BitMove Game::incremental_search(const std::string& max_search_time, int max_sea
         {
           // The search has been interrupted on lowest level.
           // No best move has been found at all, so just choose
-          // the first move (TODO: Choose randomly maybe.)
-          logfile << i << "interrupted on max_search_ply = 2" << "\n";
+          // the first move.
+          logfile << static_cast<int>(i) << "interrupted on max_search_ply = 2" << "\n";
           best_move_index = 0;
         }
       }
       break;
     }
     best_move_index = move_index;
-    _chessboard.get_pv_line(pv_list);
+
+    if (has_time_left())
+    {
+      _chessboard.get_pv_line(pv_list);
+      std::stringstream ss;
+      write_vector(pv_list, ss, true);
+      logfile.write_search_info(_chessboard.get_search_info(), ss.str());
+    }
     logfile << "PV_list: " << pv_list << "\n";
+
+    if (_score > eval_max / 2) // Forced mate
+      break;
   }
 
   if (best_move_index >= 0)
@@ -286,31 +296,31 @@ BitMove Game::incremental_search(const std::string& max_search_time, int max_sea
     _move_log.push_back(_chessboard.last_move());
   }
   actions_after_a_move();
-  // Stop possibly running timer by setting time_left to false.
+
+// Stop possibly running timer by setting time_left to false.
   _chessboard.set_time_left(false);
   return _chessboard.last_move();
-
 }
 
 BitMove Game::engine_go(const Config_params& config_params, const std::string& max_search_time)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
 
-  // This value is just a default value;
+// This value is just a default value;
   bool use_incremental_search = true;
-  int max_search_ply = 7;
+  unsigned int max_search_ply = 7;
 
-  // Read some configuration parameters
+// Read some configuration parameters
   std::string s = config_params.get_config_param("max_search_level");
   if (!s.empty())
-    max_search_ply = std::atoi(s.c_str());
+    max_search_ply = static_cast<unsigned int>(std::atoi(s.c_str()));
   s = config_params.get_config_param("use_incremental_search");
   if (!s.empty())
     use_incremental_search = (s == "true");
 
   _chessboard.init_material_evaluation(); // TODO: Should this be placed somewhere else, init_piece_state()?
 
-  // Search for best move
+// Search for best move
   if (use_incremental_search)
   {
     return incremental_search(max_search_time, max_search_ply);
@@ -340,7 +350,7 @@ BitMove Game::engine_go(const Config_params& config_params, const std::string& m
     _move_log.push_back(_chessboard.last_move());
   }
 
-  // Stop possibly running timer by setting time_left to false.
+// Stop possibly running timer by setting time_left to false.
   _chessboard.set_time_left(false);
 
   actions_after_a_move();
@@ -380,11 +390,9 @@ void Game::start_new_game()
 
 void Game::figure_out_last_move(const Bitboard& new_position)
 {
-  // new_position.write(cout, outputtype::cmd_line_diagram, col_to_move);
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   BitMove m;
 
-  logfile << "inside figure_out_last_move()" << "\n";
   int return_value = _chessboard.figure_out_last_move(new_position, m);
   if (return_value != 0)
   {
@@ -398,7 +406,7 @@ void Game::figure_out_last_move(const Bitboard& new_position)
         logfile << "Move numbers didn't match." << "\n";
         break;
       case -3:
-        logfile << "Move-colors doesn't match." << "\n";
+        logfile << "Move-colors didn't match." << "\n";
         break;
       case -4:
         case -5:
@@ -506,13 +514,13 @@ int Game::read_position(const std::string& filename)
 
 int Game::read_position_FEN(const std::string& FEN_string)
 {
-  // TODO: read new position to temporary board, so
-  // we can call figure_out_last_move().
+// TODO: read new position to temporary board, so
+// we can call figure_out_last_move().
   Bitboard new_position;
   if (new_position.read_position(FEN_string, true) != 0) // true means init_piece_state().
     return -1;
   figure_out_last_move(new_position);
-  //  _chessboard.find_legal_moves(gentype::all);
+//  _chessboard.find_legal_moves(gentype::all);
   return 0;
 }
 

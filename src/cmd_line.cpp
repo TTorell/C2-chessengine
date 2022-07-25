@@ -7,7 +7,7 @@
 
 namespace // fileprivate namespace
 {
-C2_chess::CurrentTime current_time;
+C2_chess::Current_time current_time;
 
 bool read_promotion_piecetype(C2_chess::piecetype& pt, char ch)
 {

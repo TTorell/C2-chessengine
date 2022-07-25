@@ -70,7 +70,8 @@ namespace C2_chess
 class BitMove;
 std::ostream& operator<<(std::ostream& os, const BitMove& m);
 
-class Shared_ostream {
+class Shared_ostream
+{
   private:
     static Shared_ostream* p_instance_;
     static Shared_ostream* p_cout_instance_;
@@ -102,7 +103,7 @@ class Shared_ostream {
       // lock the execution of this method, so no other thread can call this method
       // simultaneously, then make sure again that the variable is null and then
       // call the constructor.
-      std::lock_guard < std::mutex > lock(static_mutex);
+      std::lock_guard<std::mutex> lock(static_mutex);
       if (p_instance_ == nullptr)
       {
         p_instance_ = new Shared_ostream(os, is_open);
@@ -144,7 +145,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(const std::string& s)
     {
-      std::lock_guard < std::mutex > locker(static_mutex);
+      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(s) << std::flush;
       return *this;
@@ -152,7 +153,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(int i)
     {
-      std::lock_guard < std::mutex > locker(static_mutex);
+      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(std::to_string(i)) << std::flush;
       return *this;
@@ -160,7 +161,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(float flt)
     {
-      std::lock_guard < std::mutex > locker(static_mutex);
+      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(std::to_string(flt)) << std::flush;
       return *this;
@@ -168,7 +169,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(double dbl)
     {
-      std::lock_guard < std::mutex > locker(static_mutex);
+      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(std::to_string(dbl)) << std::flush;
       return *this;
@@ -176,7 +177,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(long l)
     {
-      std::lock_guard < std::mutex > locker(static_mutex);
+      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(std::to_string(l)) << std::flush;
       return *this;
@@ -184,7 +185,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(unsigned long ul)
     {
-      std::lock_guard < std::mutex > locker(static_mutex);
+      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
         _os << iso_8859_1_to_utf8(std::to_string(ul)) << std::flush;
       return *this;
@@ -204,7 +205,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(const Movelog& ml)
     {
-      std::lock_guard < std::mutex > locker(static_mutex);
+      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
       {
         std::stringstream ss;
@@ -217,7 +218,7 @@ class Shared_ostream {
     template<typename T>
     Shared_ostream& operator<<(const std::vector<T>& v)
     {
-      std::lock_guard < std::mutex > locker(static_mutex);
+      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
       {
         std::stringstream ss;
@@ -229,7 +230,7 @@ class Shared_ostream {
 
     Shared_ostream& operator<<(const BitMove& m)
     {
-      std::lock_guard < std::mutex > locker(static_mutex);
+      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
       {
         std::stringstream ss;
@@ -256,18 +257,34 @@ class Shared_ostream {
     // Method for a string which is already UTF-8 coded.
     void write_UTF8_string(std::string s)
     {
-      std::lock_guard < std::mutex > locker(static_mutex);
+      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
         _os << s << std::flush;
     }
 
     void write_config_params(const Config_params& params)
     {
-      std::lock_guard < std::mutex > locker(static_mutex);
+      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
       {
         _os << std::endl << iso_8859_1_to_utf8("Configuration parameters:") << std::endl;
         _os << iso_8859_1_to_utf8(params.get_params_string()) << std::endl;
+      }
+    }
+
+    void write_search_info(const Search_info& si, const std::string& pv_list)
+    {
+      std::lock_guard<std::mutex> locker(static_mutex);
+      if (_is_open)
+      {
+        std::stringstream ss;
+        ss << "Evaluated on depth:" << static_cast<int>(si.max_search_depth) << " " << static_cast<int>(si.leaf_node_counter) << " nodes in " << si.time_taken << " milliseconds." << std::endl;
+        ss << "PV_list: " << pv_list << "score: " << si.score << std::endl;
+        ss << "beta_cutoffs: " << static_cast<int>(si.beta_cutoffs) << " first_beta_cutoffs: " << static_cast<float>(si.first_beta_cutoffs) / static_cast<float>(si.beta_cutoffs)
+            << "%"
+            << std::endl;
+        ss << "hash_hits:" << static_cast<int>(si.hash_hits) << std::endl;
+        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
     }
 };

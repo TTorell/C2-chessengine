@@ -79,5 +79,17 @@ constexpr uint16_t move_props_draw_by_repetition = 0x0080;
 constexpr uint16_t move_props_draw_by_50_moves = 0x0100;
 constexpr bool SAME_LINE = true;
 
+struct Search_info
+{
+  unsigned int leaf_node_counter;
+  unsigned int node_counter;
+  unsigned int hash_hits;
+  unsigned int first_beta_cutoffs;
+  unsigned int beta_cutoffs;
+  unsigned long time_taken;
+  unsigned long max_search_depth;
+  float score;
+};
+
 } // namespace
 #endif

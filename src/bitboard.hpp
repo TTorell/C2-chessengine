@@ -741,14 +741,16 @@ class Bitboard
     float max(uint8_t level, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_ply) const;
     float min(uint8_t level, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_ply) const;
 
+    // Search function
+    float negamax_with_pruning(uint8_t level, float alpha, float beta, int8_t& best_move_index, const uint8_t max_search_ply) const;
+
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
     std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;
     std::ostream& write_movelist(std::ostream& os, bool same_line = false) const;
 
-    void clear_node_counter();
-    int get_node_counter() const;
-    void clear_hash_hits();
-    int get_hash_hits() const;
+    void clear_search_info();
+    Search_info& get_search_info() const;
+    unsigned int perft_test(uint8_t search_ply, uint8_t max_search_plies) const;
 };
 
 } // namespace C2_chess
