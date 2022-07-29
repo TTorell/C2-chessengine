@@ -67,8 +67,8 @@ namespace C2_chess
 // TODO: Maybe something to check dynamically in the class.
 // instead of checking _is_open. Didn,t think of that,
 // but all ostreams doesn't have an is_open() method.
-class BitMove;
-std::ostream& operator<<(std::ostream& os, const BitMove& m);
+class Bitmove;
+std::ostream& operator<<(std::ostream& os, const Bitmove& m);
 
 class Shared_ostream
 {
@@ -228,7 +228,7 @@ class Shared_ostream
       return *this;
     }
 
-    Shared_ostream& operator<<(const BitMove& m)
+    Shared_ostream& operator<<(const Bitmove& m)
     {
       std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)

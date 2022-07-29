@@ -10,12 +10,14 @@
 #ifndef CHESSFUNCS_HPP_
 #define CHESSFUNCS_HPP_
 
+#include <cassert>
 #include <filesystem>
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <string>
 //#include <utility>
+#include <bit>
 #include <bitset>
 #include <cmath>
 #include "chesstypes.hpp"
@@ -38,15 +40,6 @@ inline bool is_close(T val1, T val2)
   return is_close(val1, val2, marginal);
 }
 
-// template for enum class
-// So the enum-value can be used as an int-index
-// in arrays, for instance. Didn't want to write
-// static_cast<int> everywhere.
-template<typename T>
-inline int index(const T& val)
-{
-  return static_cast<int>(val);
-}
 
 // A fast log2 function for integer types.
 // Uses a gcc-function
@@ -96,16 +89,165 @@ std::string to_binary(const T& x)
   return ss.str();
 }
 
-class Move;
+inline uint8_t file_idx(uint8_t bit_idx)
+{
+  assert(bit_idx < 64);
+  return 7 - (bit_idx & 7);
+}
+
+inline uint8_t file_idx(uint64_t square)
+{
+  // return 7 - (bit_idx(square) % 8); // is possibly a tiny little bit slower
+  return 7 - (bit_idx(square) & 7);
+}
+
+inline uint8_t rank_idx(uint8_t bit_idx)
+{
+  assert(bit_idx < 64);
+  return 8 - (bit_idx >> 3);
+}
+
+inline uint8_t rank_idx(uint64_t square)
+{
+  // return 8 - (bit_idx(square) % 8); // is possibly a tiny little bit slower
+  return 8 - (bit_idx(square) >> 3);
+}
+
+inline uint64_t rightmost_square(const uint64_t squares)
+{
+  if (squares)
+  {
+    // return (squares & (squares - 1)) ^ (squares); // Is just a little bit slower
+    return square(__builtin_ctzll(squares));
+  }
+  return zero;
+}
+
+inline uint64_t leftmost_square(uint64_t squares)
+{
+  if (squares)
+  {
+    // return square(63 - std::countl_zero(squares)); -std=c++20
+    return square(63 - __builtin_clzl(squares));
+  }
+  return zero;
+}
+
+inline uint64_t popright_square(uint64_t& squares)
+{
+  if (squares)
+  {
+    //    The following also works fine:
+    //    uint64_t tmp_squares = squares;
+    //    squares &= (squares - 1);
+    //    return squares ^ tmp_squares;
+    uint64_t square = rightmost_square(squares);
+    squares &= (squares - 1);
+    return square;
+  }
+  return zero;
+}
+
+inline uint64_t popleft_square(uint64_t& squares)
+{
+  assert(squares);
+  uint64_t sq = leftmost_square(squares);
+  squares ^= sq;
+  return sq;
+}
+inline uint64_t to_file(uint64_t square)
+{
+  return file[file_idx(square)];
+}
+
+inline uint64_t to_rank(uint64_t square)
+{
+  return rank[rank_idx(square)];
+}
+
+inline uint64_t to_diagonal(uint64_t square)
+{
+  return diagonal[8 - rank_idx(square) + file_idx(square)];
+}
+
+inline uint64_t to_diagonal(uint8_t f_idx, uint8_t r_idx)
+{
+  assert(f_idx < 8 && r_idx <= 8 && r_idx > 0);
+  return diagonal[8 - r_idx + f_idx];
+}
+
+inline uint64_t to_anti_diagonal(uint64_t square)
+{
+  return anti_diagonal[file_idx(square) + rank_idx(square) - 1];
+}
+
+inline uint64_t to_anti_diagonal(uint8_t f_idx, uint8_t r_idx)
+{
+  assert(f_idx < 8 && r_idx <= 8 && r_idx > 0);
+  return anti_diagonal[f_idx + r_idx - 1];
+}
+
+// Precondition: sq1 and sq2 must be on the same file, rank, diagonal or antidiagonal.
+inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diagonals = false)
+{
+  assert(squares);
+  uint64_t common_squares;
+  if (diagonals)
+    common_squares = squares & (to_diagonal(sq2) | to_anti_diagonal(sq2));
+  else
+    common_squares = squares & (to_file(sq2) | to_rank(sq2));
+  if (sq1 > sq2)
+    return common_squares & ((sq1 - one) ^ ((sq2 << 1) - one));
+  else
+    return common_squares & ((sq2 - one) ^ ((sq1 << 1) - one));
+}
+
+//inline uint8_t popright_bit_idx(uint64_t& squares)
+//{
+//  assert(squares);
+//  // uint8_t idx = std::countr_zero(squares);
+//  uint8_t idx = __builtin_ctzll(squares);
+//  squares &= (squares - 1);
+//  return idx;
+//}
+
+inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
+{
+  assert(pattern && std::has_single_bit(center_square));
+  uint64_t squares;
+  int shift = bit_idx(center_square) - e4_square_idx;
+  squares = (shift >= 0) ? (pattern << shift) : (pattern >> -shift);
+  // Remove squares in the pattern which may have
+  // been shifted over to the other side of the board.
+  // (the pattern is max 5 bits wide, so we can remove
+  // two files regardless of if center_square is on a-,
+  // or b-file etc).
+  if (to_file(center_square) & a_b_files)
+    squares &= not_g_h_files;
+  else if (to_file(center_square) & g_h_files)
+    squares &= not_a_b_files;
+  return squares;
+}
+
+inline uint64_t ortogonal_squares(uint64_t square)
+{
+  uint8_t b_idx = bit_idx(square);
+  return file[file_idx(b_idx)] | rank[rank_idx(b_idx)];
+}
+
+inline uint64_t diagonal_squares(uint64_t square)
+{
+  return to_diagonal(square) | to_anti_diagonal(square);
+}
+
 class Config_params;
-class BitMove;
 
 col other_color(const col& c);
 inline col& operator++(col& c);
 col col_from_string(const std::string& s);
 std::string get_logfile_name();
 void require(bool b, std::string file, std::string method, int line);
-void require_m(bool b, std::string file, std::string method, int line, const BitMove& m);
+void require_m(bool b, std::string file, std::string method, int line, const Bitmove& m);
 std::ostream& print_backtrace(std::ostream& os);
 std::string get_stdout_from_cmd(std::string cmd);
 std::pair<std::string, int> exec(const char* cmd);

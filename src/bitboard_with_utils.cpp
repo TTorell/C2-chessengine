@@ -14,7 +14,7 @@
 namespace C2_chess
 {
 
-std::ostream& operator<<(std::ostream& os, const BitMove& m)
+std::ostream& operator<<(std::ostream& os, const Bitmove& m)
 {
   std::stringstream sstr;
   switch (m.piece_type())
@@ -86,7 +86,6 @@ std::ostream& operator<<(std::ostream& os, const BitMove& m)
   return os;
 }
 
-
 std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::vector<std::string>& moves, col col_to_move)
 {
   std::vector<std::string> stripped_moves;
@@ -94,11 +93,11 @@ std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::ve
   {
     if (move == "0-0")
     {
-      (col_to_move == col::white) ? stripped_moves.push_back("e1g1") : stripped_moves.push_back("e8g8");
+      (col_to_move == col::white)? stripped_moves.push_back("e1g1"):stripped_moves.push_back("e8g8");
     }
     else if (move == "0-0-0")
     {
-      (col_to_move == col::white) ? stripped_moves.push_back("e1c1") : stripped_moves.push_back("e8c8");
+      (col_to_move == col::white)? stripped_moves.push_back("e1c1"):stripped_moves.push_back("e8c8");
     }
     else
     {
@@ -123,7 +122,7 @@ std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::ve
   return stripped_moves;
 }
 
-void Bitboard_with_utils::make_move(const std::string& UCI_move)
+void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move)
 {
   std::stringstream out_moves;
   write_movelist(out_moves);
@@ -390,7 +389,7 @@ float Bitboard_with_utils::evaluate_position(col col_to_move, uint8_t level) con
   return Bitboard::evaluate_position(col_to_move, level);
 }
 
-int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, BitMove& m) const
+int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitmove& m) const
 {
   uint64_t from_square;
   uint64_t to_square;
@@ -426,17 +425,17 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, BitM
       move_props |= move_props_capture;
       from_square = piece_diff;
       p_type = get_piece_type(from_square);
-      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_col_to_move == col::black) ? 2 : 7))))
+      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_col_to_move == col::black)? 2:7))))
         move_props |= move_props_promotion;
       //to_square = _own->pieces ^ new_position.other()->pieces; // TODO: _other->pieces ^ new_position.own()->pieces ?
-      to_square =_other->pieces ^ new_position.own()->pieces;
+      to_square = _other->pieces ^ new_position.own()->pieces;
       break;
     case 2:
       // not a capture
       from_square = _all_pieces & piece_diff;
       to_square = piece_diff ^ from_square;
       p_type = get_piece_type(from_square);
-      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_col_to_move == col::black) ? 2 : 7))))
+      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_col_to_move == col::black)? 2:7))))
         move_props |= move_props_promotion;
       break;
     case 3:
@@ -445,11 +444,13 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, BitM
       {
         to_square = _ep_square;
         if (_own->Pawns & piece_diff)
+        {
           from_square = _own->Pawns & piece_diff;
+          p_type = piecetype::Pawn;
+          move_props |= move_props_capture | move_props_en_passant;
+        }
         else
           return -4;
-        p_type = piecetype::Pawn;
-        move_props |= move_props_capture | move_props_en_passant;
       }
       else
         return -5;
@@ -498,11 +499,11 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, BitM
   if (move_props & move_props_promotion)
   {
     promotion_pt = new_position.get_piece_type(to_square);
-    m = BitMove(p_type, move_props, from_square, to_square, promotion_pt);
+    m = Bitmove(p_type, move_props, from_square, to_square, promotion_pt);
   }
   else
   {
-    m = BitMove(p_type, move_props, from_square, to_square);
+    m = Bitmove(p_type, move_props, from_square, to_square);
   }
   return 0;
 }

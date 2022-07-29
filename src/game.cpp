@@ -182,55 +182,54 @@ void Game::actions_after_a_move()
   // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
 }
 
-int Game::find_best_move_index(float& score, unsigned int max_search_ply)
+Bitmove Game::find_best_move(float& score, unsigned int max_search_ply)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   _chessboard.clear_search_info();
   _chessboard.get_search_info().max_search_depth = max_search_ply - 1;
   _chessboard.clear_transposition_table();
-
-  int8_t best_move_index = -1;
-
-  // Set initial values of alpha and beta default from whites point of view.
-  const float infinity = std::numeric_limits<float>::infinity();
-
+  Bitmove best_move;
   steady_clock.tic();
-  score = _chessboard.negamax_with_pruning(0, -infinity, infinity, best_move_index, max_search_ply);
+  score = _chessboard.negamax_with_pruning(0, -infinity, infinity, best_move, max_search_ply);
   _chessboard.get_search_info().time_taken = steady_clock.toc_ms();
   _chessboard.get_search_info().score = score;
-
   if (_chessboard.get_col_to_move() == col::white)
   {
-    if (best_move_index == -1 && is_close(score, -100.0F))
+    if (best_move == NO_MOVE && is_close(score, -100.0F))
     {
       logfile << "White was check mated." << "\n"; // TODO
-      return 0;
     }
   }
   else // col::black
   {
-    if (best_move_index == -1 && is_close(score, eval_max))
+    if (best_move == NO_MOVE && is_close(score, eval_max))
     {
       logfile << "Black was check mated." << "\n"; // TODO
-      return 0;
     }
   }
-  if (best_move_index == -2)
+  if (best_move == DRAW_BY_THREEFOLD_REPETITION)
   {
-    logfile << "The game is a draw." << "\n";
-    return 0;
+    logfile << "The game is a draw by threefold repetition." << "\n";
   }
-  return best_move_index;
+  if (best_move == DRAW_BY_50_MOVES_RULE)
+  {
+    logfile << "The game is a draw by the fifty-moves rule." << "\n";
+  }
+  if (best_move == SEARCH_HAS_BEEN_INTERRUPTED)
+  {
+    logfile << "The sarch has been interruted." << "\n";
+  }
+  return best_move;
 }
 
-BitMove Game::incremental_search(const std::string& max_search_time, unsigned int max_search_ply)
+Bitmove Game::incremental_search(const std::string& max_search_time, unsigned int max_search_ply)
 {
   // Incremental search, to have a best-move available as quickly as possible
   // and it actually saves search time due to move-ordering.
   // When searching incrementally we consider max_search_time.
 
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  std::vector<BitMove> pv_list;
+  std::vector<Bitmove> pv_list;
   if (!max_search_time.empty())
   {
     _chessboard.start_timer_thread(max_search_time);
@@ -238,13 +237,14 @@ BitMove Game::incremental_search(const std::string& max_search_time, unsigned in
   }
   else
     _chessboard.set_time_left(true);
-  int8_t best_move_index = -1;
+  Bitmove best_move;
+  Bitmove local_best_move;
   for (unsigned int i = 2; i <= max_search_ply; i++)
   {
-    int move_index = find_best_move_index(_score, i);
+    local_best_move = find_best_move(_score, i);
 
     // Has the search on this ply been aborted by time limit?
-    if (move_index == -1)
+    if (local_best_move == SEARCH_HAS_BEEN_INTERRUPTED)
     {
       // This happens when max_search_ply has been set to 1
       // or when the search has been interrupted by the time limit.
@@ -252,30 +252,19 @@ BitMove Game::incremental_search(const std::string& max_search_time, unsigned in
       // My min() or max() will just evaluate the current position
       // then and wont be able to choose best move.
       // So, searching with searh_ply = 1 is completely pointless.
-      if (has_time_left())
+      // Time is out.
+      logfile << "Time is out! or a stop-command has been received.\n";
+      if (i == 2)
       {
-        logfile << "Error: find_best_move() returned -1." << "\n";
-        // We can't choose. Just set it to the first move.
-        // (TODO: Choose randomly maybe.)
-        if (best_move_index == -1)
-          best_move_index = 0;
-      }
-      else
-      {
-        // Time is out.
-        logfile << "Time is out!\n";
-        if (i == 2)
-        {
-          // The search has been interrupted on lowest level.
-          // No best move has been found at all, so just choose
-          // the first move.
-          logfile << static_cast<int>(i) << "interrupted on max_search_ply = 2" << "\n";
-          best_move_index = 0;
-        }
+        // The search has been interrupted on lowest level.
+        // No best move has been found at all, so just choose
+        // the first move.
+        logfile << static_cast<int>(i) << "interrupted on max_search_ply = 2" << "\n";
+        local_best_move = NO_MOVE;
       }
       break;
     }
-    best_move_index = move_index;
+    best_move = local_best_move;
 
     if (has_time_left())
     {
@@ -290,27 +279,27 @@ BitMove Game::incremental_search(const std::string& max_search_time, unsigned in
       break;
   }
 
-  if (best_move_index >= 0)
+  if (best_move.is_valid())
   {
-    _chessboard.make_move(static_cast<uint8_t>(best_move_index));
+    _chessboard.make_move(best_move);
     _move_log.push_back(_chessboard.last_move());
   }
   actions_after_a_move();
 
-// Stop possibly running timer by setting time_left to false.
+  // Stop possibly running timer by setting time_left to false.
   _chessboard.set_time_left(false);
   return _chessboard.last_move();
 }
 
-BitMove Game::engine_go(const Config_params& config_params, const std::string& max_search_time)
+Bitmove Game::engine_go(const Config_params& config_params, const std::string& max_search_time)
 {
-  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  // Shared_ostream& logfile = *(Shared_ostream::get_instance());
 
-// This value is just a default value;
+  // This value is just a default value;
   bool use_incremental_search = true;
   unsigned int max_search_ply = 7;
 
-// Read some configuration parameters
+  // Read some configuration parameters
   std::string s = config_params.get_config_param("max_search_level");
   if (!s.empty())
     max_search_ply = static_cast<unsigned int>(std::atoi(s.c_str()));
@@ -320,7 +309,7 @@ BitMove Game::engine_go(const Config_params& config_params, const std::string& m
 
   _chessboard.init_material_evaluation(); // TODO: Should this be placed somewhere else, init_piece_state()?
 
-// Search for best move
+  // Search for best move
   if (use_incremental_search)
   {
     return incremental_search(max_search_time, max_search_ply);
@@ -330,30 +319,17 @@ BitMove Game::engine_go(const Config_params& config_params, const std::string& m
     // Not incremental search, start searching directly at max_search_ply and stop when finished.
     // Ignore max_search_time.
     _chessboard.set_time_left(true);
-    int best_move_index = -1;
-    int move_index = find_best_move_index(_score, max_search_ply);
-    if (move_index == -1)
+    Bitmove best_move = find_best_move(_score, max_search_ply);
+    if (best_move.is_valid())
     {
-      // This happens when max_search_ply has been set to 1.
-      // (Or possibly when something else has gone wrong.)
-      // My min() or max() will just evaluate the current position
-      // then and wont be able to choose best move.
-      // So, searching with max_search_ply = 1 is completely pointless.
-      logfile << "Error: find_best_move() returned -1." << "\n";
-      // We can't choose. Just set it to the first move.
-      move_index = 0;
+      _chessboard.make_move(best_move);
+      _move_log.push_back(_chessboard.last_move());
     }
-    best_move_index = move_index;
-//    uint64_t nsec_stop = current_time.nanoseconds();
-//    logfile.log_time_diff(nsec_stop, nsec_start, max_search_level, _chessboard.get_possible_move(best_move_index), _score);
-    _chessboard.make_move(best_move_index);
-    _move_log.push_back(_chessboard.last_move());
   }
-
-// Stop possibly running timer by setting time_left to false.
+  actions_after_a_move();
+  // Stop possibly running timer by setting time_left to false.
   _chessboard.set_time_left(false);
 
-  actions_after_a_move();
   return _chessboard.last_move();
 }
 
@@ -391,7 +367,7 @@ void Game::start_new_game()
 void Game::figure_out_last_move(const Bitboard& new_position)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  BitMove m;
+  Bitmove m;
 
   int return_value = _chessboard.figure_out_last_move(new_position, m);
   if (return_value != 0)
@@ -434,12 +410,12 @@ void Game::figure_out_last_move(const Bitboard& new_position)
     int moveindex = _chessboard.get_move_index(m);
     if (moveindex == -1)
     {
-      logfile << "Coldn't find index of " << m << "\n";
+      logfile << "Couldn't find index of " << m << "\n";
       (*dynamic_cast<Bitboard*>(&_chessboard)) = new_position;
       start_new_game();
       return;
     }
-    _chessboard.make_move(moveindex);
+    _chessboard.make_move(m);
     _move_log.push_back(_chessboard.last_move());
     actions_after_a_move();
   }
@@ -526,7 +502,7 @@ int Game::read_position_FEN(const std::string& FEN_string)
 
 void Game::make_move(const std::string& move)
 {
-  _chessboard.make_move(move);
+  _chessboard.make_UCI_move(move);
   _move_log.push_back(_chessboard.last_move());
 }
 

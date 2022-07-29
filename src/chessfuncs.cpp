@@ -104,7 +104,7 @@ void require(bool bo, std::string File, std::string method, int line)
   }
 }
 
-void require_m(bool bo, std::string File, std::string method, int line, const BitMove& m)
+void require_m(bool bo, std::string File, std::string method, int line, const Bitmove& m)
 {
   if (!bo)
   {

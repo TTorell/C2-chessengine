@@ -39,8 +39,6 @@ class Game
     ~Game();
     Game operator=(const C2_chess::Game&) = delete;
 
-    int find_best_move_index(float& score,
-                             unsigned int max_search_level);
 
     int read_position_FEN(const std::string& FEN_string);
 
@@ -51,8 +49,9 @@ class Game
     void init_board_hash_tag();
     void actions_after_a_move();
     void start();
-    BitMove incremental_search(const std::string& max_search_time, unsigned int max_search_level);
-    BitMove engine_go(const Config_params& config_params, const std::string& max_search_time);
+    Bitmove find_best_move(float& score, unsigned int max_search_ply);
+    Bitmove incremental_search(const std::string& max_search_time, unsigned int max_search_level);
+    Bitmove engine_go(const Config_params& config_params, const std::string& max_search_time);
     void start_timer_thread(const std::string& max_search_time);
     bool has_time_left();
     void set_time_left(bool value);

@@ -269,7 +269,7 @@ void Bitboard::update_col_to_move()
   _hash_tag ^= transposition_table._black_to_move;
 }
 
-inline void Bitboard::update_state_after_king_move(const BitMove& m)
+inline void Bitboard::update_state_after_king_move(const Bitmove& m)
 {
   uint64_t from_square = m.from();
   uint64_t to_square = m.to();
@@ -330,7 +330,7 @@ void Bitboard::make_move(uint8_t i, gentype gt, bool add_to_history)
 
 // The move must be valid, but doesn't have to be in _movelist.
 // _movelist may be empty.
-void Bitboard::make_move(const BitMove& m, gentype gt, bool add_to_history)
+void Bitboard::make_move(const Bitmove& m, gentype gt, bool add_to_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
   uint64_t to_square = m.to();

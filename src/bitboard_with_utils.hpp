@@ -15,7 +15,7 @@
 namespace C2_chess
 {
 
-std::ostream& operator <<(std::ostream& os, const BitMove& m);
+std::ostream& operator <<(std::ostream& os, const Bitmove& m);
 
 class Bitboard_with_utils: public Bitboard
 {
@@ -52,7 +52,7 @@ class Bitboard_with_utils: public Bitboard
 
     uint64_t find_legal_squares(uint64_t sq, uint64_t mask, uint64_t all_pieces, uint64_t other_pieces);
 
-    void make_move(const std::string& UCI_move);
+    void make_UCI_move(const std::string& UCI_move);
 
     float evaluate_position(col col_to_move, uint8_t level) const;
 
@@ -66,17 +66,12 @@ class Bitboard_with_utils: public Bitboard
       return _movelist.size();
     }
 
-    void make_move(uint8_t move_index)
-    {
-      Bitboard::make_move(move_index);
-    }
+    int figure_out_last_move(const Bitboard& new_position, Bitmove& m) const;
 
-    int figure_out_last_move(const Bitboard& new_position, BitMove& m) const;
-
-    int get_move_index(const BitMove& move) const
+    int get_move_index(const Bitmove& move) const
     {
       int idx = 0;
-      for (const BitMove& m : _movelist)
+      for (const Bitmove& m : _movelist)
       {
         if (m == move)
           return idx;

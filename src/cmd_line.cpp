@@ -37,22 +37,22 @@ std::ostream& write_piece_diagram_style(std::ostream& os, C2_chess::piecetype p_
   switch (p_type)
   {
     case C2_chess::piecetype::King:
-      os << ((color == C2_chess::col::white) ? ("\u2654") : ("\u265A"));
+      os << ((color == C2_chess::col::white)? ("\u2654"):("\u265A"));
       break;
     case C2_chess::piecetype::Queen:
-      os << ((color == C2_chess::col::white) ? ("\u2655") : ("\u265B"));
+      os << ((color == C2_chess::col::white)? ("\u2655"):("\u265B"));
       break;
     case C2_chess::piecetype::Rook:
-      os << ((color == C2_chess::col::white) ? ("\u2656") : ("\u265C"));
+      os << ((color == C2_chess::col::white)? ("\u2656"):("\u265C"));
       break;
     case C2_chess::piecetype::Bishop:
-      os << ((color == C2_chess::col::white) ? ("\u2657") : ("\u265D"));
+      os << ((color == C2_chess::col::white)? ("\u2657"):("\u265D"));
       break;
     case C2_chess::piecetype::Knight:
-      os << ((color == C2_chess::col::white) ? ("\u2658") : ("\u265E"));
+      os << ((color == C2_chess::col::white)? ("\u2658"):("\u265E"));
       break;
     case C2_chess::piecetype::Pawn:
-      os << ((color == C2_chess::col::white) ? ("\u2659") : ("\u265F"));
+      os << ((color == C2_chess::col::white)? ("\u2659"):("\u265F"));
       break;
     default:
       std::cerr << ("Undefined piece type in Piece::write_diagram_style") << std::endl;
@@ -208,7 +208,7 @@ void play_on_cmd_line(Config_params& config_params)
   }
 }
 
-int Game::make_a_move(float& score, const uint8_t max_search_level)
+int Game::make_a_move(float& score, const uint8_t max_search_ply)
 {
   if (_player_type[index(_chessboard.get_col_to_move())] == playertype::human)
   {
@@ -216,29 +216,21 @@ int Game::make_a_move(float& score, const uint8_t max_search_level)
   }
   else // _type == computer
   {
-    int8_t best_move_index;
-    float alpha = -100, beta = 100;
+    Bitmove best_move;
     _chessboard.clear_transposition_table();
     _chessboard.init_material_evaluation();
-    if (_chessboard.get_col_to_move() == col::white)
+    score = _chessboard.negamax_with_pruning(0, -infinity, infinity, best_move, max_search_ply);
+    if (best_move == NO_MOVE && is_close(score, -100.0F))
     {
-      score = _chessboard.max(0, alpha, beta, best_move_index, max_search_level);
-      if (best_move_index == -1 && is_close(score, -100.0F))
-      {
-        std::cout << "White was check mated." << std::endl; // TODO
-        return 0;
-      }
+      std::cout << "White was check mated." << std::endl; // TODO
+      return 0;
     }
-    else
+    if (best_move == NO_MOVE && is_close(score, 100.0F))
     {
-      score = _chessboard.min(0, alpha, beta, best_move_index, max_search_level);
-      if (best_move_index == -1 && is_close(score, 100.0F))
-      {
-        std::cout << "Black was check mated." << std::endl; // TODO
-        return 0;
-      }
+      std::cout << "Black was check mated." << std::endl; // TODO
+      return 0;
     }
-    _chessboard.make_move(static_cast<uint8_t>(best_move_index));
+    _chessboard.make_move(best_move);
     return 0;
   }
 }
@@ -291,9 +283,9 @@ void Game::start()
   }
 }
 
-bool Bitboard::is_in_movelist(const BitMove& m) const
+bool Bitboard::is_in_movelist(const Bitmove& m) const
 {
-  for (const BitMove& move:_movelist)
+  for (const Bitmove& move : _movelist)
   {
     if (m == move)
       return true;
@@ -324,7 +316,8 @@ int Bitboard::make_move(playertype player)
       cmdline << "The Move you entered is impossible!" << "\n\n";
     first = false;
     cmdline << "(Just enter from-square and to-square," << "\n" <<
-        "like: " << "e2e4, or g7g8Q if it's a propmotion.)" << "\n";
+            "like: "
+            << "e2e4, or g7g8Q if it's a propmotion.)" << "\n";
     cmdline << "Your move: ";
     std::cin >> move_string;
     if (move_string.size() < 4 || move_string.size() > 5)
@@ -348,7 +341,7 @@ int Bitboard::make_move(playertype player)
       move_props |= move_props_promotion;
     }
     if (move_props & move_props_promotion)
-      if ((_col_to_move == col::white) ? from_rank_idx != 7 : from_rank_idx != 2)
+      if ((_col_to_move == col::white)? from_rank_idx != 7:from_rank_idx != 2)
         continue;
     uint64_t from_square = file[from_file_idx] & rank[from_rank_idx];
     uint64_t to_square = file[to_file_idx] & rank[to_rank_idx];
@@ -380,7 +373,7 @@ int Bitboard::make_move(playertype player)
     }
     if (to_square & _other->pieces)
       move_props = move_props_capture;
-    BitMove m(p_type, move_props, from_square, to_square, promotion_piecetype);
+    Bitmove m(p_type, move_props, from_square, to_square, promotion_piecetype);
     if (!is_in_movelist(m))
       continue;
     //  Move is OK,make it

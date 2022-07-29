@@ -36,7 +36,7 @@ void close_threads(std::thread& input_thread, std::thread& output_thread);
 
 void print_help_txt();
 
-std::string engine_style(const BitMove& move);
+std::string engine_style(const Bitmove& move);
 
 // This method finds the token in the go-command following var_name.
 // Returns an empty string if not found.
@@ -220,7 +220,7 @@ void print_help_txt()
           "C2 Without arguments will start the chess-engine" << "\n" << "\n";
 }
 
-std::string engine_style(const BitMove& move)
+std::string engine_style(const Bitmove& move)
 {
   std::stringstream ss;
   ss << static_cast<char>('a' + file_idx(move.from())) << static_cast<int>(rank_idx(move.from())) <<
@@ -400,7 +400,7 @@ int main(int argc, char* argv[])
           logfile << "max_search_time = " << max_search_time << " milliseconds\n";
         }
         // Find the best move
-        BitMove bestmove = game.engine_go(config_params, max_search_time);
+        Bitmove bestmove = game.engine_go(config_params, max_search_time);
         output_buffer.put("bestmove " + engine_style(bestmove));
       }
     }

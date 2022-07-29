@@ -14,7 +14,7 @@ class Movelog
   protected:
     col _col_to_start;
     uint16_t _first_moveno;
-    std::vector<BitMove> _list;
+    std::vector<Bitmove> _list;
 
     public:
     Movelog() :
@@ -31,7 +31,7 @@ class Movelog
     {
     }
 
-    void push_back(const BitMove& move)
+    void push_back(const Bitmove& move)
     {
       _list.push_back(move);
     }
