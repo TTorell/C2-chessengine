@@ -555,10 +555,92 @@ float Bitboard::evaluate_position(col col_to_move, uint8_t level) const
   return sum;
 }
 
+float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply) const
+{
+  assert(beta > alpha);
+
+  search_ply++;
+  if (search_ply > max_search_ply)
+  {
+    std::cerr << "!!! Erroe: search_ply > " << max_search_ply << std::endl;
+  }
+  search_info.node_counter++;
+
+  if (history.is_threefold_repetition() || is_draw_by_50_moves())
+  {
+    return 0.0;
+  }
+  // If there are no possible moves, the evaluation will check for such things as
+  // mate or stalemate which may happen before max_search_ply has been reached.
+  if (_movelist.size() == 0)
+  {
+    return (_col_to_move == col::white)? evaluate_position(_col_to_move, search_ply):
+                                         -evaluate_position(_col_to_move, search_ply);
+  }
+
+  float score = evaluate_position(_col_to_move, search_ply);
+
+  if(score >= beta) {
+      return beta;
+  }
+
+  if(score > alpha) {
+      alpha = score;
+  }
+
+  float move_score = -infinity;
+  // Collect the best value from all possible moves
+  for (uint8_t i = 0; i < static_cast<uint8_t>(_movelist.size()); i++)
+  {
+    if (!(_movelist[i].properties() & move_props_capture))
+        continue;
+    // Copy current board into the preallocated board for this search_ply.
+    Bitboard::level_boards[search_ply] = *this;
+
+    // Save history state for current position.
+    History_state saved_history_state = history.get_state();
+
+    // Make the selected move on the "ply-board" and ask min() to evaluate it further.
+    level_boards[search_ply].make_move(_movelist[i], gentype::captures);
+    move_score = -level_boards[search_ply].Quiesence_search(search_ply, -beta, -alpha, max_search_ply);
+
+    // Restore game history to current position.
+    history.takeback_moves(saved_history_state);
+
+    // Pruning:
+    if (move_score > alpha)
+    {
+      if (move_score >= beta)
+      {
+        // Beta cut-off.
+        // Look no further. Skip the rest of the branches.
+        // The other player won't choose this path anyway.
+        // TODO: what about best_move;
+        search_info.beta_cutoffs++;
+        if (i == 0)
+          search_info.first_beta_cutoffs++;
+        return beta;
+      }
+      // Update alpha value-
+      // We have found a better move.
+      alpha = move_score;
+    }
+
+    if (!time_left)
+    {
+      search_info.search_interrupted = true;
+      return 0.0;
+    }
+  }
+  return alpha;
+}
+
 // Search algorithm: Negamax with alpha-beta-pruning
 float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta, Bitmove& best_move, const uint8_t max_search_ply) const
 {
-  float move_score = -std::numeric_limits<float>::infinity(); // Must be lower than lowest evaluation
+  assert(beta > alpha);
+  search_info.node_counter++;
+  float move_score = -infinity; // Must be lower than lowest evaluation
   search_ply++;
 
   if (history.is_threefold_repetition())
@@ -591,16 +673,29 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
 
   // If there are no possible moves, the evaluation will check for such things as
   // mate or stalemate which may happen before max_search_ply has been reached.
-  if (_movelist.size() == 0 || search_ply >= max_search_ply)
+  if (_movelist.size() == 0)
   {
-    if (search_ply >= max_search_ply)
-      search_info.leaf_node_counter++;
 
     // ---------------------------------------
     best_move = NO_MOVE;
     element.best_move = NO_MOVE;
     element.best_move._evaluation = (_col_to_move == col::white)? evaluate_position(_col_to_move, search_ply):
                                                                   -evaluate_position(_col_to_move, search_ply);
+    element.search_ply = search_ply;
+    // ---------------------------------------
+    return element.best_move._evaluation;
+  }
+
+  if (search_ply == max_search_ply)
+  {
+    search_info.leaf_node_counter++;
+    // ---------------------------------------
+    best_move = NO_MOVE;
+    element.best_move = NO_MOVE;
+    // Quiesence_search will increment node_counter and search_ply
+    // so we must decrement them here.
+    search_info.node_counter--;
+    element.best_move._evaluation = Quiesence_search(search_ply - 1, alpha, beta, N_SEARCH_BOARDS_DEFAULT);
     element.search_ply = search_ply;
     // ---------------------------------------
     return element.best_move._evaluation;

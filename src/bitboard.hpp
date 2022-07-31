@@ -325,6 +325,8 @@ class Bitboard
       return history.get_state();
     }
 
+    float Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply) const;
+
     // Search function
     float negamax_with_pruning(uint8_t level, float alpha, float beta, Bitmove& best_move, const uint8_t max_search_ply) const;
 
