@@ -284,6 +284,7 @@ class Shared_ostream
             << "%"
             << std::endl;
         ss << "hash_hits:" << static_cast<int>(si.hash_hits) << std::endl;
+        ss << "highest search_ply:" << static_cast<int>(si.highest_search_ply) << std::endl;
         _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
     }

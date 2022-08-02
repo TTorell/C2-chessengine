@@ -35,6 +35,7 @@ const float epsilon = 0.00000001F;
 
 const int N_SEARCH_BOARDS_DEFAULT = 38;
 const bool dont_update_history = false;
+const bool dont_evaluate_zero_moves = false;
 
 enum class piecetype
 {
@@ -110,6 +111,7 @@ struct Search_info
     unsigned long max_search_depth;
     bool search_interrupted;
     float score;
+    unsigned int highest_search_ply;
 };
 
 struct Bitpieces

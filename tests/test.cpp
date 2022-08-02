@@ -627,6 +627,26 @@ TEST_CASE("find_best_move")
   Config_params config_params;
   Game game(config_params);
 
+  SECTION("examining:_strange_queen-move1")
+  {
+    std::string FEN_string = get_FEN_test_position(94);
+    game.read_position_FEN(FEN_string);
+    game.init();
+    Bitmove bestmove = game.engine_go(config_params, "10000");
+    std::cout << "Best move: " << bestmove << std::endl;
+    std::stringstream ss;
+    ss << bestmove;
+    REQUIRE(ss.str() == "Ng8-e7");
+    game.read_position_FEN(reverse_FEN_string(FEN_string));
+    game.init();
+    bestmove = game.engine_go(config_params, "10000");
+    std::cout << "Best move: " << bestmove << std::endl;
+    ss.clear();
+    ss.str("");
+    ss << bestmove;
+    REQUIRE(ss.str() == "Ng1-e2");
+  }
+
   SECTION("mate in one")
   {
     std::string FEN_string = get_FEN_test_position(90);

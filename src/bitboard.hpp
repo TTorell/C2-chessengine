@@ -155,7 +155,7 @@ class Bitboard
     void count_development(float& sum, float weight) const;
     void count_center_control(float& sum, float weight) const;
     int count_threats_to_square(uint64_t square, col color) const;
-    float evaluate_position(col for_color, uint8_t level) const;
+    float evaluate_position(col for_color, uint8_t level, bool evaluate_zero_moves = true) const;
 
   public:
 

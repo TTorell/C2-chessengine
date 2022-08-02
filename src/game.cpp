@@ -152,7 +152,7 @@ void Game::actions_after_a_move()
     logfile << (is_close(evaluation, eval_max)? "1 - 0, black was mated":"0 - 1, white was mated") << "\n";
     _playing = false;
   }
-  else if (is_close(evaluation, 0.0F) && _chessboard.no_of_moves() == 0)
+  else if (is_close(evaluation, 0.0F) && _chessboard.get_no_of_moves() == 0)
   {
     _chessboard.set_stalemate();
     cmdline << "1/2 - 1/2 draw by stalemate" << "\n";
@@ -257,10 +257,10 @@ Bitmove Game::incremental_search(const std::string& max_search_time, unsigned in
       if (i == 2)
       {
         // The search has been interrupted on lowest level.
-        // No best move has been found at all, so just choose
-        // the first move.
-        logfile << static_cast<int>(i) << "interrupted on max_search_ply = 2" << "\n";
-        local_best_move = NO_MOVE;
+        // No best move has been found at all. What to do?
+        // Just return the first move.
+        logfile << "Search was interrupted on lowest search depth." << "\n";
+        local_best_move = _chessboard.get_first_move();
       }
       break;
     }
@@ -273,7 +273,6 @@ Bitmove Game::incremental_search(const std::string& max_search_time, unsigned in
       write_vector(pv_list, ss, true);
       logfile.write_search_info(_chessboard.get_search_info(), ss.str());
     }
-    logfile << "PV_list: " << pv_list << "\n";
 
     if (_score > eval_max / 2) // Forced mate
       break;

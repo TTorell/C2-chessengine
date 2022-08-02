@@ -130,7 +130,7 @@ void Bitboard::init_board_hash_tag()
   {
     piece = popright_square(pieces);
     piecetype p_type = get_piece_type(piece);
-    col p_color = (piece & _own->pieces)? _col_to_move:other_color(_col_to_move);
+    col p_color = (piece & _own->pieces) ? _col_to_move : other_color(_col_to_move);
     update_hash_tag(piece, p_color, p_type);
   }
 
@@ -464,15 +464,15 @@ int Bitboard::count_threats_to_square(uint64_t to_square, col color) const
   uint64_t tmp_all_pieces = _all_pieces;
   uint8_t f_idx = file_idx(to_square);
 
-  const Bitpieces& pieces = (color == col::white)? _white_pieces:_black_pieces;
+  const Bitpieces& pieces = (color == col::white) ? _white_pieces : _black_pieces;
 
   int count = 0;
   // Check Pawn-threats
   if (pieces.Pawns)
   {
-    if ((f_idx != h) && (pieces.Pawns & ((color == col::white)? to_square << 7:to_square >> 9)))
+    if ((f_idx != h) && (pieces.Pawns & ((color == col::white) ? to_square << 7 : to_square >> 9)))
       count++;
-    if ((f_idx != a) && (pieces.Pawns & ((color == col::white)? to_square << 9:to_square >> 7)))
+    if ((f_idx != a) && (pieces.Pawns & ((color == col::white) ? to_square << 9 : to_square >> 7)))
       count++;
   }
 
@@ -525,16 +525,16 @@ void Bitboard::count_center_control(float& sum, float weight) const
   sum += counter * weight;
 }
 
-float Bitboard::evaluate_position(col col_to_move, uint8_t level) const
+float Bitboard::evaluate_position(col col_to_move, uint8_t level, bool evaluate_zero_moves) const
 {
-  if (_movelist.size() == 0)
+  if (evaluate_zero_moves && _movelist.size() == 0)
   {
     // if (square_is_threatened(_own->King, false))
     if (_last_move.properties() & move_props_check) // TODO: Check if this always has been set?
     {
       // This is checkmate, we want to evaluate the quickest way to mate higher
       // so we add/subtract level.
-      return (col_to_move == col::white)? (eval_min + level):(eval_max - level);
+      return (col_to_move == col::white) ? (eval_min + level) : (eval_max - level);
     }
     else
     {
@@ -560,9 +560,12 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
   assert(beta > alpha);
 
   search_ply++;
+  if (search_ply > search_info.highest_search_ply)
+    search_info.highest_search_ply = search_ply;
+
   if (search_ply > max_search_ply)
   {
-    std::cerr << "!!! Erroe: search_ply > " << max_search_ply << std::endl;
+    std::cerr << "!!! Error: search_ply > " << max_search_ply << std::endl;
   }
   search_info.node_counter++;
 
@@ -570,30 +573,45 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
   {
     return 0.0;
   }
-  // If there are no possible moves, the evaluation will check for such things as
-  // mate or stalemate which may happen before max_search_ply has been reached.
+
+  float score = (_col_to_move == col::white) ? evaluate_position(_col_to_move, search_ply, dont_evaluate_zero_moves) :
+                                            -evaluate_position(_col_to_move, search_ply, dont_evaluate_zero_moves);
+
   if (_movelist.size() == 0)
   {
-    return (_col_to_move == col::white)? evaluate_position(_col_to_move, search_ply):
-                                         -evaluate_position(_col_to_move, search_ply);
+    return score;
   }
 
-  float score = evaluate_position(_col_to_move, search_ply);
-
-  if(score >= beta) {
-      return beta;
+  if (score >= beta)
+  {
+    return beta;
   }
 
-  if(score > alpha) {
-      alpha = score;
+  if (score > alpha)
+  {
+    alpha = score;
   }
 
   float move_score = -infinity;
-  // Collect the best value from all possible moves
+  // Collect the best value from all possible "capture-moves"
   for (uint8_t i = 0; i < static_cast<uint8_t>(_movelist.size()); i++)
   {
+    // When quiesence-search is called from negamax...() _movelist contains
+    // all legal moves, so I extract the captures. (when it's called
+    // recursively from inside this method, then _movelist contains only
+    // captures.)
     if (!(_movelist[i].properties() & move_props_capture))
+    {
+      // All the captures have been sorted and come in sequence early
+      // in the list, but there can be a non-capture PV-move as the very
+      // first move. So if we find a none-capture anywhere after the first
+      // move, then we're done.
+      if (i == 0)
         continue;
+      else
+        break;
+    }
+
     // Copy current board into the preallocated board for this search_ply.
     Bitboard::level_boards[search_ply] = *this;
 
@@ -602,6 +620,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
     level_boards[search_ply].make_move(_movelist[i], gentype::captures);
+    //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
     move_score = -level_boards[search_ply].Quiesence_search(search_ply, -beta, -alpha, max_search_ply);
 
     // Restore game history to current position.
@@ -621,15 +640,9 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
           search_info.first_beta_cutoffs++;
         return beta;
       }
-      // Update alpha value-
+      // Update alpha value.
       // We have found a better move.
       alpha = move_score;
-    }
-
-    if (!time_left)
-    {
-      search_info.search_interrupted = true;
-      return 0.0;
     }
   }
   return alpha;
@@ -675,12 +688,11 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
   // mate or stalemate which may happen before max_search_ply has been reached.
   if (_movelist.size() == 0)
   {
-
     // ---------------------------------------
     best_move = NO_MOVE;
     element.best_move = NO_MOVE;
-    element.best_move._evaluation = (_col_to_move == col::white)? evaluate_position(_col_to_move, search_ply):
-                                                                  -evaluate_position(_col_to_move, search_ply);
+    element.best_move._evaluation = (_col_to_move == col::white) ? evaluate_position(_col_to_move, search_ply) :
+                                                                   -evaluate_position(_col_to_move, search_ply);
     element.search_ply = search_ply;
     // ---------------------------------------
     return element.best_move._evaluation;
@@ -712,7 +724,8 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     History_state saved_history_state = history.get_state();
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    level_boards[search_ply].make_move(_movelist[i], (search_ply < max_search_ply)? gentype::all:gentype::captures);
+    level_boards[search_ply].make_move(_movelist[i], (search_ply < max_search_ply) ? gentype::all : gentype::captures);
+    //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
     move_score = -level_boards[search_ply].negamax_with_pruning(search_ply, -beta, -alpha, best_move_dummy, max_search_ply);
 
     // Restore game history to current position.
@@ -732,7 +745,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     }
     if (move_score > alpha)
     {
-      // Update alpha value-
+      // Update alpha value.
       // We have found a better move.
       best_move = _movelist[i];
       best_move._evaluation = move_score;

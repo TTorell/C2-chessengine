@@ -61,12 +61,16 @@ class Bitboard_with_utils: public Bitboard
       return _col_to_move;
     }
 
-    int no_of_moves()
+    int get_no_of_moves()
     {
       return _movelist.size();
     }
 
-    int figure_out_last_move(const Bitboard& new_position, Bitmove& m) const;
+    Bitmove get_first_move()
+    {
+      assert(_movelist.size() > 0);
+      return _movelist[0];
+    }
 
     int get_move_index(const Bitmove& move) const
     {
@@ -79,6 +83,8 @@ class Bitboard_with_utils: public Bitboard
       }
       return -1;
     }
+
+    int figure_out_last_move(const Bitboard& new_position, Bitmove& m) const;
 
     void clear_game_history()
     {
