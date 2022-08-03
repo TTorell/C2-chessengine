@@ -636,7 +636,7 @@ TEST_CASE("find_best_move")
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Ng8-e7");
+    REQUIRE(ss.str() == "Ng8-h6");
     game.read_position_FEN(reverse_FEN_string(FEN_string));
     game.init();
     bestmove = game.engine_go(config_params, "10000");
@@ -644,7 +644,7 @@ TEST_CASE("find_best_move")
     ss.clear();
     ss.str("");
     ss << bestmove;
-    REQUIRE(ss.str() == "Ng1-e2");
+    REQUIRE(ss.str() == "Ng1-h3");
   }
 
   SECTION("mate in one")
@@ -757,7 +757,7 @@ TEST_CASE("find_best_move")
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Qb6-c5");
+    REQUIRE(ss.str() == "Nb8-d7");
     game.read_position_FEN(reverse_FEN_string(FEN_string));
     game.init();
     bestmove = game.engine_go(config_params, "");
@@ -765,7 +765,7 @@ TEST_CASE("find_best_move")
     ss.clear();
     ss.str("");
     ss << bestmove;
-    REQUIRE(ss.str() == "Qb3-c4");
+    REQUIRE(ss.str() == "Nb1-d2");
   }
 
   SECTION("examining: strange rook-move")
@@ -777,7 +777,7 @@ TEST_CASE("find_best_move")
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Rc8-c4");
+    REQUIRE(ss.str() == "Nd3-c1+");
     std::cout << FEN_string << std::endl;
     std::cout << reverse_FEN_string(FEN_string) << std::endl;
     game.read_position_FEN(reverse_FEN_string(FEN_string));
@@ -787,7 +787,7 @@ TEST_CASE("find_best_move")
     ss.clear();
     ss.str("");
     ss << bestmove;
-    REQUIRE(ss.str() == "Nd6-c8+");
+    REQUIRE(ss.str() == "Nd6-c4");
   }
 
 }
