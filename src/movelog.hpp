@@ -12,19 +12,19 @@ namespace C2_chess
 class Movelog
 {
   protected:
-    col _col_to_start;
+    color _col_to_start;
     uint16_t _first_moveno;
     std::vector<Bitmove> _list;
 
     public:
     Movelog() :
-        _col_to_start(col::white),
+        _col_to_start(color::white),
         _first_moveno(1),
         _list { }
     {
     }
 
-    Movelog(col col_to_start, uint16_t first_moveno):
+    Movelog(color col_to_start, uint16_t first_moveno):
         _col_to_start(col_to_start),
         _first_moveno(first_moveno),
         _list { }
@@ -36,7 +36,7 @@ class Movelog
       _list.push_back(move);
     }
 
-    void clear_and_init(col col_to_start, uint16_t first_moveno)
+    void clear_and_init(color col_to_start, uint16_t first_moveno)
     {
       _col_to_start = col_to_start;
       _first_moveno = first_moveno;

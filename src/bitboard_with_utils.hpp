@@ -28,7 +28,7 @@ class Bitboard_with_utils: public Bitboard
 
     bool run_mg_test_case(uint32_t testnum, const std::string& FEN_string);
 
-    std::vector<std::string> convert_moves_to_UCI(const std::vector<std::string>& moves, col col_to_move);
+    std::vector<std::string> convert_moves_to_UCI(const std::vector<std::string>& moves, color col_to_move);
 
   public:
 
@@ -42,7 +42,7 @@ class Bitboard_with_utils: public Bitboard
       return _hash_tag;
     }
 
-    std::ostream& write_cmdline_style(std::ostream& os, outputtype ot, col from_perspective) const;
+    std::ostream& write_cmdline_style(std::ostream& os, outputtype ot, color from_perspective) const;
 
     int add_mg_test_position(const std::string& filename);
 
@@ -54,11 +54,11 @@ class Bitboard_with_utils: public Bitboard
 
     void make_UCI_move(const std::string& UCI_move);
 
-    float evaluate_position(col col_to_move, uint8_t level) const;
+    float evaluate_position(color col_to_move, uint8_t level, bool evaluate_zero_moves = true) const;
 
-    col get_col_to_move() const
+    color get_col_to_move() const
     {
-      return _col_to_move;
+      return _side_to_move;
     }
 
     int get_no_of_moves()

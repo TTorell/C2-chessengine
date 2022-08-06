@@ -48,7 +48,7 @@ enum class piecetype
   Undefined
 };
 
-enum class col
+enum class color
 {
   white = 0,
   black = 1

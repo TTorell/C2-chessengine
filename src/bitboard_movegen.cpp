@@ -14,10 +14,10 @@ namespace C2_chess
 
 void Bitboard::find_long_castling()
 {
-  uint64_t King_initial_square = (_col_to_move == col::white)? e1_square:e8_square;
-  if (_castling_rights & ((_col_to_move == col::white)? castling_right_WQ:castling_right_BQ))
+  uint64_t King_initial_square = (_side_to_move == color::white)? e1_square:e8_square;
+  if (_castling_rights & ((_side_to_move == color::white)? castling_right_WQ:castling_right_BQ))
   {
-    uint64_t castling_empty_squares = (castling_empty_squares_Q & ((_col_to_move == col::white)? lower_board_half:upper_board_half));
+    uint64_t castling_empty_squares = (castling_empty_squares_Q & ((_side_to_move == color::white)? lower_board_half:upper_board_half));
     // The squares between king and rook must be empty.
     if (castling_empty_squares & _all_pieces)
       return;
@@ -35,10 +35,10 @@ void Bitboard::find_long_castling()
 
 void Bitboard::find_short_castling()
 {
-  uint64_t King_initial_square = (_col_to_move == col::white)? e1_square:e8_square;
-  if (_castling_rights & ((_col_to_move == col::white)? castling_right_WK:castling_right_BK))
+  uint64_t King_initial_square = (_side_to_move == color::white)? e1_square:e8_square;
+  if (_castling_rights & ((_side_to_move == color::white)? castling_right_WK:castling_right_BK))
   {
-    uint64_t castling_empty_squares = (castling_empty_squares_K & ((_col_to_move == col::white)? lower_board_half:upper_board_half));
+    uint64_t castling_empty_squares = (castling_empty_squares_K & ((_side_to_move == color::white)? lower_board_half:upper_board_half));
     if (castling_empty_squares & _all_pieces)
       return;
     while (castling_empty_squares)
@@ -241,7 +241,7 @@ void Bitboard::find_Pawn_moves(gentype gt)
   // A pinned pawn on the King-file can possibly move.
   uint64_t pawns = _own->Pawns & ~(_pinned_pieces & ~King_file);
   // Shift chosen pawns one square ahead. Check if the new square is empty:
-  pawns = ((_col_to_move == col::white)? pawns >> 8:pawns << 8) & ~_all_pieces;
+  pawns = ((_side_to_move == color::white)? pawns >> 8:pawns << 8) & ~_all_pieces;
   if (gt == gentype::all)
   {
     // save moved pieces
@@ -249,19 +249,19 @@ void Bitboard::find_Pawn_moves(gentype gt)
     while (pawns)
     {
       to_square = popright_square(pawns);
-      add_pawn_move_check_promotion((_col_to_move == col::white)? to_square << 8:to_square >> 8, to_square);
+      add_pawn_move_check_promotion((_side_to_move == color::white)? to_square << 8:to_square >> 8, to_square);
     }
     // Check if any of the moved pawns can take another step forward
     if (moved_pawns)
     {
-      moved_pawns = (~_all_pieces) & ((_col_to_move == col::white)? ((moved_pawns >> 8) & rank[4]):
+      moved_pawns = (~_all_pieces) & ((_side_to_move == color::white)? ((moved_pawns >> 8) & rank[4]):
                                                                     ((moved_pawns << 8) & rank[5]));
       while (moved_pawns)
       {
         to_square = popright_square(moved_pawns);
         add_move(piecetype::Pawn,
                  move_props_none,
-                 (_col_to_move == col::white)? to_square << 16:to_square >> 16,
+                 (_side_to_move == color::white)? to_square << 16:to_square >> 16,
                  to_square);
       }
     }
@@ -269,39 +269,39 @@ void Bitboard::find_Pawn_moves(gentype gt)
   if (gt == gentype::captures)
   {
     // Include normal promotions in the "capture"-category
-    pawns = pawns & ((_col_to_move == col::white)? rank[8]:rank[1]);
+    pawns = pawns & ((_side_to_move == color::white)? rank[8]:rank[1]);
     while (pawns)
     {
       to_square = popright_square(pawns);
-      add_pawn_move_check_promotion((_col_to_move == col::white)? to_square << 8:to_square >> 8, to_square);
+      add_pawn_move_check_promotion((_side_to_move == color::white)? to_square << 8:to_square >> 8, to_square);
     }
   }
 
   // Check for pawn captures and ep.
   // Pinned pawns along King-diagonal may still be able to capture the pinning piece
   pawns = _own->Pawns & ~(_pinned_pieces & ~King_diagonal);
-  moved_pawns = (_col_to_move == col::white)? (pawns >> 9) & not_a_file:(pawns << 9) & not_h_file;
+  moved_pawns = (_side_to_move == color::white)? (pawns >> 9) & not_a_file:(pawns << 9) & not_h_file;
   while (moved_pawns)
   {
     to_square = popright_square(moved_pawns);
     if (to_square & _other->pieces)
-      add_pawn_move_check_promotion((_col_to_move == col::white)? to_square << 9:
+      add_pawn_move_check_promotion((_side_to_move == color::white)? to_square << 9:
                                                                   to_square >> 9,
                                     to_square);
     else if (to_square == _ep_square)
-      try_adding_ep_pawn_move((_col_to_move == col::white)? to_square << 9:to_square >> 9);
+      try_adding_ep_pawn_move((_side_to_move == color::white)? to_square << 9:to_square >> 9);
   }
   pawns = _own->Pawns & ~(_pinned_pieces & ~King_anti_diagonal);
-  moved_pawns = (_col_to_move == col::white)? (pawns >> 7) & not_h_file:(pawns << 7) & not_a_file;
+  moved_pawns = (_side_to_move == color::white)? (pawns >> 7) & not_h_file:(pawns << 7) & not_a_file;
   while (moved_pawns)
   {
     to_square = popright_square(moved_pawns);
     if (to_square & _other->pieces)
-      add_pawn_move_check_promotion((_col_to_move == col::white)? to_square << 7:
+      add_pawn_move_check_promotion((_side_to_move == color::white)? to_square << 7:
                                                                   to_square >> 7,
                                     to_square);
     else if (to_square == _ep_square)
-      try_adding_ep_pawn_move((_col_to_move == col::white)? to_square << 7:to_square >> 7);
+      try_adding_ep_pawn_move((_side_to_move == color::white)? to_square << 7:to_square >> 7);
   }
 }
 
@@ -314,8 +314,8 @@ void Bitboard::find_normal_legal_moves(gentype gt)
   find_Queen_Rook_and_Bishop_moves(gt);
   if (gt == gentype::all)
   {
-    if ((_col_to_move == col::white && _own->King == e1_square) ||
-        (_col_to_move == col::black && _own->King == e8_square))
+    if ((_side_to_move == color::white && _own->King == e1_square) ||
+        (_side_to_move == color::black && _own->King == e8_square))
     {
       find_short_castling();
       find_long_castling();
@@ -425,7 +425,7 @@ void Bitboard::try_adding_ep_pawn_move(uint64_t from_square)
 // on rank 5 (or 4 for black) where the king can be in a check
 // from the side when both the taken pawn and our own pawn
 // disappears from the rank.
-    uint64_t other_pawn_square = (_col_to_move == col::white)? _ep_square << 8:_ep_square >> 8;
+    uint64_t other_pawn_square = (_side_to_move == color::white)? _ep_square << 8:_ep_square >> 8;
 
 // A pin (of the other pawn) on the king-file poses no problem,
 // since our own pawn will block the file after the capture.
@@ -461,13 +461,13 @@ void Bitboard::add_pawn_move_check_promotion(uint64_t from_square,
   assert(std::has_single_bit(from_square) && (from_square & _own->Pawns) &&
          std::has_single_bit(to_square));
 
-  if ((_col_to_move == col::white)? to_square & not_row_8:to_square & not_row_1)
+  if ((_side_to_move == color::white)? to_square & not_row_8:to_square & not_row_1)
   {
     // Not a promotion.
     if (to_square & ~_all_pieces)
     {
       // To empty squares we only allow "straight" pawn-moves. (or e.p., already taken care of)
-      if (to_square == (_col_to_move == col::white)? from_square >> 8:from_square << 8)
+      if (to_square == (_side_to_move == color::white)? from_square >> 8:from_square << 8)
         add_move(piecetype::Pawn,
                  move_props_none,
                  from_square,
@@ -504,17 +504,17 @@ void Bitboard::find_pawn_moves_to_empty_square(uint64_t to_square, gentype gt)
 
   if (gt == gentype::all)
   {
-    from_square = (_col_to_move == col::white)? to_square << 8:to_square >> 8; // one step
+    from_square = (_side_to_move == color::white)? to_square << 8:to_square >> 8; // one step
     // No pawn moves possible if from_sqare doesn't contain a pawn of
     // color _col_to_move, which isn't pinned.
     if ((from_square & _own->Pawns) && (from_square & ~_pinned_pieces))
     {
       add_pawn_move_check_promotion(from_square, to_square);
     }
-    else if ((from_square & ~_all_pieces) && (to_square & ((_col_to_move == col::white)? row_4:row_5)))
+    else if ((from_square & ~_all_pieces) && (to_square & ((_side_to_move == color::white)? row_4:row_5)))
     {
       // No blocking piece and correct row for a for two-squares-pawn-move
-      (_col_to_move == col::white)? from_square <<= 8:from_square >>= 8; // two steps
+      (_side_to_move == color::white)? from_square <<= 8:from_square >>= 8; // two steps
       if ((from_square & _own->Pawns) && (from_square & ~_pinned_pieces))
       {
         add_move(piecetype::Pawn,
@@ -531,13 +531,13 @@ void Bitboard::find_pawn_moves_to_empty_square(uint64_t to_square, gentype gt)
   {
     if (_ep_square & not_h_file)
     {
-      from_square = (_col_to_move == col::white)? _ep_square << 7:_ep_square >> 9;
+      from_square = (_side_to_move == color::white)? _ep_square << 7:_ep_square >> 9;
       if (from_square & _own->Pawns)
         try_adding_ep_pawn_move(from_square);
     }
     if (_ep_square & not_a_file)
     {
-      from_square = (_col_to_move == col::white)? _ep_square << 9:_ep_square >> 7;
+      from_square = (_side_to_move == color::white)? _ep_square << 9:_ep_square >> 7;
       if (from_square & _own->Pawns)
         try_adding_ep_pawn_move(from_square);
     }
@@ -561,13 +561,13 @@ void Bitboard::find_moves_to_square(uint64_t to_square, gentype gt)
     // Pawn Captures (e.p. not possible)
     if (to_square & not_h_file)
     {
-      from_square = (_col_to_move == col::white)? to_square << 7:to_square >> 9;
+      from_square = (_side_to_move == color::white)? to_square << 7:to_square >> 9;
       if ((from_square & _own->Pawns) && (from_square & ~_pinned_pieces))
         add_pawn_move_check_promotion(from_square, to_square);
     }
     if (to_square & not_a_file)
     {
-      from_square = (_col_to_move == col::white)? to_square << 9:to_square >> 7;
+      from_square = (_side_to_move == color::white)? to_square << 9:to_square >> 7;
       if ((from_square & _own->Pawns) && (from_square & ~_pinned_pieces))
         add_pawn_move_check_promotion(from_square, to_square);
     }
@@ -667,17 +667,17 @@ void Bitboard::find_moves_after_check(gentype gt)
   find_moves_to_square(_checkers, gt);
 
   // Also check if the checker is a Pawn which can be taken e.p.
-  if (_ep_square & ((_col_to_move == col::white)? _checkers >> 8:_checkers << 8))
+  if (_ep_square & ((_side_to_move == color::white)? _checkers >> 8:_checkers << 8))
   {
     if (_ep_square & not_a_file)
     {
-      uint64_t from_square = (_col_to_move == col::white)? _ep_square << 9:_ep_square >> 7;
+      uint64_t from_square = (_side_to_move == color::white)? _ep_square << 9:_ep_square >> 7;
       if (from_square & _own->Pawns)
         try_adding_ep_pawn_move(from_square);
     }
     if (_ep_square & not_h_file)
     {
-      uint64_t from_square = (_col_to_move == col::white)? _ep_square << 7:_ep_square >> 9;
+      uint64_t from_square = (_side_to_move == color::white)? _ep_square << 7:_ep_square >> 9;
       if (from_square & _own->Pawns)
         try_adding_ep_pawn_move(from_square);
     }
@@ -732,13 +732,13 @@ void Bitboard::find_checkers_and_pinned_pieces()
   {
     if (King_file_idx != h)
     {
-      possible_checker = (_col_to_move == col::white)? _own->King >> 9:_own->King << 7;
+      possible_checker = (_side_to_move == color::white)? _own->King >> 9:_own->King << 7;
       if (possible_checker & _other->Pawns)
         _checkers |= possible_checker;
     }
     if (King_file_idx != a)
     {
-      possible_checker = (_col_to_move == col::white)? _own->King >> 7:_own->King << 9;
+      possible_checker = (_side_to_move == color::white)? _own->King >> 7:_own->King << 9;
       if (possible_checker & _other->Pawns)
         _checkers |= possible_checker;
     }
@@ -797,9 +797,9 @@ bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking) con
 // Check Pawn-threats
   if (_other->Pawns)
   {
-    if ((f_idx != h) && (_other->Pawns & ((_col_to_move == col::white)? to_square >> 9:to_square << 7)))
+    if ((f_idx != h) && (_other->Pawns & ((_side_to_move == color::white)? to_square >> 9:to_square << 7)))
       return true;
-    if ((f_idx != a) && (_other->Pawns & ((_col_to_move == col::white)? to_square >> 7:to_square << 9)))
+    if ((f_idx != a) && (_other->Pawns & ((_side_to_move == color::white)? to_square >> 7:to_square << 9)))
       return true;
   }
 
@@ -860,9 +860,9 @@ bool Bitboard::square_is_threatened2(uint64_t to_square, bool King_is_asking)
 // Check Pawn-threats
   if (_other->Pawns)
   {
-    if ((f_idx != h) && (_other->Pawns & ((_col_to_move == col::white)? to_square >> 9:to_square << 7)))
+    if ((f_idx != h) && (_other->Pawns & ((_side_to_move == color::white)? to_square >> 9:to_square << 7)))
       return true;
-    if ((f_idx != a) && (_other->Pawns & ((_col_to_move == col::white)? to_square >> 7:to_square << 9)))
+    if ((f_idx != a) && (_other->Pawns & ((_side_to_move == color::white)? to_square >> 7:to_square << 9)))
       return true;
   }
 

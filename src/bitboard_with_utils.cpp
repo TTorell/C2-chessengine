@@ -86,18 +86,18 @@ std::ostream& operator<<(std::ostream& os, const Bitmove& m)
   return os;
 }
 
-std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::vector<std::string>& moves, col col_to_move)
+std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::vector<std::string>& moves, color col_to_move)
 {
   std::vector<std::string> stripped_moves;
   for (const std::string& move : moves)
   {
     if (move == "0-0")
     {
-      (col_to_move == col::white)? stripped_moves.push_back("e1g1"):stripped_moves.push_back("e8g8");
+      (col_to_move == color::white)? stripped_moves.push_back("e1g1"):stripped_moves.push_back("e8g8");
     }
     else if (move == "0-0-0")
     {
-      (col_to_move == col::white)? stripped_moves.push_back("e1c1"):stripped_moves.push_back("e8c8");
+      (col_to_move == color::white)? stripped_moves.push_back("e1c1"):stripped_moves.push_back("e8c8");
     }
     else
     {
@@ -130,7 +130,7 @@ void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move)
   std::string out_move = "";
   while (std::getline(out_moves, out_move))
     out_moves_vector.push_back(out_move);
-  out_moves_vector = convert_moves_to_UCI(out_moves_vector, _col_to_move);
+  out_moves_vector = convert_moves_to_UCI(out_moves_vector, _side_to_move);
   bool found = false;
   int i = 0;
   for (const std::string& s : out_moves_vector)
@@ -178,7 +178,7 @@ int Bitboard_with_utils::add_mg_test_position(const std::string& filename)
 
   read_position(FEN_string);
   init_piece_state();
-  write(std::cout, outputtype::cmd_line_diagram, col::white);
+  write(std::cout, outputtype::cmd_line_diagram, color::white);
   find_legal_moves(gentype::all);
   std::cout << "Possible moves are:" << std::endl;
   write_movelist(std::cout);
@@ -245,7 +245,7 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum,
   if (!compare_move_lists(out_moves_vector, filtered_ref_moves_vector))
   {
     std::cout << "ERROR: Test " << testnum << " " << testcase_info << " failed!" << std::endl;
-    write(std::cout, outputtype::cmd_line_diagram, col::white);
+    write(std::cout, outputtype::cmd_line_diagram, color::white);
     std::cout << "Comparing program output with test case reference:" << std::endl;
     std::cout << "OUT: " << std::endl;
     write_movelist(std::cout, true);
@@ -308,23 +308,23 @@ int Bitboard_with_utils::test_move_generation(uint32_t single_testnum)
         }
 
       // Run the testcase for the position:
-      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "for inital color", gentype::all))
+      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "for inital side", gentype::all))
         failed_testcases.push_back(testnum);
 
-      // Run the same test-case with reversed colors.
+      // Run the same test-case with reversed sides.
       std::string reversed_FEN_string = reverse_FEN_string(matches[0]);
       //std::cout << "FEN_string2: " << reversed_FEN_string << std::endl;
       std::vector<std::string> reversed_ref_moves_vector = reverse_moves(ref_moves_vector);
-      if (!run_mg_test_case(testnum, reversed_FEN_string, reversed_ref_moves_vector, "for other color", gentype::all))
+      if (!run_mg_test_case(testnum, reversed_FEN_string, reversed_ref_moves_vector, "for other side", gentype::all))
         failed_testcases.push_back(testnum);
 
       // Run the above two testcases, but generate only captures
-      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "inital color only captures", gentype::captures))
+      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "inital side only captures", gentype::captures))
         failed_testcases.push_back(testnum);
 
       if (!run_mg_test_case(testnum, reversed_FEN_string,
                             reversed_ref_moves_vector,
-                            "other color only captures",
+                            "other side only captures",
                             gentype::captures))
         failed_testcases.push_back(testnum);
 
@@ -384,9 +384,9 @@ uint64_t Bitboard_with_utils::find_legal_squares(uint64_t sq, uint64_t mask, uin
   return Bitboard::find_legal_squares(sq, mask);
 }
 
-float Bitboard_with_utils::evaluate_position(col col_to_move, uint8_t level) const
+float Bitboard_with_utils::evaluate_position(color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
 {
-  return Bitboard::evaluate_position(col_to_move, level);
+  return Bitboard::evaluate_position(col_to_move, search_ply, evaluate_zero_moves);
 }
 
 int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitmove& m) const
@@ -411,7 +411,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
     return -2;
   }
 
-  if (new_position.get_color_to_move() == get_color_to_move())
+  if (new_position.get_side_to_move() == get_side_to_move())
   {
     return -3;
   }
@@ -425,7 +425,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
       move_props |= move_props_capture;
       from_square = piece_diff;
       p_type = get_piece_type(from_square);
-      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_col_to_move == col::black)? 2:7))))
+      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_side_to_move == color::black)? 2:7))))
         move_props |= move_props_promotion;
       //to_square = _own->pieces ^ new_position.other()->pieces; // TODO: _other->pieces ^ new_position.own()->pieces ?
       to_square = _other->pieces ^ new_position.own()->pieces;
@@ -435,7 +435,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
       from_square = _all_pieces & piece_diff;
       to_square = piece_diff ^ from_square;
       p_type = get_piece_type(from_square);
-      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_col_to_move == col::black)? 2:7))))
+      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_side_to_move == color::black)? 2:7))))
         move_props |= move_props_promotion;
       break;
     case 3:
@@ -457,7 +457,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
       break;
     case 4:
       // Could be 0-0 or 0-0-0
-      if (_col_to_move == col::black)
+      if (_side_to_move == color::black)
       {
         if (_own->King & e8_square & piece_diff)
         {

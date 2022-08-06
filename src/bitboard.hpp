@@ -38,7 +38,7 @@ class Bitboard
 
     uint64_t _hash_tag;
     std::deque<Bitmove> _movelist;
-    col _col_to_move = col::white;
+    color _side_to_move = color::white;
     uint16_t _move_number;
     uint8_t _castling_rights = castling_rights_none;
     bool _has_castled[2];
@@ -139,9 +139,9 @@ class Bitboard
 
     inline void set_ep_square(uint64_t ep_square);
 
-    void update_hash_tag(uint64_t square, col p_color, piecetype p_type);
+    void update_hash_tag(uint64_t square, color p_color, piecetype p_type);
 
-    inline void update_hash_tag(uint64_t square1, uint64_t square2, col p_color, piecetype type);
+    inline void update_hash_tag(uint64_t square1, uint64_t square2, color p_color, piecetype type);
 
     void update_col_to_move();
 
@@ -154,8 +154,8 @@ class Bitboard
     void count_castling(float& sum, float weight) const;
     void count_development(float& sum, float weight) const;
     void count_center_control(float& sum, float weight) const;
-    int count_threats_to_square(uint64_t square, col color) const;
-    float evaluate_position(col for_color, uint8_t level, bool evaluate_zero_moves = true) const;
+    int count_threats_to_square(uint64_t square, color side) const;
+    float evaluate_position(color for_side, uint8_t level, bool evaluate_zero_moves = true) const;
 
   public:
 
@@ -299,9 +299,9 @@ class Bitboard
       return _half_move_counter;
     }
 
-    col get_color_to_move() const
+    color get_side_to_move() const
     {
-      return _col_to_move;
+      return _side_to_move;
     }
 
     bool is_draw_by_50_moves() const;
@@ -331,7 +331,7 @@ class Bitboard
     float negamax_with_pruning(uint8_t level, float alpha, float beta, Bitmove& best_move, const uint8_t max_search_ply) const;
 
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
-    std::ostream& write(std::ostream& os, outputtype wt, col from_perspective) const;
+    std::ostream& write(std::ostream& os, outputtype wt, color from_perspective) const;
     std::ostream& write_movelist(std::ostream& os, bool same_line = false) const;
 
     void clear_search_info();

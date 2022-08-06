@@ -31,7 +31,7 @@ class Game
     bool _playing;
   public:
     Game(Config_params& config_params);
-    Game(col c, Config_params& config_params);
+    Game(color side, Config_params& config_params);
     Game(const Game&) = delete;
     Game(playertype pt1,
          playertype pt2,
@@ -44,7 +44,7 @@ class Game
 
     void init();
     void clear_chessboard();
-    void clear_move_log(col col_to_move, uint16_t move_number);
+    void clear_move_log(color col_to_move, uint16_t move_number);
     void setup_pieces();
     void init_board_hash_tag();
     void actions_after_a_move();
@@ -56,14 +56,14 @@ class Game
     bool has_time_left();
     void set_time_left(bool value);
     void save() const;
-    col get_col_to_move() const;
-    playertype get_playertype(const col& color) const;
-    void set_move_log_col_to_start(col c);
+    color get_col_to_move() const;
+    playertype get_playertype(const color& side) const;
+    void set_move_log_col_to_start(color c);
     void set_castling_state(const Castling_state& cs);
     void set_en_passant_square(int file, int rank);
     void set_half_move_counter(int half_move_counter);
     void set_moveno(int moveno);
-    std::ostream& write_chessboard(std::ostream& os, outputtype ot, col from_perspective) const;
+    std::ostream& write_chessboard(std::ostream& os, outputtype ot, color from_perspective) const;
     std::ostream& write_diagram(std::ostream& os) const;
     Shared_ostream& write_diagram(Shared_ostream& sos) const;
     std::ostream& write_movelog(std::ostream& os) const;

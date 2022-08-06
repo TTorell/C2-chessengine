@@ -5,7 +5,7 @@
 #include "game.hpp"
 #include "current_time.hpp"
 
-namespace // fileprivate namespace
+namespace // file-private namespace
 {
 C2_chess::Current_time current_time;
 
@@ -32,27 +32,27 @@ bool read_promotion_piecetype(C2_chess::piecetype& pt, char ch)
   return true;
 }
 
-std::ostream& write_piece_diagram_style(std::ostream& os, C2_chess::piecetype p_type, C2_chess::col color)
+std::ostream& write_piece_diagram_style(std::ostream& os, C2_chess::piecetype p_type, C2_chess::color side)
 {
   switch (p_type)
   {
     case C2_chess::piecetype::King:
-      os << ((color == C2_chess::col::white)? ("\u2654"):("\u265A"));
+      os << ((side == C2_chess::color::white)? ("\u2654"):("\u265A"));
       break;
     case C2_chess::piecetype::Queen:
-      os << ((color == C2_chess::col::white)? ("\u2655"):("\u265B"));
+      os << ((side == C2_chess::color::white)? ("\u2655"):("\u265B"));
       break;
     case C2_chess::piecetype::Rook:
-      os << ((color == C2_chess::col::white)? ("\u2656"):("\u265C"));
+      os << ((side == C2_chess::color::white)? ("\u2656"):("\u265C"));
       break;
     case C2_chess::piecetype::Bishop:
-      os << ((color == C2_chess::col::white)? ("\u2657"):("\u265D"));
+      os << ((side == C2_chess::color::white)? ("\u2657"):("\u265D"));
       break;
     case C2_chess::piecetype::Knight:
-      os << ((color == C2_chess::col::white)? ("\u2658"):("\u265E"));
+      os << ((side == C2_chess::color::white)? ("\u2658"):("\u265E"));
       break;
     case C2_chess::piecetype::Pawn:
-      os << ((color == C2_chess::col::white)? ("\u2659"):("\u265F"));
+      os << ((side == C2_chess::color::white)? ("\u2659"):("\u265F"));
       break;
     default:
       std::cerr << ("Undefined piece type in Piece::write_diagram_style") << std::endl;
@@ -121,7 +121,7 @@ static int back_to_main_menu()
 }
 
 // Method for the cmdline-interface
-static col white_or_black()
+static color white_or_black()
 {
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
 
@@ -129,23 +129,23 @@ static col white_or_black()
   bool try_again = true;
   while (try_again)
   {
-    cmdline << "Which color would you like to play ? [w/b]: ";
+    cmdline << "Which side would you like to play ? [w/b]: ";
     std::cin >> st;
     if (st[0] == 'w')
     {
-      return col::white;
+      return color::white;
       try_again = false;
     }
     else if (st[0] == 'b')
     {
-      return col::black;
+      return color::black;
       try_again = false;
 
     }
     else
       cmdline << "Enter w or b" << "\n";
   }
-  return col::white;
+  return color::white;
 }
 
 // Method for the cmdline-interface
@@ -160,8 +160,8 @@ void play_on_cmd_line(Config_params& config_params)
     {
       case 1:
         {
-        col color = white_or_black();
-        Game game(color, config_params);
+        color side = white_or_black();
+        Game game(side, config_params);
         game.setup_pieces();
         game.init();
         game.start();
@@ -173,7 +173,7 @@ void play_on_cmd_line(Config_params& config_params)
         {
         std::string input;
 
-        col human_color = white_or_black();
+        color human_color = white_or_black();
         Game game(human_color, config_params);
         std::string filename = get_stdout_from_cmd("cmd java -classpath \".\" ChooseFile");
         int status = game.read_position(filename);
@@ -341,7 +341,7 @@ int Bitboard::make_move(playertype player)
       move_props |= move_props_promotion;
     }
     if (move_props & move_props_promotion)
-      if ((_col_to_move == col::white)? from_rank_idx != 7:from_rank_idx != 2)
+      if ((_side_to_move == color::white)? from_rank_idx != 7:from_rank_idx != 2)
         continue;
     uint64_t from_square = file[from_file_idx] & rank[from_rank_idx];
     uint64_t to_square = file[to_file_idx] & rank[to_rank_idx];
@@ -357,7 +357,7 @@ int Bitboard::make_move(playertype player)
           move_props |= move_props_en_passant;
         break;
       case piecetype::King:
-        if (_col_to_move == col::white)
+        if (_side_to_move == color::white)
         {
           if ((from_square & e1_square) && (to_square & (g1_square | c1_square)))
             move_props |= move_props_castling;
@@ -382,7 +382,7 @@ int Bitboard::make_move(playertype player)
   } // while not read
 }
 
-std::ostream& Bitboard_with_utils::write_cmdline_style(std::ostream& os, outputtype ot, col from_perspective) const
+std::ostream& Bitboard_with_utils::write_cmdline_style(std::ostream& os, outputtype ot, color from_perspective) const
 {
   switch (ot)
   {
@@ -401,7 +401,7 @@ std::ostream& Bitboard_with_utils::write_cmdline_style(std::ostream& os, outputt
 //      this->write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
       break;
     case outputtype::cmd_line_diagram:
-      if (from_perspective == col::white)
+      if (from_perspective == color::white)
       {
         os << "###################" << std::endl;
         for (int i = 8; i >= 1; i--)
@@ -412,9 +412,9 @@ std::ostream& Bitboard_with_utils::write_cmdline_style(std::ostream& os, outputt
             os << "|";
             uint64_t square = file[j] & rank[i];
             if (square & _own->pieces)
-              write_piece_diagram_style(os, get_piece_type(square), _col_to_move);
+              write_piece_diagram_style(os, get_piece_type(square), _side_to_move);
             else if (square & _other->pieces)
-              write_piece_diagram_style(os, get_piece_type(square), other_color(_col_to_move));
+              write_piece_diagram_style(os, get_piece_type(square), other_color(_side_to_move));
             else
               os << "-";
           }
@@ -434,9 +434,9 @@ std::ostream& Bitboard_with_utils::write_cmdline_style(std::ostream& os, outputt
             os << "|";
             uint64_t square = file[j] & rank[i];
             if (square & _own->pieces)
-              write_piece_diagram_style(os, get_piece_type(square), _col_to_move);
+              write_piece_diagram_style(os, get_piece_type(square), _side_to_move);
             else if (square & _other->pieces)
-              write_piece_diagram_style(os, get_piece_type(square), other_color(_col_to_move));
+              write_piece_diagram_style(os, get_piece_type(square), other_color(_side_to_move));
             else
               os << "-";
           }

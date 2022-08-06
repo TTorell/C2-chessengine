@@ -32,7 +32,7 @@ Game::Game(Config_params& config_params) :
   init();
 }
 
-Game::Game(col color, Config_params& config_params) :
+Game::Game(color side, Config_params& config_params) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
@@ -41,8 +41,8 @@ Game::Game(col color, Config_params& config_params) :
     _config_params(config_params),
     _playing(false)
 {
-  _player_type[index(color)] = playertype::human;
-  _player_type[index(other_color(color))] = playertype::computer;
+  _player_type[index(side)] = playertype::human;
+  _player_type[index(other_color(side))] = playertype::computer;
   _chessboard.read_position(initial_position, true);
   init();
 }
@@ -73,7 +73,7 @@ void Game::init()
   _chessboard.init();
 }
 
-void Game::clear_move_log(col col_to_start, uint16_t move_number)
+void Game::clear_move_log(color col_to_start, uint16_t move_number)
 {
   _move_log.clear_and_init(col_to_start, move_number);
 }
@@ -83,12 +83,12 @@ void Game::setup_pieces()
   _chessboard.read_position(initial_position);
 }
 
-col Game::get_col_to_move() const
+color Game::get_col_to_move() const
 {
   return _chessboard.get_col_to_move();
 }
 
-std::ostream& Game::write_chessboard(std::ostream& os, outputtype ot, col from_perspective) const
+std::ostream& Game::write_chessboard(std::ostream& os, outputtype ot, color from_perspective) const
 {
   Bitboard_with_utils(_chessboard).write(os, ot, from_perspective);
   return os;
@@ -97,13 +97,13 @@ std::ostream& Game::write_chessboard(std::ostream& os, outputtype ot, col from_p
 std::ostream& Game::write_diagram(std::ostream& os) const
 {
   Bitboard_with_utils bwu(_chessboard);
-  if (_player_type[index(col::white)] == playertype::human)
-    bwu.write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
-  else if (_player_type[index(col::black)] == playertype::human)
-    bwu.write(os, outputtype::cmd_line_diagram, col::black) << std::endl;
+  if (_player_type[index(color::white)] == playertype::human)
+    bwu.write(os, outputtype::cmd_line_diagram, color::white) << std::endl;
+  else if (_player_type[index(color::black)] == playertype::human)
+    bwu.write(os, outputtype::cmd_line_diagram, color::black) << std::endl;
   else
     // The computer is playing itself
-    bwu.write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
+    bwu.write(os, outputtype::cmd_line_diagram, color::white) << std::endl;
   return os;
 }
 
@@ -193,7 +193,7 @@ Bitmove Game::find_best_move(float& score, unsigned int max_search_ply)
   score = _chessboard.negamax_with_pruning(0, -infinity, infinity, best_move, max_search_ply);
   _chessboard.get_search_info().time_taken = steady_clock.toc_ms();
   _chessboard.get_search_info().score = score;
-  if (_chessboard.get_col_to_move() == col::white)
+  if (_chessboard.get_col_to_move() == color::white)
   {
     if (best_move == NO_MOVE && is_close(score, -100.0F))
     {
@@ -347,9 +347,9 @@ void Game::set_time_left(bool value)
   _chessboard.set_time_left(value);
 }
 
-playertype Game::get_playertype(const col& color) const
+playertype Game::get_playertype(const color& side) const
 {
-  return _player_type[index(color)];
+  return _player_type[index(side)];
 }
 
 void Game::start_new_game()

@@ -94,7 +94,7 @@ inline void Transposition_table::init_random_numbers()
   std::uniform_real_distribution<double> dist(0, pow(2, 64));
   for (int square_index = 0; square_index < 64; square_index++)
     for (int row = 1; row <= 8; row++)
-      for (int col = index(col::white); col <= index(col::black); col++)
+      for (int col = index(color::white); col <= index(color::black); col++)
         for (int type = index(piecetype::Queen); type <= index(piecetype::King); type++)
           _random_table[square_index][col][type] = round(dist(mt));
   _castling_rights[1] = round(dist(mt));
