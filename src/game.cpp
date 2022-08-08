@@ -168,8 +168,6 @@ void Game::actions_after_a_move()
   }
   else // Normal position
   {
-    cmdline << "current position evaluation: " << evaluation << "\n";
-    logfile << "current position evaluation: " << evaluation << "\n";
     if (_chessboard.is_draw_by_50_moves())
     {
       _chessboard.set_draw_by_50_moves();
@@ -225,15 +223,16 @@ Bitmove Game::find_best_move(float& score, unsigned int max_search_ply)
 Bitmove Game::incremental_search(const std::string& max_search_time, unsigned int max_search_ply)
 {
   // Incremental search, to have a best-move available as quickly as possible
-  // and it actually saves search time due to move-ordering.
-  // When searching incrementally we consider max_search_time.
+  // and it actually saves search time due to move-ordering. PV-moves from
+  // previous search depth will be searched first.
+  // When searching incrementally we stop searching after max_search_time.
 
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  std::vector<Bitmove> pv_list;
+  std::vector<Bitmove> pv_line;
   if (!max_search_time.empty())
   {
     _chessboard.start_timer_thread(max_search_time);
-    std::this_thread::sleep_for(std::chrono::microseconds(20));
+    //std::this_thread::sleep_for(std::chrono::microseconds(200));
   }
   else
     _chessboard.set_time_left(true);
@@ -268,9 +267,9 @@ Bitmove Game::incremental_search(const std::string& max_search_time, unsigned in
 
     if (has_time_left())
     {
-      _chessboard.get_pv_line(pv_list);
+      _chessboard.get_pv_line(pv_line);
       std::stringstream ss;
-      write_vector(pv_list, ss, true);
+      write_vector(pv_line, ss, true);
       logfile.write_search_info(_chessboard.get_search_info(), ss.str());
     }
 
@@ -332,10 +331,10 @@ Bitmove Game::engine_go(const Config_params& config_params, const std::string& m
   return _chessboard.last_move();
 }
 
-void Game::start_timer_thread(const std::string& max_search_time)
-{
-  _chessboard.start_timer_thread(max_search_time);
-}
+//void Game::start_timer_thread(const std::string& max_search_time)
+//{
+//  _chessboard.start_timer_thread(max_search_time);
+//}
 
 bool Game::has_time_left()
 {
@@ -359,7 +358,7 @@ void Game::start_new_game()
   logfile << "\nNew Game started\n";
   logfile << "----------------\n";
   logfile << "move number = " << _chessboard.get_move_number() << "\n";
-  logfile.write_config_params(_config_params);
+  logfile << _config_params << "\n";
   write_diagram(logfile) << "\n";
 }
 

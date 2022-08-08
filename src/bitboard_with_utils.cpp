@@ -86,6 +86,13 @@ std::ostream& operator<<(std::ostream& os, const Bitmove& m)
   return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const Config_params& params)
+{
+  os << "Configuration parameters:" << std::endl;
+  os << params.get_params_string() << std::endl;
+  return os;
+}
+
 std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::vector<std::string>& moves, color col_to_move)
 {
   std::vector<std::string> stripped_moves;

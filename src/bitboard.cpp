@@ -33,8 +33,8 @@ Bitboard Bitboard::level_boards[N_SEARCH_BOARDS_DEFAULT];
 Game_history Bitboard::history;
 
 Bitboard::Bitboard() :
-    _hash_tag(zero),
     _movelist(),
+    _hash_tag(zero),
     _side_to_move(color::white),
     _move_number(1),
     _castling_rights(castling_rights_none),
@@ -56,8 +56,8 @@ Bitboard::Bitboard() :
 }
 
 Bitboard::Bitboard(const Bitboard& bb) :
-    _hash_tag(bb._hash_tag),
     _movelist(bb._movelist),
+    _hash_tag(bb._hash_tag),
     _side_to_move(bb._side_to_move),
     _move_number(bb._move_number),
     _castling_rights(bb._castling_rights),
@@ -88,23 +88,34 @@ Bitboard::Bitboard(const Bitboard& bb) :
 
 Bitboard& Bitboard::operator=(const Bitboard& from)
 {
-  //  std::memcpy(this, &from, sizeof(Bitboard));
-  _hash_tag = from._hash_tag;
-  //_movelist = from._movelist;
-  _side_to_move = from._side_to_move;
-  _move_number = from._move_number;
-  _castling_rights = from._castling_rights;
-  _has_castled[0] = from._has_castled[0];
-  _has_castled[1] = from._has_castled[1];
-  _ep_square = from._ep_square;
-  _material_diff = from._material_diff;
-  _last_move = from._last_move;
-  _checkers = from._checkers;
-  _pinners = from._pinners;
-  _pinned_pieces = from._pinned_pieces;
-  _all_pieces = from._all_pieces;
-  _white_pieces = from._white_pieces;
-  _black_pieces = from._black_pieces;
+  const bool memcopy = true;
+
+  if (memcopy)
+  {
+    std::memcpy(static_cast<void*>(&this->_hash_tag),
+                static_cast<const void*>(&from._hash_tag),
+                sizeof(Bitboard) - sizeof(_movelist));
+  }
+  else
+  {
+    //_movelist = from._movelist;
+    _hash_tag = from._hash_tag;
+    _side_to_move = from._side_to_move;
+    _move_number = from._move_number;
+    _castling_rights = from._castling_rights;
+    _has_castled[0] = from._has_castled[0];
+    _has_castled[1] = from._has_castled[1];
+    _ep_square = from._ep_square;
+    _material_diff = from._material_diff;
+    _last_move = from._last_move;
+    _checkers = from._checkers;
+    _pinners = from._pinners;
+    _pinned_pieces = from._pinned_pieces;
+    _all_pieces = from._all_pieces;
+    _white_pieces = from._white_pieces;
+    _black_pieces = from._black_pieces;
+    _half_move_counter = from._half_move_counter;
+  }
   if (_side_to_move == color::white)
   {
     _own = &_white_pieces;
@@ -115,7 +126,6 @@ Bitboard& Bitboard::operator=(const Bitboard& from)
     _own = &_black_pieces;
     _other = &_white_pieces;
   }
-  _half_move_counter = from._half_move_counter;
   return *this;
 }
 
@@ -130,7 +140,7 @@ void Bitboard::init_board_hash_tag()
   {
     piece = popright_square(pieces);
     piecetype p_type = get_piece_type(piece);
-    color p_color = (piece & _own->pieces) ? _side_to_move : other_color(_side_to_move);
+    color p_color = (piece & _own->pieces)? _side_to_move:other_color(_side_to_move);
     update_hash_tag(piece, p_color, p_type);
   }
 
@@ -253,7 +263,7 @@ int Bitboard::read_position(const std::string& FEN_string, bool init_pieces)
   _own = &_white_pieces;
   _other = &_black_pieces;
   if (FEN_tokens[1] == "b")
-    update_col_to_move();
+    update_side_to_move();
   std::string castling_rights = FEN_tokens[2];
   _castling_rights = castling_rights_none;
   for (const char& cr : castling_rights)
@@ -371,14 +381,17 @@ bool Bitboard::is_draw_by_50_moves() const
   return _half_move_counter >= 50;
 }
 
-// This method will run in the timer_thread.
+// This method will run in the timer-thread.
+// max_search_time is in milliseconds
+// If time_left is set to false by another thread
+// this method returns and the timer-thread dies.
 void Bitboard::start_timer(const std::string& max_search_time)
 {
+  Bitboard::time_left = true;
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  logfile << "Timer Thread Started." << "\n";
+  logfile << "Timer Thread Started, time: " << max_search_time << "\n";
 
   double time = stod(max_search_time);
-  Bitboard::time_left = true;
   while (Bitboard::time_left)
   {
     uint64_t nsec_start = now.nanoseconds();
@@ -389,17 +402,18 @@ void Bitboard::start_timer(const std::string& max_search_time)
     if (time <= 0.0)
     {
       Bitboard::time_left = false;
-      break;
+      logfile << "Timer thread stopped." << "\n";
+      return;
     }
   }
-  logfile << "Timer Thread Stopped." << "\n";
+  logfile << "Timer thread: Time is out." << "\n";
 }
 
 void Bitboard::start_timer_thread(const std::string& max_search_time)
 {
-  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  assert(is_positive_number(max_search_time));
+  Bitboard::time_left = true;
   std::thread timer_thread(start_timer, max_search_time);
-  logfile << "Timer Thread Started: " << max_search_time << " milliseconds.\n";
   timer_thread.detach();
 }
 
@@ -464,15 +478,15 @@ int Bitboard::count_threats_to_square(uint64_t to_square, color side) const
   uint64_t tmp_all_pieces = _all_pieces;
   uint8_t f_idx = file_idx(to_square);
 
-  const Bitpieces& pieces = (side == color::white) ? _white_pieces : _black_pieces;
+  const Bitpieces& pieces = (side == color::white)? _white_pieces:_black_pieces;
 
   int count = 0;
   // Check Pawn-threats
   if (pieces.Pawns)
   {
-    if ((f_idx != h) && (pieces.Pawns & ((side == color::white) ? to_square << 7 : to_square >> 9)))
+    if ((f_idx != h) && (pieces.Pawns & ((side == color::white)? to_square << 7:to_square >> 9)))
       count++;
-    if ((f_idx != a) && (pieces.Pawns & ((side == color::white) ? to_square << 9 : to_square >> 7)))
+    if ((f_idx != a) && (pieces.Pawns & ((side == color::white)? to_square << 9:to_square >> 7)))
       count++;
   }
 
@@ -534,7 +548,7 @@ float Bitboard::evaluate_position(color col_to_move, uint8_t level, bool evaluat
     {
       // This is checkmate, we want to evaluate the quickest way to mate higher
       // so we add/subtract level.
-      return (col_to_move == color::white) ? (eval_min + level) : (eval_max - level);
+      return (col_to_move == color::white)? (eval_min + level):(eval_max - level);
     }
     else
     {
@@ -574,8 +588,8 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
     return 0.0;
   }
 
-  float score = (_side_to_move == color::white) ? evaluate_position(_side_to_move, search_ply, dont_evaluate_zero_moves) :
-                                            -evaluate_position(_side_to_move, search_ply, dont_evaluate_zero_moves);
+  float score = (_side_to_move == color::white)? evaluate_position(_side_to_move, search_ply, dont_evaluate_zero_moves):
+                                                 -evaluate_position(_side_to_move, search_ply, dont_evaluate_zero_moves);
 
   if (_movelist.size() == 0)
   {
@@ -691,8 +705,8 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     // ---------------------------------------
     best_move = NO_MOVE;
     element.best_move = NO_MOVE;
-    element.best_move._evaluation = (_side_to_move == color::white) ? evaluate_position(_side_to_move, search_ply) :
-                                                                   -evaluate_position(_side_to_move, search_ply);
+    element.best_move._evaluation = (_side_to_move == color::white)? evaluate_position(_side_to_move, search_ply):
+                                                                     -evaluate_position(_side_to_move, search_ply);
     element.search_ply = search_ply;
     // ---------------------------------------
     return element.best_move._evaluation;
@@ -724,7 +738,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     History_state saved_history_state = history.get_state();
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    level_boards[search_ply].make_move(_movelist[i], (search_ply < max_search_ply) ? gentype::all : gentype::captures);
+    level_boards[search_ply].make_move(_movelist[i], (search_ply < max_search_ply)? gentype::all:gentype::captures);
     //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
     move_score = -level_boards[search_ply].negamax_with_pruning(search_ply, -beta, -alpha, best_move_dummy, max_search_ply);
 

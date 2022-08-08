@@ -89,6 +89,8 @@ std::string to_binary(const T& x)
   return ss.str();
 }
 
+bool is_positive_number(const std::string& s);
+
 inline uint8_t file_idx(uint8_t bit_idx)
 {
   assert(bit_idx < 64);

@@ -12,6 +12,7 @@
 #include <regex>
 #include <vector>
 #include <thread>
+#include <algorithm>
 //#include <memory>
 //#include <array>
 //#include <utility>
@@ -63,9 +64,27 @@ std::string get_logfile_name()
   do
   {
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    ss.clear();
+    ss.str("");
     ss << "C2_log_" << std::put_time(localtime(&time), "%F-%T") << ".txt"; // ISO 8601 format.
   } while (std::filesystem::exists(ss.str()));
   return ss.str();
+}
+#include <iostream>
+#include <algorithm>
+
+bool is_positive_number(const std::string& s)
+{
+//    return std::ranges::all_of(s.begin(), s.end(),
+//                  [](char c){ return isdigit(c) != 0; });
+  if (s.empty())
+    return false;
+  for (const char& ch:s)
+  {
+    if (!std::isdigit(ch))
+      return false;
+  }
+  return true;
 }
 
 #ifdef __linux__

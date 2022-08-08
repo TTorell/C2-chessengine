@@ -36,8 +36,8 @@ class Bitboard
     static Bitboard level_boards[];
     static std::atomic<bool> time_left;
 
-    uint64_t _hash_tag;
     std::deque<Bitmove> _movelist;
+    uint64_t _hash_tag;
     color _side_to_move = color::white;
     uint16_t _move_number;
     uint8_t _castling_rights = castling_rights_none;
@@ -143,7 +143,7 @@ class Bitboard
 
     inline void update_hash_tag(uint64_t square1, uint64_t square2, color p_color, piecetype type);
 
-    void update_col_to_move();
+    void update_side_to_move();
 
     inline void update_state_after_king_move(const Bitmove& m);
 

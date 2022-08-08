@@ -10,6 +10,7 @@
 
 #include <string>
 #include <map>
+#include "shared_ostream.hpp"
 
 namespace C2_chess
 {
@@ -99,6 +100,11 @@ class Config_params
       auto search = _config_params.find(name);
       if (search != _config_params.end())
         search->second.set_value(value);
+      else
+      {
+        Shared_ostream& logfile = *(Shared_ostream::get_instance());
+        logfile << "Couldn't find config-parameter " << name << "\n";
+      }
     }
 
     std::string get_config_param(const std::string &name) const
@@ -121,6 +127,8 @@ class Config_params
       }
       return s;
     }
+
+    friend std::ostream& operator<<(std::ostream& os, const Config_params& m);
 };
 
 } // namespace C2_chess

@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include "bitboard.hpp"
+#include "config_param.hpp"
 
 namespace C2_chess
 {

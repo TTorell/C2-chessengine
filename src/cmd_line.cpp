@@ -242,7 +242,7 @@ void Game::start()
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
 
   logfile << "\nNew Game started\n\n";
-  logfile.write_config_params(_config_params);
+  logfile << _config_params;
   cmdline << "\n" << "New Game started" << "\n";
   // Init the hash tag for the initial board-position to
   // use in the Zobrist hash transposition-table.

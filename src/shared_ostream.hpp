@@ -6,7 +6,7 @@
 #include <iostream>
 //#include "move.hpp"
 #include "chessfuncs.hpp"
-#include "config_param.hpp"
+//#include "config_param.hpp"
 #include "movelog.hpp"
 #include "bitboard.hpp"
 #include "pgn_info.hpp"
@@ -68,7 +68,9 @@ namespace C2_chess
 // instead of checking _is_open. Didn,t think of that,
 // but all ostreams doesn't have an is_open() method.
 class Bitmove;
+class Config_parms;
 std::ostream& operator<<(std::ostream& os, const Bitmove& m);
+std::ostream& operator<<(std::ostream& os, const Config_params& params);
 
 class Shared_ostream
 {
@@ -240,6 +242,18 @@ class Shared_ostream
       return *this;
     }
 
+    Shared_ostream& operator<<(const Config_params& params)
+    {
+      std::lock_guard<std::mutex> locker(static_mutex);
+      if (_is_open)
+      {
+        std::stringstream ss;
+        ss << params;
+        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
+      }
+      return *this;
+    }
+
 //    void log_time_diff(uint64_t nsec_stop,
 //                       uint64_t nsec_start,
 //                       int search_level,
@@ -262,24 +276,14 @@ class Shared_ostream
         _os << s << std::flush;
     }
 
-    void write_config_params(const Config_params& params)
-    {
-      std::lock_guard<std::mutex> locker(static_mutex);
-      if (_is_open)
-      {
-        _os << std::endl << iso_8859_1_to_utf8("Configuration parameters:") << std::endl;
-        _os << iso_8859_1_to_utf8(params.get_params_string()) << std::endl;
-      }
-    }
-
-    void write_search_info(const Search_info& si, const std::string& pv_list)
+    void write_search_info(const Search_info& si, const std::string& pv_line)
     {
       std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
       {
         std::stringstream ss;
-        ss << "Evaluated on depth:" << static_cast<int>(si.max_search_depth) << " " << static_cast<int>(si.leaf_node_counter) << " nodes in " << si.time_taken << " milliseconds." << std::endl;
-        ss << "PV_list: " << pv_list << "score: " << si.score << std::endl;
+        ss << "\nEvaluated on depth:" << static_cast<int>(si.max_search_depth) << " " << static_cast<int>(si.leaf_node_counter) << " nodes in " << si.time_taken << " milliseconds." << std::endl;
+        ss << "PV_line: " << pv_line << "score: " << si.score << std::endl;
         ss << "beta_cutoffs: " << static_cast<int>(si.beta_cutoffs) << " first_beta_cutoffs: " << static_cast<float>(si.first_beta_cutoffs) / static_cast<float>(si.beta_cutoffs)
             << "%"
             << std::endl;

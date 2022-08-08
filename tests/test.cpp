@@ -21,6 +21,8 @@ using namespace C2_chess;
 namespace // file private namespace
 {
 Current_time steady_clock;
+std::ofstream ofs(get_logfile_name());
+Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
 
 std::string get_FEN_test_position(unsigned int n)
 {
@@ -621,10 +623,9 @@ TEST_CASE("evaluation, mate and stalemate")
 
 TEST_CASE("find_best_move")
 {
-  std::ofstream ofs(get_logfile_name());
-  Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
   logfile << "TEST STARTED" << "\n";
   Config_params config_params;
+  config_params.set_config_param("max_serch_level", "8");
   Game game(config_params);
 
   SECTION("examining:_strange_queen-move1")
@@ -636,7 +637,7 @@ TEST_CASE("find_best_move")
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Ng8-h6");
+    REQUIRE((ss.str() == "d7-d5" || ss.str() == "Ng8-h6"));
     game.read_position_FEN(reverse_FEN_string(FEN_string));
     game.init();
     bestmove = game.engine_go(config_params, "10000");
@@ -644,7 +645,7 @@ TEST_CASE("find_best_move")
     ss.clear();
     ss.str("");
     ss << bestmove;
-    REQUIRE(ss.str() == "d2-d4");
+    REQUIRE((ss.str() == "Ng1-e2" || ss.str() == "d2-d4"));
   }
 
   SECTION("mate in one")
@@ -868,8 +869,6 @@ TEST_CASE("three-fold repetition")
 
 TEST_CASE("figure_out_last_move_1")
 {
-  std::ofstream ofs(get_logfile_name());
-  Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
   logfile << "\n";
   Config_params config_params;
   Game game(config_params);
@@ -901,8 +900,6 @@ TEST_CASE("figure_out_last_move_1")
 
 TEST_CASE("figure_out_last_move_2")
 {
-  std::ofstream ofs(get_logfile_name());
-  Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
   logfile << "\n";
   Config_params config_params;
   Game game(config_params);

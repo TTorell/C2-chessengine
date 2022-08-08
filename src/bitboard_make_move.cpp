@@ -253,7 +253,7 @@ inline void Bitboard::update_hash_tag(uint64_t square1, uint64_t square2, color 
                 transposition_table._random_table[bit_idx(square2)][index(p_color)][index(p_type)]);
 }
 
-void Bitboard::update_col_to_move()
+void Bitboard::update_side_to_move()
 {
   _side_to_move = other_color(_side_to_move);
   if (_side_to_move == color::white)
@@ -441,7 +441,7 @@ void Bitboard::make_move(const Bitmove& m, gentype gt, bool add_to_history)
   }
   // Set up the board for other player:
   _last_move = m;
-  update_col_to_move();
+  update_side_to_move();
   if (_side_to_move == color::white)
     _move_number++;
   if (square_is_threatened(_own->King, false))
