@@ -633,7 +633,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
     History_state saved_history_state = history.get_state();
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    level_boards[search_ply].make_move(_movelist[i], gentype::captures);
+    level_boards[search_ply].make_move(_movelist[i], gentype::captures_and_promotions);
     //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
     move_score = -level_boards[search_ply].Quiesence_search(search_ply, -beta, -alpha, max_search_ply);
 

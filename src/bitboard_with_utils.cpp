@@ -100,11 +100,11 @@ std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::ve
   {
     if (move == "0-0")
     {
-      (col_to_move == color::white)? stripped_moves.push_back("e1g1"):stripped_moves.push_back("e8g8");
+      (col_to_move == color::white) ? stripped_moves.push_back("e1g1") : stripped_moves.push_back("e8g8");
     }
     else if (move == "0-0-0")
     {
-      (col_to_move == color::white)? stripped_moves.push_back("e1c1"):stripped_moves.push_back("e8c8");
+      (col_to_move == color::white) ? stripped_moves.push_back("e1c1") : stripped_moves.push_back("e8c8");
     }
     else
     {
@@ -240,6 +240,11 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum,
   {
     case gentype::captures:
       for (const std::string& m : ref_moves_vector)
+        if (m.find("x") != std::string::npos)
+          filtered_ref_moves_vector.push_back(m);
+      break;
+    case gentype::captures_and_promotions:
+      for (const std::string& m : ref_moves_vector)
         if (m.find("x") != std::string::npos || m.find("=") != std::string::npos)
           filtered_ref_moves_vector.push_back(m);
       break;
@@ -315,24 +320,32 @@ int Bitboard_with_utils::test_move_generation(uint32_t single_testnum)
         }
 
       // Run the testcase for the position:
-      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "for inital side", gentype::all))
+      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "for initial side", gentype::all))
         failed_testcases.push_back(testnum);
 
       // Run the same test-case with reversed sides.
       std::string reversed_FEN_string = reverse_FEN_string(matches[0]);
       //std::cout << "FEN_string2: " << reversed_FEN_string << std::endl;
       std::vector<std::string> reversed_ref_moves_vector = reverse_moves(ref_moves_vector);
-      if (!run_mg_test_case(testnum, reversed_FEN_string, reversed_ref_moves_vector, "for other side", gentype::all))
+      if (!run_mg_test_case(testnum,
+                            reversed_FEN_string,
+                            reversed_ref_moves_vector,
+                            "for other side",
+                            gentype::all))
         failed_testcases.push_back(testnum);
 
       // Run the above two testcases, but generate only captures
-      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "inital side only captures", gentype::captures))
+      if (!run_mg_test_case(testnum, FEN_string,
+                            ref_moves_vector,
+                            "initial side only captures and promotions",
+                            gentype::captures_and_promotions))
         failed_testcases.push_back(testnum);
 
-      if (!run_mg_test_case(testnum, reversed_FEN_string,
+      if (!run_mg_test_case(testnum,
+                            reversed_FEN_string,
                             reversed_ref_moves_vector,
-                            "other side only captures",
-                            gentype::captures))
+                            "other side only captures and promotions",
+                            gentype::captures_and_promotions))
         failed_testcases.push_back(testnum);
 
     }
@@ -432,7 +445,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
       move_props |= move_props_capture;
       from_square = piece_diff;
       p_type = get_piece_type(from_square);
-      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_side_to_move == color::black)? 2:7))))
+      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_side_to_move == color::black) ? 2 : 7))))
         move_props |= move_props_promotion;
       //to_square = _own->pieces ^ new_position.other()->pieces; // TODO: _other->pieces ^ new_position.own()->pieces ?
       to_square = _other->pieces ^ new_position.own()->pieces;
@@ -442,7 +455,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
       from_square = _all_pieces & piece_diff;
       to_square = piece_diff ^ from_square;
       p_type = get_piece_type(from_square);
-      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_side_to_move == color::black)? 2:7))))
+      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_side_to_move == color::black) ? 2 : 7))))
         move_props |= move_props_promotion;
       break;
     case 3:

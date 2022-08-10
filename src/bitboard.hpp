@@ -74,6 +74,12 @@ class Bitboard
 
     inline float get_piece_value(uint64_t square) const;
 
+    bool is_empty(uint64_t square) {return  square & ~_all_pieces;}
+
+    bool is_not_pinned(uint64_t square) {return  square & ~_pinned_pieces;}
+
+    bool is_promotion_square(uint64_t square){ return (_side_to_move == color::white) ? square & row_8 : square & row_1;}
+
     // ### Protected Methods for move-generation
     // -----------------------------------------
     void find_long_castling();

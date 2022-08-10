@@ -63,7 +63,8 @@ enum class playertype
 enum class gentype
 {
   all,
-  captures
+  captures,
+  captures_and_promotions
 };
 
 enum class outputtype

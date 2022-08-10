@@ -645,7 +645,7 @@ TEST_CASE("find_best_move")
     ss.clear();
     ss.str("");
     ss << bestmove;
-    REQUIRE((ss.str() == "Ng1-e2" || ss.str() == "d2-d4"));
+    REQUIRE((ss.str() == "Ng1-e2" || ss.str() == "Ng1-h3" || ss.str() == "d2-d4"));
   }
 
   SECTION("mate in one")
