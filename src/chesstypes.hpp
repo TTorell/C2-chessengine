@@ -5,6 +5,7 @@
 #include <bit>
 #include <cassert>
 #include <ostream>
+#include <limits>
 
 namespace C2_chess
 {

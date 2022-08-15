@@ -1067,14 +1067,23 @@ inline void Bitboard::add_move(piecetype p_type,
   // If it is, Then give it a high evaluation for the move-ordering,
   // so it'll be sorted as the first move.
   TT_element& tte = transposition_table.find(_hash_tag);
-  if (tte.best_move != NO_MOVE)
+  if (tte.is_initialized())
   {
     if (tte.best_move == new_move)
     {
+      //std::cout << "Sorting, best move: " << tte.best_move << ":" << new_move << std::endl;
       new_move._evaluation = infinity;
       _movelist.push_front(new_move);
       return;
     }
+    else
+    {
+      //std::cout << "Not Equal" << std::endl;
+    }
+  }
+  else
+  {
+    //std::cout << "TT-element hasn't been initialized" << std::endl;
   }
   if (move_props == move_props_none)
   {
@@ -1102,10 +1111,12 @@ inline void Bitboard::add_move(piecetype p_type,
 
 inline void Bitboard::sort_moves(std::deque<Bitmove>& movelist)
 {
+  // Start at the beginning of movelist and find the first move with
+  // evaluation 0. Sort all the moves up to that move.
   std::deque<Bitmove>::iterator end_it;
   for (end_it = movelist.begin(); end_it != movelist.end(); end_it++)
   {
-    if (std::abs(end_it->_evaluation) < 0.000000001)
+    if (std::abs(end_it->_evaluation) < epsilon)
       break;
   }
   if (end_it != movelist.begin())

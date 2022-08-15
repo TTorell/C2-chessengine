@@ -305,7 +305,7 @@ Bitmove Game::engine_go(const Config_params& config_params, const std::string& m
   if (!s.empty())
     use_incremental_search = (s == "true");
 
-  _chessboard.init_material_evaluation(); // TODO: Should this be placed somewhere else, init_piece_state()?
+  //_chessboard.init_material_evaluation(); // TODO: Should this be placed somewhere else, init_piece_state()?
 
   // Search for best move
   if (use_incremental_search)

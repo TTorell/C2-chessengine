@@ -162,9 +162,11 @@ void Bitboard::init_board_hash_tag()
 
 void Bitboard::init()
 {
-  history.clear();
+  transposition_table.clear();
   init_board_hash_tag();
+  history.clear();
   add_position_to_game_history();
+  _movelist.clear();
   find_legal_moves(gentype::all);
 }
 

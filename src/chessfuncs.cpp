@@ -246,7 +246,7 @@ bool regexp_grep(const std::string& line, const std::string& regexp_string, std:
   std::smatch m;
   std::regex r(regexp_string);
   bool found = (std::regex_search(line, m, r));
-  for (const std::string& s : m)
+  for (auto s : m)
     matches.push_back(s);
   return found;
 }
