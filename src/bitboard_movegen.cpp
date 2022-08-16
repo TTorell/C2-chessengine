@@ -499,7 +499,7 @@ void Bitboard::add_pawn_move_check_promotion(uint64_t from_square,
 // - to_square should be empty
 void Bitboard::find_pawn_moves_to_empty_square(uint64_t to_square, gentype gt)
 {
-  assert(std::has_single_bit(to_square) && is_empty(to_square));
+  assert(std::has_single_bit(to_square) && is_empty_square(to_square));
   uint64_t from_square;
 
   if (gt == gentype::all)
@@ -511,7 +511,7 @@ void Bitboard::find_pawn_moves_to_empty_square(uint64_t to_square, gentype gt)
     {
       add_pawn_move_check_promotion(from_square, to_square);
     }
-    else if (is_empty(from_square) && (to_square & ((_side_to_move == color::white) ? row_4 : row_5)))
+    else if (is_empty_square(from_square) && (to_square & ((_side_to_move == color::white) ? row_4 : row_5)))
     {
       // No blocking piece and correct row for a for two-squares-pawn-move
       (_side_to_move == color::white) ? from_square <<= 8 : from_square >>= 8; // second step
@@ -1009,7 +1009,10 @@ inline float Bitboard::get_piece_value(piecetype p_type) const
 inline float Bitboard::get_piece_value(uint64_t square) const
 {
   assert(std::has_single_bit(square));
-
+  if (is_empty_square(square))
+  {
+    return 0.0F;
+  }
   if ((_white_pieces.Pawns & square) || (_black_pieces.Pawns & square))
   {
     return get_piece_value(piecetype::Pawn);
@@ -1037,7 +1040,7 @@ inline float Bitboard::get_piece_value(uint64_t square) const
   return 0.0F;
 }
 
-// Moves which are "PV-moves" from the previous search. captures and
+// Moves which are "PV-moves" from the previous search, captures and
 // promotions get sorted according to a move-ordering scheme later. The
 // evaluation-field in the Bitmove struct is used for keeping the value
 // they'll be sorted by, even if that field was intentionally meant for
