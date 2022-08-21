@@ -2,25 +2,38 @@ C2-chessengine
 --------------
 
 This repository contains the code for a simple UCI chess-engine,
-written in C++. I started on it long ago, and returned to it occasionally.
-It doesn't play too well and it's kind of slow. It has been an interesting
-task though.
+written in C++. I started on it long ago, and return to it occasionally.
 
-It has beaten me a small number of times,
-(My hess-rating was once 1970 in long games)
+Up until recently it was slow because of my own original implementation and didn't 
+play so well mostly because of the "horizon effect". I didn't have a quiesence-search.
 
+Now I've implemented a bitboard-representation, added some move-ordering, changed my
+min-max algorithm into a negamax and added a quiesence-search.
+
+It has beaten me a number of times,
+(My chess-rating was once 1970 in long games.)
+
+You can learn a lot about chess-engines on internet and you get influenced by the
+solutions of others. So, it's not so original anymore. It's beginning to look more
+and more like most of the chess-engines out there but it's also a little faster and
+better than it was before. The concepts are public knowledge, but I've made my own
+implementations of them.
+
+It has definitely been an interesting task, though.
+
+Runnig it
+---------
 It requires another program to run it, a UCI-speaking chess GUI.
-There are some of them easily downloded from the web, SCID or Jerry-chess GUI,
+There are some of them easily downloaded from the web, Arena, SCID, Jerry-chess GUI,
 for instance. You can of course connect them to much better chess-engines
 than this one, The free Stockfish is a good one. (comes with Ubuntu to install
 with "sudo apt install stockfish".) The gui and the engine simply communicates
 through stdin and stdout.
 
-I've tried C2 mostly connected to Jerry on Ubuntu 20.04.
-(Just configure a new analysis-engine in Jerry (or SCID or whatever chess-GUI
-you choose) pointing out the executable C2 file.)
+(Just configure a new analysis-engine in the chess-GUI
+you choose and point out the executable C2 file.)
 If the engine is started from a working directory where you have write-permissions,
-it will log all commands and responses from/to the GUI in a file named command_log.txt
+it will log all commands and responses from/to the GUI in a file named C2_log_<date-and-time>.txt
 It plays, but I haven't implemented the analysis-commands yet.
 
 There is also a rudimentary, to say the least, command-line interface. Which I
@@ -35,101 +48,147 @@ starts C2, and to have java installed.)
 Linux:
 ------
 I normally compile it with gcc (g++) from within Eclipse on Ubuntu.
-The only linkage-flag needed seems to be -lpthread.
-And I use (among others) the dialect-compiler-flag -std=c++14, and
--o3 in a completely futile attempt to make it as fast as Fritz or Stockfish.
+The only linkage-flag needed seems to be -lpthread (Maybe not needed anymore).
+And I use (among others) the dialect-compiler-flag -std=c++2a (ISO C++ 20), and
+-o3 in a futile attempt to make it as fast as Fritz or Stockfish.
 I have added a CMakeLists.txt in the src-directory a while ago,
 so it should hopefully be possible to build it with cmake as well.
 
 Windows:
 --------
-Actually, I made it build on windows 10 too with the help of
-the Cmake file and I tried it with the free Visual studio Community
-edition there. Unfortunately it runs even a bit slower on windows,
-though I specified max optimization with the -O2 flag in CMakelist.txt.
+Don't think it will compile on windows after all changes I made,
+but a couple of years ago I made it build on windows 10 with the help of
+CMake and I tried it with the free Visual studio Community
+edition there. Unfortunately it seemed to run a bit slower on windows.
+Maybe I missed something.
 
+The code:
+---------
 The main routine is in C2.cpp.
-The chess-logic is in Board.cpp. 
+The chess-logic is in Bitboard.cpp, Bitboard_movegen.cpp, bitboard_make_move.cpp
+and game.cpp.
+
+You may get "multiply defined main routines" if you don't exclude either test.cpp
+or C2.cpp from your project in an IDE.
 
 How does it work?:
 ------------------
-To calculate the best move in a given position I use the
-min/max-algorithm with pruning of the "search-tree". No AI.
-There are some videos on youtube explaining how it works.
-The pruning took me a while to understand.
-(I've heard or read somewhere that it was ALan Turing who invented
-this algorithm for playing games, such as chess, long before there
-were any computers to do the job, and that he did it during a coffe
-break. True or not, he was a smart guy.)
+It uses a bitboard representation of the board.
+The position(s) of each piece-type of each color is represented by an unsigned
+64-bit integer (64 squares on the chess board) which enables the use of fast
+bit-operations and shift-instructions to query and navigate the board.
 
-It searches default about 7 moves ahead, because of performance
-issues, but this can be configured.
-And when judging the positions in the final search-tree nodes it
-has a reverance for materialistic concerns, however control of the
-center squares, devolopment and casteling etc. also plays minor parts
-in the judgement.
-( There are some weights, one for each evaluation category, inside board.cpp
-which can be tweaked up or down a little to change the evaluation of positions
-and thereby also affect the behaviour of the program.)
+Game history
+------------
+To be able to check for draw by repetition of moves I keep track of a whole game
+by storing the Zobrist hash-tags of the position after each move.
+When the GUI sends a new position I try to figure out the move made,
+assuming it is a continuation of the current game.
+If this is impossible, then a new game is started at the given position.
 
-If incremental_search is configured to true it will do an incremental searh for 
-the best move, starting at level 2 and up to max_search_level. So it will have
-a "best move" early to send back. If the GUI supplies a time-limit with the 
-"go movetime <timelimit>"-command it will naturally stop when the timelimit has 
-been reached and discard the last unfinished search.
+Move ordering
+-------------
+After finding the legal moves in a position, move-ordering takes place
+, so the pruning in the search algorithm will work more efficiently.
+(Actually the moves get their value to be sorted by when they are
+added into the move list. Pv-moves, captures and promotions are added 
+at the start of the move-list, other moves are added at the end. In this
+way I only have to sort the beginning of the list, until a "normal" move
+has been found.) 
+PV-moves (best moves) from the previous search, on a lower search depth,
+come first. Captures and promotions come next. I use an MVVLVA-approach
+(Most Valuable Victim, Least valuable Attacker).
 
-If incremental_search is false it "thinks" until it's ready (on my rather old
-lap-top computer, normally under 20 sekunds with search-level set to 7, faster
+Searching
+---------
+To get a best-move available as soon as possible we search incrementally,
+deeper and deeper until the time is out. This should also be
+faster than searching to the highest search-depth directly, because
+of the move-ordering which can put the PV-moves first in the list of
+moves, which means bigger "cut-offs" in the pruning.
+The analysis part (go infinite) has not been implemented yet.
+If the GUI supplies a time-limit with the 
+"go movetime <timelimit>"-command it will naturally stop when the time-limit
+has been reached and discard the last unfinished search.
+If movetime is not set it searches to MAX_SEARCH_LEVEL which
+can be configured. 
+
+Searching directly at a certain depth can be selected with a configuration
+parameter. Then it "thinks" until it's ready (on my rather old
+lap-top computer, normally under 15 seconds with search-level set to 8, faster
 as the position gets more simple, naturally.) and ignores the time-limits it 
 recieves together with the "go"-command from the GUI.
 
-It always comes up with the same move in a given position and a given timelimit.
-(No random beaviour or book moves yet). It cannot yet "ponder" when the opponent
- is thinking. It just waits for next input-command.
+It cannot yet "ponder" when the opponent is thinking. It just waits for next
+input-command.
 
-Zobrist hashing
----------------
-Evaluated positions will be stored in a transposition table and retrieved during
-the searh to speed it up. To generate "unique" hashtags for the positions I use
-a Zobrits algorithm and the hash-element are stored ina C++ unsorted_map.
-In each hash element I store {best_move, evaluation, searchlevel}.
-A retrieved hash-element reference will not be used if it has a higher level
-than the position which asked for it. (lower level means closer to the search-root
-and should be a better evaluation. In this case the contents of the retrived 
-hash-element reference will be overwritten when we have the new evaluation.
-If the position asked for is not present in the cash we will also get a refernce
-to a hash-element, but a new, default allocated one connected to the hashtag,
-to fill with the new evaluation we make. So there is only one access to the
-hash table. There's no need for an insert method.
+The search algorithm is a negamax with alpha-beta pruning.
+At maximal depth a quiesence-search takes over and continues searching deeper,
+only considering captures and promotions until a quiet position, with no such moves, 
+has been reached which can be evaluated with better confidence.
 
-What's wrong with it?:
-------------------------
-I update, and improve it once in a while when I feel for it. To make it really
-fast will probably require serious redesign. I think it copies too much data and
-claculates too much when traversing the "search-tree" going to a lower node.
-(copying the current board position, making the move, calculating all possible moves
-in the new position from scratch.) The board-representation is also way too clumsy
-compared to bitboards.
 
-You can stop reading here.
+Zobrist hash
+------------
+A transposition hash table is used to find already evaluated positions
+during the search on the current depth. The hash table is also used to
+find the (Principal variation) PV-line after the search.
+Evaluated positions will be stored in the transposition table and retrieved
+during the searh to speed it up. To generate "unique" hash-tags for the
+positions I use the Zobrits algorithm and the hash-elements are stored in a
+C++ unsorted_map. In each hash element I store {best_move, evaluation, searchlevel}
+for the position. A retrieved hash-element reference will not be used if it has
+a higher search-level than the position which asked for it. (lower level means closer
+to the search-root and should be a better evaluation, I think. In this case the contents
+of the retrieved  hash-element reference will be overwritten when we have the
+new evaluation. If the position asked for is not present in the cash we will
+also get a reference to a hash-element, but a new, default allocated one connected
+to the hash-tag, to fill with the new evaluation we make. So there is only one
+access to the hash table. There's no need for an insert method.
 
-The rest of this file is just curiosa, some speculations about
-improvements and a thought about the algorithm.
-No more useful info abot how to build or use the program.
-
------------------------------------------------------------------
-
-Next step may be to implement sorting of the possible moves in a position
-after search of a lower level, so the pruning will work more efficiently
-in the search on next level. (idea stolen from stockfish).
+Evaluation
+----------
+An improvement of the evaluation of a position is a "TODO:"
 
 The evaluation of material is done by scanning the board adding or
-subtracting each piece-value. This could be done at the start and saved 
-only in the initial board and then adjusted when a piece gets captured
-or in the case of pawn-promotion. I measured the total time spent in
-these evaluations for a whole search. It took some milliseconds, depressing.
+subtracting each piece-value. This is done at the start only in the
+initial board of a game and saved. It gets adjusted when a piece
+is captured or in the case of pawn-promotion.
 
- 
+However, I do some other evaluations too: control of the center squares,
+pawns in the center, castling, development etc. also plays minor parts
+in the judgement. This is mostly to make it play more human-like in the
+beginning of a game.
+
+(There are some weights, one for each evaluation category, inside board.cpp
+which can be tweaked up or down a little to change the evaluation of positions
+and thereby also affect the behavior of the program.)
+
+Configuration parameters
+------------------------
+I only have very few and probably only max-search-level and incremental-search will
+have any effect.
+
+
+Future improvements
+-------------------
+Name change, C2 is boring.
+
+Improving performance.
+
+Implementing the analysis function "go infinite" and writing out the PV-lines with
+the info command. At least I have a PV-list now. But how to get it as long as
+e.g. Stockfish's PV-lists remains a mystery too me, for the time being.
+
+Ponder
+
+Multi-PV
+
+Multi-threaded
+
+Adding AI to select moves would be interesting, but I don't have a clear
+picture of how to do it yet. NNUE seems interesting.
+
 I have thoughts about improving the evaluation of a position by making the
 weights depend on the current move number or simply turning off some of
 the evaluation categories after a couple of moves.
@@ -151,47 +210,17 @@ categories" such as bishops vs bishop and night, for instance, is
 almost only relevant to look for in fairly equal (and open, I know)
 positions. If there is a major difference in material we don't have to
 spend time on checking the "bishops-category".
-
 So, we can make some of the evaluations depend on the overall important
 material count category.
  
 It would also be fun to make C2 able to play against a version of itself, 
 with just slightly differently tweaked evaluation weights. The winner could
 then meet another C2 with a slightly, randomly, tweaked copy of the winner's
-weights etc, in some kind of evolution process, which in time (a very long
-time considering 20 seconds per move) could result in the optimal setting
-of the weights, if the process converges towards a result at all.
+weights etc, in some kind of evolution process, which in time could result
+in an optimal setting of the weights, if the process converges towards a
+result at all.
 
-Adding AI to select moves would be intresting, but I don't have a clear
-picture of how to do it yet. NNUE seems interesting.
 
-A thing about the Min/Max-algorithm I have thought about:
-All evaluations are done in the leaves of the search-three and
-almost always the reason to evalute is that we have reached the maximum
-search level. But such evaluations are hard to do if e.g. the last move
-was one where some piece was taken by another one. The min- or max-function
-isn't allowed to look any further. So, they don't know if the piece can
-be taken back or not. Suppose e.g.white would have stood much better after
-recapturing the queen. Didn't the program miss an opportunity here, because
-of min's forced "bad" evaluation, which in it's turn made max take the
-"wrong" decission and discard the variation.
-
-So, quite many of the evaluations will be completely wrong, because of
-the "material count evaluation category". How can the chess-engine still
-play decent chess?
-
-I made an experiment to continue the search down the "search-tree", just and
-only if the last move at max-level was a "take" or check, until we reached a node 
-where the last move wasn't a take or a check, and at that point evaluate and
-return. It worked for some seconds until we reached level 20 in some long
-move-series with only checks and takes, so that doesn't seem to be a feasible
-way to solve this problem. At least not for my slow chess-engine.
-(I had only pre-allocated 20 boards, one for each search level so the program
-crashed at level 21.) On the other hand, skipping checking for checks, there are
-only 32 pieces to be taken, and two of them are Kings. So a move-series with only
-takes can for sure never be longer than 30 moves. But U guess we would miss other
-important moves then, some mean checks and checkmates maybe. Must check if
-other chess-engines have solved this problem.
 
 
 

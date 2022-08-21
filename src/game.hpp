@@ -10,12 +10,13 @@
 
 namespace // fileprivate namespace
 {
-  std::string initial_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 }
 
 namespace C2_chess
 {
 class Config_params;
+struct Go_params;
+struct Position_params;
 class Castling_state;
 
 class Game
@@ -40,6 +41,7 @@ class Game
     Game operator=(const C2_chess::Game&) = delete;
 
 
+    int read_position(const Position_params& params);
     int read_position_FEN(const std::string& FEN_string);
 
     void init();
@@ -50,8 +52,8 @@ class Game
     void actions_after_a_move();
     void start();
     Bitmove find_best_move(float& score, unsigned int max_search_ply);
-    Bitmove incremental_search(const std::string& max_search_time, unsigned int max_search_level);
-    Bitmove engine_go(const Config_params& config_params, const std::string& max_search_time);
+    Bitmove incremental_search(const double max_search_time, unsigned int max_search_ply);
+    Bitmove engine_go(const Config_params& config_params, const Go_params& params);
     //void start_timer_thread(const std::string& max_search_time);
     bool has_time_left();
     void set_time_left(bool value);
@@ -72,7 +74,7 @@ class Game
     void figure_out_last_move(const Bitboard& new_position);
     void start_new_game();
     int read_position(const std::string& filename);
-    int make_a_move(float& score, const uint8_t max_search_level);
+    int make_a_move(float& score, const uint8_t max_search_ply);
     void make_move(const std::string& move);
     History_state get_game_history_state()
     {

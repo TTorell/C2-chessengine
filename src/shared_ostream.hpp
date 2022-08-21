@@ -4,12 +4,22 @@
 #include <thread>
 #include <mutex>
 #include <iostream>
-//#include "move.hpp"
+#include <concepts>
+#include <type_traits>
+#include <cstddef>
 #include "chessfuncs.hpp"
-//#include "config_param.hpp"
 #include "movelog.hpp"
 #include "bitboard.hpp"
 #include "pgn_info.hpp"
+
+// Declaration of the concept "arithmetic", which
+// is satisfied by any type 'T' such that for values 'a'
+// of type 'T', are integral or floating point numbers.
+template<typename T>
+concept arithmetic = requires(T a)
+{
+  requires std::is_arithmetic_v<T>;
+};
 
 namespace C2_chess
 {
@@ -147,49 +157,66 @@ class Shared_ostream
 
     Shared_ostream& operator<<(const std::string& s)
     {
-      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
+      {
+        std::lock_guard<std::mutex> locker(static_mutex);
         _os << iso_8859_1_to_utf8(s) << std::flush;
+      }
       return *this;
     }
 
-    Shared_ostream& operator<<(int i)
-    {
-      std::lock_guard<std::mutex> locker(static_mutex);
-      if (_is_open)
-        _os << iso_8859_1_to_utf8(std::to_string(i)) << std::flush;
-      return *this;
-    }
+//    Shared_ostream& operator<<(int i)
+//    {
+//      std::lock_guard<std::mutex> locker(static_mutex);
+//      if (_is_open)
+//        _os << iso_8859_1_to_utf8(std::to_string(i)) << std::flush;
+//      return *this;
+//    }
+//
+//    Shared_ostream& operator<<(float flt)
+//    {
+//      std::lock_guard<std::mutex> locker(static_mutex);
+//      if (_is_open)
+//        _os << iso_8859_1_to_utf8(std::to_string(flt)) << std::flush;
+//      return *this;
+//    }
+//
+//    Shared_ostream& operator<<(double dbl)
+//    {
+//      std::lock_guard<std::mutex> locker(static_mutex);
+//      if (_is_open)
+//        _os << iso_8859_1_to_utf8(std::to_string(dbl)) << std::flush;
+//      return *this;
+//    }
+//
+//    Shared_ostream& operator<<(long l)
+//    {
+//      std::lock_guard<std::mutex> locker(static_mutex);
+//      if (_is_open)
+//        _os << iso_8859_1_to_utf8(std::to_string(l)) << std::flush;
+//      return *this;
+//    }
+//
+//    Shared_ostream& operator<<(unsigned long ul)
+//    {
+//      std::lock_guard<std::mutex> locker(static_mutex);
+//      if (_is_open)
+//        _os << iso_8859_1_to_utf8(std::to_string(ul)) << std::flush;
+//      return *this;
+//    }
 
-    Shared_ostream& operator<<(float flt)
+    template <typename T>
+    requires arithmetic<T>
+    Shared_ostream& operator<<(T value)
     {
-      std::lock_guard<std::mutex> locker(static_mutex);
+      std::cerr << std::is_arithmetic_v<T> << std::endl;
       if (_is_open)
-        _os << iso_8859_1_to_utf8(std::to_string(flt)) << std::flush;
-      return *this;
-    }
-
-    Shared_ostream& operator<<(double dbl)
-    {
-      std::lock_guard<std::mutex> locker(static_mutex);
-      if (_is_open)
-        _os << iso_8859_1_to_utf8(std::to_string(dbl)) << std::flush;
-      return *this;
-    }
-
-    Shared_ostream& operator<<(long l)
-    {
-      std::lock_guard<std::mutex> locker(static_mutex);
-      if (_is_open)
-        _os << iso_8859_1_to_utf8(std::to_string(l)) << std::flush;
-      return *this;
-    }
-
-    Shared_ostream& operator<<(unsigned long ul)
-    {
-      std::lock_guard<std::mutex> locker(static_mutex);
-      if (_is_open)
-        _os << iso_8859_1_to_utf8(std::to_string(ul)) << std::flush;
+      {
+        std::stringstream ss;
+        ss << value;
+        std::lock_guard<std::mutex> locker(static_mutex);
+        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
+      }
       return *this;
     }
 
@@ -220,11 +247,11 @@ class Shared_ostream
     template<typename T>
     Shared_ostream& operator<<(const std::vector<T>& v)
     {
-      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
       {
         std::stringstream ss;
         write_vector(v, ss, true);
+        std::lock_guard<std::mutex> locker(static_mutex);
         _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
       return *this;
@@ -232,11 +259,11 @@ class Shared_ostream
 
     Shared_ostream& operator<<(const Bitmove& m)
     {
-      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
       {
         std::stringstream ss;
         ss << m;
+        std::lock_guard<std::mutex> locker(static_mutex);
         _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
       return *this;
@@ -244,51 +271,40 @@ class Shared_ostream
 
     Shared_ostream& operator<<(const Config_params& params)
     {
-      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
       {
         std::stringstream ss;
         ss << params;
+        std::lock_guard<std::mutex> locker(static_mutex);
         _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
       return *this;
     }
 
-//    void log_time_diff(uint64_t nsec_stop,
-//                       uint64_t nsec_start,
-//                       int search_level,
-//                       const BitMove& best_move,
-//                       float score)
-//    {
-//      std::lock_guard < std::mutex > locker(static_mutex);
-//      uint64_t timediff = (nsec_stop - nsec_start);
-//      // Log the time it took;
-//      std::string s = "time spent by C2 on search ply " + std::to_string(search_level) + " " + std::to_string(timediff/1.0e6) +
-//          " " + best_move.bestmove_engine_style() + " score = " + std::to_string(score);
-//      _os << iso_8859_1_to_utf8(s) << "\n";
-//    }
-
     // Method for a string which is already UTF-8 coded.
     void write_UTF8_string(std::string s)
     {
-      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
+      {
+        std::lock_guard<std::mutex> locker(static_mutex);
         _os << s << std::flush;
+      }
     }
 
     void write_search_info(const Search_info& si, const std::string& pv_line)
     {
-      std::lock_guard<std::mutex> locker(static_mutex);
       if (_is_open)
       {
         std::stringstream ss;
         ss << "\nEvaluated on depth:" << static_cast<int>(si.max_search_depth) << " " << static_cast<int>(si.leaf_node_counter) << " nodes in " << si.time_taken << " milliseconds." << std::endl;
         ss << "PV_line: " << pv_line << "score: " << si.score << std::endl;
         ss << "beta_cutoffs: " << static_cast<int>(si.beta_cutoffs) << " first_beta_cutoffs: " << static_cast<float>(si.first_beta_cutoffs) / static_cast<float>(si.beta_cutoffs)
-            << "%"
-            << std::endl;
+            * 100.0F
+           << "%"
+           << std::endl;
         ss << "hash_hits:" << static_cast<int>(si.hash_hits) << std::endl;
         ss << "highest search_ply:" << static_cast<int>(si.highest_search_ply) << std::endl;
+        std::lock_guard<std::mutex> locker(static_mutex);
         _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
     }

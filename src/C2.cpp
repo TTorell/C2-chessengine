@@ -16,17 +16,10 @@
 #include "game.hpp"
 #include "circular_fifo.hpp"
 #include "current_time.hpp"
+#include "uci.hpp"
 
 namespace C2_chess
 {
-
-std::string parse_go_command(const std::vector<std::string>& command_tokens, const std::string& var_name);
-
-int parse_command(const std::string& command,
-                  Circular_fifo& output_buffer,
-                  Game& game,
-                  Config_params& config_params,
-                  std::vector<std::string>& returned_tokens);
 
 void read_input(Circular_fifo* input_buffer, Game* game);
 
@@ -38,28 +31,9 @@ void print_help_txt();
 
 std::string engine_style(const Bitmove& move);
 
-// This method finds the token in the go-command following var_name.
-// Returns an empty string if not found.
-std::string parse_go_command(const std::vector<std::string>& command_tokens, const std::string& var_name)
-{
-  bool found = false;
-  std::string token = "";
-  for (const std::string& t : command_tokens)
-  {
-    if (found)
-    {
-      token = t;
-      break;
-    }
-    if (t == var_name)
-      found = true;
-  }
-  return token;
-}
-
 // Global booleans which can be set to false to stop input and output threads
 // and to tell if the engine succeeded to open the command_log.txt file, where
-// it e.g. saves all input and output commands it receives and sends during a
+// it e.g. logs all input and output commands it receives and sends during a
 // game or (in the future) also during an analysis task.
 // If the chess-GUI has been set to start the C2-engine from a working
 // directory which is write-protected for the user who starts it, then C2 will
@@ -67,87 +41,6 @@ std::string parse_go_command(const std::vector<std::string>& command_tokens, con
 
 std::atomic<bool> input_thread_running(true);
 std::atomic<bool> output_thread_running(true);
-
-// function for parsing input-commands from a chess-GUI
-// (some commands are taken care of already in ḿain().
-int parse_command(const std::string& command,
-                  Circular_fifo& output_buffer,
-                  Game& game,
-                  Config_params& config_params,
-                  std::vector<std::string>& returned_tokens)
-{
-  //Shared_ostream& logfile = *(Shared_ostream::get_instance());
-
-  // We know at this point that the command string isn't empty
-  std::vector<std::string> tokens = split(command, ' ');
-  if (tokens[0] == "uci")
-  {
-    output_buffer.put("id name C2 experimental");
-    output_buffer.put("id author Torsten Torell");
-    // Tell GUI which parameters are configurable.
-    for (auto it : config_params.get_map())
-    {
-      output_buffer.put(it.second.get_UCI_string_for_gui());
-    }
-    output_buffer.put("uciok");
-  }
-
-  // Since we are inside parse_command(), the engine is obviously ready.
-  if (tokens[0] == "isready")
-    output_buffer.put("readyok");
-
-  if (tokens[0] == "setoption")
-  {
-    // All my config-parameters have names which are only one token long.
-    std::string name = "";
-    std::string value = "";
-    bool read_name = false;
-    bool read_value = false;
-    for (auto token : tokens)
-    {
-      if (read_name)
-      {
-        name = token;
-        read_name = false;
-      }
-      if (read_value)
-      {
-        value = token;
-        read_value = false;
-      }
-      if (token == "name")
-        read_name = true;
-      if (token == "value")
-        read_value = true;
-    }
-    if (!(name.empty() || value.empty()))
-    {
-      config_params.set_config_param(name, value);
-    }
-  }
-  if (tokens[0] == "position")
-  {
-    // Discard the first 13 characters, "position fen ", from the command.
-    std::string fen_string = command.substr(13, command.size() - 12);
-    // The information about the new requested position comes in
-    // Forsyth–Edwards Notation.
-    // Read the FEN-coded position from the GUI command and set up
-    // the board accordingly.
-    game.read_position_FEN(fen_string);
-    // print the position to the logfile
-    // game.write_diagram(logfile) << "\n";
-  }
-  // To implement go I needed some variables not available here,
-  // So I took care of it in main() instead.
-  if (tokens[0] == "go")
-  {
-    returned_tokens = tokens;
-    return 1;
-  }
-  // Otherwise just ignore the command.
-  returned_tokens = tokens;
-  return 0;
-}
 
 // This method will run in the input_thread.
 void read_input(Circular_fifo* input_buffer, Game* game)
@@ -256,7 +149,7 @@ int main(int argc, char* argv[])
 {
 
 // The engine can log all communication with GUI, and
-// other stuff to the command_log.txt file.
+// other stuff to a logfile.
 // This requires that the engine has been started by
 // the GUI from a directory where it has write-permisson.
 // And that's of course where you can find the logfile.
@@ -266,23 +159,6 @@ int main(int argc, char* argv[])
 
 // Open a shared_ostream for the cmdline-interface:
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
-
-  if (argc > 1 && strcmp(argv[1], "-test") == 0)
-  {
-    Bitboard_with_utils chessboard;
-    const char* const preferred_test_exec_dir = "/home/torsten/eclipse-workspace/C2-chessengine";
-    if (!check_execution_dir(preferred_test_exec_dir))
-      return false;
-    std::string arg = "";
-    if (argc > 2)
-      arg = argv[2];
-    bool result = chessboard.bitboard_tests(arg);
-    if (!result)
-      std::cout << "TESTS FAILED!" << std::endl;
-//    if (old_mg_tests(0) != 0)
-//      std::cout << "OLD TESTS FAILED!" << std::endl;
-    return 0;
-  }
 
   std::cout << "C2 experimental chess-engine" << std::endl;
 
@@ -302,37 +178,40 @@ int main(int argc, char* argv[])
     play_on_cmd_line(config_params);
     return 0;
   }
-// Apparently it's not a cmd-line game the user wants,
-// to begin with at least. There's another way of entering
-// command-line mode by sending "cmd" to the running chess-
-// engine.
+
+  // Apparently it's not a cmd-line game the user wants,
+  // to begin with at least. There's another way of entering
+  // command-line mode by sending "cmd" to the running chess-
+  // engine.
   cmdline.close(); // Will only set an _is_open bool to false.
 
-// Allow --help as well as -help
+  // Allow --help as well as -help
   if (argc > 1 && regexp_match(argv[1], "-{1,2}help"))
   {
     print_help_txt();
     return 0;
   }
 
-// The engine needs to store commands from the GUI until it's
-// ready to read them.
+  // The engine needs to store commands from the GUI until it's
+  // ready to read them.
   Circular_fifo input_buffer;
 
-// It's not important to buffer output commands, but I do it anyway.
-// ( symmetry above all)
+  // It's not important to buffer output commands, but I do it anyway.
+  // ( symmetry above all)
   Circular_fifo output_buffer;
 
-// Create an instance of the Game class.
+  // Create an instance of the Game class.
   Game game(config_params);
 
-// Thread which receives input commands and puts them in the
-// ipput_buffer, While the main engine process is "thinking"
-// about other things.
+  // Thread which receives input commands and puts them in the
+  // ipput_buffer, While the main engine process is "thinking"
+  // about other things.
   std::thread input_thread(read_input, &input_buffer, &game);
 
 // Thread which buffers output commands from the engine.
   std::thread output_thread(write_output, &output_buffer);
+
+  UCI uci;
 
   std::string command;
 
@@ -341,62 +220,71 @@ int main(int argc, char* argv[])
   {
     // Processing the GUI commands
     command = input_buffer.get();
-    if (!command.empty())
+    if (command.empty())
     {
-      if (command == "quit")
-      {
-        break;
-      }
-      if (command == "cmd")
-      {
-        close_threads(input_thread, output_thread);
-        // Tell the cmdline instance to be ready for
-        // writing to cout.
-        cmdline.open();
-        play_on_cmd_line(config_params);
-        break;
-      }
-      if (command == "ucinewgame")
-      {
-        // We have nothing, but the move log in the Game class,
-        // to clean up before starting a new game. Maybe we could
-        // close the logfile and start a new one, but for now everything
-        // is logged until the GUI closes the engine down by a quit command.
-        // game.clear_move_log();
-        // logfile << "New game started\n";
-        // logfile.write_config_params(config_params);
-        continue;
-      }
-
-      // Other commands, "uci", "position" etc, are sent to the parse_command() function and most
-      // of them are also taken care of there
-      std::vector<std::string> command_tokens; // will contain tokens from the following parsing.
-      int rc = parse_command(command, output_buffer, game, config_params, command_tokens);
-      if (rc == 1) // This means go ...
-      {
-        // Init the main chess board with preserved position
-        // and calculate all possible moves.
-        // game.init();
-
-        // logfile << "go command_tokens:" << "\n";
-        // for (std::string token:command_tokens)
-        //   logfile << token << "\n";
-
-        // Get the time-limit from the go-command, if there is one.
-        std::string max_search_time = parse_go_command(command_tokens, "movetime");
-        if (!max_search_time.empty())
-        {
-          logfile << "max_search_time = " << max_search_time << " milliseconds\n";
-        }
-        // Find the best move
-        Bitmove bestmove = game.engine_go(config_params, max_search_time);
-        output_buffer.put("bestmove " + engine_style(bestmove));
-      }
+      std::this_thread::sleep_for(std::chrono::microseconds(50));
+      continue;
     }
-    //this_thread::sleep_for(milliseconds(3));
-  }
-  close_threads(input_thread, output_thread);
-  ofs.close();
-  return 0;
+
+    uci_cmd uci_command = uci.parse_command(command, output_buffer, config_params);
+
+    if (uci_command == uci_cmd::go)
+    {
+      // (try to) Find the best move in the position
+      Bitmove bestmove = game.engine_go(config_params, uci.get_go_params());
+      output_buffer.put("bestmove " + engine_style(bestmove));
+      continue;
+    }
+
+    // The stop and quit commands are first taken care of in the
+    // input thread to stop the search-thread if it's searching.
+    // but the commands are also put in the input-buffer for
+    // this main-thread to read.
+    if (uci_command == uci_cmd::quit)
+    {
+      break;
+    }
+    if (uci_command == uci_cmd::stop)
+    {
+      // We have already stopped searching when we reach this code.
+      continue;
+    }
+
+    if (uci_command == uci_cmd::position)
+    {
+      game.read_position(uci.get_position_params());
+    }
+
+    if (uci_command == uci_cmd::ucinewgame)
+    {
+      // We have nothing to clean up before starting a new game.
+      // It will be taken care of when the first position is sent
+      // from the GUI.
+      // Maybe we could close the logfile and start a new one, but
+      // for now everything is logged until the GUI closes the engine
+      // down by a quit command.
+      continue;
+    }
+
+    // this is a homemade command specific for this engine.
+    if (uci_command == uci_cmd::cmd)
+    {
+      close_threads(input_thread, output_thread);
+      // Tell the cmdline instance to be ready for
+      // writing to cout.
+      cmdline.open();
+      // Starting command-line play
+      play_on_cmd_line(config_params);
+      break;
+    }
+    if (uci_command == uci_cmd::unknown)
+    {
+      logfile << "Unknown UCI-command:/n" << command << "\n";
+      continue;
+    }
+}
+close_threads(input_thread, output_thread);
+ofs.close();
+return 0;
 }
 

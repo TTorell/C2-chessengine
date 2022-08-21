@@ -11,7 +11,7 @@ namespace C2_chess
 {
 
 // template for enum class
-// So the enum-value can be used as an int-index
+// So the enum-value can be used as an index
 // in arrays, for instance. Didn't want to write
 // static_cast<int> everywhere.
 template<typename T>
@@ -19,6 +19,8 @@ inline int index(const T& val)
 {
   return static_cast<int>(val);
 }
+
+const std::string start_position_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 const float infinity = std::numeric_limits<float>::infinity();
 

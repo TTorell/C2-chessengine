@@ -624,6 +624,7 @@ std::ostream& operator <<(std::ostream& os, const Movelog& ml)
 {
   return ml.write(os);
 }
+
 std::ostream& Movelog::write(std::ostream& os) const
 {
   int moveno = _first_moveno;

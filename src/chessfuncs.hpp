@@ -40,6 +40,16 @@ inline bool is_close(T val1, T val2)
   return is_close(val1, val2, marginal);
 }
 
+template<typename  T>
+inline bool is_in_vector(const std::vector<T>& v, const T& element)
+{
+  for (const T& e:v)
+  {
+    if (e == element)
+      return true;
+  }
+  return false;
+}
 
 // A fast log2 function for integer types.
 // Uses a gcc-function

@@ -10,6 +10,7 @@
 #include "config_param.hpp"
 #include "shared_ostream.hpp"
 #include "bitboard_with_utils.hpp"
+#include "uci.hpp"
 
 namespace
 {
@@ -23,12 +24,12 @@ Game::Game(Config_params& config_params) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player_type{playertype::human, playertype::computer },
+    _player_type {playertype::human, playertype::computer},
     _score(0),
     _config_params(config_params),
     _playing(false)
 {
-  _chessboard.read_position(initial_position);
+  _chessboard.read_position(start_position_FEN);
   init();
 }
 
@@ -36,14 +37,14 @@ Game::Game(color side, Config_params& config_params) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player_type{playertype::human, playertype::computer },
+    _player_type {playertype::human, playertype::computer},
     _score(0),
     _config_params(config_params),
     _playing(false)
 {
   _player_type[index(side)] = playertype::human;
   _player_type[index(other_color(side))] = playertype::computer;
-  _chessboard.read_position(initial_position, true);
+  _chessboard.read_position(start_position_FEN, true);
   init();
 }
 
@@ -53,12 +54,12 @@ Game::Game(playertype pt1,
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player_type{pt1, pt2 },
+    _player_type {pt1, pt2},
     _score(0),
     _config_params(config_params),
     _playing(false)
 {
-  _chessboard.read_position(initial_position, true);
+  _chessboard.read_position(start_position_FEN, true);
   init();
 }
 
@@ -69,7 +70,7 @@ Game::~Game()
 void Game::init()
 {
   _is_first_position = true;
-  _move_log.clear_and_init(_chessboard.get_col_to_move(), _chessboard.get_move_number());
+  _move_log.clear_and_init(_chessboard.get_side_to_move(), _chessboard.get_move_number());
   _chessboard.init();
 }
 
@@ -80,12 +81,12 @@ void Game::clear_move_log(color col_to_start, uint16_t move_number)
 
 void Game::setup_pieces()
 {
-  _chessboard.read_position(initial_position);
+  _chessboard.read_position(start_position_FEN);
 }
 
 color Game::get_col_to_move() const
 {
-  return _chessboard.get_col_to_move();
+  return _chessboard.get_side_to_move();
 }
 
 std::ostream& Game::write_chessboard(std::ostream& os, outputtype ot, color from_perspective) const
@@ -144,12 +145,12 @@ void Game::actions_after_a_move()
   write_diagram(cmdline);
   write_diagram(logfile);
 
-  float evaluation = _chessboard.evaluate_position(_chessboard.get_col_to_move(), 0);
+  float evaluation = _chessboard.evaluate_position(_chessboard.get_side_to_move(), 0);
   if (is_close(evaluation, eval_max) || is_close(evaluation, eval_min))
   {
     _chessboard.set_mate();
-    cmdline << (is_close(evaluation, eval_max)? "1 - 0, black was mated":"0 - 1, white was mated") << "\n" << "\n";
-    logfile << (is_close(evaluation, eval_max)? "1 - 0, black was mated":"0 - 1, white was mated") << "\n";
+    cmdline << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n" << "\n";
+    logfile << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
     _playing = false;
   }
   else if (is_close(evaluation, 0.0F) && _chessboard.get_no_of_moves() == 0)
@@ -191,7 +192,7 @@ Bitmove Game::find_best_move(float& score, unsigned int max_search_ply)
   score = _chessboard.negamax_with_pruning(0, -infinity, infinity, best_move, max_search_ply);
   _chessboard.get_search_info().time_taken = steady_clock.toc_ms();
   _chessboard.get_search_info().score = score;
-  if (_chessboard.get_col_to_move() == color::white)
+  if (_chessboard.get_side_to_move() == color::white)
   {
     if (best_move == NO_MOVE && is_close(score, -100.0F))
     {
@@ -220,16 +221,16 @@ Bitmove Game::find_best_move(float& score, unsigned int max_search_ply)
   return best_move;
 }
 
-Bitmove Game::incremental_search(const std::string& max_search_time, unsigned int max_search_ply)
+Bitmove Game::incremental_search(const double max_search_time, unsigned int max_search_ply)
 {
   // Incremental search, to have a best-move available as quickly as possible
-  // and it actually saves search time due to move-ordering. PV-moves from
+  // and it actually saves search-time due to move-ordering. PV-moves from
   // previous search depth will be searched first.
   // When searching incrementally we stop searching after max_search_time.
 
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   std::vector<Bitmove> pv_line;
-  if (!max_search_time.empty())
+  if (max_search_time > 0.0)
   {
     _chessboard.start_timer_thread(max_search_time);
     //std::this_thread::sleep_for(std::chrono::microseconds(200));
@@ -289,16 +290,16 @@ Bitmove Game::incremental_search(const std::string& max_search_time, unsigned in
   return _chessboard.last_move();
 }
 
-Bitmove Game::engine_go(const Config_params& config_params, const std::string& max_search_time)
+Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_params)
 {
   // Shared_ostream& logfile = *(Shared_ostream::get_instance());
 
-  // This value is just a default value;
+  // Default values only.
   bool use_incremental_search = true;
   unsigned int max_search_ply = 7;
 
   // Read some configuration parameters
-  std::string s = config_params.get_config_param("max_search_level");
+  std::string s = config_params.get_config_param("max_search_depth");
   if (!s.empty())
     max_search_ply = static_cast<unsigned int>(std::atoi(s.c_str()));
   s = config_params.get_config_param("use_incremental_search");
@@ -310,7 +311,30 @@ Bitmove Game::engine_go(const Config_params& config_params, const std::string& m
   // Search for best move
   if (use_incremental_search)
   {
-    return incremental_search(max_search_time, max_search_ply);
+    if (go_params.infinite == true)
+    {
+      return incremental_search(go_params.movetime, 10);
+    }
+    else if (!is_close(go_params.movetime, 0.0, 1e-10))
+    {
+      return incremental_search(go_params.movetime, max_search_ply);
+    }
+    else if (!is_close(go_params.wtime, 0.0, 1e-10))
+    {
+      // Assuming that also btime, winc and binc has been set in the same command (according to the UCI-protocol),
+      // try to figure out a reasonable max_search_time.
+      int moves_left_approx = 40 - _chessboard.get_move_number();
+      while (moves_left_approx < 10)
+        moves_left_approx += 20;
+      bool is_white_to_move = (_chessboard.get_side_to_move() == color::white);
+      double time = (is_white_to_move) ? go_params.wtime + moves_left_approx * go_params.winc :
+                                         go_params.btime + moves_left_approx * go_params.binc;
+      return incremental_search(time / moves_left_approx, max_search_ply);
+    }
+    else
+    {
+        return incremental_search(400000, max_search_ply);
+    }
   }
   else
   {
@@ -325,16 +349,13 @@ Bitmove Game::engine_go(const Config_params& config_params, const std::string& m
     }
   }
   actions_after_a_move();
+
   // Stop possibly running timer by setting time_left to false.
   _chessboard.set_time_left(false);
 
   return _chessboard.last_move();
 }
 
-//void Game::start_timer_thread(const std::string& max_search_time)
-//{
-//  _chessboard.start_timer_thread(max_search_time);
-//}
 
 bool Game::has_time_left()
 {
@@ -359,7 +380,7 @@ void Game::start_new_game()
   logfile << "----------------\n";
   logfile << "move number = " << _chessboard.get_move_number() << "\n";
   logfile << _config_params << "\n";
-  write_diagram(logfile) << "\n";
+  //write_diagram(logfile) << "\n";
 }
 
 void Game::figure_out_last_move(const Bitboard& new_position)
@@ -417,6 +438,21 @@ void Game::figure_out_last_move(const Bitboard& new_position)
     _move_log.push_back(_chessboard.last_move());
     actions_after_a_move();
   }
+}
+
+int Game::read_position(const Position_params& params)
+{
+  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  read_position_FEN(params.FEN_string);
+  if (params.moves)
+  {
+    for (const std::string& move:params.move_list)
+    {
+      make_move(move);
+    }
+  }
+  write_diagram(logfile) << "\n";
+  return 0;
 }
 
 int Game::read_position(const std::string& filename)

@@ -57,11 +57,6 @@ class Bitboard_with_utils: public Bitboard
 
     float evaluate_position(color col_to_move, uint8_t level, bool evaluate_zero_moves = true) const;
 
-    color get_col_to_move() const
-    {
-      return _side_to_move;
-    }
-
     int get_no_of_moves()
     {
       return _movelist.size();

@@ -284,9 +284,9 @@ class Bitboard
 
     void set_time_left(bool value);
 
-    static void start_timer(const std::string& max_search_time);
+    static void start_timer(double time);
 
-    void start_timer_thread(const std::string& max_search_time);
+    void start_timer_thread(const double time);
 
     bool has_time_left();
 

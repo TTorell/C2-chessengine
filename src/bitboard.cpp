@@ -387,13 +387,12 @@ bool Bitboard::is_draw_by_50_moves() const
 // max_search_time is in milliseconds
 // If time_left is set to false by another thread
 // this method returns and the timer-thread dies.
-void Bitboard::start_timer(const std::string& max_search_time)
+void Bitboard::start_timer(double time)
 {
   Bitboard::time_left = true;
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
-  logfile << "Timer Thread Started, time: " << max_search_time << "\n";
+  logfile << "Timer Thread Started, time: " << time << "\n";
 
-  double time = stod(max_search_time);
   while (Bitboard::time_left)
   {
     uint64_t nsec_start = now.nanoseconds();
@@ -411,11 +410,11 @@ void Bitboard::start_timer(const std::string& max_search_time)
   logfile << "Timer thread: Time is out." << "\n";
 }
 
-void Bitboard::start_timer_thread(const std::string& max_search_time)
+void Bitboard::start_timer_thread(const double time)
 {
-  assert(is_positive_number(max_search_time));
+  assert(time >= 0);
   Bitboard::time_left = true;
-  std::thread timer_thread(start_timer, max_search_time);
+  std::thread timer_thread(start_timer, time);
   timer_thread.detach();
 }
 

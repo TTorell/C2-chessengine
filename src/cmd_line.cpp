@@ -4,6 +4,7 @@
 #include "bitboard_with_utils.hpp"
 #include "game.hpp"
 #include "current_time.hpp"
+#include "uci.hpp"
 
 namespace // file-private namespace
 {
@@ -210,7 +211,7 @@ void play_on_cmd_line(Config_params& config_params)
 
 int Game::make_a_move(float& score, const uint8_t max_search_ply)
 {
-  if (_player_type[index(_chessboard.get_col_to_move())] == playertype::human)
+  if (_player_type[index(_chessboard.get_side_to_move())] == playertype::human)
   {
     return dynamic_cast<Bitboard*>(&_chessboard)->make_move(playertype::human);
   }
@@ -258,7 +259,7 @@ void Game::start()
   while (_playing)
   {
     uint64_t nsec_start = current_time.nanoseconds();
-    if (_player_type[index(_chessboard.get_col_to_move())] == playertype::human)
+    if (_player_type[index(_chessboard.get_side_to_move())] == playertype::human)
     {
 //      cmdline << "Hashtag: " << _chessboard.get_hash_tag() << "\n";
 //      cmdline << "Material evaluation: " << _chessboard.get_material_evaluation() << "\n";
@@ -275,7 +276,9 @@ void Game::start()
     {
       // computer
       std::cout << "time_left before engine_go: " << has_time_left() << std::endl;
-      engine_go(_config_params, "40000000");
+      Go_params go_params;
+      go_params.movetime = 40000000.0; // Just something big (in milliseconds).
+      engine_go(_config_params, go_params);
     }
     uint64_t timediff = current_time.nanoseconds() - nsec_start;
     cmdline << "time spent thinking: " << timediff / 1.0e9 << " seconds" << "\n";
