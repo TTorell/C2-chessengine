@@ -50,6 +50,10 @@ void read_input(Circular_fifo* input_buffer, Game* game)
   {
     std::string command;
     getline(std::cin, command);
+    if (command.empty())
+    {
+      continue;
+    }
     input_buffer->put(command);
     (*logfile) << "input: " << command << "\n";
     if (command == "stop")
@@ -237,7 +241,8 @@ int main(int argc, char* argv[])
     }
 
     // The stop and quit commands are first taken care of in the
-    // input thread to stop the search-thread if it's searching.
+    // input thread to stop the search-thread if it's searching
+    // (or pondering, which isn't implemented yet).
     // but the commands are also put in the input-buffer for
     // this main-thread to read.
     if (uci_command == uci_cmd::quit)
@@ -246,7 +251,8 @@ int main(int argc, char* argv[])
     }
     if (uci_command == uci_cmd::stop)
     {
-      // We have already stopped searching when we reach this code.
+      // We have already stopped searching when we reach this code,
+      // because the searching also runs in this thread.
       continue;
     }
 

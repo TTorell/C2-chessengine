@@ -125,7 +125,7 @@ class UCI
       return _go_params;
     }
 
-    Position_params parse_position_params()
+    Position_params parse_position_params(const std::string& command)
     {
       // The information about the new requested position comes
       // as a text-string in Forsyth–Edwards Notation,
@@ -137,7 +137,7 @@ class UCI
         _position_params.clear();
         if (is_in_vector(_command_tokens, std::string("fen")))
         {
-          _position_params.FEN_string = parse_command_var("fen");
+          _position_params.FEN_string = command.substr(13, command.size() - 1);
         }
         else if (is_in_vector(_command_tokens, std::string("startpos")))
         {
@@ -191,7 +191,7 @@ class UCI
 
       if (_command_tokens[0] == "position")
       {
-        parse_position_params();
+        parse_position_params(command);
         return uci_cmd::position;
       }
 
