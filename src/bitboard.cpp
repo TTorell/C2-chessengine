@@ -27,7 +27,7 @@ C2_chess::Search_info search_info;
 namespace C2_chess
 {
 
-Current_time now;
+Current_time steady_clock;
 std::atomic<bool> Bitboard::time_left(false);
 Bitboard Bitboard::level_boards[N_SEARCH_BOARDS_DEFAULT];
 Game_history Bitboard::history;
@@ -354,9 +354,14 @@ void Bitboard::init_piece_state()
   _all_pieces = _own->pieces | _other->pieces;
 }
 
-void Bitboard::clear_transposition_table()
+void Bitboard::clear_transposition_table(map_tag map)
 {
-  transposition_table.clear();
+  transposition_table.clear(map);
+}
+
+void Bitboard::switch_tt_tables()
+{
+  transposition_table.switch_maps();
 }
 
 inline void Bitboard::clear_movelist()
@@ -395,9 +400,9 @@ void Bitboard::start_timer(double time)
 
   while (Bitboard::time_left)
   {
-    uint64_t nsec_start = now.nanoseconds();
+    uint64_t nsec_start = steady_clock.nanoseconds();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    uint64_t nsec_stop = now.nanoseconds();
+    uint64_t nsec_stop = steady_clock.nanoseconds();
     uint64_t timediff = nsec_stop - nsec_start;
     time -= static_cast<double>(timediff) / 1e6;
     if (time <= 0.0)
@@ -937,6 +942,20 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_plies) 
 
   }
   return search_info.leaf_node_counter;
+}
+
+Shared_ostream& Bitboard::write_search_info(Shared_ostream & logfile) const
+{
+  logfile << "Evaluated on depth:" << static_cast<int>(search_info.max_search_depth) << " "
+  << static_cast<int>(search_info.leaf_node_counter) << " nodes in " << search_info.time_taken
+  << " milliseconds.\n";
+  std::stringstream ss;
+  std::vector<Bitmove> pv_line;
+  get_pv_line(pv_line);
+  write_vector(pv_line, ss, true);
+  logfile << "PV_line: " << ss.str();
+  logfile << search_info << "\n";
+  return logfile;
 }
 
 } // End namespace C2_chess

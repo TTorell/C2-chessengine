@@ -20,11 +20,73 @@
 #include <bit>
 #include <bitset>
 #include <cmath>
+
 #include "chesstypes.hpp"
 
 namespace fs = std::filesystem;
 
-// templates for comparing float and double
+// Two templates I copied from internet to check
+// the types of auto-defined variables.
+
+#include <type_traits>
+#include <typeinfo>
+#ifndef _MSC_VER
+#   include <cxxabi.h>
+#endif
+#include <memory>
+#include <cstdlib>
+
+template <class T>
+std::string
+type_name()
+{
+    typedef typename std::remove_reference<T>::type TR;
+    std::unique_ptr<char, void(*)(void*)> own
+           (
+#ifndef _MSC_VER
+                abi::__cxa_demangle(typeid(TR).name(), nullptr,
+                                           nullptr, nullptr),
+#else
+                nullptr,
+#endif
+                std::free
+           );
+    std::string r = own != nullptr ? own.get() : typeid(TR).name();
+    if (std::is_const<TR>::value)
+        r += " const";
+    if (std::is_volatile<TR>::value)
+        r += " volatile";
+    if (std::is_lvalue_reference<T>::value)
+        r += "&";
+    else if (std::is_rvalue_reference<T>::value)
+        r += "&&";
+    return r;
+}
+
+#include <string_view>
+
+template <typename T>
+constexpr auto type_name2() {
+  std::string_view name, prefix, suffix;
+#ifdef __clang__
+  name = __PRETTY_FUNCTION__;
+  prefix = "auto type_name() [T = ";
+  suffix = "]";
+#elif defined(__GNUC__)
+  name = __PRETTY_FUNCTION__;
+  prefix = "constexpr auto type_name() [with T = ";
+  suffix = "]";
+#elif defined(_MSC_VER)
+  name = __FUNCSIG__;
+  prefix = "auto __cdecl type_name<";
+  suffix = ">(void)";
+#endif
+  name.remove_prefix(prefix.size());
+  name.remove_suffix(suffix.size());
+  return name;
+}
+
+// templates for comparing floats or doubles
 template<typename T>
 inline bool is_close(T val1, T val2, T marginal)
 {
@@ -40,7 +102,7 @@ inline bool is_close(T val1, T val2)
   return is_close(val1, val2, marginal);
 }
 
-template<typename  T>
+template<typename T>
 inline bool is_in_vector(const std::vector<T>& v, const T& element)
 {
   for (const T& e:v)
@@ -167,6 +229,7 @@ inline uint64_t popleft_square(uint64_t& squares)
   squares ^= sq;
   return sq;
 }
+
 inline uint64_t to_file(uint64_t square)
 {
   return file[file_idx(square)];
@@ -271,8 +334,6 @@ std::string rexexp_sed(const std::string& line, const std::string& regexp_string
 std::vector<std::string> split(const std::string& s, char delim);
 std::vector<std::string> split(const std::string& input, std::string& delimiter);
 std::string cut(const std::string& s, char delim, uint64_t field_number);
-std::string iso_8859_1_to_utf8(const std::string& str);
-std::string iso_8859_1_to_utf8(const char* c_string);
 void play_on_cmd_line(Config_params& config_params);
 void print_filetype(std::ostream& os, const fs::file_status& s);
 void print_filepermissions(fs::perms p);

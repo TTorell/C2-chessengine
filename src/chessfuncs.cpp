@@ -8,6 +8,7 @@
  */
 #include <filesystem>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <regex>
 #include <vector>
@@ -44,17 +45,17 @@ namespace C2_chess
 
 color other_color(const color& side)
 {
-  return (side == color::white)? color::black:color::white;
+  return (side == color::white) ? color::black : color::white;
 }
 
 inline color& operator++(color& side)
 {
-  return side = (side == color::white)? color::black:color::white;
+  return side = (side == color::white) ? color::black : color::white;
 }
 
 color col_from_string(const std::string& s)
 {
-  return (s == "w")? color::white:color::black;
+  return (s == "w") ? color::white : color::black;
 }
 
 std::string get_logfile_name()
@@ -67,7 +68,8 @@ std::string get_logfile_name()
     ss.clear();
     ss.str("");
     ss << "C2_log_" << std::put_time(localtime(&time), "%F-%T") << ".txt"; // ISO 8601 format.
-  } while (std::filesystem::exists(ss.str()));
+  }
+  while (std::filesystem::exists(ss.str()));
   return ss.str();
 }
 #include <iostream>
@@ -79,7 +81,7 @@ bool is_positive_number(const std::string& s)
 //                  [](char c){ return isdigit(c) != 0; });
   if (s.empty())
     return false;
-  for (const char& ch:s)
+  for (const char& ch : s)
   {
     if (!std::isdigit(ch))
       return false;
@@ -258,7 +260,7 @@ bool regexp_grep(const std::string& line, const std::string& regexp_string, std:
 std::string rexexp_sed(const std::string& line, const std::string& regexp_string, const std::string& replacement_string)
 {
   // regex_replace example:
-  //#include <sstreamream>
+  //#include <sstream>
   //#include <string>
   //#include <regex>
   //#include <iterator>
@@ -332,31 +334,6 @@ std::vector<std::string> split(const std::string& input, std::string& delimiter)
   return tokens;
 }
 
-std::string iso_8859_1_to_utf8(const std::string& str)
-{
-  std::string str_out;
-  for (const char ch : str)
-  {
-    uint8_t byte = static_cast<uint8_t>(ch);
-    if (byte < 0x80)
-    {
-      str_out.push_back(static_cast<char>(byte));
-    }
-    else
-    {
-      str_out.push_back(static_cast<char>(0xc0 | (byte >> 6)));
-      str_out.push_back(static_cast<char>(0x80 | (byte & 0x3f)));
-    }
-  }
-  return str_out;
-}
-
-std::string iso_8859_1_to_utf8(const char* c_string)
-{
-  std::string str_out(c_string);
-  return iso_8859_1_to_utf8(str_out);
-}
-
 void print_filetype(std::ostream& os, const fs::file_status& s)
 {
   os << "It";
@@ -381,15 +358,15 @@ void print_filetype(std::ostream& os, const fs::file_status& s)
 
 void print_filepermissions(fs::perms p)
 {
-  std::cerr << ((p & fs::perms::owner_read) != fs::perms::none? "r":"-")
-            << ((p & fs::perms::owner_write) != fs::perms::none? "w":"-")
-            << ((p & fs::perms::owner_exec) != fs::perms::none? "x":"-")
-            << ((p & fs::perms::group_read) != fs::perms::none? "r":"-")
-            << ((p & fs::perms::group_write) != fs::perms::none? "w":"-")
-            << ((p & fs::perms::group_exec) != fs::perms::none? "x":"-")
-            << ((p & fs::perms::others_read) != fs::perms::none? "r":"-")
-            << ((p & fs::perms::others_write) != fs::perms::none? "w":"-")
-            << ((p & fs::perms::others_exec) != fs::perms::none? "x":"-")
+  std::cerr << ((p & fs::perms::owner_read) != fs::perms::none ? "r" : "-")
+            << ((p & fs::perms::owner_write) != fs::perms::none ? "w" : "-")
+            << ((p & fs::perms::owner_exec) != fs::perms::none ? "x" : "-")
+            << ((p & fs::perms::group_read) != fs::perms::none ? "r" : "-")
+            << ((p & fs::perms::group_write) != fs::perms::none ? "w" : "-")
+            << ((p & fs::perms::group_exec) != fs::perms::none ? "x" : "-")
+            << ((p & fs::perms::others_read) != fs::perms::none ? "r" : "-")
+            << ((p & fs::perms::others_write) != fs::perms::none ? "w" : "-")
+            << ((p & fs::perms::others_exec) != fs::perms::none ? "x" : "-")
             << '\n';
 }
 
@@ -566,7 +543,7 @@ std::string reverse_FEN_string(const std::string& FEN_string)
   }
   reversed_FEN_string += " ";
   // Change color to move.
-  reversed_FEN_string += ((cut(FEN_string, ' ', 2) == "w")? "b ":"w ");
+  reversed_FEN_string += ((cut(FEN_string, ' ', 2) == "w") ? "b " : "w ");
   // Reverse castling_rights.
   std::string castling_rights = cut(FEN_string, ' ', 3);
   for (char& ch : castling_rights)
@@ -616,6 +593,18 @@ std::vector<std::string> reverse_moves(const std::vector<std::string>& moves)
     reversed_moves.push_back(move);
   }
   return reversed_moves;
+}
+
+std::ostream& operator <<(std::ostream& os, const Search_info& si)
+{
+  os << "score: " << si.get_score() << std::endl;
+  os << "beta_cutoffs: " << static_cast<int>(si.beta_cutoffs) << " first_beta_cutoffs: "
+     << std::fixed << std::setprecision(1)
+     << static_cast<float>(si.first_beta_cutoffs) / static_cast<float>(si.beta_cutoffs) * 100.0F
+     << "%" << std::endl;
+  os << "hash_hits:" << static_cast<int>(si.hash_hits) << std::endl;
+  os << "highest quiescense search-ply:" << static_cast<int>(si.highest_search_ply) << std::endl;
+  return os;
 }
 
 std::ostream& operator <<(std::ostream& os, History_state hs)

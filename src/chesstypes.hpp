@@ -7,6 +7,8 @@
 #include <ostream>
 #include <limits>
 
+using namespace std::string_literals;
+
 namespace C2_chess
 {
 
@@ -20,25 +22,25 @@ inline int index(const T& val)
   return static_cast<int>(val);
 }
 
-const std::string start_position_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const auto start_position_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"s; // std::string
 
-const float infinity = std::numeric_limits<float>::infinity();
+const auto infinity = std::numeric_limits<float>::infinity(); // float
 
-const int a = 0;
-const int b = 1;
-const int c = 2;
-const int d = 3;
-const int e = 4;
-const int f = 5;
-const int g = 6;
-const int h = 7;
-const float eval_max = 100.0F;
-const float eval_min = -eval_max;
-const float epsilon = 0.00000001F;
+const auto a = 0; // int
+const auto b = 1;
+const auto c = 2;
+const auto d = 3;
+const auto e = 4;
+const auto f = 5;
+const auto g = 6;
+const auto h = 7;
+const auto eval_max = 100.0F;
+const auto eval_min = -eval_max;
+const auto epsilon = 0.00000001F;
 
-const int N_SEARCH_BOARDS_DEFAULT = 38;
-const bool dont_update_history = false;
-const bool dont_evaluate_zero_moves = false;
+const auto N_SEARCH_BOARDS_DEFAULT = 38;
+const auto dont_update_history = false;
+const auto dont_evaluate_zero_moves = false;
 
 enum class piecetype
 {
@@ -50,6 +52,8 @@ enum class piecetype
   King,
   Undefined
 };
+
+const float piece_values[7] = {9.0F, 5.0F, 3.0F, 3.0F, 1.0F, 0.0F, 0.0F};
 
 enum class color
 {
@@ -106,6 +110,7 @@ constexpr bool SAME_LINE = true;
 
 struct Search_info
 {
+    color searching_side;
     unsigned int leaf_node_counter;
     unsigned int node_counter;
     unsigned int hash_hits;
@@ -116,6 +121,13 @@ struct Search_info
     bool search_interrupted;
     float score;
     unsigned int highest_search_ply;
+
+    float get_score() const
+    {
+      return (searching_side == color::white) ? score : -score;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const Search_info& si);
 };
 
 struct Bitpieces
@@ -152,6 +164,8 @@ inline uint64_t square(uint8_t bit_idx)
   return one << bit_idx;
 }
 
+const uint32_t last_none_valid_move_constant = 4;
+
 struct Bitmove
 {
     uint32_t _move;
@@ -170,15 +184,16 @@ struct Bitmove
     }
 
     Bitmove(piecetype p_type, // bit 25-32
-        uint16_t move_props, // bit 15-24
-        uint64_t from_square, // bit 7-12
-        uint64_t to_square, // bit 1-6
-        piecetype promotion_pt = piecetype::Queen) : // bit 13-14
+            uint16_t move_props, // bit 15-24
+            uint64_t from_square, // bit 7-12
+            uint64_t to_square, // bit 1-6
+            piecetype promotion_pt = piecetype::Queen) : // bit 13-14
         _move(0),
         _evaluation(0.0)
     {
       _move = (static_cast<uint32_t>(index(p_type)) << 24) | (move_props << 14) | static_cast<uint32_t>(index(promotion_pt) << 12)
-              | static_cast<uint32_t>(bit_idx(from_square)) << 6 | static_cast<uint32_t>(bit_idx(to_square));
+              | static_cast<uint32_t>(bit_idx(from_square)) << 6
+              | static_cast<uint32_t>(bit_idx(to_square));
     }
 
     bool operator==(const Bitmove& m) const
@@ -239,19 +254,19 @@ struct Bitmove
 
     bool is_valid()
     {
-      return _move > 4; // Bigger than DRAW_BY_50_MOVES_RULE._move.
+      return _move > last_none_valid_move_constant; // Bigger than DRAW_BY_50_MOVES_RULE._move.
     }
 };
 
 // The returned best_move from a search can contain a valid move of course,
 // but it can also contain the following information.
 const Bitmove NO_MOVE(0);
-const Bitmove DRAW_BY_THREEFOLD_REPETITION(2);
-const Bitmove DRAW_BY_50_MOVES_RULE(3);
-const Bitmove SEARCH_HAS_BEEN_INTERRUPTED(4);
 // I also use a Bitmove to decide if a TT-element has been initialized,
 // or if it's a new empty element returned from the Transposition_table.find(hash_tag) method.
 const Bitmove UNDEFINED_MOVE(1);
+const Bitmove DRAW_BY_THREEFOLD_REPETITION(2);
+const Bitmove DRAW_BY_50_MOVES_RULE(3);
+const Bitmove SEARCH_HAS_BEEN_INTERRUPTED(last_none_valid_move_constant); // currently 4
 
 // constexpr is a way of telling the compiler
 // that we wish these expressions to be calculated
@@ -290,10 +305,10 @@ constexpr uint64_t g_h_files = g_file | h_file;
 constexpr uint64_t not_row_8 = whole_board ^ row_8;
 constexpr uint64_t not_row_1 = whole_board ^ row_1;
 
-constexpr uint64_t file[] = {a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file };
+constexpr uint64_t file[] = {a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file};
 
 // 0 is not used as rank-index
-constexpr uint64_t rank[] = {zero, row_1, row_2, row_3, row_4, row_5, row_6, row_7, row_8, zero, zero };
+constexpr uint64_t rank[] = {zero, row_1, row_2, row_3, row_4, row_5, row_6, row_7, row_8, zero, zero};
 
 constexpr uint64_t king_side = e_file | f_file | g_file | h_file;
 constexpr uint64_t queen_side = a_file | b_file | c_file | d_file;
@@ -373,11 +388,11 @@ constexpr uint64_t di(int i)
   return val;
 }
 
-constexpr uint64_t diagonal[15] = {di(0), di(1), di(2), di(3), di(4), di(5), di(6), di(7), di(8), di(9), di(10), di(11), di(12), di(13), di(14) };
+constexpr uint64_t diagonal[15] = {di(0), di(1), di(2), di(3), di(4), di(5), di(6), di(7), di(8), di(9), di(10), di(11), di(12), di(13), di(14)};
 
 constexpr uint64_t ad(const int i)
 {
-  int8_t fi = a; // important: NOT uint8_t because f-- will then become 255, not -1
+  auto fi = a; // important: NOT uint8_t because f-- may then become 255, not -1
   uint8_t r = 1;
   uint64_t val = zero;
   if (i < 8)
@@ -393,7 +408,7 @@ constexpr uint64_t ad(const int i)
   return val;
 }
 
-constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14) };
+constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14)};
 
 } // namespace C2_chess
 #endif

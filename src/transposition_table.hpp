@@ -22,9 +22,8 @@ struct TT_element
     Bitmove best_move;
     int search_ply;
 
-    // An unused element will have best_move_index = -99
+    // An unused element will have best_move = UNDEFINED_MOVE.
     TT_element() :
-        // best_move_index(-99),
         best_move(UNDEFINED_MOVE),
         search_ply(0)
     {
@@ -35,34 +34,47 @@ struct TT_element
       return !(best_move == UNDEFINED_MOVE);
     }
 
+//    // This didn't work for different types in the initialyzer-list of course:
 //    TT_element& operator=(const std::initializer_list<float>& il)
 //    {
-//      std::initializer_list<float>::const_iterator it = il.begin();
-//      best_move_index = static_cast<int>(*it);
-//      best_move = static_cast<Bitmove>(*++it);
-//      search_ply = static_cast<int>(*++it);
+//      auto_iterator it = il.begin();
+//      best_move = static_cast<Bitmove>(*it++);
+//      search_ply = static_cast<int>(*it);
 //      return *this;
 //    }
 };
+
+enum class map_tag
+{
+    current,
+    previous,
+    both
+};
+
+using Hashmap = std::unordered_map<uint64_t, TT_element>;
 
 class Transposition_table
 {
   private:
     friend class Bitboard;
-    friend class Bitboard_with_utils;
-    std::unordered_map<unsigned long, TT_element> _hash_map;
+
+    Hashmap _hash_map[2];
+    Hashmap* _current_searchdepth_map;
+    Hashmap* _previous_searchdepth_map;
+    unsigned long _black_to_move;
     unsigned long _random_table[64][2][6]; // square_index, piece_color, piece_type
     unsigned long _en_passant_file[8];
     unsigned long _castling_rights[16]; // we only use index 1, 2, 4 and 8
-    unsigned long _black_to_move;
+
 
     void init_random_numbers();
 
   public:
 
     Transposition_table() :
-        _hash_map(),
-        _black_to_move(0L)
+      _current_searchdepth_map(&_hash_map[0]),
+      _previous_searchdepth_map(&_hash_map[1]),
+      _black_to_move(0L)
     {
       init_random_numbers();
     }
@@ -75,15 +87,38 @@ class Transposition_table
     // matching the hash_tag. If no such element can be found
     // it returns a reference to a new empty (default allocated)
     // hash_element connected to the hash_tag.
-    // So it can be used for both searching and inserting.
-    TT_element& find(unsigned long hash_tag)
+    // So find can be used for both searching and inserting.
+    TT_element& find(unsigned long hash_tag, map_tag map = map_tag::current)
     {
-      return _hash_map[hash_tag];
+      if (map == map_tag::current)
+        return (*_current_searchdepth_map)[hash_tag];
+      else
+        return (*_previous_searchdepth_map)[hash_tag];
     }
 
-    void clear()
+    void clear(map_tag map = map_tag::current)
     {
-      _hash_map.clear();
+      switch (map)
+      {
+        case map_tag::current:
+          _current_searchdepth_map->clear();
+          break;
+        case map_tag::previous:
+          _previous_searchdepth_map->clear();
+          break;
+        case map_tag::both:
+          _current_searchdepth_map->clear();
+          _previous_searchdepth_map->clear();
+          break;
+      }
+    }
+
+    void switch_maps()
+    {
+      Hashmap* tmp_map = _previous_searchdepth_map;
+      _previous_searchdepth_map->clear();
+      _previous_searchdepth_map = _current_searchdepth_map;
+      _current_searchdepth_map = tmp_map;
     }
 };
 

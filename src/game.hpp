@@ -52,7 +52,7 @@ class Game
     void actions_after_a_move();
     void start();
     Bitmove find_best_move(float& score, unsigned int max_search_ply);
-    Bitmove incremental_search(const double max_search_time, unsigned int max_search_ply);
+    Bitmove incremental_search(const double movetime);
     Bitmove engine_go(const Config_params& config_params, const Go_params& params);
     //void start_timer_thread(const std::string& max_search_time);
     bool has_time_left();

@@ -23,6 +23,7 @@
 #include "chessfuncs.hpp"
 #include "transposition_table.hpp"
 #include "game_history.hpp"
+#include "shared_ostream.hpp"
 
 namespace C2_chess
 {
@@ -157,11 +158,18 @@ class Bitboard
     // -----------------------------------------------------
 
     void count_pawns_in_centre(float& sum, float weight) const;
+
     void count_castling(float& sum, float weight) const;
+
     void count_development(float& sum, float weight) const;
+
     void count_center_control(float& sum, float weight) const;
+
     int count_threats_to_square(uint64_t square, color side) const;
+
     float evaluate_position(color for_side, uint8_t level, bool evaluate_zero_moves = true) const;
+
+    void get_pv_line(std::vector<Bitmove>& pv_line) const;
 
   public:
 
@@ -290,7 +298,9 @@ class Bitboard
 
     bool has_time_left();
 
-    void clear_transposition_table();
+    void clear_transposition_table(map_tag map = map_tag::current);
+
+    void switch_tt_tables();
 
     void clear_PV_table();
 
@@ -324,8 +334,6 @@ class Bitboard
 
     void init_material_evaluation();
 
-    void get_pv_line(std::vector<Bitmove>& pv_list) const;
-
     History_state get_history_state() const
     {
       return history.get_state();
@@ -339,6 +347,7 @@ class Bitboard
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
     std::ostream& write(std::ostream& os, outputtype wt, color from_perspective) const;
     std::ostream& write_movelist(std::ostream& os, bool same_line = false) const;
+    Shared_ostream& write_search_info(Shared_ostream& logfile) const;
 
     void clear_search_info();
     Search_info& get_search_info() const;

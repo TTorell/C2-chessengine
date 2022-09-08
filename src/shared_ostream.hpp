@@ -4,22 +4,45 @@
 #include <thread>
 #include <mutex>
 #include <iostream>
-#include <concepts>
-#include <type_traits>
-#include <cstddef>
 #include "chessfuncs.hpp"
-#include "movelog.hpp"
-#include "bitboard.hpp"
-#include "pgn_info.hpp"
 
-// Declaration of the concept "arithmetic", which
-// is satisfied by any type 'T' such that for values 'a'
-// of type 'T', are integral or floating point numbers.
-template<typename T>
-concept arithmetic = requires(T a)
+//// Declaration of the concept "arithmetic", which
+//// is satisfied by any type 'T' such that for values 'a'
+//// of type 'T', are integral or floating point numbers.
+//#include <concepts>
+//#include <type_traits>
+//#include <cstddef>
+//template<typename T>
+//concept arithmetic = requires(T a)
+//{
+//  requires std::is_arithmetic_v<T>;
+//};
+namespace
 {
-  requires std::is_arithmetic_v<T>;
-};
+
+// The chessboard prints some utf-8 cgaracters.
+// So, I figured it would be good if the whole logfile
+// has the same character format.
+std::string iso_8859_1_to_utf8(const std::string& str)
+{
+  std::string str_out;
+  for (const char ch : str)
+  {
+    uint8_t byte = static_cast<uint8_t>(ch);
+    if (byte < 0x80)
+    {
+      str_out.push_back(static_cast<char>(byte));
+    }
+    else
+    {
+      str_out.push_back(static_cast<char>(0xc0 | (byte >> 6)));
+      str_out.push_back(static_cast<char>(0x80 | (byte & 0x3f)));
+    }
+  }
+  return str_out;
+}
+
+} // End of fileprivate namespace
 
 namespace C2_chess
 {
@@ -77,10 +100,6 @@ namespace C2_chess
 // TODO: Maybe something to check dynamically in the class.
 // instead of checking _is_open. Didn,t think of that,
 // but all ostreams doesn't have an is_open() method.
-class Bitmove;
-class Config_parms;
-std::ostream& operator<<(std::ostream& os, const Bitmove& m);
-std::ostream& operator<<(std::ostream& os, const Config_params& params);
 
 class Shared_ostream
 {
@@ -155,126 +174,13 @@ class Shared_ostream
       _is_open = true;
     }
 
-    Shared_ostream& operator<<(const std::string& s)
-    {
-      if (_is_open)
-      {
-        std::lock_guard<std::mutex> locker(static_mutex);
-        _os << iso_8859_1_to_utf8(s) << std::flush;
-      }
-      return *this;
-    }
-
-//    Shared_ostream& operator<<(int i)
-//    {
-//      std::lock_guard<std::mutex> locker(static_mutex);
-//      if (_is_open)
-//        _os << iso_8859_1_to_utf8(std::to_string(i)) << std::flush;
-//      return *this;
-//    }
-//
-//    Shared_ostream& operator<<(float flt)
-//    {
-//      std::lock_guard<std::mutex> locker(static_mutex);
-//      if (_is_open)
-//        _os << iso_8859_1_to_utf8(std::to_string(flt)) << std::flush;
-//      return *this;
-//    }
-//
-//    Shared_ostream& operator<<(double dbl)
-//    {
-//      std::lock_guard<std::mutex> locker(static_mutex);
-//      if (_is_open)
-//        _os << iso_8859_1_to_utf8(std::to_string(dbl)) << std::flush;
-//      return *this;
-//    }
-//
-//    Shared_ostream& operator<<(long l)
-//    {
-//      std::lock_guard<std::mutex> locker(static_mutex);
-//      if (_is_open)
-//        _os << iso_8859_1_to_utf8(std::to_string(l)) << std::flush;
-//      return *this;
-//    }
-//
-//    Shared_ostream& operator<<(unsigned long ul)
-//    {
-//      std::lock_guard<std::mutex> locker(static_mutex);
-//      if (_is_open)
-//        _os << iso_8859_1_to_utf8(std::to_string(ul)) << std::flush;
-//      return *this;
-//    }
-
-    template <typename T>
-    requires arithmetic<T>
-    Shared_ostream& operator<<(T value)
-    {
-      std::cerr << std::is_arithmetic_v<T> << std::endl;
-      if (_is_open)
-      {
-        std::stringstream ss;
-        ss << value;
-        std::lock_guard<std::mutex> locker(static_mutex);
-        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
-      }
-      return *this;
-    }
-
-//    Tried to make it work with the endl-function which returns an ostream&
-//    It works when calling endl with an argument
-//    ( e.g."Shared_ostream instance" << endl(cout); ), but that's not good enough.
-//    Shared_ostream& operator<<(ostream& os)
-//    {
-//      os << "\n";
-//      std::lock_guard < std::mutex > locker(static_mutex);
-//      if (_is_open)
-//        _os << std::endl << std::flush;
-//      return *this;
-//    }
-
-    Shared_ostream& operator<<(const Movelog& ml)
-    {
-      std::lock_guard<std::mutex> locker(static_mutex);
-      if (_is_open)
-      {
-        std::stringstream ss;
-        ml.write(ss);
-        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
-      }
-      return *this;
-    }
-
     template<typename T>
-    Shared_ostream& operator<<(const std::vector<T>& v)
+    Shared_ostream& operator<<(const T& var)
     {
       if (_is_open)
       {
         std::stringstream ss;
-        write_vector(v, ss, true);
-        std::lock_guard<std::mutex> locker(static_mutex);
-        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
-      }
-      return *this;
-    }
-
-    Shared_ostream& operator<<(const Bitmove& m)
-    {
-      if (_is_open)
-      {
-        std::stringstream ss;
-        ss << m;
-        std::lock_guard<std::mutex> locker(static_mutex);
-        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
-      }
-      return *this;
-    }
-
-    Shared_ostream& operator<<(const Config_params& params)
-    {
-      if (_is_open)
-      {
-        std::stringstream ss;
-        ss << params;
+        ss << var;
         std::lock_guard<std::mutex> locker(static_mutex);
         _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
       }
@@ -291,24 +197,56 @@ class Shared_ostream
       }
     }
 
-    void write_search_info(const Search_info& si, const std::string& pv_line)
-    {
-      if (_is_open)
-      {
-        std::stringstream ss;
-        ss << "\nEvaluated on depth:" << static_cast<int>(si.max_search_depth) << " " << static_cast<int>(si.leaf_node_counter) << " nodes in " << si.time_taken << " milliseconds." << std::endl;
-        ss << "PV_line: " << pv_line << "score: " << si.score << std::endl;
-        ss << "beta_cutoffs: " << static_cast<int>(si.beta_cutoffs) << " first_beta_cutoffs: " << static_cast<float>(si.first_beta_cutoffs) / static_cast<float>(si.beta_cutoffs)
-            * 100.0F
-           << "%"
-           << std::endl;
-        ss << "hash_hits:" << static_cast<int>(si.hash_hits) << std::endl;
-        ss << "highest search_ply:" << static_cast<int>(si.highest_search_ply) << std::endl;
-        std::lock_guard<std::mutex> locker(static_mutex);
-        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
-      }
-    }
+//    // Template only for primitive arithmetic types (float, double, char, short, int etc).
+//    // It works, but isn't necessary. The first template, above, covers primitives too.
+//    // And having both templates defined clashes with:
+//    // error: ambiguous overload for ‘operator<<’ (operand types are ‘C2_chess::Shared_ostream’ and ‘double’).
+//    template <typename T>
+//    requires arithmetic<T>
+//    Shared_ostream& operator<<(T value)
+//    {
+//      // std::cerr << std::is_arithmetic_v<T> << std::endl;
+//      if (_is_open)
+//      {
+//        std::stringstream ss;
+//        ss << value;
+//        std::lock_guard<std::mutex> locker(static_mutex);
+//        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
+//      }
+//      return *this;
+//    }
+
+//    Tried to make it work with the std::endl-function which returns an ostream&
+//    It works when calling endl with an argument
+//    ( e.g."Shared_ostream instance" << std::endl(cout); ), but that's not good enough.
+//    The problem, I think, is that Shared_ostream "isn't" an ostream, it just "has"
+//    an ostream.
+//    Shared_ostream& operator<<(ostream& os)
+//    {
+//      std::lock_guard < std::mutex > locker(static_mutex);
+//      if (_is_open)
+//        _os << std::endl << std::flush;
+//      return *this;
+//    }
+
+//    // Template for writing the contents of a vector with each element on the same line.
+//    // But that can be done before sending the vector to the Shared_ostream, e.g. via a
+//    // stringstream.
+//    template<typename T>
+//    Shared_ostream& operator<<(const std::vector<T>& v)
+//    {
+//      if (_is_open)
+//      {
+//        std::stringstream ss;
+//        write_vector(v, ss, true);
+//        std::lock_guard<std::mutex> locker(static_mutex);
+//        _os << iso_8859_1_to_utf8(ss.str()) << std::flush;
+//      }
+//      return *this;
+//    }
 };
 
 } // namespace C2_chess
+
+
 #endif

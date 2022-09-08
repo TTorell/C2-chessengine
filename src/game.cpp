@@ -185,6 +185,7 @@ Bitmove Game::find_best_move(float& score, unsigned int max_search_ply)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   _chessboard.clear_search_info();
+  _chessboard.get_search_info().searching_side = _chessboard.get_side_to_move();
   _chessboard.get_search_info().max_search_depth = max_search_ply - 1;
   _chessboard.clear_transposition_table();
   Bitmove best_move;
@@ -221,27 +222,44 @@ Bitmove Game::find_best_move(float& score, unsigned int max_search_ply)
   return best_move;
 }
 
-Bitmove Game::incremental_search(const double max_search_time, unsigned int max_search_ply)
+Bitmove Game::incremental_search(const double movetime_ms)
 {
-  // Incremental search, to have a best-move available as quickly as possible
-  // and it actually saves search-time due to move-ordering. PV-moves from
-  // previous search depth will be searched first.
-  // When searching incrementally we stop searching after max_search_time.
+  // Incremental search, to have a best-move available as quickly
+  // as possible and it actually saves search-time due to move-ordering.
+  // Best moves from the previous search depth will be searched first.
+  // When searching incrementally we stop searching after movetime.
+  // If movetime is zero we search infinitely until the GUI sends a stop command,
+  // or the predefined search-boards limit has been reached.
+
+  Bitmove best_move;
+  Bitmove local_best_move;
 
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   std::vector<Bitmove> pv_line;
-  if (max_search_time > 0.0)
+
+  // Keep track of how much time we have spent.
+  auto time_taken_ms {0.0};
+  steady_clock.tic();
+
+  if (is_close(movetime_ms, 0.0))
   {
-    _chessboard.start_timer_thread(max_search_time);
-    //std::this_thread::sleep_for(std::chrono::microseconds(200));
+    // search infinitely, until the GUI sends a stop command,
+    // or the search-board limit has been reached.
+    _chessboard.set_time_left(true);
   }
   else
-    _chessboard.set_time_left(true);
-  Bitmove best_move;
-  Bitmove local_best_move;
-  for (unsigned int i = 2; i <= max_search_ply; i++)
   {
-    local_best_move = find_best_move(_score, i);
+    _chessboard.start_timer_thread(movetime_ms);
+    //std::this_thread::sleep_for(std::chrono::microseconds(200));
+  }
+
+  _chessboard.clear_transposition_table(map_tag::both);
+
+  // We will need some search-boards for Quiescense-search too.
+  for (unsigned int search_depth = 2; search_depth <= N_SEARCH_BOARDS_DEFAULT/2; search_depth++)
+  {
+    _chessboard.switch_tt_tables();
+    local_best_move = find_best_move(_score, search_depth);
 
     // Has the search on this ply been aborted by time limit?
     if (local_best_move == SEARCH_HAS_BEEN_INTERRUPTED)
@@ -254,7 +272,7 @@ Bitmove Game::incremental_search(const double max_search_time, unsigned int max_
       // So, searching with searh_ply = 1 is completely pointless.
       // Time is out.
       logfile << "Time is out! or a stop-command has been received.\n";
-      if (i == 2)
+      if (search_depth == 2)
       {
         // The search has been interrupted on lowest level.
         // No best move has been found at all. What to do?
@@ -268,13 +286,14 @@ Bitmove Game::incremental_search(const double max_search_time, unsigned int max_
 
     if (has_time_left())
     {
-      _chessboard.get_pv_line(pv_line);
-      std::stringstream ss;
-      write_vector(pv_line, ss, true);
-      logfile.write_search_info(_chessboard.get_search_info(), ss.str());
+      _chessboard.write_search_info(logfile);
     }
 
     if (_score > eval_max / 2) // Forced mate
+      break;
+
+    time_taken_ms = static_cast<double>(steady_clock.toc_us())/1000.0;
+    if (time_taken_ms > movetime_ms/2.0)
       break;
   }
 
@@ -313,11 +332,13 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
   {
     if (go_params.infinite == true)
     {
-      return incremental_search(go_params.movetime, 10);
+      return incremental_search(0.0); // movetime should be zero here
     }
-    else if (!is_close(go_params.movetime, 0.0, 1e-10))
+    else if (go_params.movetime >= 0.0)
     {
-      return incremental_search(go_params.movetime, max_search_ply);
+      // This means that "movetime 0" will become an infinite search, actually.
+      // And so will a "go" without parameters.
+      return incremental_search(go_params.movetime);
     }
     else if (!is_close(go_params.wtime, 0.0, 1e-10))
     {
@@ -329,17 +350,17 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
       bool is_white_to_move = (_chessboard.get_side_to_move() == color::white);
       double time = (is_white_to_move) ? go_params.wtime + moves_left_approx * go_params.winc :
                                          go_params.btime + moves_left_approx * go_params.binc;
-      return incremental_search(time / moves_left_approx, max_search_ply);
+      return incremental_search(time / moves_left_approx);
     }
     else
     {
-        return incremental_search(400000, max_search_ply);
+      return incremental_search(400000);
     }
   }
   else
   {
     // Not incremental search, start searching directly at max_search_ply and stop when finished.
-    // Ignore max_search_time.
+    // Ignore movetime.
     _chessboard.set_time_left(true);
     Bitmove best_move = find_best_move(_score, max_search_ply);
     if (best_move.is_valid())
@@ -355,7 +376,6 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
 
   return _chessboard.last_move();
 }
-
 
 bool Game::has_time_left()
 {
@@ -442,16 +462,16 @@ void Game::figure_out_last_move(const Bitboard& new_position)
 
 int Game::read_position(const Position_params& params)
 {
-  Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  //Shared_ostream& logfile = *(Shared_ostream::get_instance());
   read_position_FEN(params.FEN_string);
   if (params.moves)
   {
-    for (const std::string& move:params.move_list)
+    for (const std::string& move : params.move_list)
     {
       make_move(move);
     }
   }
-  write_diagram(logfile) << "\n";
+  // write_diagram(logfile) << "\n";
   return 0;
 }
 

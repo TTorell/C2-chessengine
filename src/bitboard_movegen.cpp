@@ -741,7 +741,7 @@ void Bitboard::find_checkers_and_pinned_pieces()
   uint64_t other_Queens_or_Rooks = _other->Queens | _other->Rooks;
   uint64_t other_Queens_or_Bishops = _other->Queens | _other->Bishops;
 
-// Check Pawn-threats
+  // Check Pawn-threats
   if (_other->Pawns)
   {
     if (King_file_idx != h)
@@ -758,11 +758,11 @@ void Bitboard::find_checkers_and_pinned_pieces()
     }
   }
 
-// Check Knight threats
+  // Check Knight threats
   if (_other->Knights)
     _checkers |= (adjust_pattern(knight_pattern, _own->King) & _other->Knights);
 
-// Check threats on file and rank
+  // Check threats on file and rank
   if (_other->Queens | _other->Rooks)
   {
     uint64_t King_ortogonal_squares = ortogonal_squares(_own->King);
@@ -781,7 +781,7 @@ void Bitboard::find_checkers_and_pinned_pieces()
     }
   }
 
-// Check diagonal threats
+  // Check diagonal threats
   if (_other->Queens | _other->Bishops)
   {
     uint64_t King_diagonal_squares = diagonal_squares(_own->King);
@@ -808,7 +808,7 @@ bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking) con
   uint64_t tmp_all_pieces = _all_pieces;
   uint8_t f_idx = file_idx(to_square);
 
-// Check Pawn-threats
+  // Check Pawn-threats
   if (_other->Pawns)
   {
     if ((f_idx != h) && (_other->Pawns & ((_side_to_move == color::white) ? to_square >> 9 : to_square << 7)))
@@ -817,11 +817,11 @@ bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking) con
       return true;
   }
 
-// Check Knight-threats
+  // Check Knight-threats
   if (_other->Knights && ((adjust_pattern(knight_pattern, to_square) & _other->Knights)))
     return true;
 
-// Check King (and adjacent Queen-threats)
+  // Check King (and adjacent Queen-threats)
   if (adjust_pattern(king_pattern, to_square) & (_other->King | _other->Queens))
     return true;
 
@@ -831,7 +831,7 @@ bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking) con
     tmp_all_pieces ^= _own->King;
   }
 
-// Check threats on file and rank
+  // Check threats on file and rank
   if (_other->Queens | _other->Rooks)
   {
     // Check threats on file and rank
@@ -845,7 +845,7 @@ bool Bitboard::square_is_threatened(uint64_t to_square, bool King_is_asking) con
     }
   }
 
-// Check diagonal threats
+  // Check diagonal threats
   if (_other->Queens | _other->Bishops)
   {
     uint64_t to_diagonal_squares = diagonal_squares(to_square);
@@ -939,7 +939,7 @@ inline void Bitboard::find_king_moves(gentype gt)
       }
       break;
     case gentype::captures:
-    case gentype::captures_and_promotions:
+      case gentype::captures_and_promotions:
       king_moves &= _other->pieces;
       while (king_moves)
       {
@@ -990,20 +990,7 @@ void Bitboard::find_legal_moves(gentype gt)
 
 inline float Bitboard::get_piece_value(piecetype p_type) const
 {
-  switch (p_type)
-  {
-    case piecetype::Pawn:
-      return 1.0F;
-    case piecetype::Knight:
-      case piecetype::Bishop:
-      return 3.0F;
-    case piecetype::Rook:
-      return 5.0F;
-    case piecetype::Queen:
-      return 9.0F;
-    default:
-      return 0.0F;
-  }
+  return piece_values[index(p_type)];
 }
 
 inline float Bitboard::get_piece_value(uint64_t square) const
@@ -1013,27 +1000,30 @@ inline float Bitboard::get_piece_value(uint64_t square) const
   {
     return 0.0F;
   }
-  if ((_white_pieces.Pawns & square) || (_black_pieces.Pawns & square))
+
+  const Bitpieces* pieces = (_own->pieces & square) ? _own : _other;
+
+  if (pieces->Pawns & square)
   {
     return get_piece_value(piecetype::Pawn);
   }
-  else if ((_white_pieces.Queens & square) || (_black_pieces.Queens & square))
+  else if (pieces->Queens & square)
   {
     return get_piece_value(piecetype::Queen);
   }
-  else if ((_white_pieces.Rooks & square) || (_black_pieces.Rooks & square))
+  else if (pieces->Rooks & square)
   {
     return get_piece_value(piecetype::Rook);
   }
-  else if ((_white_pieces.Bishops & square) || (_black_pieces.Bishops & square))
+  else if (pieces->Bishops & square)
   {
     return get_piece_value(piecetype::Bishop);
   }
-  else if ((_white_pieces.Knights & square) || (_black_pieces.Knights & square))
+  else if (pieces->Knights & square)
   {
     return get_piece_value(piecetype::Knight);
   }
-  else if ((_white_pieces.King & square) || (_black_pieces.King & square))
+  else if (pieces->King & square)
   {
     return get_piece_value(piecetype::King);
   }
@@ -1069,7 +1059,19 @@ inline void Bitboard::add_move(piecetype p_type,
   // See if new_move is the "PV-move" for the current position.
   // If it is, Then give it a high evaluation for the move-ordering,
   // so it'll be sorted as the first move.
-  TT_element& tte = transposition_table.find(_hash_tag);
+
+  // Playing around. Testing that decltype(auto) also adds reference qualifier (and const/volatile),
+  // which only "auto" wouldn't do.
+  decltype(auto) tte = transposition_table.find(_hash_tag, map_tag::previous);
+  //  std::cout << type_name<decltype(tte)>() << std::endl;
+  //  // Gives "C2_chess::TT_element&" as it should.
+  //
+  //  // std::cout << type_name<decltype(start_position_FEN)>() << std::endl;
+  //  // Gives "std::string const".
+  //
+  //  typename2() gives a different output (maybe more detailed)
+  //  std::cout << type_name2<decltype(start_position_FEN)>() << std::endl;
+  //  // Gives "const std::basic_string<char>", which also seems OK.
   if (tte.is_initialized())
   {
     if (tte.best_move == new_move)
@@ -1088,9 +1090,11 @@ inline void Bitboard::add_move(piecetype p_type,
   {
     //std::cout << "TT-element hasn't been initialized" << std::endl;
   }
+
   if (move_props == move_props_none)
   {
     _movelist.push_back(new_move);
+    return;
   }
   else
   {
@@ -1116,6 +1120,8 @@ inline void Bitboard::sort_moves(std::deque<Bitmove>& movelist)
 {
   // Start at the beginning of movelist and find the first move with
   // evaluation 0. Sort all the moves up to that move.
+  // To make std::stable_sort sort in descending order, i defined operator<
+  // in Bitmove in a suiting way.
   std::deque<Bitmove>::iterator end_it;
   for (end_it = movelist.begin(); end_it != movelist.end(); end_it++)
   {
@@ -1124,36 +1130,10 @@ inline void Bitboard::sort_moves(std::deque<Bitmove>& movelist)
   }
   if (end_it != movelist.begin())
     std::stable_sort(movelist.begin(), end_it);
+//  for (auto& m:movelist)
+//    std::cerr << m._evaluation << " ";
+//  std::cerr << std::endl;
 }
 
-//inline void Bitboard::sort_moves(std::deque<BitMove>& movelist)
-//{
-//  unsigned int stop_idx;
-//  BitMove tmp_move;
-//  for (stop_idx = 0; stop_idx < movelist.size(); stop_idx++)
-//  {
-//    if (std::abs(movelist[stop_idx]._evaluation) < 0.000000001)
-//      break;
-//  }
-//  unsigned int start_idx = 0;
-//  while (true)
-//  {
-//    bool sorted = true;
-//    for (unsigned int i = start_idx; i < stop_idx - 1; i++)
-//    {
-//      if (movelist[i + 1]._evaluation > movelist[i]._evaluation)
-//      {
-//        tmp_move = movelist[i];
-//        movelist[i] = movelist[i + 1];
-//        movelist[i + 1] = tmp_move;
-//        sorted = false;
-//      }
-//    }
-//    if (sorted)
-//      break;
-//    else
-//      start_idx++;
-//  }
-//}
 
 }// End namespace C2_chess
