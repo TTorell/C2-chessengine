@@ -599,7 +599,7 @@ TEST_CASE("evaluation")
 TEST_CASE("evaluation, mate and stalemate")
 {
   float evaluation;
-// Load test position 72
+  // Load test position 72
   std::string FEN_string = get_FEN_test_position(72);
   Bitboard_with_utils chessboard;
   REQUIRE(chessboard.read_position(FEN_string) == 0);
@@ -626,7 +626,7 @@ TEST_CASE("find_best_move")
 {
   logfile << "TEST STARTED" << "\n";
   Config_params config_params;
-  config_params.set_config_param("max_serch_level", "8");
+  config_params.set_config_param("max_search_depth", "8");
   Game game(config_params);
   Go_params go_params; // All members in go_params are set to zero.
 
@@ -656,6 +656,7 @@ TEST_CASE("find_best_move")
     std::string FEN_string = get_FEN_test_position(90);
     game.read_position_FEN(FEN_string);
     game.init();
+    go_params.movetime = 10000; // milliseconds
     Bitmove bestmove = game.engine_go(config_params, go_params);
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
@@ -676,6 +677,7 @@ TEST_CASE("find_best_move")
     std::string FEN_string = get_FEN_test_position(93);
     game.read_position_FEN(FEN_string);
     game.init();
+    go_params.movetime = 10000; // milliseconds
     Bitmove bestmove = game.engine_go(config_params,  go_params);
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
@@ -696,11 +698,12 @@ TEST_CASE("find_best_move")
     std::string FEN_string = get_FEN_test_position(91);
     game.read_position_FEN(FEN_string);
     game.init();
+    go_params.movetime = 10000; // milliseconds
     Bitmove bestmove = game.engine_go(config_params,  go_params);
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Ke5-e6");
+    REQUIRE((ss.str() == "Ke5-e6" || ss.str() == "Ke5-f6"));
     game.read_position_FEN(reverse_FEN_string(FEN_string));
     game.init();
     bestmove = game.engine_go(config_params, go_params);
@@ -716,7 +719,8 @@ TEST_CASE("find_best_move")
     std::string FEN_string = get_FEN_test_position(89);
     game.read_position_FEN(FEN_string);
     game.init();
-    Bitmove bestmove = game.engine_go(config_params, go_params);
+    go_params.movetime = 10000; // milliseconds
+   Bitmove bestmove = game.engine_go(config_params, go_params);
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
@@ -736,6 +740,7 @@ TEST_CASE("find_best_move")
     std::string FEN_string = get_FEN_test_position(73);
     game.read_position_FEN(FEN_string);
     game.init();
+    go_params.movetime = 10000; // milliseconds
     Bitmove bestmove = game.engine_go(config_params, go_params);
     REQUIRE(game.get_game_history_state() == History_state{2, 0, 0});
     std::cout << "Best move: " << bestmove << std::endl;
@@ -757,6 +762,7 @@ TEST_CASE("find_best_move")
     std::string FEN_string = get_FEN_test_position(78);
     game.read_position_FEN(FEN_string);
     game.init();
+    go_params.movetime = 10000; // milliseconds
     Bitmove bestmove = game.engine_go(config_params, go_params);
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
@@ -777,11 +783,12 @@ TEST_CASE("find_best_move")
     std::string FEN_string = get_FEN_test_position(80);
     game.read_position_FEN(FEN_string);
     game.init();
+    go_params.movetime = 10000; // milliseconds
     Bitmove bestmove = game.engine_go(config_params, go_params);
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Nd3-c1+");
+    REQUIRE((ss.str() == "Nd3-c1+" || ss.str() == "Rc8-c4"));
     std::cout << FEN_string << std::endl;
     std::cout << reverse_FEN_string(FEN_string) << std::endl;
     game.read_position_FEN(reverse_FEN_string(FEN_string));
@@ -791,7 +798,7 @@ TEST_CASE("find_best_move")
     ss.clear();
     ss.str("");
     ss << bestmove;
-    REQUIRE(ss.str() == "Nd6-c4");
+    REQUIRE((ss.str() == "Nd6-c4" || ss.str() == "Rc1-c5"));
   }
 
 }

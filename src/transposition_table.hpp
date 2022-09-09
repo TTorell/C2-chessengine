@@ -79,6 +79,9 @@ class Transposition_table
       init_random_numbers();
     }
 
+    void operator=(const Transposition_table&) = delete;
+    Transposition_table(const Transposition_table&) = delete;
+
     ~Transposition_table()
     {
     }
@@ -107,9 +110,9 @@ class Transposition_table
           _previous_searchdepth_map->clear();
           break;
         case map_tag::both:
+        default:
           _current_searchdepth_map->clear();
           _previous_searchdepth_map->clear();
-          break;
       }
     }
 
