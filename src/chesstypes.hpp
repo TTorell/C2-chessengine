@@ -38,9 +38,10 @@ const auto eval_max = 100.0F;
 const auto eval_min = -eval_max;
 const auto epsilon = 0.00000001F;
 
-const auto N_SEARCH_BOARDS_DEFAULT = 38;
+const auto N_SEARCH_BOARDS_DEFAULT = 38U;
 const auto dont_update_history = false;
 const auto dont_evaluate_zero_moves = false;
+const auto use_max_search_depth = true;
 
 enum class piecetype
 {

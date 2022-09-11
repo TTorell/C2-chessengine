@@ -55,7 +55,7 @@ class Bitboard_with_utils: public Bitboard
 
     void make_UCI_move(const std::string& UCI_move);
 
-    float evaluate_position(color col_to_move, uint8_t level, bool evaluate_zero_moves = true) const;
+//    float evaluate_position(color col_to_move, uint8_t level, bool evaluate_zero_moves = true) const;
 
     int get_no_of_moves()
     {

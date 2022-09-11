@@ -404,10 +404,10 @@ uint64_t Bitboard_with_utils::find_legal_squares(uint64_t sq, uint64_t mask, uin
   return Bitboard::find_legal_squares(sq, mask);
 }
 
-float Bitboard_with_utils::evaluate_position(color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
-{
-  return Bitboard::evaluate_position(col_to_move, search_ply, evaluate_zero_moves);
-}
+//float Bitboard_with_utils::evaluate_position(color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
+//{
+//  return Bitboard::evaluate_position(col_to_move, search_ply, evaluate_zero_moves);
+//}
 
 int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitmove& m) const
 {

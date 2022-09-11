@@ -167,7 +167,6 @@ class Bitboard
 
     int count_threats_to_square(uint64_t square, color side) const;
 
-    float evaluate_position(color for_side, uint8_t level, bool evaluate_zero_moves = true) const;
 
     void get_pv_line(std::vector<Bitmove>& pv_line) const;
 
@@ -289,6 +288,8 @@ class Bitboard
 
     // ### Public methods for the search of best move. ###
     // ---------------------------------------------------
+
+    float evaluate_position(color for_side, uint8_t level, bool evaluate_zero_moves = true) const;
 
     void set_time_left(bool value);
 

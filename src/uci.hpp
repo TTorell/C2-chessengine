@@ -164,6 +164,13 @@ class UCI
     }
 
   public:
+    UCI():
+      _command_tokens {},
+      _go_params(),
+      _position_params()
+    {
+
+    }
     Go_params get_go_params() const
     {
       return _go_params;

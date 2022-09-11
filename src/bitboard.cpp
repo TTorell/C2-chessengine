@@ -545,7 +545,7 @@ void Bitboard::count_center_control(float& sum, float weight) const
   sum += counter * weight;
 }
 
-float Bitboard::evaluate_position(color col_to_move, uint8_t level, bool evaluate_zero_moves) const
+float Bitboard::evaluate_position(color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
 {
   if (evaluate_zero_moves && _movelist.size() == 0)
   {
@@ -554,7 +554,7 @@ float Bitboard::evaluate_position(color col_to_move, uint8_t level, bool evaluat
     {
       // This is checkmate, we want to evaluate the quickest way to mate higher
       // so we add/subtract level.
-      return (col_to_move == color::white)? (eval_min + level):(eval_max - level);
+      return (col_to_move == color::white)? (eval_min + search_ply):(eval_max - search_ply);
     }
     else
     {
@@ -669,7 +669,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
 }
 
 // Search algorithm: Negamax with alpha-beta-pruning
-float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta, Bitmove& best_move, const uint8_t max_search_ply) const
+float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta, Bitmove& best_move, const uint8_t search_depth) const
 {
   assert(beta > alpha);
   search_info.node_counter++;
@@ -698,7 +698,6 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     if (element.search_ply <= search_ply)
     {
       search_info.hash_hits++;
-      // best_move_index = element.best_move_index;
       best_move = element.best_move;
       return element.best_move._evaluation;
     }
@@ -718,7 +717,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     return element.best_move._evaluation;
   }
 
-  if (search_ply == max_search_ply)
+  if (search_ply == search_depth + 1)
   {
     search_info.leaf_node_counter++;
     // ---------------------------------------
@@ -744,9 +743,9 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     History_state saved_history_state = history.get_state();
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    level_boards[search_ply].make_move(_movelist[i], (search_ply < max_search_ply)? gentype::all:gentype::captures);
+    level_boards[search_ply].make_move(_movelist[i], gentype::all);
     //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
-    move_score = -level_boards[search_ply].negamax_with_pruning(search_ply, -beta, -alpha, best_move_dummy, max_search_ply);
+    move_score = -level_boards[search_ply].negamax_with_pruning(search_ply, -beta, -alpha, best_move_dummy, search_depth);
 
     // Restore game history to current position.
     history.takeback_moves(saved_history_state);
@@ -944,11 +943,12 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_plies) 
   return search_info.leaf_node_counter;
 }
 
-Shared_ostream& Bitboard::write_search_info(Shared_ostream & logfile) const
+Shared_ostream& Bitboard::write_search_info(Shared_ostream& logfile) const
 {
   logfile << "Evaluated on depth:" << static_cast<int>(search_info.max_search_depth) << " "
-  << static_cast<int>(search_info.leaf_node_counter) << " nodes in " << search_info.time_taken
-  << " milliseconds.\n";
+          << static_cast<int>(search_info.leaf_node_counter)
+          << " nodes in " << search_info.time_taken
+          << " milliseconds.\n";
   std::stringstream ss;
   std::vector<Bitmove> pv_line;
   get_pv_line(pv_line);
