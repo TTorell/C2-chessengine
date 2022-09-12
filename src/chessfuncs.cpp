@@ -43,19 +43,19 @@ extern "C"
 namespace C2_chess
 {
 
-color other_color(const color& side)
+Color other_color(const Color& side)
 {
-  return (side == color::white) ? color::black : color::white;
+  return (side == Color::White) ? Color::Black : Color::White;
 }
 
-inline color& operator++(color& side)
+inline Color& operator++(Color& side)
 {
-  return side = (side == color::white) ? color::black : color::white;
+  return side = (side == Color::White) ? Color::Black : Color::White;
 }
 
-color col_from_string(const std::string& s)
+Color col_from_string(const std::string& s)
 {
-  return (s == "w") ? color::white : color::black;
+  return (s == "w") ? Color::White : Color::Black;
 }
 
 std::string get_logfile_name()
@@ -626,7 +626,7 @@ std::ostream& Movelog::write(std::ostream& os) const
   {
     std::ostringstream move;
     move << _list[i];
-    if (i == 0 && _col_to_start == color::black)
+    if (i == 0 && _col_to_start == Color::Black)
     {
       os << moveno++ << "." << std::left << std::setw(9) << "  ...  " << move.str() << std::endl;
       increment = 1;

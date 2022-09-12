@@ -39,7 +39,7 @@ class Bitboard
 
     std::deque<Bitmove> _movelist;
     uint64_t _hash_tag;
-    color _side_to_move = color::white;
+    Color _side_to_move = Color::White;
     uint16_t _move_number;
     uint8_t _castling_rights = castling_rights_none;
     bool _has_castled[2];
@@ -63,15 +63,15 @@ class Bitboard
 
     inline void sort_moves(std::deque<Bitmove>& movelist);
 
-    inline void add_move(piecetype p_type,
+    inline void add_move(Piecetype p_type,
                          uint16_t move_props,
                          uint64_t from_square,
                          uint64_t to_square,
-                         piecetype promotion_p_type = piecetype::Queen);
+                         Piecetype promotion_p_type = Piecetype::Queen);
 
     bool is_in_movelist(const Bitmove& m) const;
 
-    inline float get_piece_value(piecetype p_type) const;
+    inline float get_piece_value(Piecetype p_type) const;
 
     inline float get_piece_value(uint64_t square) const;
 
@@ -79,7 +79,7 @@ class Bitboard
 
     bool is_not_pinned(uint64_t square) const {return  square & ~_pinned_pieces;}
 
-    bool is_promotion_square(uint64_t square) const { return (_side_to_move == color::white) ? square & row_8 : square & row_1;}
+    bool is_promotion_square(uint64_t square) const { return (_side_to_move == Color::White) ? square & row_8 : square & row_1;}
 
     // ### Protected Methods for move-generation
     // -----------------------------------------
@@ -93,15 +93,15 @@ class Bitboard
 
     uint64_t find_legal_squares(uint64_t sq, uint64_t mask);
 
-    void find_Queen_Rook_and_Bishop_moves(gentype gt);
+    void find_Queen_Rook_and_Bishop_moves(Gentype gt);
 
-    void find_legal_moves_for_pinned_pieces(gentype gt);
+    void find_legal_moves_for_pinned_pieces(Gentype gt);
 
-    void find_Knight_moves(gentype gt);
+    void find_Knight_moves(Gentype gt);
 
-    void find_Pawn_moves(gentype gt);
+    void find_Pawn_moves(Gentype gt);
 
-    void find_normal_legal_moves(gentype gt);
+    void find_normal_legal_moves(Gentype gt);
 
     void find_Knight_moves_to_square(const uint64_t to_square);
 
@@ -111,11 +111,11 @@ class Bitboard
 
     void add_pawn_move_check_promotion(uint64_t from_square, uint64_t to_square);
 
-    void find_pawn_moves_to_empty_square(uint64_t to_square, gentype gt);
+    void find_pawn_moves_to_empty_square(uint64_t to_square, Gentype gt);
 
-    void find_moves_to_square(uint64_t to_square, gentype gt);
+    void find_moves_to_square(uint64_t to_square, Gentype gt);
 
-    void find_moves_after_check(gentype gt);
+    void find_moves_after_check(Gentype gt);
 
     void find_checkers_and_pinned_pieces();
 
@@ -123,12 +123,12 @@ class Bitboard
 
     bool square_is_threatened2(uint64_t to_square, bool King_is_asking);
 
-    inline void find_king_moves(gentype gt);
+    inline void find_king_moves(Gentype gt);
 
     // ### Protected methods for making a move ###
     // ---------------------------------------
 
-    inline void add_promotion_piece(piecetype p_type);
+    inline void add_promotion_piece(Piecetype p_type);
 
     inline void touch_piece(uint64_t from_square);
 
@@ -136,19 +136,19 @@ class Bitboard
 
     inline void move_piece(uint64_t from_square,
                            uint64_t to_square,
-                           piecetype p_type);
+                           Piecetype p_type);
 
     inline void remove_castling_right(uint8_t cr);
 
-    inline void place_piece(piecetype p_type, uint64_t square);
+    inline void place_piece(Piecetype p_type, uint64_t square);
 
     inline void clear_ep_square();
 
     inline void set_ep_square(uint64_t ep_square);
 
-    void update_hash_tag(uint64_t square, color p_color, piecetype p_type);
+    void update_hash_tag(uint64_t square, Color p_color, Piecetype p_type);
 
-    inline void update_hash_tag(uint64_t square1, uint64_t square2, color p_color, piecetype type);
+    inline void update_hash_tag(uint64_t square1, uint64_t square2, Color p_color, Piecetype type);
 
     void update_side_to_move();
 
@@ -165,9 +165,9 @@ class Bitboard
 
     void count_center_control(float& sum, float weight) const;
 
-    int count_threats_to_square(uint64_t square, color side) const;
+    int count_threats_to_square(uint64_t square, Color side) const;
 
-    float evaluate_position(color for_side, uint8_t level, bool evaluate_zero_moves = true) const;
+    float evaluate_position(Color for_side, uint8_t level, bool evaluate_zero_moves = true) const;
 
     void get_pv_line(std::vector<Bitmove>& pv_line) const;
 
@@ -202,7 +202,7 @@ class Bitboard
     // Puts all legal moves of the position in _movelist.
     // (Naturally only the moves for the player who's in
     // turn to make a move.)
-    void find_legal_moves(gentype gt);
+    void find_legal_moves(Gentype gt);
 
     // ### Public methods for make move ###
     // ------------------------------------
@@ -210,15 +210,15 @@ class Bitboard
     // Looks up the i:th move in movelist and makes it.
     // move_no just keeps track of the full move number
     // in the game.
-    void make_move(uint8_t i, gentype gt = gentype::all, bool update_history = true);
+    void make_move(uint8_t i, Gentype gt = Gentype::All, bool update_history = true);
 
     // Only for the command-line interface, where the user
     // is prompted to enter the new move on the keyboard,
     // if he's on turn.
-    int make_move(playertype player_type);
+    int make_move(Playertype player_type);
 
     // This make_move() doesn't require a defined movelist.
-    void make_move(const Bitmove& m, gentype gt = gentype::all, bool update_history = true);
+    void make_move(const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
 
     // All properties of a move are not decided immediately,
     // but some of them (check for instance) are set after the
@@ -275,7 +275,7 @@ class Bitboard
 
     // A slow way of determining the piecetype of a piece on
     // given square. Should not be used inside the search-loop.
-    piecetype get_piece_type(uint64_t square) const;
+    Piecetype get_piece_type(uint64_t square) const;
 
     uint16_t get_move_number() const
     {
@@ -298,7 +298,7 @@ class Bitboard
 
     bool has_time_left();
 
-    void clear_transposition_table(map_tag map = map_tag::current);
+    void clear_transposition_table(map_tag map = map_tag::Current);
 
     void switch_tt_tables();
 
@@ -315,7 +315,7 @@ class Bitboard
       return _half_move_counter;
     }
 
-    color get_side_to_move() const
+    Color get_side_to_move() const
     {
       return _side_to_move;
     }
@@ -345,7 +345,7 @@ class Bitboard
     float negamax_with_pruning(uint8_t level, float alpha, float beta, Bitmove& best_move, const uint8_t max_search_ply) const;
 
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
-    std::ostream& write(std::ostream& os, outputtype wt, color from_perspective) const;
+    std::ostream& write(std::ostream& os, Outputtype wt, Color from_perspective) const;
     std::ostream& write_movelist(std::ostream& os, bool same_line = false) const;
     Shared_ostream& write_search_info(Shared_ostream& logfile) const;
 

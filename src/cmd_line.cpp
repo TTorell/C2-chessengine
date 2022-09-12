@@ -5,60 +5,34 @@
 #include "game.hpp"
 #include "current_time.hpp"
 #include "uci.hpp"
+#include "shared_ostream.hpp"
+#include "magic_enum.hpp"
 
 namespace // file-private namespace
 {
 C2_chess::Current_time current_time;
 
-bool read_promotion_piecetype(C2_chess::piecetype& pt, char ch)
+bool read_promotion_piecetype(C2_chess::Piecetype& pt, char ch)
 {
   // method not important for efficiency
   switch (ch)
   {
     case 'Q':
-      pt = C2_chess::piecetype::Queen;
+      pt = C2_chess::Piecetype::Queen;
       break;
     case 'R':
-      pt = C2_chess::piecetype::Rook;
+      pt = C2_chess::Piecetype::Rook;
       break;
     case 'N':
-      pt = C2_chess::piecetype::Knight;
+      pt = C2_chess::Piecetype::Knight;
       break;
     case 'B':
-      pt = C2_chess::piecetype::Bishop;
+      pt = C2_chess::Piecetype::Bishop;
       break;
     default:
       return false;
   }
   return true;
-}
-
-std::ostream& write_piece_diagram_style(std::ostream& os, C2_chess::piecetype p_type, C2_chess::color side)
-{
-  switch (p_type)
-  {
-    case C2_chess::piecetype::King:
-      os << ((side == C2_chess::color::white)? ("\u2654"):("\u265A"));
-      break;
-    case C2_chess::piecetype::Queen:
-      os << ((side == C2_chess::color::white)? ("\u2655"):("\u265B"));
-      break;
-    case C2_chess::piecetype::Rook:
-      os << ((side == C2_chess::color::white)? ("\u2656"):("\u265C"));
-      break;
-    case C2_chess::piecetype::Bishop:
-      os << ((side == C2_chess::color::white)? ("\u2657"):("\u265D"));
-      break;
-    case C2_chess::piecetype::Knight:
-      os << ((side == C2_chess::color::white)? ("\u2658"):("\u265E"));
-      break;
-    case C2_chess::piecetype::Pawn:
-      os << ((side == C2_chess::color::white)? ("\u2659"):("\u265F"));
-      break;
-    default:
-      std::cerr << ("Undefined piece type in Piece::write_diagram_style") << std::endl;
-  }
-  return os;
 }
 
 int write_menue_get_choice()
@@ -99,15 +73,9 @@ int write_menue_get_choice()
   }
 }
 
-} // End fileprivate namespace
-
-namespace C2_chess
+int back_to_main_menu()
 {
-
-// Method for the cmdline-interface
-static int back_to_main_menu()
-{
-  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+  C2_chess::Shared_ostream& cmdline = *(C2_chess::Shared_ostream::get_cout_instance());
 
   std::string input;
   cmdline << "\n" << "Back to main menu? [y/n]:";
@@ -121,10 +89,9 @@ static int back_to_main_menu()
   }
 }
 
-// Method for the cmdline-interface
-static color white_or_black()
+C2_chess::Color white_or_black()
 {
-  Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
+  C2_chess::Shared_ostream& cmdline = *(C2_chess::Shared_ostream::get_cout_instance());
 
   char st[100];
   bool try_again = true;
@@ -134,20 +101,25 @@ static color white_or_black()
     std::cin >> st;
     if (st[0] == 'w')
     {
-      return color::white;
+      return C2_chess::Color::White;
       try_again = false;
     }
     else if (st[0] == 'b')
     {
-      return color::black;
+      return C2_chess::Color::Black;
       try_again = false;
 
     }
     else
       cmdline << "Enter w or b" << "\n";
   }
-  return color::white;
+  return C2_chess::Color::White;
 }
+
+} // End of fileprivate namespace
+
+namespace C2_chess
+{
 
 // Method for the cmdline-interface
 void play_on_cmd_line(Config_params& config_params)
@@ -161,7 +133,7 @@ void play_on_cmd_line(Config_params& config_params)
     {
       case 1:
         {
-        color side = white_or_black();
+        Color side = white_or_black();
         Game game(side, config_params);
         game.setup_pieces();
         game.init();
@@ -174,7 +146,7 @@ void play_on_cmd_line(Config_params& config_params)
         {
         std::string input;
 
-        color human_color = white_or_black();
+        Color human_color = white_or_black();
         Game game(human_color, config_params);
         std::string filename = get_stdout_from_cmd("cmd java -classpath \".\" ChooseFile");
         int status = game.read_position(filename);
@@ -191,8 +163,8 @@ void play_on_cmd_line(Config_params& config_params)
       }
       case 3:
         {
-        Game game(playertype::human,
-                  playertype::human,
+        Game game(Playertype::Human,
+                  Playertype::Human,
                   config_params);
         game.setup_pieces();
         game.init();
@@ -211,9 +183,9 @@ void play_on_cmd_line(Config_params& config_params)
 
 int Game::make_a_move(float& score, const uint8_t max_search_ply)
 {
-  if (_player_type[index(_chessboard.get_side_to_move())] == playertype::human)
+  if (_player_type[index(_chessboard.get_side_to_move())] == Playertype::Human)
   {
-    return dynamic_cast<Bitboard*>(&_chessboard)->make_move(playertype::human);
+    return dynamic_cast<Bitboard*>(&_chessboard)->make_move(Playertype::Human);
   }
   else // _type == computer
   {
@@ -245,13 +217,13 @@ void Game::start()
   logfile << "\nNew Game started\n\n";
   logfile << _config_params;
   cmdline << "\n" << "New Game started" << "\n";
-  // Init the hash tag for the initial board-position to
-  // use in the Zobrist hash transposition-table.
+// Init the hash tag for the initial board-position to
+// use in the Zobrist hash transposition-table.
   init_board_hash_tag();
-  // Generate all moves.
-  _chessboard.find_legal_moves(gentype::all);
-  // Tell the engine that there are no time limits.
-  // The time it takes is defined by the max_searh_level
+// Generate all moves.
+  _chessboard.find_legal_moves(Gentype::All);
+// Tell the engine that there are no time limits.
+// The time it takes is defined by the max_searh_level
   _chessboard.set_time_left(true);
   const int max_search_ply = 7;
   write_diagram(cmdline);
@@ -259,7 +231,7 @@ void Game::start()
   while (_playing)
   {
     uint64_t nsec_start = current_time.nanoseconds();
-    if (_player_type[index(_chessboard.get_side_to_move())] == playertype::human)
+    if (_player_type[index(_chessboard.get_side_to_move())] == Playertype::Human)
     {
 //      cmdline << "Hashtag: " << _chessboard.get_hash_tag() << "\n";
 //      cmdline << "Material evaluation: " << _chessboard.get_material_evaluation() << "\n";
@@ -296,10 +268,10 @@ bool Bitboard::is_in_movelist(const Bitmove& m) const
   return false;
 }
 
-int Bitboard::make_move(playertype player)
+int Bitboard::make_move(Playertype player)
 {
-  assert(player == playertype::human); // This method is only for humans playing on the cmd-line.
-  if (player != playertype::human)
+  assert(player == Playertype::Human); // This method is only for humans playing on the cmd-line.
+  if (player != Playertype::Human)
     return -1;
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
 
@@ -307,8 +279,8 @@ int Bitboard::make_move(playertype player)
   uint8_t from_rank_idx;
   uint8_t to_file_idx;
   uint8_t to_rank_idx;
-  piecetype p_type;
-  piecetype promotion_piecetype = piecetype::Queen; // Default
+  Piecetype p_type;
+  Piecetype promotion_piecetype = Piecetype::Queen; // Default
   uint8_t move_props = move_props_none;
   std::string move_string;
 
@@ -344,7 +316,7 @@ int Bitboard::make_move(playertype player)
       move_props |= move_props_promotion;
     }
     if (move_props & move_props_promotion)
-      if ((_side_to_move == color::white)? from_rank_idx != 7:from_rank_idx != 2)
+      if ((_side_to_move == Color::White) ? from_rank_idx != 7 : from_rank_idx != 2)
         continue;
     uint64_t from_square = file[from_file_idx] & rank[from_rank_idx];
     uint64_t to_square = file[to_file_idx] & rank[to_rank_idx];
@@ -353,26 +325,27 @@ int Bitboard::make_move(playertype player)
     p_type = get_piece_type(from_square);
     switch (p_type)
     {
-      case piecetype::Undefined:
-        continue;
-      case piecetype::Pawn:
-        if (to_square & _ep_square)
-          move_props |= move_props_en_passant;
-        break;
-      case piecetype::King:
-        if (_side_to_move == color::white)
-        {
-          if ((from_square & e1_square) && (to_square & (g1_square | c1_square)))
-            move_props |= move_props_castling;
-        }
-        else
-        {
-          if ((from_square & e8_square) && (to_square & (g8_square | c8_square)))
-            move_props |= move_props_castling;
-        }
-        break;
-      default:
-        ;
+    using enum Piecetype;
+    case Undefined:
+      continue;
+    case Pawn:
+      if (to_square & _ep_square)
+        move_props |= move_props_en_passant;
+      break;
+    case King:
+      if (_side_to_move == Color::White)
+      {
+        if ((from_square & e1_square) && (to_square & (g1_square | c1_square)))
+          move_props |= move_props_castling;
+      }
+      else
+      {
+        if ((from_square & e8_square) && (to_square & (g8_square | c8_square)))
+          move_props |= move_props_castling;
+      }
+      break;
+    default:
+      ;
     }
     if (to_square & _other->pieces)
       move_props = move_props_capture;
@@ -385,128 +358,100 @@ int Bitboard::make_move(playertype player)
   } // while not read
 }
 
-std::ostream& Bitboard_with_utils::write_cmdline_style(std::ostream& os, outputtype ot, color from_perspective) const
+
+std::ostream& write_piece_diagram_style(std::ostream& os, C2_chess::Piecetype p_type, C2_chess::Color side)
 {
-  switch (ot)
+  switch (p_type)
   {
-    case outputtype::debug:
-      //      os << "The latest move was: ";
-//      os << _last_move << std::endl;
-//      os << "Castling state is: " << _castling_state << std::endl;
-//      os << "En passant square is: " << _en_passant_square << std::endl;
-//      for (int fileindex = a; fileindex <= h; fileindex++)
-//        for (int rankindex = 1; rankindex <= 8; rankindex++)
-//          _file[fileindex][rankindex]->write_describing(os);
-//      os << std::endl << "*** Possible moves ***" << std::endl;
-//      for (int i = 0; i < _possible_moves.size(); i++)
-//        os << *_possible_moves[i] << std::endl;
-//      os << std::endl;
-//      this->write(os, outputtype::cmd_line_diagram, col::white) << std::endl;
-      break;
-    case outputtype::cmd_line_diagram:
-      if (from_perspective == color::white)
-      {
-        os << "###################" << std::endl;
-        for (int i = 8; i >= 1; i--)
-        {
-          os << "#";
-          for (int j = a; j <= h; j++)
-          {
-            os << "|";
-            uint64_t square = file[j] & rank[i];
-            if (square & _own->pieces)
-              write_piece_diagram_style(os, get_piece_type(square), _side_to_move);
-            else if (square & _other->pieces)
-              write_piece_diagram_style(os, get_piece_type(square), other_color(_side_to_move));
-            else
-              os << "-";
-          }
-          os << "|#" << " " << i << std::endl;
-        }
-        os << "###################" << std::endl;
-        os << "  a b c d e f g h " << std::endl;
-      }
-      else // From blacks point of view
-      {
-        os << "###################" << std::endl;
-        for (int i = 1; i <= 8; i++)
-        {
-          os << "#";
-          for (int j = h; j >= a; j--)
-          {
-            os << "|";
-            uint64_t square = file[j] & rank[i];
-            if (square & _own->pieces)
-              write_piece_diagram_style(os, get_piece_type(square), _side_to_move);
-            else if (square & _other->pieces)
-              write_piece_diagram_style(os, get_piece_type(square), other_color(_side_to_move));
-            else
-              os << "-";
-          }
-          os << "|#" << " " << i << std::endl;
-        }
-        os << "###################" << std::endl;
-        os << "  h g f e d c b a " << std::endl;
-      }
-      break;
-    default:
-      os << "Sorry: Output type not implemented yet." << std::endl;
+  using enum C2_chess::Piecetype;
+  using enum C2_chess::Color;
+  case King:
+    os << ((side == White) ? ("\u2654") : ("\u265A"));
+    break;
+  case Queen:
+    os << ((side == White) ? ("\u2655") : ("\u265B"));
+    break;
+  case Rook:
+    os << ((side == White) ? ("\u2656") : ("\u265C"));
+    break;
+  case Bishop:
+    os << ((side == White) ? ("\u2657") : ("\u265D"));
+    break;
+  case Knight:
+    os << ((side == White) ? ("\u2658") : ("\u265E"));
+    break;
+  case Pawn:
+    os << ((side == White) ? ("\u2659") : ("\u265F"));
+    break;
+  default:
+    std::cerr << "Undefined piece type: " << magic_enum::enum_name(p_type) << std::endl;
+    Shared_ostream& logfile = *(Shared_ostream::get_instance());
+    logfile << "Undefined piece type: " << magic_enum::enum_name(p_type) << "\n";
+    assert(false);
   }
   return os;
 }
 
-//bool Player::mate_in(const int& n, const Board& board, int k, int& make_move_no)
-//{
-//  cout << "Player::mate_in " << n << " k = " << k << "col_to_move = " << _colour << std::endl;
-//  bool mate1 = false;
-//  int i = 0;
-//  //cerr<<"board noofmoves"<<board.no_of_moves()<<std::endl;
-//  while ((i < board.no_of_moves()) && (!mate1))
-//  {
-//    int x = 3; // just a dummy in this case
-//    _b[k] = board;
-//    //if (k==0)
-//    //cout << "i=" << i << " k=" << k << std::endl;
-//    _b[k].make_move(i++, x, _colour, true);
-//    if ((_b[k].no_of_moves()))
-//    {
-//      //      cerr<<"bk no of moves "<<b[k].no_of_moves()<<std::endl;
-//      if (n > 1) //(k<(n-1))
-//      {
-//        bool mate2 = true;
-//        int j = 0;
-//        Board tempboard;
-//        while ((j < _b[k].no_of_moves()) && (mate2))
-//        {
-//          tempboard = _b[k];
-//          tempboard.make_move(j++, x, _other_col, true);
-//          if (!mate_in(n - 1, tempboard, k + 1, make_move_no))
-//            mate2 = false;
-//        }
-//        if (mate2)
-//          mate1 = true;
-//      }
-//    }
-//    else
-//    {
-//      if (_b[k].get_last_move().get_check())
-//      {
-//        mate1 = true;
-//        // cerr<<"OK*********"<<std::endl;
-//      }
-//      //         else
-//      //            cout << "stalemate" << std::endl;
-//    }
-//    //if (!mate1)
-//    //   b[k].clear();
-//  }
-//  //cerr<<"mate_in END "<<n<<std::endl;
-//  if (mate1 && (k == 0))
-//  {
-//    make_move_no = --i;
-//    //cerr<<"the move was number"<< i << std::endl;
-//  }
-//  return mate1;
-//}
+std::ostream& Bitboard_with_utils::write_cmdline_style(std::ostream& os, Outputtype ot, Color from_perspective) const
+{
+  switch (ot)
+  {
+  using enum Outputtype;
+  case Debug:
+    break;
+  case Cmd_line_diagram:
+    if (from_perspective == Color::White)
+    {
+      os << "###################" << std::endl;
+      for (int i = 8; i >= 1; i--)
+      {
+        os << "#";
+        for (int j = a; j <= h; j++)
+        {
+          os << "|";
+          uint64_t square = file[j] & rank[i];
+          if (square & _own->pieces)
+            write_piece_diagram_style(os, get_piece_type(square), _side_to_move);
+          else if (square & _other->pieces)
+            write_piece_diagram_style(os, get_piece_type(square), other_color(_side_to_move));
+          else
+            os << "-";
+        }
+        os << "|#" << " " << i << std::endl;
+      }
+      os << "###################" << std::endl;
+      os << "  a b c d e f g h " << std::endl;
+    }
+    else // From blacks point of view
+    {
+      os << "###################" << std::endl;
+      for (int i = 1; i <= 8; i++)
+      {
+        os << "#";
+        for (int j = h; j >= a; j--)
+        {
+          os << "|";
+          uint64_t square = file[j] & rank[i];
+          if (square & _own->pieces)
+            write_piece_diagram_style(os, get_piece_type(square), _side_to_move);
+          else if (square & _other->pieces)
+            write_piece_diagram_style(os, get_piece_type(square), other_color(_side_to_move));
+          else
+            os << "-";
+        }
+        os << "|#" << " " << i << std::endl;
+      }
+      os << "###################" << std::endl;
+      os << "  h g f e d c b a " << std::endl;
+    }
+    break;
+  default:
+    os << "Sorry: Output type not implemented yet: " << magic_enum::enum_name(ot) << std::endl;
+    Shared_ostream& logfile = *(Shared_ostream::get_instance());
+    logfile << "Sorry: Output type not implemented yet: " << magic_enum::enum_name(ot) << "\n";
+    assert(false);
+  }
+  return os;
+}
 
-}// namespace C2_CHESS
+} // namespace C2_CHESS

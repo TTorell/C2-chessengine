@@ -17,6 +17,7 @@
 #include "circular_fifo.hpp"
 #include "current_time.hpp"
 #include "uci.hpp"
+#include "magic_enum.hpp"
 
 namespace C2_chess
 {
@@ -126,20 +127,28 @@ std::string engine_style(const Bitmove& move)
   {
     switch (move.promotion_piece_type())
     {
-      case piecetype::Queen:
-        ss << "q";
-        break;
-      case piecetype::Rook:
-        ss << "r";
-        break;
-      case piecetype::Knight:
-        ss << "n";
-        break;
-      case piecetype::Bishop:
-        ss << "b" << std::endl;
-        break;
-      default:
-        assert(false);
+    using enum Piecetype;
+    case Queen:
+      ss << "q";
+      break;
+    case Rook:
+      ss << "r";
+      break;
+    case Knight:
+      ss << "n";
+      break;
+    case Bishop:
+      ss << "b" << std::endl;
+      break;
+    default:
+      std::cerr << "Invalid promotion piece-type: "
+                << magic_enum::enum_name(move.promotion_piece_type())
+                << std::endl;
+      Shared_ostream& logfile = *(Shared_ostream::get_instance());
+      logfile << ("Invalid promotion piece-type: "s)
+      << magic_enum::enum_name(move.promotion_piece_type())
+      << "\n";
+      assert(false);
     }
   }
   return ss.str();
@@ -288,9 +297,9 @@ int main(int argc, char* argv[])
       logfile << "Unknown UCI-command:/n" << command << "\n";
       continue;
     }
-}
-close_threads(input_thread, output_thread);
-ofs.close();
-return 0;
+  }
+  close_threads(input_thread, output_thread);
+  ofs.close();
+  return 0;
 }
 

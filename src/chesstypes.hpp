@@ -42,7 +42,7 @@ const auto N_SEARCH_BOARDS_DEFAULT = 38;
 const auto dont_update_history = false;
 const auto dont_evaluate_zero_moves = false;
 
-enum class piecetype
+enum class Piecetype
 {
   Queen,
   Rook,
@@ -55,31 +55,31 @@ enum class piecetype
 
 const float piece_values[7] = {9.0F, 5.0F, 3.0F, 3.0F, 1.0F, 0.0F, 0.0F};
 
-enum class color
+enum class Color
 {
-  white = 0,
-  black = 1
+  White = 0,
+  Black = 1
 };
 
-enum class playertype
+enum class Playertype
 {
-  computer,
-  human
+  Computer,
+  Human
 };
 
-enum class gentype
+enum class Gentype
 {
-  all,
-  captures,
-  captures_and_promotions
+  All,
+  Captures,
+  Captures_and_Promotions
 };
 
-enum class outputtype
+enum class Outputtype
 {
-  verbose,
-  silent,
-  debug,
-  cmd_line_diagram
+  Verbose,
+  Silent,
+  Debug,
+  Cmd_line_diagram
 };
 
 // Castling rights
@@ -110,7 +110,7 @@ constexpr bool SAME_LINE = true;
 
 struct Search_info
 {
-    color searching_side;
+    Color searching_side;
     unsigned int leaf_node_counter;
     unsigned int node_counter;
     unsigned int hash_hits;
@@ -124,7 +124,7 @@ struct Search_info
 
     float get_score() const
     {
-      return (searching_side == color::white) ? score : -score;
+      return (searching_side == Color::White) ? score : -score;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Search_info& si);
@@ -183,11 +183,11 @@ struct Bitmove
     {
     }
 
-    Bitmove(piecetype p_type, // bit 25-32
+    Bitmove(Piecetype p_type, // bit 25-32
             uint16_t move_props, // bit 15-24
             uint64_t from_square, // bit 7-12
             uint64_t to_square, // bit 1-6
-            piecetype promotion_pt = piecetype::Queen) : // bit 13-14
+            Piecetype promotion_pt = Piecetype::Queen) : // bit 13-14
         _move(0),
         _evaluation(0.0)
     {
@@ -219,9 +219,9 @@ struct Bitmove
       return square((_move >> 6) & 0x3F);
     }
 
-    piecetype promotion_piece_type() const
+    Piecetype promotion_piece_type() const
     {
-      return static_cast<piecetype>((_move >> 12) & 0x03);
+      return static_cast<Piecetype>((_move >> 12) & 0x03);
     }
 
     uint16_t properties() const
@@ -229,9 +229,9 @@ struct Bitmove
       return (_move >> 14) & 0x03FF;
     }
 
-    piecetype piece_type() const
+    Piecetype piece_type() const
     {
-      return static_cast<piecetype>(_move >> 24);
+      return static_cast<Piecetype>(_move >> 24);
     }
 
     void add_property(uint16_t property)
