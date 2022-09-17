@@ -75,11 +75,20 @@ class Bitboard
 
     inline float get_piece_value(uint64_t square) const;
 
-    bool is_empty_square(uint64_t square) const {return square & ~_all_pieces;}
+    bool is_empty_square(uint64_t square) const
+    {
+      return square & ~_all_pieces;
+    }
 
-    bool is_not_pinned(uint64_t square) const {return  square & ~_pinned_pieces;}
+    bool is_not_pinned(uint64_t square) const
+    {
+      return square & ~_pinned_pieces;
+    }
 
-    bool is_promotion_square(uint64_t square) const { return (_side_to_move == Color::White) ? square & row_8 : square & row_1;}
+    bool is_promotion_square(uint64_t square) const
+    {
+      return (_side_to_move == Color::White) ? square & row_8 : square & row_1;
+    }
 
     // ### Protected Methods for move-generation
     // -----------------------------------------
@@ -130,9 +139,11 @@ class Bitboard
 
     inline void add_promotion_piece(Piecetype p_type);
 
-    inline void touch_piece(uint64_t from_square);
+    //inline void touch_piece(const uint64_t square, const Color color);
 
-    inline void remove_other_piece(uint64_t square);
+    inline void remove_taken_piece(const uint64_t square, const Color color);
+
+    //inline void remove_pawn(const uint64_t square, const Color color);
 
     inline void move_piece(uint64_t from_square,
                            uint64_t to_square,
@@ -140,7 +151,7 @@ class Bitboard
 
     inline void remove_castling_right(uint8_t cr);
 
-    inline void place_piece(Piecetype p_type, uint64_t square);
+    inline void place_piece(Piecetype p_type, const uint64_t square, Color color);
 
     inline void clear_ep_square();
 
@@ -154,8 +165,12 @@ class Bitboard
 
     inline void update_state_after_king_move(const Bitmove& m);
 
-    // ### Protected methods for searching for the best move
-    // -----------------------------------------------------
+    void takeback_en_passant(const Bitmove& m, const Color moving_side);
+
+    void takeback_castling(const Bitmove& m, const Color moving_side);
+
+    // ### Protected methods for searching for the best move ###
+    // ---------------------------------------------------------
 
     void count_pawns_in_centre(float& sum, float weight) const;
 
@@ -217,8 +232,10 @@ class Bitboard
     // if he's on turn.
     int make_move(Playertype player_type);
 
-    // This make_move() doesn't require a defined movelist.
+    // This make_move() doesn't require a generated movelist.
     void make_move(const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
+
+    void take_back_move(const Bitmove& m, const Gentype gt, const bool add_to_history = true);
 
     // All properties of a move are not decided immediately,
     // but some of them (check for instance) are set after the

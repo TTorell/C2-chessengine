@@ -128,6 +128,7 @@ std::string engine_style(const Bitmove& move)
     switch (move.promotion_piece_type())
     {
     using enum Piecetype;
+
     case Queen:
       ss << "q";
       break;
@@ -146,8 +147,8 @@ std::string engine_style(const Bitmove& move)
                 << std::endl;
       Shared_ostream& logfile = *(Shared_ostream::get_instance());
       logfile << ("Invalid promotion piece-type: "s)
-      << magic_enum::enum_name(move.promotion_piece_type())
-      << "\n";
+              << magic_enum::enum_name(move.promotion_piece_type())
+              << "\n";
       assert(false);
     }
   }
@@ -224,7 +225,7 @@ int main(int argc, char* argv[])
 // Thread which buffers output commands from the engine.
   std::thread output_thread(write_output, &output_buffer);
 
-  UCI uci;
+  UCI Uci;
 
   std::string command;
 
@@ -232,6 +233,9 @@ int main(int argc, char* argv[])
   while (true)
   {
     // Processing the GUI commands
+
+    using enum UCI_cmd;
+
     command = input_buffer.get();
     if (command.empty())
     {
@@ -239,12 +243,12 @@ int main(int argc, char* argv[])
       continue;
     }
 
-    uci_cmd uci_command = uci.parse_command(command, output_buffer, config_params);
+    auto uci_command = Uci.parse_command(command, output_buffer, config_params);
 
-    if (uci_command == uci_cmd::go)
+    if (uci_command == go)
     {
       // (try to) Find the best move in the position
-      Bitmove bestmove = game.engine_go(config_params, uci.get_go_params());
+      Bitmove bestmove = game.engine_go(config_params, Uci.get_go_params());
       output_buffer.put("bestmove " + engine_style(bestmove));
       continue;
     }
@@ -254,23 +258,23 @@ int main(int argc, char* argv[])
     // (or pondering, which isn't implemented yet).
     // but the commands are also put in the input-buffer for
     // this main-thread to read.
-    if (uci_command == uci_cmd::quit)
+    if (uci_command == quit)
     {
       break;
     }
-    if (uci_command == uci_cmd::stop)
+    if (uci_command == stop)
     {
       // We have already stopped searching when we reach this code,
       // because the searching also runs in this thread.
       continue;
     }
 
-    if (uci_command == uci_cmd::position)
+    if (uci_command == position)
     {
-      game.read_position(uci.get_position_params());
+      game.read_position(Uci.get_position_params());
     }
 
-    if (uci_command == uci_cmd::ucinewgame)
+    if (uci_command == ucinewgame)
     {
       // We have nothing to clean up before starting a new game.
       // It will be taken care of when the first position is sent
@@ -282,7 +286,7 @@ int main(int argc, char* argv[])
     }
 
     // this is a homemade command specific for this engine.
-    if (uci_command == uci_cmd::cmd)
+    if (uci_command == cmd)
     {
       close_threads(input_thread, output_thread);
       // Tell the cmdline instance to be ready for
@@ -292,9 +296,9 @@ int main(int argc, char* argv[])
       play_on_cmd_line(config_params);
       break;
     }
-    if (uci_command == uci_cmd::unknown)
+    if (uci_command == unknown)
     {
-      logfile << "Unknown UCI-command:/n" << command << "\n";
+      logfile << "Unknown UCI-command:\n" << command << "\n";
       continue;
     }
   }

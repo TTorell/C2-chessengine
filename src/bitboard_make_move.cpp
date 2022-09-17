@@ -36,39 +36,39 @@ inline void Bitboard::add_promotion_piece(Piecetype p_type)
   }
 }
 
-inline void Bitboard::touch_piece(uint64_t square)
-{
-  if (_side_to_move == Color::White)
-  {
-    if (_white_pieces.Queens & square)
-      _white_pieces.Queens ^= square;
-    else if (_white_pieces.Pawns & square)
-      _white_pieces.Pawns ^= square;
-    else if (_white_pieces.King & square)
-      _white_pieces.King ^= square;
-    else if (_white_pieces.Rooks & square)
-      _white_pieces.Rooks ^= square;
-    else if (_white_pieces.Bishops & square)
-      _white_pieces.Bishops ^= square;
-    else if (_white_pieces.Knights & square)
-      _white_pieces.Knights ^= square;
-  }
-  else
-  {
-    if (_black_pieces.Queens & square)
-      _black_pieces.Queens ^= square;
-    else if (_black_pieces.Pawns & square)
-      _black_pieces.Pawns ^= square;
-    else if (_black_pieces.King & square)
-      _black_pieces.King ^= square;
-    else if (_black_pieces.Rooks & square)
-      _black_pieces.Rooks ^= square;
-    else if (_black_pieces.Bishops & square)
-      _black_pieces.Bishops ^= square;
-    else if (_black_pieces.Knights & square)
-      _black_pieces.Knights ^= square;
-  }
-}
+//inline void Bitboard::touch_piece(uint64_t square, const Color color)
+//{
+//  if (color == Color::White)
+//  {
+//    if (_white_pieces.Queens & square)
+//      _white_pieces.Queens ^= square;
+//    else if (_white_pieces.Pawns & square)
+//      _white_pieces.Pawns ^= square;
+//    else if (_white_pieces.King & square)
+//      _white_pieces.King ^= square;
+//    else if (_white_pieces.Rooks & square)
+//      _white_pieces.Rooks ^= square;
+//    else if (_white_pieces.Bishops & square)
+//      _white_pieces.Bishops ^= square;
+//    else if (_white_pieces.Knights & square)
+//      _white_pieces.Knights ^= square;
+//  }
+//  else
+//  {
+//    if (_black_pieces.Queens & square)
+//      _black_pieces.Queens ^= square;
+//    else if (_black_pieces.Pawns & square)
+//      _black_pieces.Pawns ^= square;
+//    else if (_black_pieces.King & square)
+//      _black_pieces.King ^= square;
+//    else if (_black_pieces.Rooks & square)
+//      _black_pieces.Rooks ^= square;
+//    else if (_black_pieces.Bishops & square)
+//      _black_pieces.Bishops ^= square;
+//    else if (_black_pieces.Knights & square)
+//      _black_pieces.Knights ^= square;
+//  }
+//}
 
 Piecetype Bitboard::get_piece_type(uint64_t square) const
 {
@@ -100,82 +100,95 @@ Piecetype Bitboard::get_piece_type(uint64_t square) const
   return Piecetype::Undefined;
 }
 
+//inline void Bitboard::remove_pawn(const uint64_t square, const Color color)
+//{
+//  assert(square & (_white_pieces.Pawns | _black_pieces.Pawns));
+//  const auto value = piece_values[index(Piecetype::Pawn)];
+//  _material_diff += (color == Color::White) ? value : -value; // Todo in e.p we can do this once at the end.
+//  update_hash_tag(square, color, Piecetype::Pawn);
+//}
 
-inline void Bitboard::remove_other_piece(uint64_t square)
+inline void Bitboard::remove_taken_piece(const uint64_t square, const Color piece_color)
 {
-  Piecetype pt = Piecetype::Undefined;
-  if (_side_to_move == Color::White)
+  assert(std::has_single_bit(square));
+
+  using enum Color;
+  using enum Piecetype;
+
+  // The reference "&" is very important here!
+  // Otherwise we'll only update a copied instance.
+  auto& pieces = (piece_color == White) ? _white_pieces : _black_pieces;
+  auto piecetype = Undefined;
+
+  if (pieces.Pawns & square)
   {
-    if (_black_pieces.Queens & square)
+    pieces.Pawns ^= square, piecetype = Pawn;
+  }
+  else if (pieces.Rooks & square)
+  {
+    pieces.Rooks ^= square, piecetype = Rook;
+    // update castling rights if needed
+    switch (square)
     {
-      _black_pieces.Queens ^= square, _material_diff += 9, pt = Piecetype::Queen;
-    }
-    else if (_black_pieces.Pawns & square)
-    {
-      _black_pieces.Pawns ^= square, _material_diff += 1, pt = Piecetype::Pawn;
-    }
-    else if (_black_pieces.Rooks & square)
-    {
-      _black_pieces.Rooks ^= square, _material_diff += 5, pt = Piecetype::Rook;
-      // update castling rights if needed
-      if (square & h8_square)
+      case h8_square:
         remove_castling_right(castling_right_BK);
-      else if (square & a8_square)
+        break;
+      case a8_square:
         remove_castling_right(castling_right_BQ);
-    }
-    else if (_black_pieces.Bishops & square)
-      _black_pieces.Bishops ^= square, _material_diff += 3, pt = Piecetype::Bishop;
-    else if (_black_pieces.Knights & square)
-      _black_pieces.Knights ^= square, _material_diff += 3, pt = Piecetype::Knight;
-    update_hash_tag(square, Color::Black, pt);
-  }
-  else
-  {
-    if (_white_pieces.Queens & square)
-      _white_pieces.Queens ^= square, _material_diff -= 9, pt = Piecetype::Queen;
-    else if (_white_pieces.Pawns & square)
-    {
-      _white_pieces.Pawns ^= square, _material_diff -= 1, pt = Piecetype::Pawn;
-    }
-    else if (_white_pieces.Rooks & square)
-    {
-      _white_pieces.Rooks ^= square, _material_diff -= 5, pt = Piecetype::Rook;
-      // update castling rights if needed
-      if (square & h1_square)
+        break;
+      case h1_square:
         remove_castling_right(castling_right_WK);
-      else if (square & a1_square)
+        break;
+      case a1_square:
         remove_castling_right(castling_right_WQ);
+        break;
+      default:
+        ;
     }
-    else if (_white_pieces.Bishops & square)
-      _white_pieces.Bishops ^= square, _material_diff -= 3, pt = Piecetype::Bishop;
-    else if (_white_pieces.Knights & square)
-      _white_pieces.Knights ^= square, _material_diff -= 3, pt = Piecetype::Knight;
-    assert(pt != Piecetype::Undefined);
-    update_hash_tag(square, Color::White, pt);
   }
+  else if (pieces.Bishops & square)
+  {
+    pieces.Bishops ^= square, piecetype = Bishop;
+  }
+  else if (pieces.Knights & square)
+  {
+    pieces.Knights ^= square, piecetype = Knight;
+  }
+  else if (pieces.Queens & square)
+  {
+    pieces.Queens ^= square, piecetype = Queen;
+  }
+  assert(piecetype != Undefined);
+  update_hash_tag(square, piece_color, piecetype);
+  _material_diff += (piece_color == White) ? -piece_values[index(piecetype)] : piece_values[index(piecetype)];
 }
 
-inline void Bitboard::place_piece(Piecetype p_type, uint64_t square)
+inline void Bitboard::place_piece(Piecetype p_type, const uint64_t square, Color color)
 {
+  using enum Color;
+  using enum Piecetype;
+
+  auto pieces = (color == White) ? _white_pieces : _black_pieces;
   switch (p_type)
   {
-    case Piecetype::Pawn:
-      (_side_to_move == Color::White) ? _white_pieces.Pawns |= square : _black_pieces.Pawns |= square;
+
+    case Pawn:
+      pieces.Pawns |= square;
       break;
-    case Piecetype::Queen:
-      (_side_to_move == Color::White) ? _white_pieces.Queens |= square : _black_pieces.Queens |= square;
+    case Queen:
+      pieces.Queens |= square;
       break;
-    case Piecetype::King:
-      (_side_to_move == Color::White) ? _white_pieces.King |= square : _black_pieces.King |= square;
+    case King:
+      pieces.King |= square;
       break;
-    case Piecetype::Rook:
-      (_side_to_move == Color::White) ? _white_pieces.Rooks |= square : _black_pieces.Rooks |= square;
+    case Rook:
+      pieces.Rooks |= square;
       break;
-    case Piecetype::Knight:
-      (_side_to_move == Color::White) ? _white_pieces.Knights |= square : _black_pieces.Knights |= square;
+    case Knight:
+      pieces.Knights |= square;
       break;
-    case Piecetype::Bishop:
-      (_side_to_move == Color::White) ? _white_pieces.Bishops |= square : _black_pieces.Bishops |= square;
+    case Bishop:
+      pieces.Bishops |= square;
       break;
     default:
       ;
@@ -187,31 +200,32 @@ inline void Bitboard::move_piece(uint64_t from_square,
                                  uint64_t to_square,
                                  Piecetype p_type)
 {
-  uint64_t* p = nullptr;
+  using enum Piecetype;
+
+  Bitpieces& pieces = (_side_to_move == Color::White) ? _white_pieces : _black_pieces;
   switch (p_type)
   {
-    case Piecetype::Pawn:
-      p = (_side_to_move == Color::White) ? &_white_pieces.Pawns : &_black_pieces.Pawns;
+    case Pawn:
+      pieces.Pawns ^= (from_square | to_square);
       break;
-    case Piecetype::Queen:
-      p = (_side_to_move == Color::White) ? &_white_pieces.Queens : &_black_pieces.Queens;
+    case Queen:
+      pieces.Queens ^= (from_square | to_square);
       break;
-    case Piecetype::King:
-      p = (_side_to_move == Color::White) ? &_white_pieces.King : &_black_pieces.King;
+    case King:
+      pieces.King ^= (from_square | to_square);
       break;
-    case Piecetype::Rook:
-      p = (_side_to_move == Color::White) ? &_white_pieces.Rooks : &_black_pieces.Rooks;
+    case Rook:
+      pieces.Rooks ^= (from_square | to_square);
       break;
-    case Piecetype::Knight:
-      p = (_side_to_move == Color::White) ? &_white_pieces.Knights : &_black_pieces.Knights;
+    case Knight:
+      pieces.Knights ^= (from_square | to_square);
       break;
-    case Piecetype::Bishop:
-      p = (_side_to_move == Color::White) ? &_white_pieces.Bishops : &_black_pieces.Bishops;
+    case Bishop:
+      pieces.Bishops ^= (from_square | to_square);
       break;
     default:
       ;
   }
-  (*p) ^= (from_square | to_square);
   update_hash_tag(from_square, to_square, _side_to_move, p_type);
 }
 
@@ -233,6 +247,7 @@ inline void Bitboard::clear_ep_square()
 
 inline void Bitboard::set_ep_square(uint64_t ep_square)
 {
+  assert(std::has_single_bit(ep_square));
   _ep_square = ep_square;
   _hash_tag ^= transposition_table._en_passant_file[file_idx(_ep_square)];
 }
@@ -241,6 +256,7 @@ inline void Bitboard::set_ep_square(uint64_t ep_square)
 // adding or removing one piece from a square.
 void Bitboard::update_hash_tag(uint64_t square, Color p_color, Piecetype p_type)
 {
+  assert(std::has_single_bit(square));
   _hash_tag ^= transposition_table._random_table[bit_idx(square)][index(p_color)][index(p_type)];
 }
 
@@ -274,7 +290,7 @@ inline void Bitboard::update_state_after_king_move(const Bitmove& m)
   uint64_t from_square = m.from();
   uint64_t to_square = m.to();
 
-  if (from_square & e1_square)
+  if (from_square & e1_square) // TODO: Kan inte fel sidas kung flytta från rutan?
   {
     remove_castling_right(castling_right_WK);
     remove_castling_right(castling_right_WQ);
@@ -301,7 +317,7 @@ inline void Bitboard::update_state_after_king_move(const Bitmove& m)
         _black_pieces.Rooks ^= (h8_square | f8_square);
         update_hash_tag(h8_square, f8_square, _side_to_move, Piecetype::Rook);
         _has_castled[index(Color::Black)] = true;
-     }
+      }
     }
     else
     {
@@ -329,17 +345,14 @@ void Bitboard::make_move(uint8_t i, Gentype gt, bool add_to_history)
 }
 
 // The move must be valid, but doesn't have to be in _movelist.
-// _movelist may be empty.
+// _movelist may be empty, not generated yet.
 void Bitboard::make_move(const Bitmove& m, Gentype gt, bool add_to_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
   uint64_t to_square = m.to();
   uint64_t from_square = m.from();
 
-//  std::cout << "make_move: " << m << std::endl << to_binary_board(from_square) << std::endl << to_binary_board(to_square) << std::endl <<
-//      to_binary_board(_other->pieces) << std::endl;
-
-  // Clear _ep_square
+// Clear _ep_square
   uint64_t tmp_ep_square = _ep_square;
   if (_ep_square)
     clear_ep_square();
@@ -347,7 +360,7 @@ void Bitboard::make_move(const Bitmove& m, Gentype gt, bool add_to_history)
 // Remove possible piece of other color on to_square and
 // Then make the move (updates hashtag)
   if (to_square & _other->pieces)
-    remove_other_piece(to_square);
+    remove_taken_piece(to_square, other_color(_side_to_move));
   move_piece(from_square, to_square, m.piece_type());
 
 // OK we have moved the piece, now we must
@@ -388,22 +401,22 @@ void Bitboard::make_move(const Bitmove& m, Gentype gt, bool add_to_history)
       {
         case Piecetype::Queen:
           (_side_to_move == Color::White) ? (_material_diff += 8.0, _white_pieces.Queens |= to_square) :
-                                         (_material_diff -= 8.0, _black_pieces.Queens |= to_square);
+                                            (_material_diff -= 8.0, _black_pieces.Queens |= to_square);
           update_hash_tag(to_square, _side_to_move, Piecetype::Queen);
           break;
         case Piecetype::Rook:
           (_side_to_move == Color::White) ? (_material_diff += 4.0, _white_pieces.Rooks |= to_square) :
-                                         (_material_diff -= 4.0, _black_pieces.Rooks |= to_square);
+                                            (_material_diff -= 4.0, _black_pieces.Rooks |= to_square);
           update_hash_tag(to_square, _side_to_move, Piecetype::Rook);
           break;
         case Piecetype::Knight:
           (_side_to_move == Color::White) ? (_material_diff += 2.0, _white_pieces.Knights |= to_square) :
-                                         (_material_diff -= 2.0, _black_pieces.Knights |= to_square);
+                                            (_material_diff -= 2.0, _black_pieces.Knights |= to_square);
           update_hash_tag(to_square, _side_to_move, Piecetype::Knight);
           break;
         case Piecetype::Bishop:
           (_side_to_move == Color::White) ? (_material_diff += 2.0, _white_pieces.Bishops |= to_square) :
-                                         (_material_diff -= 2.0, _black_pieces.Bishops |= to_square);
+                                            (_material_diff -= 2.0, _black_pieces.Bishops |= to_square);
           update_hash_tag(to_square, _side_to_move, Piecetype::Bishop);
           break;
         default:
@@ -415,13 +428,208 @@ void Bitboard::make_move(const Bitmove& m, Gentype gt, bool add_to_history)
       // Remove the pawn taken e.p.
       if (_side_to_move == Color::White)
       {
-        _black_pieces.Pawns ^= tmp_ep_square << 8, _material_diff += 1.0;
+        _black_pieces.Pawns ^= tmp_ep_square << 8,
+            _material_diff += 1.0;
         update_hash_tag(tmp_ep_square << 8, Color::Black, Piecetype::Pawn);
       }
       else
       {
-        _white_pieces.Pawns ^= tmp_ep_square >> 8, _material_diff -= 1.0;
+        _white_pieces.Pawns ^= tmp_ep_square >> 8
+                               , _material_diff -= 1.0;
         update_hash_tag(tmp_ep_square >> 8, Color::Black, Piecetype::Pawn);
+      }
+      update_hash_tag(to_square, other_color(_side_to_move), Piecetype::Pawn);
+    }
+    else if ((_side_to_move == Color::White) && (from_square & row_2) && (to_square & row_4))
+    {
+// Check if there is a pawn of other color alongside to_square.
+      if (((to_square & not_a_file) && ((to_square << 1) & _other->Pawns)) ||
+          ((to_square & not_h_file) && ((to_square >> 1) & _other->Pawns)))
+        set_ep_square(to_square << 8);
+    }
+    else if ((_side_to_move == Color::Black) && (from_square & row_7) && (to_square & row_5))
+    {
+      if (((to_square & not_a_file) && ((to_square << 1) & _other->Pawns)) ||
+          ((to_square & not_h_file) && ((to_square >> 1) & _other->Pawns)))
+        set_ep_square(to_square >> 8);
+    }
+  }
+  // Set up the board for other player:
+  _last_move = m;
+  update_side_to_move();
+  if (_side_to_move == Color::White)
+    _move_number++;
+  if (square_is_threatened(_own->King, false))
+    _last_move.add_property(move_props_check);
+  // add_position to game_history
+  if (add_to_history)
+  {
+    history.add_position(_hash_tag);
+  }
+  update_half_move_counter();
+  // TODO: Must be possible to change to gentype::captures.
+
+  find_legal_moves(gt);
+}
+
+void Bitboard::takeback_en_passant(const Bitmove& m, const Color moving_side)
+{
+  using enum Color;
+  using enum Piecetype;
+  // Keeping the definition of to_square and from_square from the move,
+  // even if the move will be reversed.
+  // _other points to the pieces of the moving side.
+  const auto to_square = m.to();
+  const auto from_square = m.from();
+  const auto taken_pawn_square = (moving_side == White) ? to_square << 8 : to_square >> 8;
+  set_ep_square(to_square);
+  // move back the Pawn that has taken e.p.
+  update_hash_tag(from_square, to_square, moving_side, Pawn);
+  // Put the taken Pawn back.
+  update_hash_tag(taken_pawn_square, other_color(moving_side), Pawn);
+  // Update the resulting material diff
+  _material_diff += (moving_side == White) ? -pawn_value : pawn_value;
+  _other->Pawns ^= (from_square | to_square); // moving side
+  _own->Pawns |= taken_pawn_square;
+}
+
+void Bitboard::takeback_castling(const Bitmove& m, const Color moving_side)
+{
+  uint64_t rook_square;
+  uint64_t rook_destination;
+  using enum Piecetype;
+  using enum Color;
+  auto king_squares = (moving_side == White) ? (e1_square | m.to()) :
+                                               (e8_square | m.to());
+  if (file_idx(m.to()) == g)
+  {
+    rook_square = (moving_side == White) ? f1_square : f8_square;
+    rook_destination = (moving_side == White) ? h1_square : h8_square;
+    _castling_rights |= (moving_side == White) ? castling_right_WK : castling_right_BK;
+  }
+  else
+  {
+    rook_square = (moving_side == White) ? d1_square : d8_square;
+    rook_destination = (moving_side == White) ? a1_square : a8_square;
+    _castling_rights |= (moving_side == White) ? castling_right_WQ : castling_right_BQ;
+  }
+  _other->King ^= king_squares;
+  _other->Rooks ^= (rook_square | rook_destination);
+  update_hash_tag(m.from(), m.to(), moving_side, King);
+  update_hash_tag(rook_square, rook_destination, moving_side, Rook);
+  // No change in material_diff.
+}
+
+// The move must be valid, but doesn't have to be in _movelist.
+// _movelist may be empty.
+void Bitboard::take_back_move(const Bitmove& m, Gentype gt, const bool add_to_history)
+{
+  assert((_own->pieces & _other->pieces) == zero);
+  using enum Color;
+  using enum Piecetype;
+
+  // Keeping the definition of to_square and from_square from the move,
+  // even if the move will be reversed.
+  // _side_to_move is the side that didn't make the move.
+  const uint64_t to_square = m.to();
+  const uint64_t from_square = m.from();
+
+  //  std::cout << "takeback_move: " << m << std::endl << to_binary_board(from_square) << std::endl << to_binary_board(to_square) << std::endl <<
+  //  to_binary_board(_other->pieces) << std::endl;
+
+  if (m.properties() & move_props_en_passant)
+  {
+    takeback_en_passant(m, other_color(_side_to_move));
+  }
+  else if (m.properties() & move_props_castling)
+  {
+    takeback_castling(m, other_color(_side_to_move));
+  }
+
+  // Move the piece back to the original sqaure
+  if (m.properties() & move_props_capture)
+  {
+    takeback_en_passant(m, other_color(_side_to_move));
+  }
+
+// Remove possible piece of other color on to_square and
+// Then make the move (updates hashtag)
+  if (to_square & _other->pieces)
+    remove_taken_piece(to_square, other_color(_side_to_move));
+  move_piece(from_square, to_square, m.piece_type());
+
+// OK we have moved the piece, now we must
+// look at some special cases.
+  if (m.piece_type() == King)
+  {
+    update_state_after_king_move(m);
+  }
+  else if (m.piece_type() == Rook)
+  {
+    // Clear castling rights for one side if applicable.
+    if (to_square & _white_pieces.Rooks)
+    {
+      if (from_square & a1_square)
+        remove_castling_right(castling_right_WQ);
+      else if (from_square & h1_square)
+        remove_castling_right(castling_right_WK);
+    }
+    else
+    {
+      // Black rook
+      if (from_square & a8_square)
+        remove_castling_right(castling_right_BQ);
+      else if (from_square & h8_square)
+        remove_castling_right(castling_right_BK);
+    }
+  }
+  else if (m.piece_type() == Pawn)
+  {
+    if (m.properties() & move_props_promotion)
+    {
+      // Remove the pawn from promotion square
+      // subtract 1 from the normal piece-values
+      // because the pawn disappears from the board.
+      (_side_to_move == Color::White) ? _white_pieces.Pawns ^= to_square : _black_pieces.Pawns ^= to_square;
+      update_hash_tag(to_square, other_color(_side_to_move), Piecetype::Pawn);
+      switch (m.promotion_piece_type())
+      {
+        case Piecetype::Queen:
+          (_side_to_move == Color::White) ? (_material_diff += 8.0, _white_pieces.Queens |= to_square) :
+                                            (_material_diff -= 8.0, _black_pieces.Queens |= to_square);
+          update_hash_tag(to_square, _side_to_move, Piecetype::Queen);
+          break;
+        case Piecetype::Rook:
+          (_side_to_move == Color::White) ? (_material_diff += 4.0, _white_pieces.Rooks |= to_square) :
+                                            (_material_diff -= 4.0, _black_pieces.Rooks |= to_square);
+          update_hash_tag(to_square, _side_to_move, Piecetype::Rook);
+          break;
+        case Piecetype::Knight:
+          (_side_to_move == Color::White) ? (_material_diff += 2.0, _white_pieces.Knights |= to_square) :
+                                            (_material_diff -= 2.0, _black_pieces.Knights |= to_square);
+          update_hash_tag(to_square, _side_to_move, Piecetype::Knight);
+          break;
+        case Piecetype::Bishop:
+          (_side_to_move == Color::White) ? (_material_diff += 2.0, _white_pieces.Bishops |= to_square) :
+                                            (_material_diff -= 2.0, _black_pieces.Bishops |= to_square);
+          update_hash_tag(to_square, _side_to_move, Piecetype::Bishop);
+          break;
+        default:
+          ;
+      }
+    }
+    else if (m.properties() & move_props_en_passant)
+    {
+      // Remove the pawn taken e.p.
+      if (_side_to_move == Color::White)
+      {
+//        _black_pieces.Pawns ^= tmp_ep_square << 8, _material_diff += 1.0;
+//        update_hash_tag(tmp_ep_square << 8, Color::Black, Piecetype::Pawn);
+      }
+      else
+      {
+//        _white_pieces.Pawns ^= tmp_ep_square >> 8, _material_diff -= 1.0;
+//        update_hash_tag(tmp_ep_square >> 8, Color::Black, Piecetype::Pawn);
       }
       update_hash_tag(to_square, other_color(_side_to_move), Piecetype::Pawn);
     }

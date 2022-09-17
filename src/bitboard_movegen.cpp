@@ -957,6 +957,8 @@ void Bitboard::find_legal_moves(Gentype gt)
 {
   init_piece_state();
   assert((_own->pieces & _other->pieces) == zero);
+
+  assert((_own->pieces & _other->pieces) == zero);
   find_king_moves(gt);
   find_checkers_and_pinned_pieces();
   int n_checkers = std::popcount(_checkers);

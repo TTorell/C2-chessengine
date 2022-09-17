@@ -41,6 +41,7 @@ const auto epsilon = 0.00000001F;
 const auto N_SEARCH_BOARDS_DEFAULT = 38;
 const auto dont_update_history = false;
 const auto dont_evaluate_zero_moves = false;
+const auto on_same_line = true;
 
 enum class Piecetype
 {
@@ -54,6 +55,8 @@ enum class Piecetype
 };
 
 const float piece_values[7] = {9.0F, 5.0F, 3.0F, 3.0F, 1.0F, 0.0F, 0.0F};
+
+const auto pawn_value = piece_values[index(Piecetype::Pawn)];
 
 enum class Color
 {
@@ -106,7 +109,6 @@ constexpr uint16_t move_props_stalemate = 0x0020;
 constexpr uint16_t move_props_castling = 0x0040;
 constexpr uint16_t move_props_draw_by_repetition = 0x0080;
 constexpr uint16_t move_props_draw_by_50_moves = 0x0100;
-constexpr bool SAME_LINE = true;
 
 struct Search_info
 {
@@ -352,6 +354,7 @@ constexpr uint64_t h8_square = h_file & row_8;
 
 constexpr uint64_t center_squares = d4_square | d5_square | e4_square | e5_square;
 
+constexpr uint64_t king_initial_squares = e1_square | e8_square;
 constexpr uint64_t rook_initial_squares_white = a1_square | h1_square;
 constexpr uint64_t rook_initial_squares_black = a8_square | h8_square;
 constexpr uint64_t knight_initial_squares_white = b1_square | g1_square;

@@ -334,10 +334,8 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
     {
       return incremental_search(0.0); // movetime should be zero here
     }
-    else if (go_params.movetime >= 0.0)
+    else if (go_params.movetime > 0.0)
     {
-      // This means that "movetime 0" will become an infinite search, actually.
-      // And so will a "go" without parameters.
       return incremental_search(go_params.movetime);
     }
     else if (!is_close(go_params.wtime, 0.0, 1e-10))
@@ -354,7 +352,7 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
     }
     else
     {
-      return incremental_search(400000);
+      return incremental_search(0.0);
     }
   }
   else
