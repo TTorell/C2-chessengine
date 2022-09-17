@@ -19,7 +19,7 @@ std::ostream& operator<<(std::ostream& os, const Bitmove& m)
   std::stringstream sstr;
   switch (m.piece_type())
   {
-    case piecetype::King:
+    case Piecetype::King:
       {
       if (abs(static_cast<int64_t>(file_idx(m.from()) - file_idx(m.to()))) == 2)
       {
@@ -33,16 +33,16 @@ std::ostream& operator<<(std::ostream& os, const Bitmove& m)
       sstr << "K";
       break;
     }
-    case piecetype::Queen:
+    case Piecetype::Queen:
       sstr << "Q";
       break;
-    case piecetype::Rook:
+    case Piecetype::Rook:
       sstr << "R";
       break;
-    case piecetype::Bishop:
+    case Piecetype::Bishop:
       sstr << "B";
       break;
-    case piecetype::Knight:
+    case Piecetype::Knight:
       sstr << "N";
       break;
     default:
@@ -60,16 +60,16 @@ std::ostream& operator<<(std::ostream& os, const Bitmove& m)
   {
     switch (m.promotion_piece_type())
     {
-      case piecetype::Queen:
+      case Piecetype::Queen:
         sstr << "=Q";
         break;
-      case piecetype::Rook:
+      case Piecetype::Rook:
         sstr << "=R";
         break;
-      case piecetype::Bishop:
+      case Piecetype::Bishop:
         sstr << "=B";
         break;
-      case piecetype::Knight:
+      case Piecetype::Knight:
         sstr << "=N";
         break;
       default:
@@ -93,18 +93,18 @@ std::ostream& operator<<(std::ostream& os, const Config_params& params)
   return os;
 }
 
-std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::vector<std::string>& moves, color col_to_move)
+std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::vector<std::string>& moves, Color col_to_move)
 {
   std::vector<std::string> stripped_moves;
   for (const std::string& move : moves)
   {
     if (move == "0-0")
     {
-      (col_to_move == color::white) ? stripped_moves.push_back("e1g1") : stripped_moves.push_back("e8g8");
+      (col_to_move == Color::White) ? stripped_moves.push_back("e1g1") : stripped_moves.push_back("e8g8");
     }
     else if (move == "0-0-0")
     {
-      (col_to_move == color::white) ? stripped_moves.push_back("e1c1") : stripped_moves.push_back("e8c8");
+      (col_to_move == Color::White) ? stripped_moves.push_back("e1c1") : stripped_moves.push_back("e8c8");
     }
     else
     {
@@ -185,8 +185,8 @@ int Bitboard_with_utils::add_mg_test_position(const std::string& filename)
 
   read_position(FEN_string);
   init_piece_state();
-  write(std::cout, outputtype::cmd_line_diagram, color::white);
-  find_legal_moves(gentype::all);
+  write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+  find_legal_moves(Gentype::All);
   std::cout << "Possible moves are:" << std::endl;
   write_movelist(std::cout);
   if (question_to_user("Is this correct?\nIf so, would you like to add the position\nas a new test case? [y/n]: ", "^[yY].*$"))
@@ -209,7 +209,7 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum,
                                            const std::string& FEN_string,
                                            const std::vector<std::string>& ref_moves_vector,
                                            const std::string& testcase_info,
-                                           const gentype gt)
+                                           const Gentype gt)
 {
   Current_time now;
   std::cout << "-- Test " << testnum << " " << testcase_info << " --" << std::endl;
@@ -238,17 +238,17 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum,
   std::vector<std::string> filtered_ref_moves_vector;
   switch (gt)
   {
-    case gentype::captures:
+    case Gentype::Captures:
       for (const std::string& m : ref_moves_vector)
         if (m.find("x") != std::string::npos)
           filtered_ref_moves_vector.push_back(m);
       break;
-    case gentype::captures_and_promotions:
+    case Gentype::Captures_and_Promotions:
       for (const std::string& m : ref_moves_vector)
         if (m.find("x") != std::string::npos || m.find("=") != std::string::npos)
           filtered_ref_moves_vector.push_back(m);
       break;
-    case gentype::all:
+    case Gentype::All:
       filtered_ref_moves_vector = ref_moves_vector;
       break;
     default:
@@ -257,7 +257,7 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum,
   if (!compare_move_lists(out_moves_vector, filtered_ref_moves_vector))
   {
     std::cout << "ERROR: Test " << testnum << " " << testcase_info << " failed!" << std::endl;
-    write(std::cout, outputtype::cmd_line_diagram, color::white);
+    write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
     std::cout << "Comparing program output with test case reference:" << std::endl;
     std::cout << "OUT: " << std::endl;
     write_movelist(std::cout, true);
@@ -320,7 +320,7 @@ int Bitboard_with_utils::test_move_generation(uint32_t single_testnum)
         }
 
       // Run the testcase for the position:
-      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "for initial side", gentype::all))
+      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "for initial side", Gentype::All))
         failed_testcases.push_back(testnum);
 
       // Run the same test-case with reversed sides.
@@ -331,21 +331,21 @@ int Bitboard_with_utils::test_move_generation(uint32_t single_testnum)
                             reversed_FEN_string,
                             reversed_ref_moves_vector,
                             "for other side",
-                            gentype::all))
+                            Gentype::All))
         failed_testcases.push_back(testnum);
 
       // Run the above two testcases, but generate only captures
       if (!run_mg_test_case(testnum, FEN_string,
                             ref_moves_vector,
                             "initial side only captures and promotions",
-                            gentype::captures_and_promotions))
+                            Gentype::Captures_and_Promotions))
         failed_testcases.push_back(testnum);
 
       if (!run_mg_test_case(testnum,
                             reversed_FEN_string,
                             reversed_ref_moves_vector,
                             "other side only captures and promotions",
-                            gentype::captures_and_promotions))
+                            Gentype::Captures_and_Promotions))
         failed_testcases.push_back(testnum);
 
     }
@@ -404,18 +404,18 @@ uint64_t Bitboard_with_utils::find_legal_squares(uint64_t sq, uint64_t mask, uin
   return Bitboard::find_legal_squares(sq, mask);
 }
 
-//float Bitboard_with_utils::evaluate_position(color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
-//{
-//  return Bitboard::evaluate_position(col_to_move, search_ply, evaluate_zero_moves);
-//}
+float Bitboard_with_utils::evaluate_position(Color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
+{
+  return Bitboard::evaluate_position(col_to_move, search_ply, evaluate_zero_moves);
+}
 
 int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitmove& m) const
 {
   uint64_t from_square;
   uint64_t to_square;
   uint16_t move_props = move_props_none;
-  piecetype p_type;
-  piecetype promotion_pt;
+  Piecetype p_type;
+  Piecetype promotion_pt;
   // TODO: 0-0, 0-0-0 and e.p
   uint64_t new_all_pieces = new_position.all_pieces();
   uint64_t piece_diff = _all_pieces ^ new_all_pieces;
@@ -445,7 +445,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
       move_props |= move_props_capture;
       from_square = piece_diff;
       p_type = get_piece_type(from_square);
-      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_side_to_move == color::black) ? 2 : 7))))
+      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_side_to_move == Color::Black) ? 2 : 7))))
         move_props |= move_props_promotion;
       //to_square = _own->pieces ^ new_position.other()->pieces; // TODO: _other->pieces ^ new_position.own()->pieces ?
       to_square = _other->pieces ^ new_position.own()->pieces;
@@ -455,7 +455,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
       from_square = _all_pieces & piece_diff;
       to_square = piece_diff ^ from_square;
       p_type = get_piece_type(from_square);
-      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_side_to_move == color::black) ? 2 : 7))))
+      if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_side_to_move == Color::Black) ? 2 : 7))))
         move_props |= move_props_promotion;
       break;
     case 3:
@@ -466,7 +466,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
         if (_own->Pawns & piece_diff)
         {
           from_square = _own->Pawns & piece_diff;
-          p_type = piecetype::Pawn;
+          p_type = Piecetype::Pawn;
           move_props |= move_props_capture | move_props_en_passant;
         }
         else
@@ -477,7 +477,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
       break;
     case 4:
       // Could be 0-0 or 0-0-0
-      if (_side_to_move == color::black)
+      if (_side_to_move == Color::Black)
       {
         if (_own->King & e8_square & piece_diff)
         {
@@ -488,7 +488,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
             to_square = g8_square;
           else
             return -6;
-          p_type = piecetype::King;
+          p_type = Piecetype::King;
           move_props |= move_props_castling;
         }
         else
@@ -505,7 +505,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
             to_square = g1_square;
           else
             return -8;
-          p_type = piecetype::King;
+          p_type = Piecetype::King;
           move_props |= move_props_castling;
         }
         else

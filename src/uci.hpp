@@ -15,7 +15,7 @@
 namespace C2_chess
 {
 
-enum class uci_cmd
+enum class UCI_cmd
 {
   uci,
   setoption,
@@ -183,28 +183,29 @@ class UCI
 
     // function for parsing UCI-input-commands from a chess-GUI
     // (some commands are taken care of already in the ḿain()-function.
-    uci_cmd parse_command(const std::string& command,
+    UCI_cmd parse_command(const std::string& command,
                           Circular_fifo& output_buffer,
                           Config_params& config_params)
     {
+      using enum UCI_cmd;
       // We know at this point that the command string isn't empty
       _command_tokens = split(command, ' ');
 
       if (_command_tokens[0] == "go")
       {
         parse_go_params();
-        return uci_cmd::go;
+        return UCI_cmd::go;
       }
 
       if (_command_tokens[0] == "position")
       {
         parse_position_params(command);
-        return uci_cmd::position;
+        return UCI_cmd::position;
       }
 
       if (_command_tokens[0] == "stop")
       {
-        return uci_cmd::stop;
+        return UCI_cmd::stop;
       }
 
       // Since we are inside parse_command(), the engine thread
@@ -212,22 +213,22 @@ class UCI
       if (_command_tokens[0] == "isready")
       {
         output_buffer.put("readyok");
-        return uci_cmd::isready;
+        return UCI_cmd::isready;
       }
 
       if (_command_tokens[0] == "quit")
       {
-        return uci_cmd::quit;
+        return UCI_cmd::quit;
       }
 
       if (_command_tokens[0] == "ucinewgame")
       {
-        return uci_cmd::ucinewgame;
+        return UCI_cmd::ucinewgame;
       }
 
       if (_command_tokens[0] == "cmd")
       {
-        return uci_cmd::cmd;
+        return UCI_cmd::cmd;
       }
 
       if (_command_tokens[0] == "uci")
@@ -240,7 +241,7 @@ class UCI
           output_buffer.put(it.second.get_UCI_string_for_gui());
         }
         output_buffer.put("uciok");
-        return uci_cmd::uci;
+        return UCI_cmd::uci;
       }
 
       if (_command_tokens[0] == "setoption")
@@ -271,11 +272,11 @@ class UCI
         {
           config_params.set_config_param(name, value);
         }
-        return uci_cmd::setoption;
+        return UCI_cmd::setoption;
       }
 
       // Unknown command, or not implemented yet.
-      return uci_cmd::unknown;
+      return UCI_cmd::unknown;
     }
 
 };

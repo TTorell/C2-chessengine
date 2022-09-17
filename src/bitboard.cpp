@@ -35,7 +35,7 @@ Game_history Bitboard::history;
 Bitboard::Bitboard() :
     _movelist(),
     _hash_tag(zero),
-    _side_to_move(color::white),
+    _side_to_move(Color::White),
     _move_number(1),
     _castling_rights(castling_rights_none),
     _ep_square(zero),
@@ -74,7 +74,7 @@ Bitboard::Bitboard(const Bitboard& bb) :
     _other(nullptr),
     _half_move_counter(bb._half_move_counter)
 {
-  if (_side_to_move == color::white)
+  if (_side_to_move == Color::White)
   {
     _own = &_white_pieces;
     _other = &_black_pieces;
@@ -116,7 +116,7 @@ Bitboard& Bitboard::operator=(const Bitboard& from)
     _black_pieces = from._black_pieces;
     _half_move_counter = from._half_move_counter;
   }
-  if (_side_to_move == color::white)
+  if (_side_to_move == Color::White)
   {
     _own = &_white_pieces;
     _other = &_black_pieces;
@@ -139,8 +139,8 @@ void Bitboard::init_board_hash_tag()
   while (pieces)
   {
     piece = popright_square(pieces);
-    piecetype p_type = get_piece_type(piece);
-    color p_color = (piece & _own->pieces)? _side_to_move:other_color(_side_to_move);
+    Piecetype p_type = get_piece_type(piece);
+    Color p_color = (piece & _own->pieces)? _side_to_move:other_color(_side_to_move);
     update_hash_tag(piece, p_color, p_type);
   }
 
@@ -156,7 +156,7 @@ void Bitboard::init_board_hash_tag()
   if (_ep_square)
     _hash_tag ^= transposition_table._en_passant_file[file_idx(_ep_square)];
 
-  if (_side_to_move == color::black)
+  if (_side_to_move == Color::Black)
     _hash_tag ^= transposition_table._black_to_move;
 }
 
@@ -167,7 +167,7 @@ void Bitboard::init()
   history.clear();
   add_position_to_game_history();
   _movelist.clear();
-  find_legal_moves(gentype::all);
+  find_legal_moves(Gentype::All);
 }
 
 // Initializes the Bitboard position from a text string (Forsyth-Edwards Notation)
@@ -261,7 +261,7 @@ int Bitboard::read_position(const std::string& FEN_string, bool init_pieces)
     }
     fi++;
   } // end of for-loop
-  _side_to_move = color::white;
+  _side_to_move = Color::White;
   _own = &_white_pieces;
   _other = &_black_pieces;
   if (FEN_tokens[1] == "b")
@@ -372,7 +372,7 @@ inline void Bitboard::clear_movelist()
 void Bitboard::update_half_move_counter()
 {
   // Update half-move counter for the 50-moves-drawing-rule.
-  if ((_last_move.properties() & move_props_capture) || (_last_move.piece_type() == piecetype::Pawn))
+  if ((_last_move.properties() & move_props_capture) || (_last_move.piece_type() == Piecetype::Pawn))
     _half_move_counter = 0;
   else
     _half_move_counter++;
@@ -458,9 +458,9 @@ void Bitboard::count_pawns_in_centre(float& sum, float weight) const
 void Bitboard::count_castling(float& sum, float weight) const
 {
   int counter = 0;
-  if (_has_castled[index(color::white)])
+  if (_has_castled[index(Color::White)])
     counter++;
-  if (_has_castled[index(color::black)])
+  if (_has_castled[index(Color::Black)])
     counter--;
   sum += counter * weight;
 }
@@ -477,22 +477,22 @@ void Bitboard::count_development(float& sum, float weight) const
   sum += counter * weight;
 }
 
-int Bitboard::count_threats_to_square(uint64_t to_square, color side) const
+int Bitboard::count_threats_to_square(uint64_t to_square, Color side) const
 {
   uint64_t possible_attackers;
   uint64_t attacker;
   uint64_t tmp_all_pieces = _all_pieces;
   uint8_t f_idx = file_idx(to_square);
 
-  const Bitpieces& pieces = (side == color::white)? _white_pieces:_black_pieces;
+  const Bitpieces& pieces = (side == Color::White)? _white_pieces:_black_pieces;
 
   int count = 0;
   // Check Pawn-threats
   if (pieces.Pawns)
   {
-    if ((f_idx != h) && (pieces.Pawns & ((side == color::white)? to_square << 7:to_square >> 9)))
+    if ((f_idx != h) && (pieces.Pawns & ((side == Color::White)? to_square << 7:to_square >> 9)))
       count++;
-    if ((f_idx != a) && (pieces.Pawns & ((side == color::white)? to_square << 9:to_square >> 7)))
+    if ((f_idx != a) && (pieces.Pawns & ((side == Color::White)? to_square << 9:to_square >> 7)))
       count++;
   }
 
@@ -539,13 +539,13 @@ void Bitboard::count_center_control(float& sum, float weight) const
   while (tmp_center_squares)
   {
     center_square = popright_square(tmp_center_squares);
-    counter += count_threats_to_square(center_square, color::white);
-    counter -= count_threats_to_square(center_square, color::black);
+    counter += count_threats_to_square(center_square, Color::White);
+    counter -= count_threats_to_square(center_square, Color::Black);
   }
   sum += counter * weight;
 }
 
-float Bitboard::evaluate_position(color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
+float Bitboard::evaluate_position(Color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
 {
   if (evaluate_zero_moves && _movelist.size() == 0)
   {
@@ -554,7 +554,7 @@ float Bitboard::evaluate_position(color col_to_move, uint8_t search_ply, bool ev
     {
       // This is checkmate, we want to evaluate the quickest way to mate higher
       // so we add/subtract level.
-      return (col_to_move == color::white)? (eval_min + search_ply):(eval_max - search_ply);
+      return (col_to_move == Color::White)? (eval_min + search_ply):(eval_max - search_ply);
     }
     else
     {
@@ -594,7 +594,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
     return 0.0;
   }
 
-  float score = (_side_to_move == color::white)? evaluate_position(_side_to_move, search_ply, dont_evaluate_zero_moves):
+  float score = (_side_to_move == Color::White)? evaluate_position(_side_to_move, search_ply, dont_evaluate_zero_moves):
                                                  -evaluate_position(_side_to_move, search_ply, dont_evaluate_zero_moves);
 
   if (_movelist.size() == 0)
@@ -639,7 +639,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
     History_state saved_history_state = history.get_state();
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    level_boards[search_ply].make_move(_movelist[i], gentype::captures_and_promotions);
+    level_boards[search_ply].make_move(_movelist[i], Gentype::Captures_and_Promotions);
     //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
     move_score = -level_boards[search_ply].Quiesence_search(search_ply, -beta, -alpha, max_search_ply);
 
@@ -710,7 +710,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     // ---------------------------------------
     best_move = NO_MOVE;
     element.best_move = NO_MOVE;
-    element.best_move._evaluation = (_side_to_move == color::white)? evaluate_position(_side_to_move, search_ply):
+    element.best_move._evaluation = (_side_to_move == Color::White)? evaluate_position(_side_to_move, search_ply):
                                                                      -evaluate_position(_side_to_move, search_ply);
     element.search_ply = search_ply;
     // ---------------------------------------
@@ -743,7 +743,8 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     History_state saved_history_state = history.get_state();
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    level_boards[search_ply].make_move(_movelist[i], gentype::all);
+    level_boards[search_ply].make_move(_movelist[i], Gentype::All);
+    //merge level_boards[search_ply].make_move(_movelist[i], (search_ply < max_search_ply)? Gentype::All:Gentype::Captures);
     //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
     move_score = -level_boards[search_ply].negamax_with_pruning(search_ply, -beta, -alpha, best_move_dummy, search_depth);
 
@@ -820,12 +821,12 @@ inline std::ostream& Bitboard::write_piece(std::ostream& os, uint64_t square) co
   return os;
 }
 
-std::ostream& Bitboard::write(std::ostream& os, outputtype wt, color from_perspective) const
+std::ostream& Bitboard::write(std::ostream& os, Outputtype wt, Color from_perspective) const
 {
   switch (wt)
   {
-    case outputtype::cmd_line_diagram:
-      if (from_perspective == color::white)
+    case Outputtype::Cmd_line_diagram:
+      if (from_perspective == Color::White)
       {
         //os << "\n";
         for (int i = 8; i >= 1; i--)
@@ -903,7 +904,7 @@ void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
     TT_element& tte = transposition_table.find(bb._hash_tag);
     if (!tte.best_move.is_valid())
       break;
-    bb.make_move(tte.best_move, gentype::all, dont_update_history);
+    bb.make_move(tte.best_move, Gentype::All, dont_update_history);
     pv_line.push_back(bb._last_move);
   }
 }
@@ -936,7 +937,7 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_plies) 
     Bitboard::level_boards[search_ply] = *this;
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    level_boards[search_ply].make_move(_movelist[i], gentype::all);
+    level_boards[search_ply].make_move(_movelist[i], Gentype::All);
     level_boards[search_ply].perft_test(search_ply, max_search_plies);
 
   }
