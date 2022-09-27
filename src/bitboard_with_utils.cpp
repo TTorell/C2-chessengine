@@ -20,7 +20,7 @@ std::ostream& operator<<(std::ostream& os, const Bitmove& m)
   switch (m.piece_type())
   {
     case Piecetype::King:
-      {
+    {
       if (abs(static_cast<int64_t>(file_idx(m.from()) - file_idx(m.to()))) == 2)
       {
         if (file_idx(m.to()) == g)
@@ -132,7 +132,8 @@ std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::ve
 void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move)
 {
   std::stringstream out_moves;
-  write_movelist(out_moves);
+  //TODO: Is this right?
+  write_movelist(Bitboard::takeback_list[0].state_S.movelist, out_moves);
   std::vector<std::string> out_moves_vector;
   std::string out_move = "";
   while (std::getline(out_moves, out_move))
@@ -186,9 +187,11 @@ int Bitboard_with_utils::add_mg_test_position(const std::string& filename)
   read_position(FEN_string);
   init_piece_state();
   write(std::cout, Color::White);
-  find_legal_moves(Gentype::All);
+  //TODO:Is this right?
+  find_legal_moves(Bitboard::takeback_list[0].state_S.movelist, Gentype::All);
   std::cout << "Possible moves are:" << std::endl;
-  write_movelist(std::cout);
+  //TODO:Is this right?
+  write_movelist(Bitboard::takeback_list[0].state_S.movelist, std::cout);
   if (question_to_user("Is this correct?\nIf so, would you like to add the position\nas a new test case? [y/n]: ", "^[yY].*$"))
   {
     std::ofstream ofs;
@@ -199,16 +202,14 @@ int Bitboard_with_utils::add_mg_test_position(const std::string& filename)
       return -1;
     }
     ofs << FEN_string << " ";
-    write_movelist(ofs, true);
+    //TODO:Is this right?
+    write_movelist(Bitboard::takeback_list[0].state_S.movelist, ofs, true);
     ofs.close();
   }
   return 0;
 }
 
-bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum,
-                                           const std::string& FEN_string,
-                                           const std::vector<std::string>& ref_moves_vector,
-                                           const std::string& testcase_info,
+bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum, const std::string& FEN_string, const std::vector<std::string>& ref_moves_vector, const std::string& testcase_info,
                                            const Gentype gt)
 {
   Current_time now;
@@ -222,14 +223,16 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum,
 
   uint64_t start = now.nanoseconds();
 
-  find_legal_moves(gt);
+  //TODO: Is this right?
+  find_legal_moves(Bitboard::takeback_list[0].state_S.movelist, gt);
 
   uint64_t stop = now.nanoseconds();
   std::cout << "Move generation took " << stop - start << " nanoseconds." << std::endl;
 
   // Compare output and reference moves, first build a vector of "output-moves".
   std::stringstream out_moves;
-  write_movelist(out_moves);
+  //TODO: Is this right?
+  write_movelist(Bitboard::takeback_list[0].state_S.movelist, out_moves);
   std::vector<std::string> out_moves_vector;
   std::string out_move = "";
   while (std::getline(out_moves, out_move))
@@ -259,7 +262,8 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum,
     write(std::cout, Color::White);
     std::cout << "Comparing program output with test case reference:" << std::endl;
     std::cout << "OUT: " << std::endl;
-    write_movelist(std::cout, true);
+    //TODO: Is this right?
+    write_movelist(Bitboard::takeback_list[0].state_S.movelist, std::cout, true);
     std::cout << "REF: " << std::endl;
     bool first = true;
     for (const std::string& m : filtered_ref_moves_vector)
@@ -326,25 +330,14 @@ int Bitboard_with_utils::test_move_generation(uint32_t single_testnum)
       std::string reversed_FEN_string = reverse_FEN_string(matches[0]);
       //std::cout << "FEN_string2: " << reversed_FEN_string << std::endl;
       std::vector<std::string> reversed_ref_moves_vector = reverse_moves(ref_moves_vector);
-      if (!run_mg_test_case(testnum,
-                            reversed_FEN_string,
-                            reversed_ref_moves_vector,
-                            "for other side",
-                            Gentype::All))
+      if (!run_mg_test_case(testnum, reversed_FEN_string, reversed_ref_moves_vector, "for other side", Gentype::All))
         failed_testcases.push_back(testnum);
 
       // Run the above two testcases, but generate only captures
-      if (!run_mg_test_case(testnum, FEN_string,
-                            ref_moves_vector,
-                            "initial side only captures and promotions",
-                            Gentype::Captures_and_Promotions))
+      if (!run_mg_test_case(testnum, FEN_string, ref_moves_vector, "initial side only captures and promotions", Gentype::Captures_and_Promotions))
         failed_testcases.push_back(testnum);
 
-      if (!run_mg_test_case(testnum,
-                            reversed_FEN_string,
-                            reversed_ref_moves_vector,
-                            "other side only captures and promotions",
-                            Gentype::Captures_and_Promotions))
+      if (!run_mg_test_case(testnum, reversed_FEN_string, reversed_ref_moves_vector, "other side only captures and promotions", Gentype::Captures_and_Promotions))
         failed_testcases.push_back(testnum);
 
     }
@@ -405,7 +398,8 @@ uint64_t Bitboard_with_utils::find_legal_squares(uint64_t sq, uint64_t mask, uin
 
 float Bitboard_with_utils::evaluate_position(Color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
 {
-  return Bitboard::evaluate_position(col_to_move, search_ply, evaluate_zero_moves);
+  //TODO: Is this right?
+  return Bitboard::evaluate_position((Bitboard::takeback_list[0].state_S.movelist.size() == 0), col_to_move, search_ply, evaluate_zero_moves);
 }
 
 int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitmove& m) const
@@ -424,8 +418,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
     return -1;
   }
 
-  if (new_position.get_move_number() < get_move_number() ||
-      new_position.get_move_number() - get_move_number() > 1)
+  if (new_position.get_move_number() < get_move_number() || new_position.get_move_number() - get_move_number() > 1)
   {
     return -2;
   }
@@ -525,6 +518,16 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
     m = Bitmove(p_type, move_props, from_square, to_square);
   }
   return 0;
+}
+
+void Bitboard_with_utils::write_movelist(std::ostream& os, const bool same_line) const
+{
+  write_movelist(takeback_list[0].state_S.movelist, os, same_line);
+}
+
+std::deque<Bitmove>& Bitboard_with_utils::get_first_movelist()
+{
+  return takeback_list[0].state_S.movelist;
 }
 
 } // End namespace C2_chess

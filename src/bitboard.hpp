@@ -59,7 +59,7 @@ class Bitboard
     // ### Protected basic Bitboard_functions ###
     // ------------------------------------------
 
-    void init_piece_state(std::deque<Bitmove>& movelist);
+    void init_piece_state();
 
     inline void sort_moves(std::deque<Bitmove>& movelist) const;
 
@@ -127,7 +127,7 @@ class Bitboard
 
     void find_moves_after_check(std::deque<Bitmove>& movelist, Gentype gt) const;
 
-    void find_checkers_and_pinned_pieces()const;
+    void find_checkers_and_pinned_pieces();
 
     bool square_is_threatened(uint64_t square, bool King_is_asking) const;
 
@@ -185,7 +185,7 @@ class Bitboard
 
     int count_threats_to_square(uint64_t square, Color side) const;
 
-    float evaluate_position(Color for_side, uint8_t search_ply, bool evaluate_zero_moves = true) const;
+    float evaluate_position(const bool movelist_is_empty, Color for_side, uint8_t search_ply, bool evaluate_zero_moves = true) const;
 
     void get_pv_line(std::vector<Bitmove>& pv_line) const;
 
@@ -228,7 +228,7 @@ class Bitboard
     // Looks up the i:th move in movelist and makes it.
     // move_no just keeps track of the full move number
     // in the game.
-    void make_move(uint8_t i, Gentype gt = Gentype::All, bool update_history = true);
+    void make_move(std::deque<Bitmove>& movelist, uint8_t i, Gentype gt = Gentype::All, bool update_history = true);
 
     // Only for the command-line interface, where the user
     // is prompted to enter the new move on the keyboard,
@@ -236,9 +236,9 @@ class Bitboard
     int make_move(Playertype player_type);
 
     // This make_move() doesn't require a generated movelist.
-    void make_move(const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
+    void make_move(std::deque<Bitmove>& movelist, const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
 
-    void take_back_move(const Bitmove& m, const Gentype gt, const bool add_to_history = true);
+    void take_back_move(std::deque<Bitmove>& movelist, const Bitmove& m, const Gentype gt, const bool add_to_history = true);
 
     // All properties of a move are not decided immediately,
     // but some of them (check for instance) are set after the
@@ -324,7 +324,7 @@ class Bitboard
 
     void clear_PV_table();
 
-    inline void clear_movelist(std::deque<Bitmove>& movelist);
+    //TODO: REMOVE inline void clear_movelist(std::deque<Bitmove>& movelist);
 
     void update_half_move_counter();
 

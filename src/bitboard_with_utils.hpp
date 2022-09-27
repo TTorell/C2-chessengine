@@ -57,21 +57,18 @@ class Bitboard_with_utils: public Bitboard
 
     float evaluate_position(Color col_to_move, uint8_t level, bool evaluate_zero_moves = true) const;
 
-    int get_no_of_moves()
-    {
-      return _movelist->size();
-    }
-
     Bitmove get_first_move()
     {
-      assert(_movelist->size() > 0);
-      return (*_movelist)[0];
+      //TODO: Is this right:
+      assert(Bitboard::takeback_list[0].state_S.movelist.size() > 0);
+      return Bitboard::takeback_list[0].state_S.movelist[0];
     }
 
     int get_move_index(const Bitmove& move) const
     {
       int idx = 0;
-      for (const Bitmove& m : *_movelist)
+      //TODO: Is this right:
+      for (const Bitmove& m : Bitboard::takeback_list[0].state_S.movelist)
       {
         if (m == move)
           return idx;
@@ -86,6 +83,10 @@ class Bitboard_with_utils: public Bitboard
     {
       history.clear();
     }
+
+    void write_movelist(std::ostream& os, const bool same_line) const;
+
+    std::deque<Bitmove>& get_first_movelist();
 
 };
 

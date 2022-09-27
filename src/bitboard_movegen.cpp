@@ -739,7 +739,7 @@ void Bitboard::find_moves_after_check(std::deque<Bitmove>& movelist, Gentype gt)
 // But naturally, I haven't made use of all these
 // restrictions.
 // ------------------------------------------------------
-void Bitboard::find_checkers_and_pinned_pieces() const
+void Bitboard::find_checkers_and_pinned_pieces()
 {
   uint64_t possible_checkers;
   uint64_t possible_checker;
@@ -1109,7 +1109,9 @@ inline void Bitboard::sort_moves(std::deque<Bitmove>& movelist) const
 
 void Bitboard::find_legal_moves(std::deque<Bitmove>& movelist, Gentype gt)
 {
-  init_piece_state(movelist);
+  movelist.clear(); //TODO: This was added.
+
+  init_piece_state();
   assert((_own->pieces & _other->pieces) == zero);
   find_king_moves(movelist, gt);
   find_checkers_and_pinned_pieces();

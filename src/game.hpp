@@ -49,7 +49,7 @@ class Game
     void clear_move_log(Color col_to_move, uint16_t move_number);
     void setup_pieces();
     void init_board_hash_tag();
-    void actions_after_a_move();
+    void actions_after_a_move(const std::deque<Bitmove>& movelist);
     void start();
     Bitmove find_best_move(float& score, unsigned int max_search_ply);
     Bitmove incremental_search(const double movetime, unsigned int max_depth = N_SEARCH_BOARDS_DEFAULT/2);

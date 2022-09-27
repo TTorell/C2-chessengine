@@ -135,7 +135,7 @@ void Game::init_board_hash_tag()
   _chessboard.init_board_hash_tag();
 }
 
-void Game::actions_after_a_move()
+void Game::actions_after_a_move(const std::deque<Bitmove>& movelist)
 {
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
@@ -154,7 +154,7 @@ void Game::actions_after_a_move()
     logfile << (is_close(evaluation, eval_max)? "1 - 0, black was mated":"0 - 1, white was mated") << "\n";
     _playing = false;
   }
-  else if (is_close(evaluation, 0.0F) && _chessboard.get_no_of_moves() == 0)
+  else if (is_close(evaluation, 0.0F) && movelist.size() == 0)
   {
     _chessboard.set_stalemate();
     cmdline << "1/2 - 1/2 draw by stalemate" << "\n";
@@ -296,10 +296,12 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
 
   if (best_move.is_valid())
   {
-    _chessboard.make_move(best_move);
+    //TODO: Is this right?
+    _chessboard.make_move(_chessboard.get_first_movelist(), best_move);
     _move_log.push_back(_chessboard.last_move());
   }
-  actions_after_a_move();
+  //TODO: Is this right?
+  actions_after_a_move(_chessboard.get_first_movelist());
 
   // Stop possibly running timer by setting time_left to false.
   _chessboard.set_time_left(false);

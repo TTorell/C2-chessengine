@@ -328,15 +328,15 @@ inline void Bitboard::update_state_after_king_move(const Bitmove& m)
   }
 }
 
-void Bitboard::make_move(uint8_t i, Gentype gt, bool add_to_history)
+void Bitboard::make_move(std::deque<Bitmove>& movelist, uint8_t i, Gentype gt, bool add_to_history)
 {
-  assert(i < _movelist->size());
-  make_move((*_movelist)[i], gt, add_to_history);
+  assert(i < movelist.size());
+  make_move(movelist, movelist[i], gt, add_to_history);
 }
 
 // The move must be valid, but doesn't have to be in _movelist.
 // _movelist may be empty, not generated yet.
-void Bitboard::make_move(const Bitmove& m, Gentype gt, bool add_to_history)
+void Bitboard::make_move(std::deque<Bitmove>& movelist, const Bitmove& m, Gentype gt, bool add_to_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
   uint64_t to_square = m.to();
@@ -451,7 +451,7 @@ void Bitboard::make_move(const Bitmove& m, Gentype gt, bool add_to_history)
   update_half_move_counter();
   // TODO: Must be possible to change to gentype::captures.
 
-  find_legal_moves(gt);
+  find_legal_moves(movelist, gt);
 }
 
 void Bitboard::takeback_en_passant(const Bitmove& m, const Color moving_side)
@@ -499,7 +499,7 @@ void Bitboard::takeback_castling(const Bitmove& m, const Color moving_side)
 
 // The move must be valid, but doesn't have to be in _movelist.
 // _movelist may be empty.
-void Bitboard::take_back_move(const Bitmove& m, Gentype gt, const bool add_to_history)
+void Bitboard::take_back_move(std::deque<Bitmove>& movelist, const Bitmove& m, Gentype gt, const bool add_to_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
 
@@ -630,7 +630,7 @@ void Bitboard::take_back_move(const Bitmove& m, Gentype gt, const bool add_to_hi
   }
   update_half_move_counter();
   // TODO: Must be possible to change to gentype::captures.
-  find_legal_moves(gt);
+  find_legal_moves(movelist, gt);
 }
 
 }
