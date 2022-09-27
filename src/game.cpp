@@ -25,32 +25,32 @@ Game::Game(Config_params& config_params) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player_type{playertype::human, playertype::computer },
+    _player_type {Playertype::Human, Playertype::Computer},
     _score(0),
     _config_params(config_params),
     _playing(false)
 {
-  _chessboard.read_position(start_position_FEN);
-  init();
+   std::cerr << "Game::Game(Config_params& config_params)" << std::endl;
+  _chessboard.read_position(start_position_FEN, init_pieces_and_moves);
 }
 
-Game::Game(color side, Config_params& config_params) :
+Game::Game(Color side, Config_params& config_params) :
     _is_first_position(true),
     _move_log(),
     _chessboard(),
-    _player_type{playertype::human, playertype::computer },
+    _player_type {Playertype::Human, Playertype::Computer},
     _score(0),
     _config_params(config_params),
     _playing(false)
 {
-  _player_type[index(side)] = playertype::human;
-  _player_type[index(other_color(side))] = playertype::computer;
-  _chessboard.read_position(start_position_FEN, true);
-  init();
+  std::cerr << "Game::Game(Color side, Config_params& config_params)" << std::endl;
+  _player_type[index(side)] = Playertype::Human;
+  _player_type[index(other_color(side))] = Playertype::Computer;
+  _chessboard.read_position(start_position_FEN, init_pieces_and_moves);
 }
 
-Game::Game(playertype pt1,
-           playertype pt2,
+Game::Game(Playertype pt1,
+           Playertype pt2,
            Config_params& config_params) :
     _is_first_position(true),
     _move_log(),
@@ -60,8 +60,8 @@ Game::Game(playertype pt1,
     _config_params(config_params),
     _playing(false)
 {
+  std::cerr << "Game::Game(Playertype pt1, Playertype pt2, Config_params& config_params)" << std::endl;
   _chessboard.read_position(start_position_FEN, true);
-  init();
 }
 
 Game::~Game()
@@ -75,7 +75,7 @@ void Game::init()
   _chessboard.init();
 }
 
-void Game::clear_move_log(color col_to_start, uint16_t move_number)
+void Game::clear_move_log(Color col_to_start, uint16_t move_number)
 {
   _move_log.clear_and_init(col_to_start, move_number);
 }
@@ -85,27 +85,27 @@ void Game::setup_pieces()
   _chessboard.read_position(start_position_FEN);
 }
 
-color Game::get_col_to_move() const
+Color Game::get_col_to_move() const
 {
   return _chessboard.get_side_to_move();
 }
 
-std::ostream& Game::write_chessboard(std::ostream& os, outputtype ot, color from_perspective) const
+std::ostream& Game::write_chessboard(std::ostream& os, const Color from_perspective) const
 {
-  Bitboard_with_utils(_chessboard).write(os, ot, from_perspective);
+  Bitboard_with_utils(_chessboard).write(os, from_perspective);
   return os;
 }
 
 std::ostream& Game::write_diagram(std::ostream& os) const
 {
   Bitboard_with_utils bwu(_chessboard);
-  if (_player_type[index(color::white)] == playertype::human)
-    bwu.write(os, outputtype::cmd_line_diagram, color::white) << std::endl;
-  else if (_player_type[index(color::black)] == playertype::human)
-    bwu.write(os, outputtype::cmd_line_diagram, color::black) << std::endl;
+  if (_player_type[index(Color::White)] == Playertype::Human)
+    bwu.write(os, Color::White) << std::endl;
+  else if (_player_type[index(Color::Black)] == Playertype::Human)
+    bwu.write(os, Color::Black) << std::endl;
   else
     // The computer is playing itself
-    bwu.write(os, outputtype::cmd_line_diagram, color::white) << std::endl;
+    bwu.write(os, Color::White) << std::endl;
   return os;
 }
 
@@ -194,7 +194,7 @@ Bitmove Game::find_best_move(float& score, unsigned int search_depth)
   score = _chessboard.negamax_with_pruning(0, -infinity, infinity, best_move, search_depth);
   _chessboard.get_search_info().time_taken = steady_clock.toc_ms();
   _chessboard.get_search_info().score = score;
-  if (_chessboard.get_side_to_move() == color::white)
+  if (_chessboard.get_side_to_move() == Color::White)
   {
     if (best_move == NO_MOVE && is_close(score, -100.0F))
     {
@@ -218,7 +218,7 @@ Bitmove Game::find_best_move(float& score, unsigned int search_depth)
   }
   if (best_move == SEARCH_HAS_BEEN_INTERRUPTED)
   {
-    logfile << "The sarch has been interruted." << "\n";
+    logfile << "The search has been interruted." << "\n";
   }
   return best_move;
 }
@@ -257,7 +257,7 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
     //std::this_thread::sleep_for(std::chrono::microseconds(200));
   }
 
-  _chessboard.clear_transposition_table(map_tag::both);
+  _chessboard.clear_transposition_table(map_tag::Both);
 
   // We will need some search-boards for Quiescense-search too.
   for (unsigned int search_depth = 1; search_depth <= max_search_depth; search_depth++)
@@ -344,6 +344,7 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
       {
         return incremental_search(go_params.movetime);
       }
+      //merge return incremental_search(go_params.movetime);
     }
     else if (!is_close(go_params.wtime, 0.0, 1e-10))
     {
@@ -352,9 +353,9 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
       int moves_left_approx = 40 - _chessboard.get_move_number();
       while (moves_left_approx < 10)
         moves_left_approx += 20;
-      bool is_white_to_move = (_chessboard.get_side_to_move() == color::white);
-      double time = (is_white_to_move)? go_params.wtime + moves_left_approx * go_params.winc:
-                                        go_params.btime + moves_left_approx * go_params.binc;
+      bool is_white_to_move = (_chessboard.get_side_to_move() == Color::White);
+      double time = (is_white_to_move) ? go_params.wtime + moves_left_approx * go_params.winc :
+                                         go_params.btime + moves_left_approx * go_params.binc;
       return incremental_search(time / moves_left_approx);
     }
     else
@@ -392,7 +393,7 @@ void Game::set_time_left(bool value)
   _chessboard.set_time_left(value);
 }
 
-playertype Game::get_playertype(const color& side) const
+Playertype Game::get_playertype(const Color& side) const
 {
   return _player_type[index(side)];
 }
@@ -549,10 +550,9 @@ int Game::read_position(const std::string& filename)
 
 int Game::read_position_FEN(const std::string& FEN_string)
 {
-// TODO: read new position to temporary board, so
-// we can call figure_out_last_move().
   Bitboard new_position;
-  if (new_position.read_position(FEN_string, true) != 0) // true means init_piece_state().
+  new_position.init();
+  if (new_position.read_position(FEN_string, init_pieces_and_moves) != 0)
     return -1;
   figure_out_last_move(new_position);
 //  _chessboard.find_legal_moves(gentype::all);

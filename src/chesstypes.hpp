@@ -6,6 +6,7 @@
 #include <cassert>
 #include <ostream>
 #include <limits>
+#include <deque>
 
 using namespace std::string_literals;
 
@@ -40,10 +41,12 @@ const auto epsilon = 0.00000001F;
 
 const auto N_SEARCH_BOARDS_DEFAULT = 38U;
 const auto dont_update_history = false;
+const auto init_pieces_and_moves = true;
 const auto dont_evaluate_zero_moves = false;
 const auto use_max_search_depth = true;
+const auto on_same_line = true;
 
-enum class piecetype
+enum class Piecetype
 {
   Queen,
   Rook,
@@ -56,31 +59,25 @@ enum class piecetype
 
 const float piece_values[7] = {9.0F, 5.0F, 3.0F, 3.0F, 1.0F, 0.0F, 0.0F};
 
-enum class color
+const auto pawn_value = piece_values[index(Piecetype::Pawn)];
+
+enum class Color
 {
-  white = 0,
-  black = 1
+  White = 0,
+  Black = 1
 };
 
-enum class playertype
+enum class Playertype
 {
-  computer,
-  human
+  Computer,
+  Human
 };
 
-enum class gentype
+enum class Gentype
 {
-  all,
-  captures,
-  captures_and_promotions
-};
-
-enum class outputtype
-{
-  verbose,
-  silent,
-  debug,
-  cmd_line_diagram
+  All,
+  Captures,
+  Captures_and_Promotions
 };
 
 // Castling rights
@@ -107,11 +104,10 @@ constexpr uint16_t move_props_stalemate = 0x0020;
 constexpr uint16_t move_props_castling = 0x0040;
 constexpr uint16_t move_props_draw_by_repetition = 0x0080;
 constexpr uint16_t move_props_draw_by_50_moves = 0x0100;
-constexpr bool SAME_LINE = true;
 
 struct Search_info
 {
-    color searching_side;
+    Color searching_side;
     unsigned int leaf_node_counter;
     unsigned int node_counter;
     unsigned int hash_hits;
@@ -125,7 +121,7 @@ struct Search_info
 
     float get_score() const
     {
-      return (searching_side == color::white) ? score : -score;
+      return (searching_side == Color::White) ? score : -score;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Search_info& si);
@@ -184,11 +180,11 @@ struct Bitmove
     {
     }
 
-    Bitmove(piecetype p_type, // bit 25-32
+    Bitmove(Piecetype p_type, // bit 25-32
             uint16_t move_props, // bit 15-24
             uint64_t from_square, // bit 7-12
             uint64_t to_square, // bit 1-6
-            piecetype promotion_pt = piecetype::Queen) : // bit 13-14
+            Piecetype promotion_pt = Piecetype::Queen) : // bit 13-14
         _move(0),
         _evaluation(0.0)
     {
@@ -220,9 +216,9 @@ struct Bitmove
       return square((_move >> 6) & 0x3F);
     }
 
-    piecetype promotion_piece_type() const
+    Piecetype promotion_piece_type() const
     {
-      return static_cast<piecetype>((_move >> 12) & 0x03);
+      return static_cast<Piecetype>((_move >> 12) & 0x03);
     }
 
     uint16_t properties() const
@@ -230,9 +226,9 @@ struct Bitmove
       return (_move >> 14) & 0x03FF;
     }
 
-    piecetype piece_type() const
+    Piecetype piece_type() const
     {
-      return static_cast<piecetype>(_move >> 24);
+      return static_cast<Piecetype>(_move >> 24);
     }
 
     void add_property(uint16_t property)
@@ -257,6 +253,21 @@ struct Bitmove
     {
       return _move > last_none_valid_move_constant; // Bigger than DRAW_BY_50_MOVES_RULE._move.
     }
+};
+
+struct Takeback_state
+{
+    std::deque<Bitmove> movelist;
+    uint64_t hash_tag;
+    uint8_t castling_rights;
+    uint8_t half_move_counter;
+};
+
+struct Takeback_element
+{
+    Takeback_state state_S; // For Negamax search;
+    Takeback_state state_Q; // For Quiescence search;
+    friend std::ostream& operator<<(std::ostream& os, const Takeback_element& element);
 };
 
 // The returned best_move from a search can contain a valid move of course,
@@ -353,6 +364,7 @@ constexpr uint64_t h8_square = h_file & row_8;
 
 constexpr uint64_t center_squares = d4_square | d5_square | e4_square | e5_square;
 
+constexpr uint64_t king_initial_squares = e1_square | e8_square;
 constexpr uint64_t rook_initial_squares_white = a1_square | h1_square;
 constexpr uint64_t rook_initial_squares_black = a8_square | h8_square;
 constexpr uint64_t knight_initial_squares_white = b1_square | g1_square;

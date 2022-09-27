@@ -124,6 +124,23 @@ inline unsigned int LOG2(const T& val)
 #endif
 
 template<typename T>
+std::ostream& write_list(const std::deque<T>& list, std::ostream& os, bool same_line = false)
+{
+  bool first = true;
+  for (const T& element : list)
+  {
+    if (!first && same_line)
+      os << " ";
+    os << element;
+    if (!same_line)
+      os << std::endl;
+    first = false;
+  }
+  os << std::endl;
+  return os;
+}
+
+template<typename T>
 std::ostream& write_vector(const std::vector<T>& list, std::ostream& os, bool same_line = false)
 {
   bool first = true;
@@ -317,9 +334,9 @@ inline uint64_t diagonal_squares(uint64_t square)
 
 class Config_params;
 
-color other_color(const color& side);
-inline color& operator++(color& side);
-color col_from_string(const std::string& s);
+Color other_color(const Color& side);
+inline Color& operator++(Color& side);
+Color col_from_string(const std::string& s);
 std::string get_logfile_name();
 void require(bool b, std::string file, std::string method, int line);
 void require_m(bool b, std::string file, std::string method, int line, const Bitmove& m);

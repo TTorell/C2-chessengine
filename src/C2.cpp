@@ -17,6 +17,7 @@
 #include "circular_fifo.hpp"
 #include "current_time.hpp"
 #include "uci.hpp"
+#include "magic_enum.hpp"
 
 namespace C2_chess
 {
@@ -126,20 +127,27 @@ std::string engine_style(const Bitmove& move)
   {
     switch (move.promotion_piece_type())
     {
-      case piecetype::Queen:
-        ss << "q";
-        break;
-      case piecetype::Rook:
-        ss << "r";
-        break;
-      case piecetype::Knight:
-        ss << "n";
-        break;
-      case piecetype::Bishop:
-        ss << "b" << std::endl;
-        break;
-      default:
-        assert(false);
+    case Piecetype::Queen:
+      ss << "q";
+      break;
+    case Piecetype::Rook:
+      ss << "r";
+      break;
+    case Piecetype::Knight:
+      ss << "n";
+      break;
+    case Piecetype::Bishop:
+      ss << "b" << std::endl;
+      break;
+    default:
+      std::cerr << "Invalid promotion piece-type: "
+                << magic_enum::enum_name(move.promotion_piece_type())
+                << std::endl;
+      Shared_ostream& logfile = *(Shared_ostream::get_instance());
+      logfile << ("Invalid promotion piece-type: "s)
+              << magic_enum::enum_name(move.promotion_piece_type())
+              << "\n";
+      assert(false);
     }
   }
   return ss.str();
@@ -151,7 +159,7 @@ using namespace C2_chess;
 
 int main(int argc, char* argv[])
 {
-
+   Bitboard::init_search_boards();
 // The engine can log all communication with GUI, and
 // other stuff to a logfile.
 // This requires that the engine has been started by
@@ -206,6 +214,7 @@ int main(int argc, char* argv[])
 
   // Create an instance of the Game class.
   Game game(config_params);
+  game.init();
 
   // Thread which receives input commands and puts them in the
   // ipput_buffer, While the main engine process is "thinking"
@@ -215,7 +224,7 @@ int main(int argc, char* argv[])
 // Thread which buffers output commands from the engine.
   std::thread output_thread(write_output, &output_buffer);
 
-  UCI uci;
+  UCI Uci;
 
   std::string command;
 
@@ -230,12 +239,12 @@ int main(int argc, char* argv[])
       continue;
     }
 
-    uci_cmd uci_command = uci.parse_command(command, output_buffer, config_params);
+    auto uci_command = Uci.parse_command(command, output_buffer, config_params);
 
-    if (uci_command == uci_cmd::go)
+    if (uci_command == UCI_cmd::go)
     {
       // (try to) Find the best move in the position
-      Bitmove bestmove = game.engine_go(config_params, uci.get_go_params());
+      Bitmove bestmove = game.engine_go(config_params, Uci.get_go_params());
       output_buffer.put("bestmove " + engine_style(bestmove));
       continue;
     }
@@ -245,23 +254,23 @@ int main(int argc, char* argv[])
     // (or pondering, which isn't implemented yet).
     // but the commands are also put in the input-buffer for
     // this main-thread to read.
-    if (uci_command == uci_cmd::quit)
+    if (uci_command == UCI_cmd::quit)
     {
       break;
     }
-    if (uci_command == uci_cmd::stop)
+    if (uci_command == UCI_cmd::stop)
     {
       // We have already stopped searching when we reach this code,
       // because the searching also runs in this thread.
       continue;
     }
 
-    if (uci_command == uci_cmd::position)
+    if (uci_command == UCI_cmd::position)
     {
-      game.read_position(uci.get_position_params());
+      game.read_position(Uci.get_position_params());
     }
 
-    if (uci_command == uci_cmd::ucinewgame)
+    if (uci_command == UCI_cmd::ucinewgame)
     {
       // We have nothing to clean up before starting a new game.
       // It will be taken care of when the first position is sent
@@ -273,7 +282,7 @@ int main(int argc, char* argv[])
     }
 
     // this is a homemade command specific for this engine.
-    if (uci_command == uci_cmd::cmd)
+    if (uci_command == UCI_cmd::cmd)
     {
       close_threads(input_thread, output_thread);
       // Tell the cmdline instance to be ready for
@@ -283,14 +292,14 @@ int main(int argc, char* argv[])
       play_on_cmd_line(config_params);
       break;
     }
-    if (uci_command == uci_cmd::unknown)
+    if (uci_command == UCI_cmd::unknown)
     {
-      logfile << "Unknown UCI-command:/n" << command << "\n";
+      logfile << "Unknown UCI-command:\n" << command << "\n";
       continue;
     }
-}
-close_threads(input_thread, output_thread);
-ofs.close();
-return 0;
+  }
+  close_threads(input_thread, output_thread);
+  ofs.close();
+  return 0;
 }
 

@@ -43,19 +43,19 @@ extern "C"
 namespace C2_chess
 {
 
-color other_color(const color& side)
+Color other_color(const Color& side)
 {
-  return (side == color::white) ? color::black : color::white;
+  return (side == Color::White) ? Color::Black : Color::White;
 }
 
-inline color& operator++(color& side)
+inline Color& operator++(Color& side)
 {
-  return side = (side == color::white) ? color::black : color::white;
+  return side = (side == Color::White) ? Color::Black : Color::White;
 }
 
-color col_from_string(const std::string& s)
+Color col_from_string(const std::string& s)
 {
-  return (s == "w") ? color::white : color::black;
+  return (s == "w") ? Color::White : Color::Black;
 }
 
 std::string get_logfile_name()
@@ -180,9 +180,9 @@ std::pair<std::string, int> exec(const char* cmd)
   std::string result;
   int return_code = -1;
   auto pclose_wrapper = [&return_code](FILE* File)
-                                       {
-                                         return_code = close_pipe(File);
-                                       };
+  {
+    return_code = close_pipe(File);
+  };
   {
     // scope is important, have to make sure the pointer goes out of scope first
     const std::unique_ptr<FILE, decltype(pclose_wrapper)> pipe(open_pipe(cmd, "r"), pclose_wrapper);
@@ -202,13 +202,8 @@ bool check_execution_dir(const std::string& preferred_exec_dir)
   const std::pair<std::string, int> process_return = exec("pwd 2>&1");
   if (process_return.second != 0)
   {
-    std::cerr << "ERROR: could not execute command \"pwd\"" << std::endl
-              << "program exited with status code "
-              << process_return.second << std::endl
-              << "captured stdout and stderr; "
-              << std::endl
-              << process_return.first
-              << std::endl;
+    std::cerr << "ERROR: could not execute command \"pwd\"" << std::endl << "program exited with status code " << process_return.second << std::endl
+              << "captured stdout and stderr; " << std::endl << process_return.first << std::endl;
     return false;
   }
   std::string current_dir = process_return.first;
@@ -358,16 +353,11 @@ void print_filetype(std::ostream& os, const fs::file_status& s)
 
 void print_filepermissions(fs::perms p)
 {
-  std::cerr << ((p & fs::perms::owner_read) != fs::perms::none ? "r" : "-")
-            << ((p & fs::perms::owner_write) != fs::perms::none ? "w" : "-")
-            << ((p & fs::perms::owner_exec) != fs::perms::none ? "x" : "-")
-            << ((p & fs::perms::group_read) != fs::perms::none ? "r" : "-")
-            << ((p & fs::perms::group_write) != fs::perms::none ? "w" : "-")
-            << ((p & fs::perms::group_exec) != fs::perms::none ? "x" : "-")
-            << ((p & fs::perms::others_read) != fs::perms::none ? "r" : "-")
-            << ((p & fs::perms::others_write) != fs::perms::none ? "w" : "-")
-            << ((p & fs::perms::others_exec) != fs::perms::none ? "x" : "-")
-            << '\n';
+  std::cerr << ((p & fs::perms::owner_read) != fs::perms::none ? "r" : "-") << ((p & fs::perms::owner_write) != fs::perms::none ? "w" : "-")
+            << ((p & fs::perms::owner_exec) != fs::perms::none ? "x" : "-") << ((p & fs::perms::group_read) != fs::perms::none ? "r" : "-")
+            << ((p & fs::perms::group_write) != fs::perms::none ? "w" : "-") << ((p & fs::perms::group_exec) != fs::perms::none ? "x" : "-")
+            << ((p & fs::perms::others_read) != fs::perms::none ? "r" : "-") << ((p & fs::perms::others_write) != fs::perms::none ? "w" : "-")
+            << ((p & fs::perms::others_exec) != fs::perms::none ? "x" : "-") << '\n';
 }
 
 bool is_regular_read_OK(const fs::path& filepath)
@@ -388,9 +378,7 @@ bool is_regular_read_OK(const fs::path& filepath)
   if (access(filepath.c_str(), R_OK) != 0)
   {
     perror("Error");
-    std::cout << filepath << " is an existing, regular file, " << std::endl
-              << "but the program isn't permitted to read it."
-              << std::endl;
+    std::cout << filepath << " is an existing, regular file, " << std::endl << "but the program isn't permitted to read it." << std::endl;
     print_filepermissions(fs::status(filepath).permissions());
 #ifdef __linux__
     std::string cmd = "ls -l " + filepath.string();
@@ -415,9 +403,7 @@ bool is_regular_write_OK(const fs::path& filepath)
     if (access(filepath.c_str(), W_OK) != 0)
     {
       perror("Error");
-      std::cout << filepath << " is an existing, regular file, " << std::endl
-                << "and the program isn't permitted to write to it."
-                << std::endl;
+      std::cout << filepath << " is an existing, regular file, " << std::endl << "and the program isn't permitted to write to it." << std::endl;
 #ifdef __linux__
       std::string cmd = "ls -l " + filepath.string();
       std::cout << get_stdout_from_cmd(cmd) << std::endl;
@@ -598,12 +584,21 @@ std::vector<std::string> reverse_moves(const std::vector<std::string>& moves)
 std::ostream& operator <<(std::ostream& os, const Search_info& si)
 {
   os << "score: " << si.get_score() << std::endl;
-  os << "beta_cutoffs: " << static_cast<int>(si.beta_cutoffs) << " first_beta_cutoffs: "
-     << std::fixed << std::setprecision(1)
-     << static_cast<float>(si.first_beta_cutoffs) / static_cast<float>(si.beta_cutoffs) * 100.0F
-     << "%" << std::endl;
+  os << "beta_cutoffs: " << static_cast<int>(si.beta_cutoffs) << " first_beta_cutoffs: " << std::fixed << std::setprecision(1)
+     << static_cast<float>(si.first_beta_cutoffs) / static_cast<float>(si.beta_cutoffs) * 100.0F << "%" << std::endl;
   os << "hash_hits:" << static_cast<int>(si.hash_hits) << std::endl;
   os << "highest quiescense search-ply:" << static_cast<int>(si.highest_search_ply) << std::endl;
+  return os;
+}
+
+std::ostream& operator <<(std::ostream& os, const Takeback_element& element)
+{
+  os << "---------------------" << std::endl;
+  os << "Negamax:" << std::endl;
+  write_list(element.state_S.movelist, os, on_same_line);
+  os << "Quiescence:" << std::endl;
+  write_list(element.state_Q.movelist, os, on_same_line);
+  os << "---------------------" << std::endl;
   return os;
 }
 
@@ -626,7 +621,7 @@ std::ostream& Movelog::write(std::ostream& os) const
   {
     std::ostringstream move;
     move << _list[i];
-    if (i == 0 && _col_to_start == color::black)
+    if (i == 0 && _col_to_start == Color::Black)
     {
       os << moveno++ << "." << std::left << std::setw(9) << "  ...  " << move.str() << std::endl;
       increment = 1;

@@ -34,12 +34,12 @@ class Bitboard
     // Static declarations, incomplete type.
     static Transposition_table transposition_table;
     static Game_history history;
-    static Bitboard level_boards[];
+    static Bitboard search_boards[];
+    static struct Takeback_element takeback_list[];
     static std::atomic<bool> time_left;
 
-    std::deque<Bitmove> _movelist;
     uint64_t _hash_tag;
-    color _side_to_move = color::white;
+    Color _side_to_move = Color::White;
     uint16_t _move_number;
     uint8_t _castling_rights = castling_rights_none;
     bool _has_castled[2];
@@ -59,103 +59,121 @@ class Bitboard
     // ### Protected basic Bitboard_functions ###
     // ------------------------------------------
 
-    void init_piece_state();
+    void init_piece_state(std::deque<Bitmove>& movelist);
 
-    inline void sort_moves(std::deque<Bitmove>& movelist);
+    inline void sort_moves(std::deque<Bitmove>& movelist) const;
 
-    inline void add_move(piecetype p_type,
+    inline void add_move(std::deque<Bitmove>& movelist,
+                         Piecetype p_type,
                          uint16_t move_props,
                          uint64_t from_square,
                          uint64_t to_square,
-                         piecetype promotion_p_type = piecetype::Queen);
+                         Piecetype promotion_p_type = Piecetype::Queen) const;
 
-    bool is_in_movelist(const Bitmove& m) const;
+    bool is_in_movelist(std::deque<Bitmove>& movelist, const Bitmove& m) const;
 
-    inline float get_piece_value(piecetype p_type) const;
+    inline float get_piece_value(Piecetype p_type) const;
 
     inline float get_piece_value(uint64_t square) const;
 
-    bool is_empty_square(uint64_t square) const {return square & ~_all_pieces;}
+    bool is_empty_square(uint64_t square) const
+    {
+      return square & ~_all_pieces;
+    }
 
-    bool is_not_pinned(uint64_t square) const {return  square & ~_pinned_pieces;}
+    bool is_not_pinned(uint64_t square) const
+    {
+      return square & ~_pinned_pieces;
+    }
 
-    bool is_promotion_square(uint64_t square) const { return (_side_to_move == color::white) ? square & row_8 : square & row_1;}
+    bool is_promotion_square(uint64_t square) const
+    {
+      return (_side_to_move == Color::White) ? square & row_8 : square & row_1;
+    }
 
     // ### Protected Methods for move-generation
     // -----------------------------------------
-    void find_long_castling();
+    void find_long_castling(std::deque<Bitmove>& moelist) const;
 
-    void find_short_castling();
+    void find_short_castling(std::deque<Bitmove>& movelist) const;
 
-    uint64_t find_blockers(uint64_t sq, uint64_t mask, uint64_t all_pieces);
+    inline uint64_t find_blockers(uint64_t sq, uint64_t mask, uint64_t all_pieces) const;
 
-    inline uint64_t find_other_color_blockers(uint64_t sq, uint64_t mask);
+    inline uint64_t find_other_color_blockers(uint64_t sq, uint64_t mask) const;
 
-    uint64_t find_legal_squares(uint64_t sq, uint64_t mask);
+    uint64_t find_legal_squares(uint64_t sq, uint64_t mask) const;
 
-    void find_Queen_Rook_and_Bishop_moves(gentype gt);
+    void find_Queen_Rook_and_Bishop_moves(std::deque<Bitmove>& movelist, Gentype gt) const;
 
-    void find_legal_moves_for_pinned_pieces(gentype gt);
+    void find_legal_moves_for_pinned_pieces(std::deque<Bitmove>& movelist, Gentype gt) const;
 
-    void find_Knight_moves(gentype gt);
+    void find_Knight_moves(std::deque<Bitmove>& movelist, Gentype gt) const;
 
-    void find_Pawn_moves(gentype gt);
+    void find_Pawn_moves(std::deque<Bitmove>& movelist, Gentype gt) const;
 
-    void find_normal_legal_moves(gentype gt);
+    void find_normal_legal_moves(std::deque<Bitmove>& movelist, Gentype gt) const;
 
-    void find_Knight_moves_to_square(const uint64_t to_square);
+    void find_Knight_moves_to_square(std::deque<Bitmove>& movelist, const uint64_t to_square) const;
 
-    bool check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint64_t own_pawn_square);
+    bool check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint64_t own_pawn_square) const;
 
-    void try_adding_ep_pawn_move(uint64_t from_square);
+    void try_adding_ep_pawn_move(std::deque<Bitmove>& movelist, uint64_t from_square) const;
 
-    void add_pawn_move_check_promotion(uint64_t from_square, uint64_t to_square);
+    void add_pawn_move_check_promotion(std::deque<Bitmove>& movelist, uint64_t from_square, uint64_t to_square) const;
 
-    void find_pawn_moves_to_empty_square(uint64_t to_square, gentype gt);
+    void find_pawn_moves_to_empty_square(std::deque<Bitmove>& movelist, uint64_t to_square, Gentype gt) const;
 
-    void find_moves_to_square(uint64_t to_square, gentype gt);
+    void find_moves_to_square(std::deque<Bitmove>& movelist, uint64_t to_square, Gentype gt) const;
 
-    void find_moves_after_check(gentype gt);
+    void find_moves_after_check(std::deque<Bitmove>& movelist, Gentype gt) const;
 
-    void find_checkers_and_pinned_pieces();
+    void find_checkers_and_pinned_pieces()const;
 
     bool square_is_threatened(uint64_t square, bool King_is_asking) const;
 
-    bool square_is_threatened2(uint64_t to_square, bool King_is_asking);
+    bool square_is_threatened2(uint64_t to_square, bool King_is_asking) const;
 
-    inline void find_king_moves(gentype gt);
+    inline void find_king_moves(std::deque<Bitmove>& movelist, Gentype gt) const;
 
     // ### Protected methods for making a move ###
     // ---------------------------------------
 
-    inline void add_promotion_piece(piecetype p_type);
+    inline void add_promotion_piece(Piecetype p_type);
 
-    inline void touch_piece(uint64_t from_square);
+    //inline void touch_piece(const uint64_t square, const Color color);
 
-    inline void remove_other_piece(uint64_t square);
+    inline void remove_taken_piece(const uint64_t square, const Color color);
+
+    //inline void remove_pawn(const uint64_t square, const Color color);
 
     inline void move_piece(uint64_t from_square,
                            uint64_t to_square,
-                           piecetype p_type);
+                           Piecetype p_type);
 
     inline void remove_castling_right(uint8_t cr);
 
-    inline void place_piece(piecetype p_type, uint64_t square);
+    inline void place_piece(Piecetype p_type, const uint64_t square, Color color);
 
     inline void clear_ep_square();
 
     inline void set_ep_square(uint64_t ep_square);
 
-    void update_hash_tag(uint64_t square, color p_color, piecetype p_type);
+    void update_hash_tag(uint64_t square, Color p_color, Piecetype p_type);
 
-    inline void update_hash_tag(uint64_t square1, uint64_t square2, color p_color, piecetype type);
+    inline void update_hash_tag(uint64_t square1, uint64_t square2, Color p_color, Piecetype type);
 
     void update_side_to_move();
 
     inline void update_state_after_king_move(const Bitmove& m);
 
-    // ### Protected methods for searching for the best move
-    // -----------------------------------------------------
+    void takeback_en_passant(const Bitmove& m, const Color moving_side);
+
+    void takeback_castling(const Bitmove& m, const Color moving_side);
+
+    void takeback_from_state(Takeback_state& state);
+
+    // ### Protected methods for searching for the best move ###
+    // ---------------------------------------------------------
 
     void count_pawns_in_centre(float& sum, float weight) const;
 
@@ -165,8 +183,9 @@ class Bitboard
 
     void count_center_control(float& sum, float weight) const;
 
-    int count_threats_to_square(uint64_t square, color side) const;
+    int count_threats_to_square(uint64_t square, Color side) const;
 
+    float evaluate_position(Color for_side, uint8_t search_ply, bool evaluate_zero_moves = true) const;
 
     void get_pv_line(std::vector<Bitmove>& pv_line) const;
 
@@ -190,18 +209,18 @@ class Bitboard
       _ep_square = zero;
       _castling_rights = castling_rights_none;
       _material_diff = 0.0;
-      _movelist.clear();
+      //TODO: REMOVE movelist.clear();
     }
 
     // Reads the position from a text-string, with some
     // syntactic error-checking.
     // Returns -1 if the text-string wasn't accepted.
-    int read_position(const std::string& FEN_string, bool init_pieces = false);
+    int read_position(const std::string& FEN_string, const bool initialyse = false);
 
     // Puts all legal moves of the position in _movelist.
     // (Naturally only the moves for the player who's in
     // turn to make a move.)
-    void find_legal_moves(gentype gt);
+    void find_legal_moves(std::deque<Bitmove>& movelist, Gentype gt);
 
     // ### Public methods for make move ###
     // ------------------------------------
@@ -209,15 +228,17 @@ class Bitboard
     // Looks up the i:th move in movelist and makes it.
     // move_no just keeps track of the full move number
     // in the game.
-    void make_move(uint8_t i, gentype gt = gentype::all, bool update_history = true);
+    void make_move(uint8_t i, Gentype gt = Gentype::All, bool update_history = true);
 
     // Only for the command-line interface, where the user
     // is prompted to enter the new move on the keyboard,
     // if he's on turn.
-    int make_move(playertype player_type);
+    int make_move(Playertype player_type);
 
-    // This make_move() doesn't require a defined movelist.
-    void make_move(const Bitmove& m, gentype gt = gentype::all, bool update_history = true);
+    // This make_move() doesn't require a generated movelist.
+    void make_move(const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
+
+    void take_back_move(const Bitmove& m, const Gentype gt, const bool add_to_history = true);
 
     // All properties of a move are not decided immediately,
     // but some of them (check for instance) are set after the
@@ -274,7 +295,7 @@ class Bitboard
 
     // A slow way of determining the piecetype of a piece on
     // given square. Should not be used inside the search-loop.
-    piecetype get_piece_type(uint64_t square) const;
+    Piecetype get_piece_type(uint64_t square) const;
 
     uint16_t get_move_number() const
     {
@@ -289,8 +310,6 @@ class Bitboard
     // ### Public methods for the search of best move. ###
     // ---------------------------------------------------
 
-    float evaluate_position(color for_side, uint8_t level, bool evaluate_zero_moves = true) const;
-
     void set_time_left(bool value);
 
     static void start_timer(double time);
@@ -299,13 +318,13 @@ class Bitboard
 
     bool has_time_left();
 
-    void clear_transposition_table(map_tag map = map_tag::current);
+    void clear_transposition_table(map_tag map = map_tag::Current);
 
     void switch_tt_tables();
 
     void clear_PV_table();
 
-    inline void clear_movelist();
+    inline void clear_movelist(std::deque<Bitmove>& movelist);
 
     void update_half_move_counter();
 
@@ -316,7 +335,7 @@ class Bitboard
       return _half_move_counter;
     }
 
-    color get_side_to_move() const
+    Color get_side_to_move() const
     {
       return _side_to_move;
     }
@@ -340,19 +359,22 @@ class Bitboard
       return history.get_state();
     }
 
-    float Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply) const;
+    float Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply);
 
     // Search function
-    float negamax_with_pruning(uint8_t level, float alpha, float beta, Bitmove& best_move, const uint8_t max_search_ply) const;
+    float negamax_with_pruning(uint8_t level, float alpha, float beta, Bitmove& best_move, const uint8_t max_search_ply);
 
+    std::ostream& write_piece_diagram_style(std::ostream& os, C2_chess::Piecetype p_type, C2_chess::Color side) const;
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
-    std::ostream& write(std::ostream& os, outputtype wt, color from_perspective) const;
-    std::ostream& write_movelist(std::ostream& os, bool same_line = false) const;
+    std::ostream& write(std::ostream& os, const Color from_perspective) const;
+    std::ostream& write_movelist( const std::deque<Bitmove>& movelist, std::ostream& os, bool same_line = false) const;
     Shared_ostream& write_search_info(Shared_ostream& logfile) const;
 
     void clear_search_info();
     Search_info& get_search_info() const;
     unsigned int perft_test(uint8_t search_ply, uint8_t max_search_plies) const;
+
+    static void init_search_boards();
 };
 
 } // namespace C2_chess

@@ -1,5 +1,5 @@
 /*
- * zobrist_bitboard_hash.hpp
+ * transposition_table.hpp
  *
  *  Created on: Sep 26, 2021
  *      Author: torsten
@@ -33,22 +33,13 @@ struct TT_element
     {
       return !(best_move == UNDEFINED_MOVE);
     }
-
-//    // This didn't work for different types in the initialyzer-list of course:
-//    TT_element& operator=(const std::initializer_list<float>& il)
-//    {
-//      auto_iterator it = il.begin();
-//      best_move = static_cast<Bitmove>(*it++);
-//      search_ply = static_cast<int>(*it);
-//      return *this;
-//    }
 };
 
 enum class map_tag
 {
-    current,
-    previous,
-    both
+  Current,
+  Previous,
+  Both
 };
 
 using Hashmap = std::unordered_map<uint64_t, TT_element>;
@@ -66,15 +57,14 @@ class Transposition_table
     unsigned long _en_passant_file[8];
     unsigned long _castling_rights[16]; // we only use index 1, 2, 4 and 8
 
-
     void init_random_numbers();
 
   public:
 
     Transposition_table() :
-      _current_searchdepth_map(&_hash_map[0]),
-      _previous_searchdepth_map(&_hash_map[1]),
-      _black_to_move(0L)
+        _current_searchdepth_map(&_hash_map[0]),
+        _previous_searchdepth_map(&_hash_map[1]),
+        _black_to_move(0L)
     {
       init_random_numbers();
     }
@@ -91,28 +81,28 @@ class Transposition_table
     // it returns a reference to a new empty (default allocated)
     // hash_element connected to the hash_tag.
     // So find can be used for both searching and inserting.
-    TT_element& find(unsigned long hash_tag, map_tag map = map_tag::current)
+    TT_element& find(unsigned long hash_tag, map_tag map = map_tag::Current)
     {
-      if (map == map_tag::current)
+      if (map == map_tag::Current)
         return (*_current_searchdepth_map)[hash_tag];
       else
         return (*_previous_searchdepth_map)[hash_tag];
     }
 
-    void clear(map_tag map = map_tag::current)
+    void clear(const map_tag map = map_tag::Current)
     {
       switch (map)
       {
-        case map_tag::current:
-          _current_searchdepth_map->clear();
-          break;
-        case map_tag::previous:
-          _previous_searchdepth_map->clear();
-          break;
-        case map_tag::both:
+      case map_tag::Current:
+        _current_searchdepth_map->clear();
+        break;
+      case map_tag::Previous:
+        _previous_searchdepth_map->clear();
+        break;
+      case map_tag::Both:
         default:
-          _current_searchdepth_map->clear();
-          _previous_searchdepth_map->clear();
+        _current_searchdepth_map->clear();
+        _previous_searchdepth_map->clear();
       }
     }
 
@@ -132,8 +122,8 @@ inline void Transposition_table::init_random_numbers()
   std::uniform_real_distribution<double> dist(0, pow(2, 64));
   for (int square_index = 0; square_index < 64; square_index++)
     for (int row = 1; row <= 8; row++)
-      for (int col = index(color::white); col <= index(color::black); col++)
-        for (int type = index(piecetype::Queen); type <= index(piecetype::King); type++)
+      for (int col = index(Color::White); col <= index(Color::Black); col++)
+        for (int type = index(Piecetype::Queen); type <= index(Piecetype::King); type++)
           _random_table[square_index][col][type] = round(dist(mt));
   _castling_rights[1] = round(dist(mt));
   _castling_rights[2] = round(dist(mt));
