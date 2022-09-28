@@ -257,7 +257,7 @@ struct Bitmove
 
 struct Takeback_state
 {
-    std::deque<Bitmove> movelist;
+    std::deque<Bitmove>* movelist = new std::deque<Bitmove>{};
     uint64_t hash_tag;
     uint8_t castling_rights;
     uint8_t half_move_counter;

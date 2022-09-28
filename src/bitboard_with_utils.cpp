@@ -133,7 +133,7 @@ void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move)
 {
   std::stringstream out_moves;
   //TODO: Is this right?
-  write_movelist(Bitboard::takeback_list[0].state_S.movelist, out_moves);
+  write_movelist(out_moves, true);
   std::vector<std::string> out_moves_vector;
   std::string out_move = "";
   while (std::getline(out_moves, out_move))
@@ -151,7 +151,7 @@ void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move)
     i++;
   }
   if (found == true)
-    Bitboard::make_move(i);
+    Bitboard::make_move(*get_movelist(0), i);
   else
     assert(false);
 }
@@ -188,10 +188,10 @@ int Bitboard_with_utils::add_mg_test_position(const std::string& filename)
   init_piece_state();
   write(std::cout, Color::White);
   //TODO:Is this right?
-  find_legal_moves(Bitboard::takeback_list[0].state_S.movelist, Gentype::All);
+  find_legal_moves(*get_movelist(0), Gentype::All);
   std::cout << "Possible moves are:" << std::endl;
   //TODO:Is this right?
-  write_movelist(Bitboard::takeback_list[0].state_S.movelist, std::cout);
+  write_movelist(std::cout, on_same_line);
   if (question_to_user("Is this correct?\nIf so, would you like to add the position\nas a new test case? [y/n]: ", "^[yY].*$"))
   {
     std::ofstream ofs;
@@ -203,7 +203,7 @@ int Bitboard_with_utils::add_mg_test_position(const std::string& filename)
     }
     ofs << FEN_string << " ";
     //TODO:Is this right?
-    write_movelist(Bitboard::takeback_list[0].state_S.movelist, ofs, true);
+    write_movelist(ofs, on_same_line);
     ofs.close();
   }
   return 0;
@@ -224,7 +224,7 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum, const std::string& 
   uint64_t start = now.nanoseconds();
 
   //TODO: Is this right?
-  find_legal_moves(Bitboard::takeback_list[0].state_S.movelist, gt);
+  find_legal_moves(*get_movelist(0), gt);
 
   uint64_t stop = now.nanoseconds();
   std::cout << "Move generation took " << stop - start << " nanoseconds." << std::endl;
@@ -232,7 +232,7 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum, const std::string& 
   // Compare output and reference moves, first build a vector of "output-moves".
   std::stringstream out_moves;
   //TODO: Is this right?
-  write_movelist(Bitboard::takeback_list[0].state_S.movelist, out_moves);
+  write_movelist(out_moves, on_same_line);
   std::vector<std::string> out_moves_vector;
   std::string out_move = "";
   while (std::getline(out_moves, out_move))
@@ -263,7 +263,7 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum, const std::string& 
     std::cout << "Comparing program output with test case reference:" << std::endl;
     std::cout << "OUT: " << std::endl;
     //TODO: Is this right?
-    write_movelist(Bitboard::takeback_list[0].state_S.movelist, std::cout, true);
+    write_movelist(std::cout, true);
     std::cout << "REF: " << std::endl;
     bool first = true;
     for (const std::string& m : filtered_ref_moves_vector)
@@ -399,7 +399,7 @@ uint64_t Bitboard_with_utils::find_legal_squares(uint64_t sq, uint64_t mask, uin
 float Bitboard_with_utils::evaluate_position(Color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
 {
   //TODO: Is this right?
-  return Bitboard::evaluate_position((Bitboard::takeback_list[0].state_S.movelist.size() == 0), col_to_move, search_ply, evaluate_zero_moves);
+  return Bitboard::evaluate_position((get_movelist(0)->size() == 0), col_to_move, search_ply, evaluate_zero_moves);
 }
 
 int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitmove& m) const
@@ -520,14 +520,11 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
   return 0;
 }
 
-void Bitboard_with_utils::write_movelist(std::ostream& os, const bool same_line) const
+std::ostream& Bitboard_with_utils::write_movelist(std::ostream& os, const bool same_line) const
 {
-  write_movelist(takeback_list[0].state_S.movelist, os, same_line);
-}
-
-std::deque<Bitmove>& Bitboard_with_utils::get_first_movelist()
-{
-  return takeback_list[0].state_S.movelist;
+  //TODO: is this right?
+  Bitboard::write_movelist(*get_movelist(0), os, same_line);
+  return os;
 }
 
 } // End namespace C2_chess

@@ -336,7 +336,7 @@ void Bitboard::make_move(std::deque<Bitmove>& movelist, uint8_t i, Gentype gt, b
 
 // The move must be valid, but doesn't have to be in _movelist.
 // _movelist may be empty, not generated yet.
-void Bitboard::make_move(std::deque<Bitmove>& movelist, const Bitmove& m, Gentype gt, bool add_to_history)
+void Bitboard::make_move(std::deque<Bitmove>& next_movelist, const Bitmove& m, Gentype gt, bool add_to_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
   uint64_t to_square = m.to();
@@ -451,7 +451,7 @@ void Bitboard::make_move(std::deque<Bitmove>& movelist, const Bitmove& m, Gentyp
   update_half_move_counter();
   // TODO: Must be possible to change to gentype::captures.
 
-  find_legal_moves(movelist, gt);
+  find_legal_moves(next_movelist, gt);
 }
 
 void Bitboard::takeback_en_passant(const Bitmove& m, const Color moving_side)

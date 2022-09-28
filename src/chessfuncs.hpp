@@ -124,10 +124,10 @@ inline unsigned int LOG2(const T& val)
 #endif
 
 template<typename T>
-std::ostream& write_list(const std::deque<T>& list, std::ostream& os, bool same_line = false)
+std::ostream& write_list(const std::deque<T>* list, std::ostream& os, bool same_line = false)
 {
   bool first = true;
-  for (const T& element : list)
+  for (const T& element : *list)
   {
     if (!first && same_line)
       os << " ";

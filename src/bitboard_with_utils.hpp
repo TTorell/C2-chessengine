@@ -60,15 +60,16 @@ class Bitboard_with_utils: public Bitboard
     Bitmove get_first_move()
     {
       //TODO: Is this right:
-      assert(Bitboard::takeback_list[0].state_S.movelist.size() > 0);
-      return Bitboard::takeback_list[0].state_S.movelist[0];
+      auto movelist = get_movelist(0);
+      assert(movelist->size() > 0);
+      return (*movelist)[0];
     }
 
     int get_move_index(const Bitmove& move) const
     {
       int idx = 0;
       //TODO: Is this right:
-      for (const Bitmove& m : Bitboard::takeback_list[0].state_S.movelist)
+      for (const Bitmove& m : *get_movelist(0))
       {
         if (m == move)
           return idx;
@@ -84,9 +85,7 @@ class Bitboard_with_utils: public Bitboard
       history.clear();
     }
 
-    void write_movelist(std::ostream& os, const bool same_line) const;
-
-    std::deque<Bitmove>& get_first_movelist();
+    std::ostream& write_movelist(std::ostream& os, const bool same_line) const;
 
 };
 

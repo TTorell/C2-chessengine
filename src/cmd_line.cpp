@@ -203,7 +203,7 @@ int Game::make_a_move(float& score, const uint8_t max_search_ply)
       std::cout << "Black was check mated." << std::endl; // TODO
       return 0;
     }
-    _chessboard.make_move(best_move);
+    _chessboard.make_move(*_chessboard.get_movelist(0), best_move);
     return 0;
   }
 }
@@ -221,7 +221,7 @@ void Game::start()
 // use in the Zobrist hash transposition-table.
   init_board_hash_tag();
 // Generate all moves.
-  _chessboard.find_legal_moves(Gentype::All);
+  _chessboard.find_legal_moves(*_chessboard.get_movelist(0), Gentype::All);
 // Tell the engine that there are no time limits.
 // The time it takes is defined by the max_searh_level
   _chessboard.set_time_left(true);
@@ -242,7 +242,7 @@ void Game::start()
       }
       // Update the movelog of the game.
       _move_log.push_back(_chessboard.last_move());
-      actions_after_a_move();
+      actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
     }
     else
     {
@@ -257,10 +257,9 @@ void Game::start()
     logfile << "time spent thinking: " << timediff / 1.0e9 << " seconds" << "\n";
   }
 }
-
-bool Bitboard::is_in_movelist(const Bitmove& m) const
+bool Bitboard::is_in_movelist(std::deque<Bitmove>& movelist, const Bitmove& m) const
 {
-  for (const Bitmove& move : *_movelist)
+  for (const Bitmove& move : movelist)
   {
     if (m == move)
       return true;
@@ -349,10 +348,10 @@ int Bitboard::make_move(Playertype player)
     if (to_square & _other->pieces)
       move_props = move_props_capture;
     Bitmove m(p_type, move_props, from_square, to_square, promotion_piecetype);
-    if (!is_in_movelist(m))
+    if (!is_in_movelist(*get_movelist(0), m))
       continue;
     //  Move is OK,make it
-    make_move(m);
+    make_move(*get_movelist(0), m);
     return 0;
   } // while not read
 }

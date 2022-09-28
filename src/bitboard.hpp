@@ -236,7 +236,7 @@ class Bitboard
     int make_move(Playertype player_type);
 
     // This make_move() doesn't require a generated movelist.
-    void make_move(std::deque<Bitmove>& movelist, const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
+    void make_move(std::deque<Bitmove>& next_movelist, const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
 
     void take_back_move(std::deque<Bitmove>& movelist, const Bitmove& m, const Gentype gt, const bool add_to_history = true);
 
@@ -338,6 +338,16 @@ class Bitboard
     Color get_side_to_move() const
     {
       return _side_to_move;
+    }
+
+    inline std::deque<Bitmove>* get_movelist(size_t idx) const
+    {
+      return takeback_list[idx].state_S.movelist;
+    }
+
+    inline std::deque<Bitmove>* get_movelist_Q(size_t idx) const
+    {
+      return takeback_list[idx].state_Q.movelist;
     }
 
     bool is_draw_by_50_moves() const;

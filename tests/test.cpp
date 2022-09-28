@@ -97,7 +97,7 @@ TEST_CASE("perft_test")
     Bitboard bb;
     bb.init();
     bb.read_position(input_vector[0], init_pieces);
-    bb.find_legal_moves(Gentype::All);
+    bb.find_legal_moves(*bb.get_movelist(0), Gentype::All);
     for (size_t max_search_plies = 2; max_search_plies <= max_depth; max_search_plies++)
     {
       bb.clear_search_info();
@@ -188,7 +188,7 @@ TEST_CASE("Castling_wrights")
   chessboard.init();
   REQUIRE(chessboard.read_position(FEN_string) == 0);
   REQUIRE(chessboard.get_castling_rights() == castling_rights_all);
-  chessboard.find_legal_moves(Gentype::All);
+  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
   chessboard.write(std::cout, Color::White);
   chessboard.write_movelist(std::cout, true) << std::endl;
 
@@ -488,7 +488,7 @@ TEST_CASE("evaluation")
   Bitboard_with_utils chessboard;
   chessboard.init();
   chessboard.read_position(start_position_FEN);
-  chessboard.find_legal_moves(Gentype::All);
+  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
   REQUIRE(fabs(chessboard.evaluate_position(Color::White, 7)) < 0.01);
   chessboard.make_UCI_move("e2e4");
   now.tic();
@@ -613,7 +613,7 @@ TEST_CASE("evaluation, mate and stalemate")
   Bitboard_with_utils chessboard;
   chessboard.init();
   REQUIRE(chessboard.read_position(FEN_string) == 0);
-  chessboard.find_legal_moves(Gentype::All);
+  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
 
   SECTION("mate")
   {
@@ -822,7 +822,7 @@ TEST_CASE("move-ordering")
   Bitboard_with_utils chessboard;
   chessboard.init();
   REQUIRE(chessboard.read_position(FEN_string) == 0);
-  chessboard.find_legal_moves(Gentype::All);
+  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
   chessboard.write(std::cout, Color::White);
   chessboard.write_movelist(std::cout, true) << std::endl;
 }
@@ -836,7 +836,7 @@ TEST_CASE("50-moves-rule")
   REQUIRE(chessboard.read_position(FEN_string) == 0);
   REQUIRE(chessboard.get_half_move_counter() == 49);
   REQUIRE(chessboard.is_draw_by_50_moves() == false);
-  chessboard.find_legal_moves(Gentype::All);
+  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
 
   SECTION("pawn move")
   {
@@ -880,7 +880,7 @@ TEST_CASE("three-fold repetition")
   REQUIRE(chessboard.read_position(FEN_string) == 0);
   chessboard.clear_game_history();
   chessboard.add_position_to_game_history();
-  chessboard.find_legal_moves(Gentype::All);
+  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
   chessboard.make_UCI_move("a6b6");
   chessboard.make_UCI_move("a8b8");
   REQUIRE(chessboard.is_threefold_repetition() == false);
