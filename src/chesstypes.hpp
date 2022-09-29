@@ -40,11 +40,14 @@ const auto eval_min = -eval_max;
 const auto epsilon = 0.00000001F;
 
 const auto N_SEARCH_BOARDS_DEFAULT = 38U;
+
 const auto dont_update_history = false;
 const auto init_pieces_and_moves = true;
 const auto dont_evaluate_zero_moves = false;
 const auto use_max_search_depth = true;
 const auto on_same_line = true;
+const auto on_separate_lines = false;
+const auto xray_threats_through_king_allowed = true;
 
 enum class Piecetype
 {

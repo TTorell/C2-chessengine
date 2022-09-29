@@ -98,28 +98,28 @@ TEST_CASE("perft_test")
     bb.init();
     bb.read_position(input_vector[0], init_pieces);
     bb.find_legal_moves(*bb.get_movelist(0), Gentype::All);
-    for (size_t max_search_plies = 2; max_search_plies <= max_depth; max_search_plies++)
+    for (size_t max_search_depth = 2; max_search_depth <= max_depth; max_search_depth++)
     {
       bb.clear_search_info();
       steady_clock.tic();
-      unsigned long int n_searched_nodes = bb.perft_test(0, max_search_plies);
+      unsigned long int n_searched_nodes = bb.perft_test(0, max_search_depth);
       timediff = steady_clock.toc_us();
-      if (n_searched_nodes != static_cast<unsigned int>(std::stol(input_vector[max_search_plies - 1])))
+      if (n_searched_nodes != static_cast<unsigned int>(std::stol(input_vector[max_search_depth - 1])))
       {
         failed = true;
-        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_plies - 1
+        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_depth - 1
                   << " failed. "
-                  << n_searched_nodes << " : " << input_vector[max_search_plies - 1]
+                  << n_searched_nodes << " : " << input_vector[max_search_depth - 1]
                   << std::endl;
       }
       else
       {
-        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_plies - 1
+        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_depth - 1
                   << " passed. "
                   << "n_leaf_nodes = " << n_searched_nodes << ". It took " << timediff
                   << " micro seconds." << std::endl;
       }
-      REQUIRE(n_searched_nodes  == static_cast<unsigned int>(std::stoi(input_vector[max_search_plies - 1])));
+      REQUIRE(n_searched_nodes  == static_cast<unsigned int>(std::stoi(input_vector[max_search_depth - 1])));
     }
     if (failed)
     {
@@ -139,7 +139,6 @@ TEST_CASE("perft_test")
 
 TEST_CASE("Move_generation")
 {
-  Bitboard::init_search_boards();
   uint64_t timediff;
   std::string arg = "";
   std::cout << "Please enter an argument to the Move_generation_test." << std::endl;
@@ -179,18 +178,17 @@ TEST_CASE("Move_generation")
   std::cout << "It took " << timediff << " nanoseconds." << std::endl;
 }
 
-TEST_CASE("Castling_wrights")
+TEST_CASE("Castling_rights")
 {
-  Bitboard::init_search_boards();
   // Load test position 71
   std::string FEN_string = get_FEN_test_position(71);
   Bitboard_with_utils chessboard;
   chessboard.init();
   REQUIRE(chessboard.read_position(FEN_string) == 0);
   REQUIRE(chessboard.get_castling_rights() == castling_rights_all);
-  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
+  chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
   chessboard.write(std::cout, Color::White);
-  chessboard.write_movelist(std::cout, true) << std::endl;
+  chessboard.write_movelist(std::cout, on_same_line) << std::endl;
 
   SECTION("Rh1xh8 taking Rook at h8 etc")
   {

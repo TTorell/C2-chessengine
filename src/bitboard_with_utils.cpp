@@ -133,7 +133,7 @@ void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move)
 {
   std::stringstream out_moves;
   //TODO: Is this right?
-  write_movelist(out_moves, true);
+  write_movelist(out_moves, on_separate_lines); // writes from movelist(0)
   std::vector<std::string> out_moves_vector;
   std::string out_move = "";
   while (std::getline(out_moves, out_move))
@@ -232,7 +232,7 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum, const std::string& 
   // Compare output and reference moves, first build a vector of "output-moves".
   std::stringstream out_moves;
   //TODO: Is this right?
-  write_movelist(out_moves, on_same_line);
+  write_movelist(out_moves, on_separate_lines); // Writes from movelist(0).
   std::vector<std::string> out_moves_vector;
   std::string out_move = "";
   while (std::getline(out_moves, out_move))
@@ -308,7 +308,7 @@ int Bitboard_with_utils::test_move_generation(uint32_t single_testnum)
       std::vector<std::string> matches;
       regexp_grep(line, "^([^\\s]+\\s){5}[^\\s]+", matches);
       std::string FEN_string = matches[0];
-      //std::cout << "FEN_string1: " << FEN_string << std::endl;
+      std::cout << "FEN_string1: " << FEN_string << std::endl;
       // Put all the reference moves in a string-vector
       std::vector<std::string> ref_moves_vector = split(line, ' ');
       // Erase the actual FEN_string tokens from the vector.

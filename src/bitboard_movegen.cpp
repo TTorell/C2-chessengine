@@ -935,7 +935,7 @@ inline void Bitboard::find_king_moves(std::deque<Bitmove>& movelist, Gentype gt)
       while (king_moves)
       {
         uint64_t to_square = popright_square(king_moves);
-        if (!square_is_threatened(to_square, true))
+        if (!square_is_threatened(to_square, xray_threats_through_king_allowed))
         {
           // Found a valid King move
           if (to_square & _other->pieces)
