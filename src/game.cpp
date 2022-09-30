@@ -553,9 +553,9 @@ int Game::read_position(const std::string& filename)
 int Game::read_position_FEN(const std::string& FEN_string)
 {
   Bitboard new_position;
-  new_position.init();
   if (new_position.read_position(FEN_string, init_pieces_and_moves) != 0)
     return -1;
+  new_position.init();
   figure_out_last_move(new_position);
 //  _chessboard.find_legal_moves(gentype::all);
   return 0;

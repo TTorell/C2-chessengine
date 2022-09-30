@@ -171,14 +171,6 @@ void Bitboard::init_board_hash_tag()
     _hash_tag ^= transposition_table._black_to_move;
 }
 
-void Bitboard::init()
-{
-  transposition_table.clear();
-  init_board_hash_tag();
-  history.clear();
-  add_position_to_game_history();
-}
-
 void Bitboard::init_piece_state()
 {
   //TODO: REMOVE movelist.clear();
@@ -189,6 +181,16 @@ void Bitboard::init_piece_state()
   _other->assemble_pieces();
   _all_pieces = _own->pieces | _other->pieces;
 }
+
+void Bitboard::init()
+{
+  init_board_hash_tag();
+  history.clear();
+  add_position_to_game_history();
+  init_piece_state();
+  find_legal_moves(*get_movelist(0), Gentype::All);
+}
+
 
 // Initializes the Bitboard position from a text string (Forsyth-Edwards Notation)
 int Bitboard::read_position(const std::string& FEN_string, const bool initialize)
@@ -925,7 +927,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
   {
     // Qiescence search.
     // It takes over the searching and the node counting from here,
-
+    std::cerr << "QSEARCH" << " " << search_ply << std::endl;
     search_info.leaf_node_counter++;
     best_move = NO_MOVE;
     element.best_move = NO_MOVE;
@@ -937,6 +939,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     find_legal_moves(*get_movelist_Q(search_ply - 1), Gentype::Captures_and_Promotions);
     element.best_move._evaluation = Quiesence_search(search_ply - 1, alpha, beta, N_SEARCH_BOARDS_DEFAULT);
     element.search_ply = search_ply;
+    std::cerr << "EXIT QSEARCH" << " " << search_ply << std::endl;
     return element.best_move._evaluation;
   }
 

@@ -305,7 +305,10 @@ inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diago
 
 inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
 {
-  assert(pattern && std::has_single_bit(center_square));
+  assert(pattern);
+  //if (!std::has_single_bit(center_square))
+  //  std::cerr << "here" << std::endl;
+  assert(std::has_single_bit(center_square));
   uint64_t squares;
   int shift = bit_idx(center_square) - e4_square_idx;
   squares = (shift >= 0) ? (pattern << shift) : (pattern >> -shift);

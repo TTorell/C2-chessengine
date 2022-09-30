@@ -1112,6 +1112,12 @@ void Bitboard::find_legal_moves(std::deque<Bitmove>& movelist, Gentype gt)
   movelist.clear(); //TODO: This was added.
 
   init_piece_state();
+  if ((_own->pieces & _other->pieces) != zero)
+  {
+    std::cerr << "gobbled pieces" << std::endl;
+    write(std::cerr, Color::White);
+    std::cerr << _last_move << std::endl;
+  }
   assert((_own->pieces & _other->pieces) == zero);
   find_king_moves(movelist, gt);
   find_checkers_and_pinned_pieces();

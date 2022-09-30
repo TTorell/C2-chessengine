@@ -406,10 +406,9 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
 {
   uint64_t from_square;
   uint64_t to_square;
-  uint16_t move_props = move_props_none;
   Piecetype p_type;
   Piecetype promotion_pt;
-  // TODO: 0-0, 0-0-0 and e.p
+  uint16_t move_props = move_props_none;
   uint64_t new_all_pieces = new_position.all_pieces();
   uint64_t piece_diff = _all_pieces ^ new_all_pieces;
 

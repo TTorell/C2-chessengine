@@ -632,7 +632,6 @@ TEST_CASE("evaluation, mate and stalemate")
 
 TEST_CASE("find_best_move")
 {
-  Bitboard::init_search_boards();
    logfile << "TEST STARTED" << "\n";
   Config_params config_params;
   config_params.set_config_param("max_search_depth", "6");

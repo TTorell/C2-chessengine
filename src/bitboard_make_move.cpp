@@ -438,6 +438,7 @@ void Bitboard::make_move(std::deque<Bitmove>& next_movelist, const Bitmove& m, G
   }
   // Set up the board for other player:
   _last_move = m;
+  std::cerr << _move_number << "." << _last_move << std::endl;
   update_side_to_move();
   if (_side_to_move == Color::White)
     _move_number++;
