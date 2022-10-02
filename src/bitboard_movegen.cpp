@@ -960,11 +960,6 @@ inline void Bitboard::find_king_moves(list_ref movelist, Gentype gt) const
   }
 }
 
-inline float Bitboard::get_piece_value(Piecetype p_type) const
-{
-  return piece_values[index(p_type)];
-}
-
 inline float Bitboard::get_piece_value(uint64_t square) const
 {
   assert(std::has_single_bit(square));
@@ -977,27 +972,27 @@ inline float Bitboard::get_piece_value(uint64_t square) const
 
   if (pieces->Pawns & square)
   {
-    return get_piece_value(Piecetype::Pawn);
+    return pawn_value;
   }
   else if (pieces->Queens & square)
   {
-    return get_piece_value(Piecetype::Queen);
+    return queen_value;
   }
   else if (pieces->Rooks & square)
   {
-    return get_piece_value(Piecetype::Rook);
+    return rook_value;
   }
   else if (pieces->Bishops & square)
   {
-    return get_piece_value(Piecetype::Bishop);
+    return bishop_value;
   }
   else if (pieces->Knights & square)
   {
-    return get_piece_value(Piecetype::Knight);
+    return knight_value;
   }
   else if (pieces->King & square)
   {
-    return get_piece_value(Piecetype::King);
+    return king_value;
   }
   return 0.0F;
 }
@@ -1082,14 +1077,14 @@ inline void Bitboard::add_move(list_ref movelist,
     }
     else if (move_props & move_props_promotion)
     {
-      eval = 9.0F + get_piece_value(promotion_p_type) - 1.0F + get_piece_value(to_square);
+      eval = 9.0F + piece_values[index(promotion_p_type)] - 1.0F + get_piece_value(to_square);
     }
     else if (move_props & move_props_capture)
     {
       if (move_props & move_props_en_passant)
         eval = 9.0F;
       else
-        eval = 9.0F - get_piece_value(p_type) + get_piece_value(to_square);
+        eval = 9.0F - piece_values[index(p_type)] + get_piece_value(to_square);
     }
     new_move._evaluation = eval;
     movelist.push_front(new_move);

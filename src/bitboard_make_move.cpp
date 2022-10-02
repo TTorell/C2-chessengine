@@ -479,6 +479,42 @@ void Bitboard::takeback_en_passant(const Bitmove& m, const Color moving_side)
   _own->Pawns |= taken_pawn_square;
 }
 
+void Bitboard::takeback_promotion(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_t)
+{
+  // Keeping the definition of to_square and from_square from the move,
+  // even if the move will be reversed.
+  // _other points to the pieces of the moving side.
+  const auto to_square = m.to();
+  const auto from_square = m.from();
+
+  // Put back the Pawn that has promoted:
+  update_hash_tag(from_square, moving_side, Piecetype::Pawn);
+  _other->Pawns |= from_square;
+  // Remove the promoted piece:
+  update_hash_tag(to_square, other_color(moving_side), m.promotion_piece_type());
+  switch (m.promotion_piece_type())
+  {
+    case Piecetype::Queen:
+      _other->Queens ^= to_square;
+      break;
+    case Piecetype::Rook:
+      _other->Rooks ^= to_square;
+      break;
+    case Piecetype::Knight:
+      _other->Knights ^= to_square;
+      break;
+    case Piecetype::Bishop:
+      _other->Knights ^= to_square;
+      break;
+    default:
+      ;
+  }
+
+  // Update the resulting material diff
+  float material_diff_w = pawn_value - piece_values[index(m.promotion_piece_type())] - piece_values[index(taken_piece_t)];
+  _material_diff += (moving_side == Color::White) ? material_diff_w : -material_diff_w;
+}
+
 void Bitboard::takeback_castling(const Bitmove& m, const Color moving_side)
 {
   uint64_t rook_square;
@@ -503,9 +539,11 @@ void Bitboard::takeback_castling(const Bitmove& m, const Color moving_side)
   // No change in material_diff.
 }
 
-// The move must be valid, but doesn't have to be in _movelist.
-// _movelist may be empty.
-void Bitboard::take_back_move(list_ref movelist, const Bitmove& m, Gentype gt, const bool add_to_history)
+void Bitboard::take_back_move(list_ref movelist,
+                              const Bitmove& m,
+                              Gentype gt,
+                              const Takeback_state& tb_state,
+                              const bool takeback_from_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
 
@@ -526,11 +564,9 @@ void Bitboard::take_back_move(list_ref movelist, const Bitmove& m, Gentype gt, c
   {
     takeback_castling(m, other_color(_side_to_move));
   }
-
-  // Move the piece back to the original sqaure
-  if (m.properties() & move_props_capture)
+  else if(m.properties() & move_props_promotion)
   {
-    takeback_en_passant(m, other_color(_side_to_move));
+    takeback_promotion(m, other_color(_side_to_move), tb_state._taken_piece);
   }
 
 // Remove possible piece of other color on to_square and
@@ -630,7 +666,7 @@ void Bitboard::take_back_move(list_ref movelist, const Bitmove& m, Gentype gt, c
   if (square_is_threatened(_own->King, false))
     _last_move.add_property(move_props_check);
   // add_position to game_history
-  if (add_to_history)
+  if (takeback_from_history)
   {
     history.add_position(_hash_tag);
   }

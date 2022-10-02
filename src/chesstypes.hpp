@@ -63,6 +63,11 @@ enum class Piecetype
 const float piece_values[7] = {9.0F, 5.0F, 3.0F, 3.0F, 1.0F, 0.0F, 0.0F};
 
 const auto pawn_value = piece_values[index(Piecetype::Pawn)];
+const auto queen_value = piece_values[index(Piecetype::Queen)];
+const auto rook_value = piece_values[index(Piecetype::Rook)];
+const auto knight_value = piece_values[index(Piecetype::Knight)];
+const auto bishop_value = piece_values[index(Piecetype::Bishop)];
+const auto king_value = piece_values[index(Piecetype::King)];
 
 enum class Color
 {
@@ -276,6 +281,7 @@ struct Takeback_state
     uint64_t _ep_square = zero;
     float _material_diff;
     Bitmove _last_move;
+    Piecetype _taken_piece;
 };
 
 struct Takeback_element

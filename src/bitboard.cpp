@@ -29,27 +29,13 @@ namespace C2_chess
 
 Current_time steady_clock;
 std::atomic<bool> Bitboard::time_left(false);
-struct Takeback_element Bitboard::takeback_list[N_SEARCH_BOARDS_DEFAULT]{};
+struct Takeback_element Bitboard::takeback_list[N_SEARCH_BOARDS_DEFAULT] {};
 Bitboard Bitboard::search_boards[N_SEARCH_BOARDS_DEFAULT];
 Game_history Bitboard::history;
 
 Bitboard::Bitboard() :
-    _hash_tag(zero),
-    _side_to_move(Color::White),
-    _move_number(1),
-    _castling_rights(castling_rights_none),
-    _ep_square(zero),
-    _material_diff(0),
-    _last_move(),
-    _checkers(zero),
-    _pinners(zero),
-    _pinned_pieces(zero),
-    _all_pieces(zero),
-    _white_pieces(),
-    _black_pieces(),
-    _own(nullptr),
-    _other(nullptr),
-    _half_move_counter(0)
+    _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _last_move(), _checkers(zero),
+    _pinners(zero), _pinned_pieces(zero), _all_pieces(zero), _white_pieces(), _black_pieces(), _own(nullptr), _other(nullptr), _half_move_counter(0)
 {
   //std::cerr << "BitBoard Default constructor" << std::endl;
   _own = &_white_pieces;
@@ -57,22 +43,9 @@ Bitboard::Bitboard() :
 }
 
 Bitboard::Bitboard(const Bitboard& bb) :
-    _hash_tag(bb._hash_tag),
-    _side_to_move(bb._side_to_move),
-    _move_number(bb._move_number),
-    _castling_rights(bb._castling_rights),
-    _ep_square(bb._ep_square),
-    _material_diff(bb._material_diff),
-    _last_move(bb._last_move),
-    _checkers(bb._checkers),
-    _pinners(bb._pinners),
-    _pinned_pieces(bb._pinned_pieces),
-    _all_pieces(bb._all_pieces),
-    _white_pieces(bb._white_pieces),
-    _black_pieces(bb._black_pieces),
-    _own(nullptr),
-    _other(nullptr),
-    _half_move_counter(bb._half_move_counter)
+    _hash_tag(bb._hash_tag), _side_to_move(bb._side_to_move), _move_number(bb._move_number), _castling_rights(bb._castling_rights), _ep_square(bb._ep_square),
+    _material_diff(bb._material_diff), _last_move(bb._last_move), _checkers(bb._checkers), _pinners(bb._pinners), _pinned_pieces(bb._pinned_pieces), _all_pieces(bb._all_pieces),
+    _white_pieces(bb._white_pieces), _black_pieces(bb._black_pieces), _own(nullptr), _other(nullptr), _half_move_counter(bb._half_move_counter)
 {
   //std::cerr << "BitBoard Copy constructor" << std::endl;
   if (_side_to_move == Color::White)
@@ -94,9 +67,7 @@ Bitboard& Bitboard::operator=(const Bitboard& from)
 
   if (memcopy)
   {
-    std::memcpy(static_cast<void*>(&this->_hash_tag),
-                static_cast<const void*>(&from._hash_tag),
-                sizeof(Bitboard));
+    std::memcpy(static_cast<void*>(&this->_hash_tag), static_cast<const void*>(&from._hash_tag), sizeof(Bitboard));
   }
   else
   {
@@ -189,7 +160,6 @@ void Bitboard::init()
   //find_legal_moves(*get_movelist(0), Gentype::All);
 }
 
-
 // Initializes the Bitboard position from a text string (Forsyth-Edwards Notation)
 int Bitboard::read_position(const std::string& FEN_string, const bool initialize)
 {
@@ -249,13 +219,13 @@ int Bitboard::read_position(const std::string& FEN_string, const bool initialize
         _black_pieces.Pawns |= (file[fi] & rank[ri]), _material_diff -= 1;
         break;
       case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
         fi += ch - '1';
         break;
       case '/':
@@ -365,7 +335,6 @@ int Bitboard::read_position(const std::string& FEN_string, const bool initialize
   }
   return 0;
 }
-
 
 void Bitboard::clear_transposition_table(map_tag map)
 {
@@ -589,7 +558,6 @@ float Bitboard::evaluate_position(const bool movelist_is_empty, Color col_to_mov
   return sum;
 }
 
-
 inline std::ostream& Bitboard::write_piece(std::ostream& os, uint64_t square) const
 {
   if (square & _white_pieces.King)
@@ -736,7 +704,7 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth) 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
     search_boards[search_ply].make_move(*next_movelist, (*movelist)[i], Gentype::All);
     search_boards[search_ply].perft_test(search_ply, max_search_depth);
-    movelist = get_movelist(search_ply-1);
+    movelist = get_movelist(search_ply - 1);
   }
 
   return search_info.leaf_node_counter;
@@ -744,10 +712,8 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth) 
 
 Shared_ostream& Bitboard::write_search_info(Shared_ostream& logfile) const
 {
-  logfile << "Evaluated on depth:" << static_cast<int>(search_info.max_search_depth) << " "
-          << static_cast<int>(search_info.leaf_node_counter)
-          << " nodes in " << search_info.time_taken
-          << " milliseconds.\n";
+  logfile << "Evaluated on depth:" << static_cast<int>(search_info.max_search_depth) << " " << static_cast<int>(search_info.leaf_node_counter) << " nodes in "
+          << search_info.time_taken << " milliseconds.\n";
   std::stringstream ss;
   std::vector<Bitmove> pv_line;
   get_pv_line(pv_line);
@@ -788,7 +754,8 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
                                        _has_castled[1],
                                        _ep_square,
                                        _material_diff,
-                                       _last_move};
+                                       _last_move,
+                                       Piecetype::Undefined};
 
   search_info.node_counter++;
 
@@ -797,8 +764,9 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
     return 0.0;
   }
 
-  float score = (_side_to_move == Color::White) ? evaluate_position(movelist->size() == 0, _side_to_move, search_ply, dont_evaluate_zero_moves) :
-                                                  -evaluate_position(movelist->size() == 0, _side_to_move, search_ply, dont_evaluate_zero_moves);
+  float score =
+      (_side_to_move == Color::White) ? evaluate_position(movelist->size() == 0, _side_to_move, search_ply, dont_evaluate_zero_moves) : -evaluate_position(
+          movelist->size() == 0, _side_to_move, search_ply, dont_evaluate_zero_moves);
 
   if (movelist->size() == 0)
   {
@@ -826,7 +794,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
   {
 
     if (search_ply > search_info.highest_search_ply)
-       search_info.highest_search_ply = search_ply;
+      search_info.highest_search_ply = search_ply;
 
     // Copy current board into the preallocated board for this search_ply.
     Bitboard::search_boards[search_ply] = *this;
@@ -875,20 +843,20 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
   search_info.node_counter++;
   float move_score = -infinity; // Must be lower than lowest evaluation
 
-
   // Current movelist
   list_ptr movelist = get_movelist(search_ply);
   takeback_list[search_ply].state_S = {get_movelist(search_ply),
-                                     _hash_tag,
-                                     _castling_rights,
-                                     _half_move_counter,
-                                     _side_to_move,
-                                     _move_number,
-                                     _has_castled[0],
-                                     _has_castled[1],
-                                     _ep_square,
-                                     _material_diff,
-                                     _last_move};
+                                       _hash_tag,
+                                       _castling_rights,
+                                       _half_move_counter,
+                                       _side_to_move,
+                                       _move_number,
+                                       _has_castled[0],
+                                       _has_castled[1],
+                                       _ep_square,
+                                       _material_diff,
+                                       _last_move,
+                                       Piecetype::Undefined};
 
   // Next search_ply and next_movelist:
   search_ply++;
@@ -927,8 +895,9 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     // ---------------------------------------
     best_move = NO_MOVE;
     element.best_move = NO_MOVE;
-    element.best_move._evaluation = (_side_to_move == Color::White) ? evaluate_position(movelist->size() == 0, _side_to_move, search_ply) :
-                                                                      -evaluate_position(movelist->size() == 0, _side_to_move, search_ply);
+    element.best_move._evaluation =
+        (_side_to_move == Color::White) ? evaluate_position(movelist->size() == 0, _side_to_move, search_ply) : -evaluate_position(movelist->size() == 0, _side_to_move,
+                                                                                                                                   search_ply);
     element.search_ply = search_ply;
     // ---------------------------------------
     return element.best_move._evaluation;

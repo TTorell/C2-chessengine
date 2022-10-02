@@ -72,8 +72,6 @@ class Bitboard
 
     bool is_in_movelist(list_ref movelist, const Bitmove& m) const;
 
-    inline float get_piece_value(Piecetype p_type) const;
-
     inline float get_piece_value(uint64_t square) const;
 
     bool is_empty_square(uint64_t square) const
@@ -166,6 +164,8 @@ class Bitboard
 
     inline void update_state_after_king_move(const Bitmove& m);
 
+    void takeback_promotion(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_t);
+
     void takeback_en_passant(const Bitmove& m, const Color moving_side);
 
     void takeback_castling(const Bitmove& m, const Color moving_side);
@@ -238,7 +238,11 @@ class Bitboard
     // This make_move() doesn't require a generated movelist.
     void make_move(list_ref next_movelist, const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
 
-    void take_back_move(list_ref movelist, const Bitmove& m, const Gentype gt, const bool add_to_history = true);
+    void take_back_move(list_ref movelist,
+                        const Bitmove& m,
+                        const Gentype gt,
+                        const Takeback_state& state,
+                        const bool takeback_from_history = true);
 
     // All properties of a move are not decided immediately,
     // but some of them (check for instance) are set after the
@@ -382,6 +386,7 @@ class Bitboard
 
     void clear_search_info();
     Search_info& get_search_info() const;
+
     unsigned int perft_test(uint8_t search_ply, uint8_t max_search_plies) const;
 
 };
