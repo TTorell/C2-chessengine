@@ -30,8 +30,8 @@ Game::Game(Config_params& config_params) :
     _config_params(config_params),
     _playing(false)
 {
-   std::cerr << "Game::Game(Config_params& config_params)" << std::endl;
-  _chessboard.read_position(start_position_FEN, init_pieces_and_moves);
+   //std::cerr << "Game::Game(Config_params& config_params)" << std::endl;
+  _chessboard.read_position(start_position_FEN, init_pieces);
 }
 
 Game::Game(Color side, Config_params& config_params) :
@@ -43,10 +43,10 @@ Game::Game(Color side, Config_params& config_params) :
     _config_params(config_params),
     _playing(false)
 {
-  std::cerr << "Game::Game(Color side, Config_params& config_params)" << std::endl;
+  //std::cerr << "Game::Game(Color side, Config_params& config_params)" << std::endl;
   _player_type[index(side)] = Playertype::Human;
   _player_type[index(other_color(side))] = Playertype::Computer;
-  _chessboard.read_position(start_position_FEN, init_pieces_and_moves);
+  _chessboard.read_position(start_position_FEN, init_pieces);
 }
 
 Game::Game(Playertype pt1,
@@ -60,7 +60,7 @@ Game::Game(Playertype pt1,
     _config_params(config_params),
     _playing(false)
 {
-  std::cerr << "Game::Game(Playertype pt1, Playertype pt2, Config_params& config_params)" << std::endl;
+  //std::cerr << "Game::Game(Playertype pt1, Playertype pt2, Config_params& config_params)" << std::endl;
   _chessboard.read_position(start_position_FEN, true);
 }
 
@@ -73,6 +73,7 @@ void Game::init()
   _is_first_position = true;
   _move_log.clear_and_init(_chessboard.get_side_to_move(), _chessboard.get_move_number());
   _chessboard.init();
+  _chessboard.find_legal_moves(*_chessboard.get_movelist(0), Gentype::All);
 }
 
 void Game::clear_move_log(Color col_to_start, uint16_t move_number)
@@ -553,7 +554,7 @@ int Game::read_position(const std::string& filename)
 int Game::read_position_FEN(const std::string& FEN_string)
 {
   Bitboard new_position;
-  if (new_position.read_position(FEN_string, init_pieces_and_moves) != 0)
+  if (new_position.read_position(FEN_string, init_pieces) != 0)
     return -1;
   new_position.init();
   figure_out_last_move(new_position);

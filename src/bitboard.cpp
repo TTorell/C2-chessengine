@@ -33,16 +33,6 @@ struct Takeback_element Bitboard::takeback_list[N_SEARCH_BOARDS_DEFAULT]{};
 Bitboard Bitboard::search_boards[N_SEARCH_BOARDS_DEFAULT];
 Game_history Bitboard::history;
 
-void Bitboard::init_search_boards()
-{
-  for (unsigned int i = 0; i < N_SEARCH_BOARDS_DEFAULT; i++)
-  {
-    //std::cerr << "Bitboard init_search_boards" << std::endl;
-
-    // TODO: REMOVE Bitboard::search_boards[i]._movelist = &takeback_list[i].state_S.movelist;
-  }
-};
-
 Bitboard::Bitboard() :
     _hash_tag(zero),
     _side_to_move(Color::White),
@@ -84,7 +74,7 @@ Bitboard::Bitboard(const Bitboard& bb) :
     _other(nullptr),
     _half_move_counter(bb._half_move_counter)
 {
-  std::cerr << "BitBoard Copy constructor" << std::endl;
+  //std::cerr << "BitBoard Copy constructor" << std::endl;
   if (_side_to_move == Color::White)
   {
     _own = &_white_pieces;
@@ -110,6 +100,7 @@ Bitboard& Bitboard::operator=(const Bitboard& from)
   }
   else
   {
+    // State variables:
     _hash_tag = from._hash_tag;
     _side_to_move = from._side_to_move;
     _move_number = from._move_number;
@@ -119,14 +110,21 @@ Bitboard& Bitboard::operator=(const Bitboard& from)
     _ep_square = from._ep_square;
     _material_diff = from._material_diff;
     _last_move = from._last_move;
-    _checkers = from._checkers;
-    _pinners = from._pinners;
-    _pinned_pieces = from._pinned_pieces;
+    _half_move_counter = from._half_move_counter;
+
+    // Temporary variables. There's No need to copy them
+    // (only used in move generation).
+    //_checkers = from._checkers;
+    //_pinners = from._pinners;
+    //_pinned_pieces = from._pinned_pieces;
+
+    // Piece state variables:
+    // Will be taken care of in take_back move.
     _all_pieces = from._all_pieces;
     _white_pieces = from._white_pieces;
     _black_pieces = from._black_pieces;
-    _half_move_counter = from._half_move_counter;
   }
+  // Set pointers
   if (_side_to_move == Color::White)
   {
     _own = &_white_pieces;
@@ -188,7 +186,7 @@ void Bitboard::init()
   history.clear();
   add_position_to_game_history();
   init_piece_state();
-  find_legal_moves(*get_movelist(0), Gentype::All);
+  //find_legal_moves(*get_movelist(0), Gentype::All);
 }
 
 
@@ -363,7 +361,7 @@ int Bitboard::read_position(const std::string& FEN_string, const bool initialize
   if (initialize)
   {
     init_piece_state();
-    find_legal_moves(*get_movelist(0), Gentype::All);
+    //find_legal_moves(*get_movelist(0), Gentype::All);
   }
   return 0;
 }
@@ -663,7 +661,7 @@ std::ostream& Bitboard::write(std::ostream& os, const Color from_perspective) co
 }
 
 // TODO: Put this outside Bitboard?
-std::ostream& Bitboard::write_movelist(const std::deque<Bitmove>& movelist, std::ostream& os, bool same_line) const
+std::ostream& Bitboard::write_movelist(const list_ref movelist, std::ostream& os, bool same_line) const
 {
   if (movelist.size() > 0)
   {
@@ -692,7 +690,7 @@ std::ostream& Bitboard::write_movelist(const std::deque<Bitmove>& movelist, std:
 void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
 {
   //TODO: Is this righ?
-  std::deque<Bitmove> movelist;
+  list_t movelist;
   pv_line.clear();
   Bitboard bb = *this;
   for (int i = 0; i < 20; i++)
@@ -717,11 +715,11 @@ Search_info& Bitboard::get_search_info() const
 
 unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth) const
 {
-  std::deque<Bitmove>* next_movelist;
-  std::deque<Bitmove>* movelist = get_movelist(search_ply);
+  list_ptr next_movelist;
+  list_ptr movelist = get_movelist(search_ply);
 
   search_ply++;
-
+  next_movelist = get_movelist(search_ply);
   // Perft-test only counts leaf-nodes on highest depth, not leaf-nodes which happens
   // on lower depth because of mate or stalemate.
   if (search_ply >= max_search_depth)
@@ -734,11 +732,11 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth) 
   {
     // Copy current board into the preallocated board for this search_ply.
     Bitboard::search_boards[search_ply] = *this;
-    next_movelist = get_movelist(search_ply);
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
     search_boards[search_ply].make_move(*next_movelist, (*movelist)[i], Gentype::All);
     search_boards[search_ply].perft_test(search_ply, max_search_depth);
+    movelist = get_movelist(search_ply-1);
   }
 
   return search_info.leaf_node_counter;
@@ -761,19 +759,36 @@ Shared_ostream& Bitboard::write_search_info(Shared_ostream& logfile) const
 
 void Bitboard::takeback_from_state(Takeback_state& state)
 {
-  _hash_tag = state.hash_tag;
-  _castling_rights = state.castling_rights;
-  _half_move_counter = state.half_move_counter;
+  _hash_tag = state._hash_tag;
+  _castling_rights = state._castling_rights;
+  _half_move_counter = state._half_move_counter;
+  _side_to_move = state._side_to_move;
+  _move_number = state._move_number;
+  _has_castled[0] = state._has_castled_0;
+  _has_castled[1] = state._has_castled_1;
+  _ep_square = state._ep_square;
+  _material_diff = state._material_diff;
+  _last_move = state._last_move;
 }
 
 float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply)
 {
   assert(beta > alpha);
 
-  std::deque<Bitmove>* next_movelist;
-
   // Current quiescence-movelist
-  std::deque<Bitmove>* movelist = get_movelist_Q(search_ply);
+  list_ptr movelist = get_movelist_Q(search_ply);
+  // TODO: s this right?
+  takeback_list[search_ply].state_Q = {get_movelist_Q(search_ply),
+                                       _hash_tag,
+                                       _castling_rights,
+                                       _half_move_counter,
+                                       _side_to_move,
+                                       _move_number,
+                                       _has_castled[0],
+                                       _has_castled[1],
+                                       _ep_square,
+                                       _material_diff,
+                                       _last_move};
 
   search_info.node_counter++;
 
@@ -800,37 +815,21 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
     alpha = score;
   }
 
+  search_ply++;
+  // Get a pointer to next movelist
+  list_ptr next_movelist = get_movelist_Q(search_ply);
+
   float move_score = -infinity;
 
   // Collect the best value from all possible "capture-moves"
   for (uint8_t i = 0; i < static_cast<uint8_t>(movelist->size()); i++)
   {
-    // When quiesence-search is called from negamax...() _movelist contains
-    // all legal moves, so I extract the captures. (when it's called
-    // recursively from inside this method, then _movelist contains only
-    // captures.)
-    if (!((*movelist)[i].properties() & move_props_capture))
-    {
-      // All the captures have been sorted and come in sequence early
-      // in the list, but there can be a non-capture PV-move as the very
-      // first move. So if we find a none-capture anywhere after the first
-      // move, then we're done.
-      if (i == 0)
-        continue;
-      else
-        break;
-    }
 
-    search_ply++;
     if (search_ply > search_info.highest_search_ply)
        search_info.highest_search_ply = search_ply;
 
     // Copy current board into the preallocated board for this search_ply.
     Bitboard::search_boards[search_ply] = *this;
-    takeback_list[search_ply].state_Q = {movelist, _hash_tag, _castling_rights, _half_move_counter};
-
-    // Get a pointer to next movelist
-    next_movelist = get_movelist_Q(search_ply);
 
     // Save history state for current position.
     History_state saved_history_state = history.get_state();
@@ -842,7 +841,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
 
     // Restore game history, state and local movelist to current position.
     history.takeback_moves(saved_history_state);
-    takeback_from_state(takeback_list[search_ply].state_Q);
+    takeback_from_state(takeback_list[search_ply - 1].state_Q);
 
     // Pruning:
     if (move_score > alpha)
@@ -855,7 +854,9 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
         // TODO: what about best_move;
         search_info.beta_cutoffs++;
         if (i == 0)
+        {
           search_info.first_beta_cutoffs++;
+        }
         return beta;
       }
       // Update alpha value.
@@ -869,17 +870,29 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
 // Search algorithm: Negamax with alpha-beta-pruning
 float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta, Bitmove& best_move, const uint8_t search_depth)
 {
+
   assert(beta > alpha);
   search_info.node_counter++;
   float move_score = -infinity; // Must be lower than lowest evaluation
 
+
   // Current movelist
-  std::deque<Bitmove>* movelist = get_movelist(search_ply);
-  takeback_list[search_ply].state_S = {movelist, _hash_tag, _castling_rights, _half_move_counter};
+  list_ptr movelist = get_movelist(search_ply);
+  takeback_list[search_ply].state_S = {get_movelist(search_ply),
+                                     _hash_tag,
+                                     _castling_rights,
+                                     _half_move_counter,
+                                     _side_to_move,
+                                     _move_number,
+                                     _has_castled[0],
+                                     _has_castled[1],
+                                     _ep_square,
+                                     _material_diff,
+                                     _last_move};
 
+  // Next search_ply and next_movelist:
   search_ply++;
-
-  std::deque<Bitmove>* next_movelist = get_movelist(search_ply);
+  list_ptr next_movelist = get_movelist(search_ply);
 
   if (history.is_threefold_repetition())
   {
@@ -921,13 +934,10 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     return element.best_move._evaluation;
   }
 
-
-
   if (search_ply == search_depth + 1)
   {
     // Qiescence search.
     // It takes over the searching and the node counting from here,
-    std::cerr << "QSEARCH" << " " << search_ply << std::endl;
     search_info.leaf_node_counter++;
     best_move = NO_MOVE;
     element.best_move = NO_MOVE;
@@ -939,7 +949,6 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     find_legal_moves(*get_movelist_Q(search_ply - 1), Gentype::Captures_and_Promotions);
     element.best_move._evaluation = Quiesence_search(search_ply - 1, alpha, beta, N_SEARCH_BOARDS_DEFAULT);
     element.search_ply = search_ply;
-    std::cerr << "EXIT QSEARCH" << " " << search_ply << std::endl;
     return element.best_move._evaluation;
   }
 

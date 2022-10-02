@@ -257,7 +257,7 @@ void Game::start()
     logfile << "time spent thinking: " << timediff / 1.0e9 << " seconds" << "\n";
   }
 }
-bool Bitboard::is_in_movelist(std::deque<Bitmove>& movelist, const Bitmove& m) const
+bool Bitboard::is_in_movelist(list_ref movelist, const Bitmove& m) const
 {
   for (const Bitmove& move : movelist)
   {

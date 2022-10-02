@@ -61,16 +61,16 @@ class Bitboard
 
     void init_piece_state();
 
-    inline void sort_moves(std::deque<Bitmove>& movelist) const;
+    inline void sort_moves(list_ref movelist) const;
 
-    inline void add_move(std::deque<Bitmove>& movelist,
+    inline void add_move(list_ref movelist,
                          Piecetype p_type,
                          uint16_t move_props,
                          uint64_t from_square,
                          uint64_t to_square,
                          Piecetype promotion_p_type = Piecetype::Queen) const;
 
-    bool is_in_movelist(std::deque<Bitmove>& movelist, const Bitmove& m) const;
+    bool is_in_movelist(list_ref movelist, const Bitmove& m) const;
 
     inline float get_piece_value(Piecetype p_type) const;
 
@@ -93,9 +93,9 @@ class Bitboard
 
     // ### Protected Methods for move-generation
     // -----------------------------------------
-    void find_long_castling(std::deque<Bitmove>& moelist) const;
+    void find_long_castling(list_ref moelist) const;
 
-    void find_short_castling(std::deque<Bitmove>& movelist) const;
+    void find_short_castling(list_ref movelist) const;
 
     inline uint64_t find_blockers(uint64_t sq, uint64_t mask, uint64_t all_pieces) const;
 
@@ -103,29 +103,29 @@ class Bitboard
 
     uint64_t find_legal_squares(uint64_t sq, uint64_t mask) const;
 
-    void find_Queen_Rook_and_Bishop_moves(std::deque<Bitmove>& movelist, Gentype gt) const;
+    void find_Queen_Rook_and_Bishop_moves(list_ref movelist, Gentype gt) const;
 
-    void find_legal_moves_for_pinned_pieces(std::deque<Bitmove>& movelist, Gentype gt) const;
+    void find_legal_moves_for_pinned_pieces(list_ref movelist, Gentype gt) const;
 
-    void find_Knight_moves(std::deque<Bitmove>& movelist, Gentype gt) const;
+    void find_Knight_moves(list_ref movelist, Gentype gt) const;
 
-    void find_Pawn_moves(std::deque<Bitmove>& movelist, Gentype gt) const;
+    void find_Pawn_moves(list_ref movelist, Gentype gt) const;
 
-    void find_normal_legal_moves(std::deque<Bitmove>& movelist, Gentype gt) const;
+    void find_normal_legal_moves(list_ref movelist, Gentype gt) const;
 
-    void find_Knight_moves_to_square(std::deque<Bitmove>& movelist, const uint64_t to_square) const;
+    void find_Knight_moves_to_square(list_ref movelist, const uint64_t to_square) const;
 
     bool check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint64_t own_pawn_square) const;
 
-    void try_adding_ep_pawn_move(std::deque<Bitmove>& movelist, uint64_t from_square) const;
+    void try_adding_ep_pawn_move(list_ref movelist, uint64_t from_square) const;
 
-    void add_pawn_move_check_promotion(std::deque<Bitmove>& movelist, uint64_t from_square, uint64_t to_square) const;
+    void add_pawn_move_check_promotion(list_ref movelist, uint64_t from_square, uint64_t to_square) const;
 
-    void find_pawn_moves_to_empty_square(std::deque<Bitmove>& movelist, uint64_t to_square, Gentype gt) const;
+    void find_pawn_moves_to_empty_square(list_ref movelist, uint64_t to_square, Gentype gt) const;
 
-    void find_moves_to_square(std::deque<Bitmove>& movelist, uint64_t to_square, Gentype gt) const;
+    void find_moves_to_square(list_ref movelist, uint64_t to_square, Gentype gt) const;
 
-    void find_moves_after_check(std::deque<Bitmove>& movelist, Gentype gt) const;
+    void find_moves_after_check(list_ref movelist, Gentype gt) const;
 
     void find_checkers_and_pinned_pieces();
 
@@ -133,7 +133,7 @@ class Bitboard
 
     bool square_is_threatened2(uint64_t to_square, bool King_is_asking) const;
 
-    inline void find_king_moves(std::deque<Bitmove>& movelist, Gentype gt) const;
+    inline void find_king_moves(list_ref movelist, Gentype gt) const;
 
     // ### Protected methods for making a move ###
     // ---------------------------------------
@@ -220,7 +220,7 @@ class Bitboard
     // Puts all legal moves of the position in _movelist.
     // (Naturally only the moves for the player who's in
     // turn to make a move.)
-    void find_legal_moves(std::deque<Bitmove>& movelist, Gentype gt);
+    void find_legal_moves(list_ref movelist, Gentype gt);
 
     // ### Public methods for make move ###
     // ------------------------------------
@@ -228,7 +228,7 @@ class Bitboard
     // Looks up the i:th move in movelist and makes it.
     // move_no just keeps track of the full move number
     // in the game.
-    void make_move(std::deque<Bitmove>& movelist, uint8_t i, Gentype gt = Gentype::All, bool update_history = true);
+    void make_move(list_ref movelist, uint8_t i, Gentype gt = Gentype::All, bool update_history = true);
 
     // Only for the command-line interface, where the user
     // is prompted to enter the new move on the keyboard,
@@ -236,9 +236,9 @@ class Bitboard
     int make_move(Playertype player_type);
 
     // This make_move() doesn't require a generated movelist.
-    void make_move(std::deque<Bitmove>& next_movelist, const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
+    void make_move(list_ref next_movelist, const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
 
-    void take_back_move(std::deque<Bitmove>& movelist, const Bitmove& m, const Gentype gt, const bool add_to_history = true);
+    void take_back_move(list_ref movelist, const Bitmove& m, const Gentype gt, const bool add_to_history = true);
 
     // All properties of a move are not decided immediately,
     // but some of them (check for instance) are set after the
@@ -324,7 +324,7 @@ class Bitboard
 
     void clear_PV_table();
 
-    //TODO: REMOVE inline void clear_movelist(std::deque<Bitmove>& movelist);
+    //TODO: REMOVE inline void clear_movelist(list_ref movelist);
 
     void update_half_move_counter();
 
@@ -340,14 +340,14 @@ class Bitboard
       return _side_to_move;
     }
 
-    inline std::deque<Bitmove>* get_movelist(size_t idx) const
+    inline list_ptr get_movelist(size_t idx) const
     {
-      return takeback_list[idx].state_S.movelist;
+      return takeback_list[idx].state_S._movelist;
     }
 
-    inline std::deque<Bitmove>* get_movelist_Q(size_t idx) const
+    inline list_ptr get_movelist_Q(size_t idx) const
     {
-      return takeback_list[idx].state_Q.movelist;
+      return takeback_list[idx].state_Q._movelist;
     }
 
     bool is_draw_by_50_moves() const;
@@ -377,14 +377,13 @@ class Bitboard
     std::ostream& write_piece_diagram_style(std::ostream& os, C2_chess::Piecetype p_type, C2_chess::Color side) const;
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
     std::ostream& write(std::ostream& os, const Color from_perspective) const;
-    std::ostream& write_movelist( const std::deque<Bitmove>& movelist, std::ostream& os, bool same_line = false) const;
+    std::ostream& write_movelist( const list_ref movelist, std::ostream& os, bool same_line = false) const;
     Shared_ostream& write_search_info(Shared_ostream& logfile) const;
 
     void clear_search_info();
     Search_info& get_search_info() const;
     unsigned int perft_test(uint8_t search_ply, uint8_t max_search_plies) const;
 
-    static void init_search_boards();
 };
 
 } // namespace C2_chess

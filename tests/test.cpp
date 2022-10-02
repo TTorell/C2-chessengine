@@ -63,10 +63,9 @@ TEST_CASE("perft_test")
   // depth 1 to 6.
   // We can skip the first three characters and the last blank in each token, if we add an
   // extra blank to the line and split the line with semicolon as delimiter).
-  Bitboard::init_search_boards();
   size_t max_depth = 4; // Should be 7 to fully run all pert-test, but that takes time.
   uint64_t timediff;
-  const bool init_pieces = true;
+  //nst bool init_pieces = true;
   const bool same_line = true;
   std::string line;
   std::string filename = "tests/test_positions/perftsuite.epd";
@@ -482,7 +481,6 @@ TEST_CASE("evaluation")
   uint64_t time_taken;
   float evaluation;
   Current_time now;
-  Bitboard::init_search_boards();
   Bitboard_with_utils chessboard;
   chessboard.init();
   chessboard.read_position(start_position_FEN);
@@ -604,7 +602,6 @@ TEST_CASE("evaluation")
 
 TEST_CASE("evaluation, mate and stalemate")
 {
-  Bitboard::init_search_boards();
   float evaluation;
   // Load test position 72
   std::string FEN_string = get_FEN_test_position(72);
@@ -712,7 +709,7 @@ TEST_CASE("find_best_move")
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Ke5-e6");
+    REQUIRE(ss.str() == "Ke5-d4");
     game.read_position_FEN(reverse_FEN_string(FEN_string));
     game.init();
     bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
@@ -814,7 +811,6 @@ TEST_CASE("find_best_move")
 
 TEST_CASE("move-ordering")
 {
-  Bitboard::init_search_boards();
   std::string FEN_string = get_FEN_test_position(75);
   Bitboard_with_utils chessboard;
   chessboard.init();
@@ -826,7 +822,6 @@ TEST_CASE("move-ordering")
 
 TEST_CASE("50-moves-rule")
 {
-  Bitboard::init_search_boards();
   std::string FEN_string = get_FEN_test_position(82);
   Bitboard_with_utils chessboard;
   chessboard.init();
@@ -870,7 +865,6 @@ TEST_CASE("50-moves-rule")
 
 TEST_CASE("three-fold repetition")
 {
-  Bitboard::init_search_boards();
   std::string FEN_string = get_FEN_test_position(82);
   Bitboard_with_utils chessboard;
   chessboard.init();
@@ -894,7 +888,6 @@ TEST_CASE("three-fold repetition")
 
 TEST_CASE("figure_out_last_move_1")
 {
-  Bitboard::init_search_boards();
   logfile << "\n";
   Config_params config_params;
   Game game(config_params);
@@ -910,6 +903,7 @@ TEST_CASE("figure_out_last_move_1")
     REQUIRE(game.read_position_FEN(FEN_string) == 0);
     std::stringstream ss;
     game.write_movelog(ss);
+    game.write_movelog(std::cerr);
     REQUIRE(ss.str().starts_with("1.e5xf6 e.p."));
   }
 
@@ -919,6 +913,7 @@ TEST_CASE("figure_out_last_move_1")
     REQUIRE(game.read_position_FEN(FEN_string) == 0);
     std::stringstream ss;
     game.write_movelog(ss);
+    game.write_movelog(std::cerr);
     REQUIRE(ss.str().starts_with("1.Kd4-d5"));
   }
 
@@ -927,7 +922,6 @@ TEST_CASE("figure_out_last_move_1")
 
 TEST_CASE("figure_out_last_move_2")
 {
-  Bitboard::init_search_boards();
   logfile << "\n";
   Config_params config_params;
   Game game(config_params);
@@ -978,21 +972,20 @@ TEST_CASE("sizeof_Bitmove")
   REQUIRE(alignof(Bitmove) == 4);
 };
 
-TEST_CASE("takeback_castling")
-{
-  Bitboard::init_search_boards();
-  logfile << "TEST STARTED" << "\n";
-  Config_params config_params;
-  config_params.set_config_param("max_search_depth", "8");
-  Game game(config_params);
-  game.init();
-  Go_params go_params; // All members in go_params are set to zero.
-
-  std::string FEN_string = get_FEN_test_position(95);
-  game.read_position_FEN(FEN_string);
-  game.init();
-
-}
+//TEST_CASE("takeback_castling")
+//{
+//  logfile << "TEST STARTED" << "\n";
+//  Config_params config_params;
+//  config_params.set_config_param("max_search_depth", "8");
+//  Game game(config_params);
+//  game.init();
+//  Go_params go_params; // All members in go_params are set to zero.
+//
+//  std::string FEN_string = get_FEN_test_position(95);
+//  game.read_position_FEN(FEN_string);
+//  game.init();
+//
+//}
 
 //TEST_CASE("timing basic functions")
 //{

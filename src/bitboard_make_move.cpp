@@ -328,7 +328,7 @@ inline void Bitboard::update_state_after_king_move(const Bitmove& m)
   }
 }
 
-void Bitboard::make_move(std::deque<Bitmove>& movelist, uint8_t i, Gentype gt, bool add_to_history)
+void Bitboard::make_move(list_ref movelist, uint8_t i, Gentype gt, bool add_to_history)
 {
   assert(i < movelist.size());
   make_move(movelist, movelist[i], gt, add_to_history);
@@ -336,7 +336,7 @@ void Bitboard::make_move(std::deque<Bitmove>& movelist, uint8_t i, Gentype gt, b
 
 // The move must be valid, but doesn't have to be in _movelist.
 // _movelist may be empty, not generated yet.
-void Bitboard::make_move(std::deque<Bitmove>& next_movelist, const Bitmove& m, Gentype gt, bool add_to_history)
+void Bitboard::make_move(list_ref next_movelist, const Bitmove& m, Gentype gt, bool add_to_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
   uint64_t to_square = m.to();
@@ -438,7 +438,12 @@ void Bitboard::make_move(std::deque<Bitmove>& next_movelist, const Bitmove& m, G
   }
   // Set up the board for other player:
   _last_move = m;
-  std::cerr << _move_number << "." << _last_move << std::endl;
+
+//  std::cerr << _move_number << ".";
+//  if (_side_to_move == Color::Black)
+//    std::cerr << " ... ";
+//  std::cerr << _last_move << std::endl;
+
   update_side_to_move();
   if (_side_to_move == Color::White)
     _move_number++;
@@ -500,7 +505,7 @@ void Bitboard::takeback_castling(const Bitmove& m, const Color moving_side)
 
 // The move must be valid, but doesn't have to be in _movelist.
 // _movelist may be empty.
-void Bitboard::take_back_move(std::deque<Bitmove>& movelist, const Bitmove& m, Gentype gt, const bool add_to_history)
+void Bitboard::take_back_move(list_ref movelist, const Bitmove& m, Gentype gt, const bool add_to_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
 

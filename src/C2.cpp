@@ -159,7 +159,6 @@ using namespace C2_chess;
 
 int main(int argc, char* argv[])
 {
-   Bitboard::init_search_boards();
 // The engine can log all communication with GUI, and
 // other stuff to a logfile.
 // This requires that the engine has been started by

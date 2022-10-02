@@ -42,7 +42,7 @@ const auto epsilon = 0.00000001F;
 const auto N_SEARCH_BOARDS_DEFAULT = 38U;
 
 const auto dont_update_history = false;
-const auto init_pieces_and_moves = true;
+const auto init_pieces = true;
 const auto dont_evaluate_zero_moves = false;
 const auto use_max_search_depth = true;
 const auto on_same_line = true;
@@ -258,12 +258,24 @@ struct Bitmove
     }
 };
 
+// Movelist types:
+using list_ptr = std::deque<Bitmove>*;
+using list_ref = std::deque<Bitmove>&;
+using list_t = std::deque<Bitmove>;
+
 struct Takeback_state
 {
-    std::deque<Bitmove>* movelist = new std::deque<Bitmove>{};
-    uint64_t hash_tag;
-    uint8_t castling_rights;
-    uint8_t half_move_counter;
+    list_ptr _movelist = new list_t{};
+    uint64_t _hash_tag;
+    uint8_t _castling_rights;
+    uint8_t _half_move_counter;
+    Color _side_to_move = Color::White;
+    uint16_t _move_number;
+    bool _has_castled_0;
+    bool _has_castled_1;
+    uint64_t _ep_square = zero;
+    float _material_diff;
+    Bitmove _last_move;
 };
 
 struct Takeback_element

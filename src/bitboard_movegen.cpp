@@ -12,7 +12,7 @@
 namespace C2_chess
 {
 
-void Bitboard::find_long_castling(std::deque<Bitmove>& movelist) const
+void Bitboard::find_long_castling(list_ref movelist) const
 {
   uint64_t King_initial_square = (_side_to_move == Color::White) ? e1_square : e8_square;
   if (_castling_rights & ((_side_to_move == Color::White) ? castling_right_WQ : castling_right_BQ))
@@ -33,7 +33,7 @@ void Bitboard::find_long_castling(std::deque<Bitmove>& movelist) const
   }
 }
 
-void Bitboard::find_short_castling(std::deque<Bitmove>& movelist) const
+void Bitboard::find_short_castling(list_ref movelist) const
 {
   uint64_t King_initial_square = (_side_to_move == Color::White) ? e1_square : e8_square;
   if (_castling_rights & ((_side_to_move == Color::White) ? castling_right_WK : castling_right_BK))
@@ -84,7 +84,7 @@ uint64_t Bitboard::find_legal_squares(uint64_t sq, uint64_t mask) const
     return ((left_blocker - one) | other_color_blockers) & mask;
 }
 
-void Bitboard::find_Queen_Rook_and_Bishop_moves(std::deque<Bitmove>& movelist, Gentype gt) const
+void Bitboard::find_Queen_Rook_and_Bishop_moves(list_ref movelist, Gentype gt) const
 {
   uint64_t from_square;
   uint64_t to_square;
@@ -132,7 +132,7 @@ void Bitboard::find_Queen_Rook_and_Bishop_moves(std::deque<Bitmove>& movelist, G
   }
 }
 
-void Bitboard::find_legal_moves_for_pinned_pieces(std::deque<Bitmove>& movelist, Gentype gt) const
+void Bitboard::find_legal_moves_for_pinned_pieces(list_ref movelist, Gentype gt) const
 {
   assert(_pinned_pieces & ~_own->Pawns); // Pinned Pawns has been taken care of.
   uint64_t from_square;
@@ -193,7 +193,7 @@ void Bitboard::find_legal_moves_for_pinned_pieces(std::deque<Bitmove>& movelist,
   }
 }
 
-void Bitboard::find_Knight_moves(std::deque<Bitmove>& movelist, Gentype gt) const
+void Bitboard::find_Knight_moves(list_ref movelist, Gentype gt) const
 {
   uint64_t from_square;
   uint64_t to_square;
@@ -230,7 +230,7 @@ void Bitboard::find_Knight_moves(std::deque<Bitmove>& movelist, Gentype gt) cons
   }
 }
 
-void Bitboard::find_Pawn_moves(std::deque<Bitmove>& movelist, Gentype gt) const
+void Bitboard::find_Pawn_moves(list_ref movelist, Gentype gt) const
 {
   uint64_t to_square;
   uint64_t moved_pawns;
@@ -308,7 +308,7 @@ void Bitboard::find_Pawn_moves(std::deque<Bitmove>& movelist, Gentype gt) const
   }
 }
 
-void Bitboard::find_normal_legal_moves(std::deque<Bitmove>& movelist, Gentype gt) const
+void Bitboard::find_normal_legal_moves(list_ref movelist, Gentype gt) const
 {
   find_Pawn_moves(movelist, gt);
   find_Knight_moves(movelist, gt);
@@ -328,7 +328,7 @@ void Bitboard::find_normal_legal_moves(std::deque<Bitmove>& movelist, Gentype gt
 
 }
 
-void Bitboard::find_Knight_moves_to_square(std::deque<Bitmove>& movelist, const uint64_t to_square) const
+void Bitboard::find_Knight_moves_to_square(list_ref movelist, const uint64_t to_square) const
 {
   assert(to_square & ~_own->pieces);
   if (_own->Knights)
@@ -414,7 +414,7 @@ bool Bitboard::check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint
 // - _ep_square may not be OL.
 // - from square must be located such that ep_capture
 //   to _ep_square is possible.
-void Bitboard::try_adding_ep_pawn_move(std::deque<Bitmove>& movelist, uint64_t from_square) const
+void Bitboard::try_adding_ep_pawn_move(list_ref movelist, uint64_t from_square) const
 {
   assert(std::has_single_bit(from_square) && _ep_square &&
          (abs(static_cast<int64_t>(bit_idx(_ep_square) - bit_idx(from_square))) == 7 ||
@@ -460,7 +460,7 @@ void Bitboard::try_adding_ep_pawn_move(std::deque<Bitmove>& movelist, uint64_t f
 }
 
 // Adding Pawn move considering promotion of the Pawn.
-void Bitboard::add_pawn_move_check_promotion(std::deque<Bitmove>& movelist, uint64_t from_square, uint64_t to_square) const
+void Bitboard::add_pawn_move_check_promotion(list_ref movelist, uint64_t from_square, uint64_t to_square) const
 {
   assert(std::has_single_bit(from_square) && (from_square & _own->Pawns) &&
          std::has_single_bit(to_square));
@@ -503,7 +503,7 @@ void Bitboard::add_pawn_move_check_promotion(std::deque<Bitmove>& movelist, uint
 
 // preconditions:
 // - to_square should be empty
-void Bitboard::find_pawn_moves_to_empty_square(std::deque<Bitmove>& movelist, uint64_t to_square, Gentype gt) const
+void Bitboard::find_pawn_moves_to_empty_square(list_ref movelist, uint64_t to_square, Gentype gt) const
 {
   assert(std::has_single_bit(to_square) && is_empty_square(to_square));
   uint64_t from_square;
@@ -566,7 +566,7 @@ void Bitboard::find_pawn_moves_to_empty_square(std::deque<Bitmove>& movelist, ui
 }
 
 // The following method doesn't consider possible King-moves to square
-void Bitboard::find_moves_to_square(std::deque<Bitmove>& movelist, uint64_t to_square, Gentype gt) const
+void Bitboard::find_moves_to_square(list_ref movelist, uint64_t to_square, Gentype gt) const
 {
   assert((to_square & ~_own->pieces) && std::has_single_bit(to_square));
   uint64_t from_square;
@@ -648,7 +648,7 @@ void Bitboard::find_moves_to_square(std::deque<Bitmove>& movelist, uint64_t to_s
   }
 }
 
-void Bitboard::find_moves_after_check(std::deque<Bitmove>& movelist, Gentype gt) const
+void Bitboard::find_moves_after_check(list_ref movelist, Gentype gt) const
 {
   assert(std::has_single_bit(_checkers));
   // All possible King-moves have already been found.
@@ -925,7 +925,7 @@ bool Bitboard::square_is_threatened2(uint64_t to_square, bool King_is_asking) co
 }
 
 // Finds normal King-moves not including castling.
-inline void Bitboard::find_king_moves(std::deque<Bitmove>& movelist, Gentype gt) const
+inline void Bitboard::find_king_moves(list_ref movelist, Gentype gt) const
 {
   uint64_t king_moves = adjust_pattern(king_pattern, _own->King);
   switch (gt)
@@ -1020,7 +1020,7 @@ inline float Bitboard::get_piece_value(uint64_t square) const
 // I also put none-capture moves at the end of the move-list, but "PV-moves",
 // captures and promotions first in the list. In this way I only have to sort
 // the initial moves with evaluation greater than zero.
-inline void Bitboard::add_move(std::deque<Bitmove>& movelist,
+inline void Bitboard::add_move(list_ref movelist,
                                Piecetype p_type,
                                uint16_t move_props,
                                uint64_t from_square,
@@ -1073,7 +1073,14 @@ inline void Bitboard::add_move(std::deque<Bitmove>& movelist,
   {
     // Calculate the evaluation value for later move-ordering of captures and promotions.
     float eval = 0.0F;
-    if (move_props & move_props_promotion)
+    if (move_props & move_props_castling)
+    {
+      // Castle while you can!
+      // In this way castling will be examined before
+      // move_props_none-moves, which have value 0.
+      eval = 0.1F;
+    }
+    else if (move_props & move_props_promotion)
     {
       eval = 9.0F + get_piece_value(promotion_p_type) - 1.0F + get_piece_value(to_square);
     }
@@ -1089,14 +1096,13 @@ inline void Bitboard::add_move(std::deque<Bitmove>& movelist,
   }
 }
 
-inline void Bitboard::sort_moves(std::deque<Bitmove>& movelist) const
+inline void Bitboard::sort_moves(list_ref movelist) const
 {
   // Start at the beginning of movelist and find the first move with
   // evaluation 0. Sort all the moves up to that move.
   // To make std::stable_sort sort in descending order, i defined operator<
   // in Bitmove in a suiting way.
 
-  // std::deque<Bitmove>::iterator end_it;
   auto end_it = movelist.begin();
   for (; end_it != movelist.end(); end_it++)
   {
@@ -1107,7 +1113,7 @@ inline void Bitboard::sort_moves(std::deque<Bitmove>& movelist) const
     std::stable_sort(movelist.begin(), end_it);
 }
 
-void Bitboard::find_legal_moves(std::deque<Bitmove>& movelist, Gentype gt)
+void Bitboard::find_legal_moves(list_ref movelist, Gentype gt)
 {
   movelist.clear(); //TODO: This was added.
 
