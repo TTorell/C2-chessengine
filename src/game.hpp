@@ -58,8 +58,14 @@ class Game
     bool has_time_left();
     void set_time_left(bool value);
     void save() const;
-    Color get_col_to_move() const;
+    Color get_side_to_move() const;
+    uint64_t get_hash_tag() const;
+    float get_material_diff() const;
     Playertype get_playertype(const Color& side) const;
+    History_state get_game_history_state()
+    {
+      return _chessboard.get_history_state();
+    }
     void set_move_log_col_to_start(Color c);
     void set_castling_state(const Castling_state& cs);
     void set_en_passant_square(int file, int rank);
@@ -76,10 +82,7 @@ class Game
     int read_position(const std::string& filename);
     int make_a_move(float& score, const uint8_t max_search_ply);
     void make_move(const std::string& move);
-    History_state get_game_history_state()
-    {
-      return _chessboard.get_history_state();
-    }
+    void takeback_latest_move();
 };
 
 } // namespace C2_chess

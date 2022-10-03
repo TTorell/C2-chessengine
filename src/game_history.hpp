@@ -26,8 +26,8 @@ struct Position_element
 
 struct History_state
 {
-    uint32_t _n_plies;
-    uint32_t _n_repeated_positions;
+    size_t _n_plies;
+    size_t _n_repeated_positions;
     bool _is_threefold_repetiotion;
 
     History_state():
@@ -68,6 +68,12 @@ class Game_history
     Position_element _moves_played[MAX_HISTORY_PLIES];
     uint64_t _repeated_positions[MAX_REPEATED_POSITIONS];
 
+    void remove_repeated_position(int idx)
+    {
+      for (auto i = idx; i <  static_cast<int>(_state._n_repeated_positions) - 1; i++)
+        _repeated_positions[i] = _repeated_positions[i + 1];
+    }
+
   public:
     Game_history() :
         _state(),
@@ -85,6 +91,22 @@ class Game_history
     {
       assert(state._n_plies <= _state._n_plies&& state._n_repeated_positions <= _state._n_repeated_positions);
       _state = state;
+    }
+
+    void takeback_latest_move()
+    {
+      assert(_state._n_plies > 0);
+      auto key_to_remove = _moves_played[_state._n_plies].position_key;
+      for (auto idx = static_cast<int>(_state._n_repeated_positions) - 1; idx >= 0; idx--)
+      {
+        if (_repeated_positions[idx] == key_to_remove)
+        {
+           remove_repeated_position(idx);
+           _state._n_repeated_positions--;
+           break;
+        }
+      }
+      _state._n_plies--;
     }
 
     void add_position(uint64_t position_key)

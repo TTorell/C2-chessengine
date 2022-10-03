@@ -49,6 +49,11 @@ const auto on_same_line = true;
 const auto on_separate_lines = false;
 const auto xray_threats_through_king_allowed = true;
 
+
+// It's important that the four promotion-piecetypes
+// Comes first and have index 0 to 3 (00, 01, 10 and 11),
+// because they are represented by only two bits inside
+// the Bitmove struct.
 enum class Piecetype
 {
   Queen,
@@ -60,7 +65,7 @@ enum class Piecetype
   Undefined
 };
 
-const float piece_values[7] = {9.0F, 5.0F, 3.0F, 3.0F, 1.0F, 0.0F, 0.0F};
+const float piece_values[7] = {9.0F, 5.0F, 3.0F, 3.0F, 1.0F, 0.0F, 0.0F };
 
 const auto pawn_value = piece_values[index(Piecetype::Pawn)];
 const auto queen_value = piece_values[index(Piecetype::Queen)];

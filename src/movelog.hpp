@@ -36,6 +36,14 @@ class Movelog
       _list.push_back(move);
     }
 
+    void pop()
+    {
+      assert(!_list.empty());
+      _list.pop_back();
+      if(_list.empty())
+        _first_moveno = 1;
+    }
+
     void clear_and_init(Color col_to_start, uint16_t first_moveno)
     {
       _col_to_start = col_to_start;

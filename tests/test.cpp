@@ -629,7 +629,7 @@ TEST_CASE("evaluation, mate and stalemate")
 
 TEST_CASE("find_best_move")
 {
-   logfile << "TEST STARTED" << "\n";
+   logfile << "TEST STARTED find_best_move" << "\n";
   Config_params config_params;
   config_params.set_config_param("max_search_depth", "6");
   Game game(config_params);
@@ -972,11 +972,33 @@ TEST_CASE("sizeof_Bitmove")
   REQUIRE(alignof(Bitmove) == 4);
 };
 
-//TEST_CASE("takeback_castling")
-//{
-//  logfile << "TEST STARTED" << "\n";
-//  Config_params config_params;
-//  config_params.set_config_param("max_search_depth", "8");
+TEST_CASE("takeback_promotion")
+{
+ logfile << "TEST STARTED takeback_promotion" << "\n";
+ Config_params config_params;
+ Game game(config_params);
+ game.init();
+ std::string FEN_string = get_FEN_test_position(95);
+ game.read_position_FEN(FEN_string);
+ game.init();
+
+ SECTION("Queen promotion on empty square")
+ {
+   game.write_chessboard(std::cout, Color::White);
+   auto saved_hash_tag = game.get_hash_tag();
+   auto saved_material_diff = game.get_material_diff();
+   game.make_move("g7g8q");
+   game.write_chessboard(std::cout, Color::White);
+   auto material_diff = game.get_material_diff();
+   REQUIRE(is_close(material_diff, saved_material_diff + queen_value - pawn_value));
+   game.takeback_latest_move();
+   game.write_chessboard(std::cout, Color::White);
+   auto hash_tag = game.get_hash_tag();
+   material_diff = game.get_material_diff();
+   REQUIRE(material_diff == saved_material_diff);
+   REQUIRE(hash_tag == saved_hash_tag);
+ }
+}
 //  Game game(config_params);
 //  game.init();
 //  Go_params go_params; // All members in go_params are set to zero.

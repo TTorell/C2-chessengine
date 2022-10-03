@@ -86,9 +86,24 @@ void Game::setup_pieces()
   _chessboard.read_position(start_position_FEN);
 }
 
-Color Game::get_col_to_move() const
+Color Game::get_side_to_move() const
 {
   return _chessboard.get_side_to_move();
+}
+
+uint64_t Game::get_hash_tag() const
+{
+  return _chessboard.get_hash_tag();
+}
+
+float Game::get_material_diff() const
+{
+  return _chessboard.get_material_diff();
+}
+
+Playertype Game::get_playertype(const Color& side) const
+{
+  return _player_type[index(side)];
 }
 
 std::ostream& Game::write_chessboard(std::ostream& os, const Color from_perspective) const
@@ -396,11 +411,6 @@ void Game::set_time_left(bool value)
   _chessboard.set_time_left(value);
 }
 
-Playertype Game::get_playertype(const Color& side) const
-{
-  return _player_type[index(side)];
-}
-
 void Game::start_new_game()
 {
   init();
@@ -558,7 +568,7 @@ int Game::read_position_FEN(const std::string& FEN_string)
     return -1;
   new_position.init();
   figure_out_last_move(new_position);
-//  _chessboard.find_legal_moves(gentype::all);
+  //  _chessboard.find_legal_moves(gentype::all);
   return 0;
 }
 
@@ -566,6 +576,12 @@ void Game::make_move(const std::string& move)
 {
   _chessboard.make_UCI_move(move);
   _move_log.push_back(_chessboard.last_move());
+}
+
+void Game::takeback_latest_move()
+{
+  _chessboard.take_back_latest_move();
+  _move_log.pop();
 }
 
 } // namespace C2_chess

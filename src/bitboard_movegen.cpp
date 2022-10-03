@@ -1117,7 +1117,7 @@ void Bitboard::find_legal_moves(list_ref movelist, Gentype gt)
   {
     std::cerr << "gobbled pieces" << std::endl;
     write(std::cerr, Color::White);
-    std::cerr << _last_move << std::endl;
+    std::cerr << _latest_move << std::endl;
   }
   assert((_own->pieces & _other->pieces) == zero);
   find_king_moves(movelist, gt);

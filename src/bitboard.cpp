@@ -34,7 +34,7 @@ Bitboard Bitboard::search_boards[N_SEARCH_BOARDS_DEFAULT];
 Game_history Bitboard::history;
 
 Bitboard::Bitboard() :
-    _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _last_move(), _checkers(zero),
+    _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _latest_move(), _checkers(zero),
     _pinners(zero), _pinned_pieces(zero), _all_pieces(zero), _white_pieces(), _black_pieces(), _own(nullptr), _other(nullptr), _half_move_counter(0)
 {
   //std::cerr << "BitBoard Default constructor" << std::endl;
@@ -44,7 +44,7 @@ Bitboard::Bitboard() :
 
 Bitboard::Bitboard(const Bitboard& bb) :
     _hash_tag(bb._hash_tag), _side_to_move(bb._side_to_move), _move_number(bb._move_number), _castling_rights(bb._castling_rights), _ep_square(bb._ep_square),
-    _material_diff(bb._material_diff), _last_move(bb._last_move), _checkers(bb._checkers), _pinners(bb._pinners), _pinned_pieces(bb._pinned_pieces), _all_pieces(bb._all_pieces),
+    _material_diff(bb._material_diff), _latest_move(bb._latest_move), _checkers(bb._checkers), _pinners(bb._pinners), _pinned_pieces(bb._pinned_pieces), _all_pieces(bb._all_pieces),
     _white_pieces(bb._white_pieces), _black_pieces(bb._black_pieces), _own(nullptr), _other(nullptr), _half_move_counter(bb._half_move_counter)
 {
   //std::cerr << "BitBoard Copy constructor" << std::endl;
@@ -80,7 +80,7 @@ Bitboard& Bitboard::operator=(const Bitboard& from)
     _has_castled[1] = from._has_castled[1];
     _ep_square = from._ep_square;
     _material_diff = from._material_diff;
-    _last_move = from._last_move;
+    _latest_move = from._latest_move;
     _half_move_counter = from._half_move_counter;
 
     // Temporary variables. There's No need to copy them
@@ -355,7 +355,7 @@ void Bitboard::switch_tt_tables()
 void Bitboard::update_half_move_counter()
 {
   // Update half-move counter for the 50-moves-drawing-rule.
-  if ((_last_move.properties() & move_props_capture) || (_last_move.piece_type() == Piecetype::Pawn))
+  if ((_latest_move.properties() & move_props_capture) || (_latest_move.piece_type() == Piecetype::Pawn))
     _half_move_counter = 0;
   else
     _half_move_counter++;
@@ -533,7 +533,7 @@ float Bitboard::evaluate_position(const bool movelist_is_empty, Color col_to_mov
   if (evaluate_zero_moves && movelist_is_empty)
   {
     // if (square_is_threatened(_own->King, false))
-    if (_last_move.properties() & move_props_check) // TODO: Check if this always has been set?
+    if (_latest_move.properties() & move_props_check) // TODO: Check if this always has been set?
     {
       // This is checkmate, we want to evaluate the quickest way to mate higher
       // so we add/subtract level.
@@ -667,7 +667,7 @@ void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
     if (!tte.best_move.is_valid())
       break;
     bb.make_move(movelist, tte.best_move, Gentype::All, dont_update_history);
-    pv_line.push_back(bb._last_move);
+    pv_line.push_back(bb._latest_move);
   }
 }
 
@@ -679,6 +679,11 @@ void Bitboard::clear_search_info()
 Search_info& Bitboard::get_search_info() const
 {
   return search_info;
+}
+
+float Bitboard::get_material_diff() const
+{
+  return _material_diff;
 }
 
 unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth) const
@@ -734,7 +739,7 @@ void Bitboard::takeback_from_state(Takeback_state& state)
   _has_castled[1] = state._has_castled_1;
   _ep_square = state._ep_square;
   _material_diff = state._material_diff;
-  _last_move = state._last_move;
+  _latest_move = state._last_move;
 }
 
 float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply)
@@ -754,7 +759,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
                                        _has_castled[1],
                                        _ep_square,
                                        _material_diff,
-                                       _last_move,
+                                       _latest_move,
                                        Piecetype::Undefined};
 
   search_info.node_counter++;
@@ -855,7 +860,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
                                        _has_castled[1],
                                        _ep_square,
                                        _material_diff,
-                                       _last_move,
+                                       _latest_move,
                                        Piecetype::Undefined};
 
   // Next search_ply and next_movelist:

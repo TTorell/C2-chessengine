@@ -38,6 +38,7 @@ class Bitboard
     static struct Takeback_element takeback_list[];
     static std::atomic<bool> time_left;
 
+
     uint64_t _hash_tag;
     Color _side_to_move = Color::White;
     uint16_t _move_number;
@@ -45,7 +46,7 @@ class Bitboard
     bool _has_castled[2];
     uint64_t _ep_square = zero;
     float _material_diff;
-    Bitmove _last_move;
+    Bitmove _latest_move;
     uint64_t _checkers;
     uint64_t _pinners;
     uint64_t _pinned_pieces;
@@ -238,11 +239,13 @@ class Bitboard
     // This make_move() doesn't require a generated movelist.
     void make_move(list_ref next_movelist, const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
 
-    void take_back_move(list_ref movelist,
+    void takeback_latest_move(list_ref movelist,
                         const Bitmove& m,
                         const Gentype gt,
                         const Takeback_state& state,
                         const bool takeback_from_history = true);
+
+    void take_back_latest_move();
 
     // All properties of a move are not decided immediately,
     // but some of them (check for instance) are set after the
@@ -253,27 +256,27 @@ class Bitboard
     // other purposes.
     Bitmove last_move() const
     {
-      return _last_move;
+      return _latest_move;
     }
 
     void set_mate()
     {
-      _last_move.add_property(move_props_mate);
+      _latest_move.add_property(move_props_mate);
     }
 
     void set_stalemate()
     {
-      _last_move.add_property(move_props_stalemate);
+      _latest_move.add_property(move_props_stalemate);
     }
 
     void set_draw_by_repetition()
     {
-      _last_move.add_property(move_props_draw_by_repetition);
+      _latest_move.add_property(move_props_draw_by_repetition);
     }
 
     void set_draw_by_50_moves()
     {
-      _last_move.add_property(move_props_draw_by_50_moves);
+      _latest_move.add_property(move_props_draw_by_50_moves);
     }
 
     // The chess-engine keeps track of the game, which is
@@ -300,6 +303,8 @@ class Bitboard
     // A slow way of determining the piecetype of a piece on
     // given square. Should not be used inside the search-loop.
     Piecetype get_piece_type(uint64_t square) const;
+
+    float get_material_diff() const;
 
     uint16_t get_move_number() const
     {
