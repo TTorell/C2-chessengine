@@ -106,19 +106,15 @@ TEST_CASE("perft_test")
       if (n_searched_nodes != static_cast<unsigned int>(std::stol(input_vector[max_search_depth - 1])))
       {
         failed = true;
-        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_depth - 1
-                  << " failed. "
-                  << n_searched_nodes << " : " << input_vector[max_search_depth - 1]
+        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_depth - 1 << " failed. " << n_searched_nodes << " : " << input_vector[max_search_depth - 1]
                   << std::endl;
       }
       else
       {
-        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_depth - 1
-                  << " passed. "
-                  << "n_leaf_nodes = " << n_searched_nodes << ". It took " << timediff
+        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_depth - 1 << " passed. " << "n_leaf_nodes = " << n_searched_nodes << ". It took " << timediff
                   << " micro seconds." << std::endl;
       }
-      REQUIRE(n_searched_nodes  == static_cast<unsigned int>(std::stoi(input_vector[max_search_depth - 1])));
+      REQUIRE(n_searched_nodes == static_cast<unsigned int>(std::stoi(input_vector[max_search_depth - 1])));
     }
     if (failed)
     {
@@ -484,7 +480,7 @@ TEST_CASE("evaluation")
   Bitboard_with_utils chessboard;
   chessboard.init();
   chessboard.read_position(start_position_FEN);
-  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
+  chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
   REQUIRE(fabs(chessboard.evaluate_position(Color::White, 7)) < 0.01);
   chessboard.make_UCI_move("e2e4");
   now.tic();
@@ -608,7 +604,7 @@ TEST_CASE("evaluation, mate and stalemate")
   Bitboard_with_utils chessboard;
   chessboard.init();
   REQUIRE(chessboard.read_position(FEN_string) == 0);
-  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
+  chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
 
   SECTION("mate")
   {
@@ -629,7 +625,7 @@ TEST_CASE("evaluation, mate and stalemate")
 
 TEST_CASE("find_best_move")
 {
-   logfile << "TEST STARTED find_best_move" << "\n";
+  logfile << "TEST STARTED find_best_move" << "\n";
   Config_params config_params;
   config_params.set_config_param("max_search_depth", "6");
   Game game(config_params);
@@ -684,7 +680,7 @@ TEST_CASE("find_best_move")
     game.read_position_FEN(FEN_string);
     game.init();
     go_params.movetime = 100000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params,  go_params, use_max_search_depth);
+    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
@@ -705,7 +701,7 @@ TEST_CASE("find_best_move")
     game.read_position_FEN(FEN_string);
     game.init();
     go_params.movetime = 100000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params,  go_params, use_max_search_depth);
+    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
@@ -815,7 +811,7 @@ TEST_CASE("move-ordering")
   Bitboard_with_utils chessboard;
   chessboard.init();
   REQUIRE(chessboard.read_position(FEN_string) == 0);
-  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
+  chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
   chessboard.write(std::cout, Color::White);
   chessboard.write_movelist(std::cout, true) << std::endl;
 }
@@ -828,7 +824,7 @@ TEST_CASE("50-moves-rule")
   REQUIRE(chessboard.read_position(FEN_string) == 0);
   REQUIRE(chessboard.get_half_move_counter() == 49);
   REQUIRE(chessboard.is_draw_by_50_moves() == false);
-  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
+  chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
 
   SECTION("pawn move")
   {
@@ -871,7 +867,7 @@ TEST_CASE("three-fold repetition")
   REQUIRE(chessboard.read_position(FEN_string) == 0);
   chessboard.clear_game_history();
   chessboard.add_position_to_game_history();
-  chessboard.find_legal_moves(*chessboard .get_movelist(0), Gentype::All);
+  chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
   chessboard.make_UCI_move("a6b6");
   chessboard.make_UCI_move("a8b8");
   REQUIRE(chessboard.is_threefold_repetition() == false);
@@ -970,35 +966,178 @@ TEST_CASE("sizeof_Bitmove")
 {
   REQUIRE(sizeof(Bitmove) == 8);
   REQUIRE(alignof(Bitmove) == 4);
-};
+}
+;
 
 TEST_CASE("takeback_promotion")
 {
- logfile << "TEST STARTED takeback_promotion" << "\n";
- Config_params config_params;
- Game game(config_params);
- game.init();
- std::string FEN_string = get_FEN_test_position(95);
- game.read_position_FEN(FEN_string);
- game.init();
+  logfile << "TEST STARTED takeback_promotion" << "\n";
+  Config_params config_params;
+  Game game(config_params);
+  game.init();
+  std::string FEN_string = get_FEN_test_position(95);
+  game.read_position_FEN(FEN_string);
+  game.init();
 
- SECTION("Queen promotion on empty square")
- {
-   game.write_chessboard(std::cout, Color::White);
-   auto saved_hash_tag = game.get_hash_tag();
-   auto saved_material_diff = game.get_material_diff();
-   game.make_move("g7g8q");
-   game.write_chessboard(std::cout, Color::White);
-   auto material_diff = game.get_material_diff();
-   REQUIRE(is_close(material_diff, saved_material_diff + queen_value - pawn_value));
-   game.takeback_latest_move();
-   game.write_chessboard(std::cout, Color::White);
-   auto hash_tag = game.get_hash_tag();
-   material_diff = game.get_material_diff();
-   REQUIRE(material_diff == saved_material_diff);
-   REQUIRE(hash_tag == saved_hash_tag);
- }
+  SECTION("Queen promotion on empty square")
+  {
+    game.write_chessboard(std::cout, Color::White);
+    auto saved_hash_tag = game.get_hash_tag();
+    auto saved_material_diff = game.get_material_diff();
+    game.make_move("g7g8q");
+    game.write_chessboard(std::cout, Color::White);
+    auto material_diff = game.get_material_diff();
+    REQUIRE(is_close(material_diff, saved_material_diff + queen_value - pawn_value));
+    game.takeback_latest_move();
+    game.write_chessboard(std::cout, Color::White);
+    auto hash_tag = game.get_hash_tag();
+    material_diff = game.get_material_diff();
+    REQUIRE(material_diff == saved_material_diff);
+    REQUIRE(hash_tag == saved_hash_tag);
+  }
+
+  SECTION("Bishop promotion on empty square")
+  {
+    game.write_chessboard(std::cout, Color::White);
+    auto saved_hash_tag = game.get_hash_tag();
+    auto saved_material_diff = game.get_material_diff();
+    game.make_move("g7g8b");
+    game.write_chessboard(std::cout, Color::White);
+    auto material_diff = game.get_material_diff();
+    REQUIRE(is_close(material_diff, saved_material_diff + bishop_value - pawn_value));
+    game.takeback_latest_move();
+    game.write_chessboard(std::cout, Color::White);
+    auto hash_tag = game.get_hash_tag();
+    material_diff = game.get_material_diff();
+    REQUIRE(material_diff == saved_material_diff);
+    REQUIRE(hash_tag == saved_hash_tag);
+  }
+
+  SECTION("Knight promotion taking a Queen")
+  {
+    game.write_chessboard(std::cout, Color::White);
+    auto saved_hash_tag = game.get_hash_tag();
+    auto saved_material_diff = game.get_material_diff();
+    game.make_move("g7h8n");
+    game.write_chessboard(std::cout, Color::White);
+    auto material_diff = game.get_material_diff();
+    REQUIRE(is_close(material_diff, saved_material_diff + knight_value - pawn_value + queen_value));
+    game.takeback_latest_move();
+    game.write_chessboard(std::cout, Color::White);
+    auto hash_tag = game.get_hash_tag();
+    material_diff = game.get_material_diff();
+    REQUIRE(material_diff == saved_material_diff);
+    REQUIRE(hash_tag == saved_hash_tag);
+  }
+
+  SECTION("Rook promotion taking a rook")
+  {
+    game.write_chessboard(std::cout, Color::White);
+    auto saved_hash_tag = game.get_hash_tag();
+    auto saved_material_diff = game.get_material_diff();
+    game.make_move("g7f8r");
+    game.write_chessboard(std::cout, Color::White);
+    auto material_diff = game.get_material_diff();
+    REQUIRE(is_close(material_diff, saved_material_diff + rook_value - pawn_value + rook_value));
+    game.takeback_latest_move();
+    game.write_chessboard(std::cout, Color::White);
+    auto hash_tag = game.get_hash_tag();
+    material_diff = game.get_material_diff();
+    REQUIRE(material_diff == saved_material_diff);
+    REQUIRE(hash_tag == saved_hash_tag);
+  }
+
+  SECTION("Bishop promotion taking a knight")
+  {
+    game.write_chessboard(std::cout, Color::White);
+    auto saved_hash_tag = game.get_hash_tag();
+    auto saved_material_diff = game.get_material_diff();
+    game.make_move("c7b8b");
+    game.write_chessboard(std::cout, Color::White);
+    auto material_diff = game.get_material_diff();
+    REQUIRE(is_close(material_diff, saved_material_diff + bishop_value - pawn_value + knight_value));
+    game.takeback_latest_move();
+    game.write_chessboard(std::cout, Color::White);
+    auto hash_tag = game.get_hash_tag();
+    material_diff = game.get_material_diff();
+    REQUIRE(material_diff == saved_material_diff);
+    REQUIRE(hash_tag == saved_hash_tag);
+  }
+
+  SECTION("Queen promotion taking a bishop")
+  {
+    game.write_chessboard(std::cout, Color::White);
+    auto saved_hash_tag = game.get_hash_tag();
+    auto saved_material_diff = game.get_material_diff();
+    game.make_move("c7d8q");
+    game.write_chessboard(std::cout, Color::White);
+    auto material_diff = game.get_material_diff();
+    REQUIRE(is_close(material_diff, saved_material_diff + queen_value - pawn_value + bishop_value));
+    game.takeback_latest_move();
+    game.write_chessboard(std::cout, Color::White);
+    auto hash_tag = game.get_hash_tag();
+    material_diff = game.get_material_diff();
+    REQUIRE(material_diff == saved_material_diff);
+    REQUIRE(hash_tag == saved_hash_tag);
+  }
 }
+
+TEST_CASE("takeback_en_passant")
+{
+  logfile << "TEST STARTED takeback_en_passant" << "\n";
+  Config_params config_params;
+  Game game(config_params);
+  game.init();
+  std::string FEN_string = get_FEN_test_position(96);
+  game.read_position_FEN(FEN_string);
+  game.init();
+
+  SECTION("d5xe6_ep")
+  {
+    game.write_chessboard(std::cout, Color::White);
+    auto saved_hash_tag = game.get_hash_tag();
+    auto saved_material_diff = game.get_material_diff();
+    game.make_move("d5e6");
+    game.write_chessboard(std::cout, Color::White);
+    auto material_diff = game.get_material_diff();
+    REQUIRE(is_close(material_diff, saved_material_diff + pawn_value));
+    game.takeback_latest_move();
+    game.write_chessboard(std::cout, Color::White);
+    auto hash_tag = game.get_hash_tag();
+    material_diff = game.get_material_diff();
+    REQUIRE(material_diff == saved_material_diff);
+    REQUIRE(hash_tag == saved_hash_tag);
+  }
+}
+
+TEST_CASE("takeback_castling")
+{
+  logfile << "TEST STARTED takeback_castling" << "\n";
+  Config_params config_params;
+  Game game(config_params);
+  game.init();
+  std::string FEN_string = get_FEN_test_position(97);
+  game.read_position_FEN(FEN_string);
+  game.init();
+
+  SECTION("short castling")
+  {
+    game.write_chessboard(std::cout, Color::White);
+    auto saved_hash_tag = game.get_hash_tag();
+    auto saved_material_diff = game.get_material_diff();
+    game.make_move("e1g1");
+    game.write_chessboard(std::cout, Color::White);
+    auto material_diff = game.get_material_diff();
+    REQUIRE(is_close(material_diff, saved_material_diff));
+    game.takeback_latest_move();
+    game.write_chessboard(std::cout, Color::White);
+    auto hash_tag = game.get_hash_tag();
+    material_diff = game.get_material_diff();
+    REQUIRE(material_diff == saved_material_diff);
+    REQUIRE(hash_tag == saved_hash_tag);
+  }
+}
+
 //  Game game(config_params);
 //  game.init();
 //  Go_params go_params; // All members in go_params are set to zero.

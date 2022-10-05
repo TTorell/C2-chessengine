@@ -313,7 +313,7 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   if (best_move.is_valid())
   {
     //TODO: Is this right?
-    _chessboard.make_move(*_chessboard.get_movelist(0), best_move);
+    _chessboard.make_move(*_chessboard.get_movelist(0), best_move, _chessboard.get_tb_state(0));
     _move_log.push_back(_chessboard.last_move());
   }
   //TODO: Is this right?
@@ -389,7 +389,7 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
     Bitmove best_move = find_best_move(_score, max_search_depth);
     if (best_move.is_valid())
     {
-      _chessboard.make_move(*_chessboard.get_movelist(0), best_move);
+      _chessboard.make_move(*_chessboard.get_movelist(0), best_move, _chessboard.get_tb_state(0));
       _move_log.push_back(_chessboard.last_move());
     }
   }
@@ -473,7 +473,7 @@ void Game::figure_out_last_move(const Bitboard& new_position)
       start_new_game();
       return;
     }
-    _chessboard.make_move(*_chessboard.get_movelist(0), m);
+    _chessboard.make_move(*_chessboard.get_movelist(0), m, _chessboard.get_tb_state(0));
     _move_log.push_back(_chessboard.last_move());
     actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
   }

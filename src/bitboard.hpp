@@ -229,7 +229,7 @@ class Bitboard
     // Looks up the i:th move in movelist and makes it.
     // move_no just keeps track of the full move number
     // in the game.
-    void make_move(list_ref movelist, uint8_t i, Gentype gt = Gentype::All, bool update_history = true);
+    void make_move(list_ref movelist, uint8_t i, Takeback_state& tb_state, Gentype gt = Gentype::All, bool update_history = true);
 
     // Only for the command-line interface, where the user
     // is prompted to enter the new move on the keyboard,
@@ -237,7 +237,7 @@ class Bitboard
     int make_move(Playertype player_type);
 
     // This make_move() doesn't require a generated movelist.
-    void make_move(list_ref next_movelist, const Bitmove& m, Gentype gt = Gentype::All, bool update_history = true);
+    void make_move(list_ref next_movelist, const Bitmove& m, Takeback_state& tb_state, Gentype gt = Gentype::All, bool update_history = true);
 
     void takeback_latest_move(list_ref movelist,
                         const Bitmove& m,
@@ -335,7 +335,7 @@ class Bitboard
 
     //TODO: REMOVE inline void clear_movelist(list_ref movelist);
 
-    void update_half_move_counter();
+    void update_half_move_counter(Takeback_state& tb_state);
 
     void set_half_move_counter(uint8_t half_move_counter);
 
@@ -357,6 +357,16 @@ class Bitboard
     inline list_ptr get_movelist_Q(size_t idx) const
     {
       return takeback_list[idx].state_Q._movelist;
+    }
+
+    inline Takeback_state& get_tb_state(size_t idx) const
+    {
+      return takeback_list[idx].state_S;
+    }
+
+    inline Takeback_state& get_tb_state_Q(size_t idx) const
+    {
+      return takeback_list[idx].state_Q;
     }
 
     bool is_draw_by_50_moves() const;

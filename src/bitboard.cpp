@@ -352,9 +352,10 @@ void Bitboard::switch_tt_tables()
 //  movelist.clear();
 //}
 
-void Bitboard::update_half_move_counter()
+void Bitboard::update_half_move_counter(Takeback_state& tb_state)
 {
-  // Update half-move counter for the 50-moves-drawing-rule.
+  tb_state._half_move_counter = _half_move_counter;
+  // Update half-move counter for the 50-moves-draw-rule.
   if ((_latest_move.properties() & move_props_capture) || (_latest_move.piece_type() == Piecetype::Pawn))
     _half_move_counter = 0;
   else
@@ -666,7 +667,7 @@ void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
     TT_element& tte = transposition_table.find(bb._hash_tag);
     if (!tte.best_move.is_valid())
       break;
-    bb.make_move(movelist, tte.best_move, Gentype::All, dont_update_history);
+    bb.make_move(movelist, tte.best_move, takeback_list[0].state_S, Gentype::All, dont_update_history);
     pv_line.push_back(bb._latest_move);
   }
 }
@@ -707,7 +708,7 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth) 
     Bitboard::search_boards[search_ply] = *this;
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    search_boards[search_ply].make_move(*next_movelist, (*movelist)[i], Gentype::All);
+    search_boards[search_ply].make_move(*next_movelist, (*movelist)[i],get_tb_state(0),  Gentype::All);
     search_boards[search_ply].perft_test(search_ply, max_search_depth);
     movelist = get_movelist(search_ply - 1);
   }
@@ -808,7 +809,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
     History_state saved_history_state = history.get_state();
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    search_boards[search_ply].make_move(*next_movelist, (*movelist)[i], Gentype::Captures_and_Promotions);
+    search_boards[search_ply].make_move(*next_movelist, (*movelist)[i], get_tb_state_Q(search_ply), Gentype::Captures_and_Promotions);
     //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
     move_score = -search_boards[search_ply].Quiesence_search(search_ply, -beta, -alpha, max_search_ply);
 
@@ -937,7 +938,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     History_state saved_history_state = history.get_state();
 
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    search_boards[search_ply].make_move(*next_movelist, (*movelist)[i], Gentype::All);
+    search_boards[search_ply].make_move(*next_movelist, (*movelist)[i], get_tb_state_Q(search_ply), Gentype::All);
     //merge level_boards[search_ply].make_move((*_movelist)[i], (search_ply < max_search_ply)? Gentype::All:Gentype::Captures);
     //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
     move_score = -search_boards[search_ply].negamax_with_pruning(search_ply, -beta, -alpha, best_move_dummy, search_depth);

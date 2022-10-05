@@ -151,7 +151,7 @@ void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move)
     i++;
   }
   if (found == true)
-    Bitboard::make_move(*get_movelist(0), i);
+    Bitboard::make_move(*get_movelist(0), i, takeback_list[0].state_S);
   else
     assert(false);
 }

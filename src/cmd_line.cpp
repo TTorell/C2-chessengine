@@ -203,7 +203,7 @@ int Game::make_a_move(float& score, const uint8_t max_search_ply)
       std::cout << "Black was check mated." << std::endl; // TODO
       return 0;
     }
-    _chessboard.make_move(*_chessboard.get_movelist(0), best_move);
+    _chessboard.make_move(*_chessboard.get_movelist(0), best_move, _chessboard.get_tb_state(0));
     return 0;
   }
 }
@@ -351,7 +351,7 @@ int Bitboard::make_move(Playertype player)
     if (!is_in_movelist(*get_movelist(0), m))
       continue;
     //  Move is OK,make it
-    make_move(*get_movelist(0), m);
+    make_move(*get_movelist(0), m, get_tb_state(0));
     return 0;
   } // while not read
 }
