@@ -352,9 +352,8 @@ void Bitboard::switch_tt_tables()
 //  movelist.clear();
 //}
 
-void Bitboard::update_half_move_counter(Takeback_state& tb_state)
+void Bitboard::update_half_move_counter()
 {
-  tb_state._half_move_counter = _half_move_counter;
   // Update half-move counter for the 50-moves-draw-rule.
   if ((_latest_move.properties() & move_props_capture) || (_latest_move.piece_type() == Piecetype::Pawn))
     _half_move_counter = 0;
@@ -740,7 +739,7 @@ void Bitboard::takeback_from_state(Takeback_state& state)
   _has_castled[1] = state._has_castled_1;
   _ep_square = state._ep_square;
   _material_diff = state._material_diff;
-  _latest_move = state._last_move;
+  _latest_move = state._latest_move;
 }
 
 float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply)

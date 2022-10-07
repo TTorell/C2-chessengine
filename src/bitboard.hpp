@@ -335,7 +335,7 @@ class Bitboard
 
     //TODO: REMOVE inline void clear_movelist(list_ref movelist);
 
-    void update_half_move_counter(Takeback_state& tb_state);
+    void update_half_move_counter();
 
     void set_half_move_counter(uint8_t half_move_counter);
 

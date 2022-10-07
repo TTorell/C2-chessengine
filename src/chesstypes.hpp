@@ -285,7 +285,7 @@ struct Takeback_state
     bool _has_castled_1;
     uint64_t _ep_square = zero;
     float _material_diff;
-    Bitmove _last_move;
+    Bitmove _latest_move;
     Piecetype _taken_piece;
 };
 
