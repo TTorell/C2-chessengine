@@ -317,9 +317,14 @@ void Bitboard::make_move(list_ref next_movelist, const Bitmove& m, Takeback_stat
   if (_ep_square)
     clear_ep_square();
 
+  // Save some takeback values
+  tb_state._taken_piece = get_piece_type(to_square);
+  tb_state._castling_rights = _castling_rights;
+  tb_state._half_move_counter = _half_move_counter;
+  tb_state._latest_move = _latest_move;
+
   // Remove possible piece of other color on to_square and
   // Then make the move (updates hashtag)
-  tb_state._taken_piece = get_piece_type(to_square);
   if (to_square & _other->pieces)
     remove_taken_piece(to_square, other_color(_side_to_move));
   move_piece(from_square, to_square, m.piece_type()); // updates hash-tag
@@ -407,7 +412,6 @@ void Bitboard::make_move(list_ref next_movelist, const Bitmove& m, Takeback_stat
     }
   }
   // Set up the board for other player:
-  tb_state._last_move = _latest_move;
   _latest_move = m;
 
 //  std::cerr << _move_number << ".";
@@ -425,9 +429,10 @@ void Bitboard::make_move(list_ref next_movelist, const Bitmove& m, Takeback_stat
   {
     history.add_position(_hash_tag);
   }
-  update_half_move_counter(tb_state);
-  // TODO: Must be possible to change to gentype::captures.
 
+  // _half_move_counter is saved in takeback-state
+
+  // TODO: Can movelist be taken from takeback_state(search-ply - 1)?
   find_legal_moves(next_movelist, gt);
 }
 
@@ -566,7 +571,7 @@ void Bitboard::takeback_latest_move(list_ref movelist, const Bitmove& m, Gentype
   }
 
   //  Set up the board for other player:
-  _latest_move = tb_state._last_move;
+  _latest_move = tb_state._latest_move;
   update_side_to_move();
   if (_side_to_move == Color::Black)
     _move_number--;
