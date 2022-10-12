@@ -52,7 +52,7 @@ class Transposition_table
     Hashmap _hash_map[2];
     Hashmap* _current_searchdepth_map;
     Hashmap* _previous_searchdepth_map;
-    unsigned long _black_to_move;
+    unsigned long _toggle_side_to_move;
     unsigned long _random_table[64][2][6]; // square_index, piece_color, piece_type
     unsigned long _en_passant_file[8];
     unsigned long _castling_rights[16]; // we only use index 1, 2, 4 and 8
@@ -64,7 +64,7 @@ class Transposition_table
     Transposition_table() :
         _current_searchdepth_map(&_hash_map[0]),
         _previous_searchdepth_map(&_hash_map[1]),
-        _black_to_move(0L)
+        _toggle_side_to_move(0L)
     {
       init_random_numbers();
     }
@@ -131,7 +131,7 @@ inline void Transposition_table::init_random_numbers()
   _castling_rights[8] = round(dist(mt));
   for (int i = 0; i < 8; i++)
     _en_passant_file[i] = round(dist(mt));
-  _black_to_move = round(dist(mt));
+  _toggle_side_to_move = round(dist(mt));
 }
 
 } // End namespace C2_chess

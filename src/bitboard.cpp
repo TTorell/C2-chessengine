@@ -137,7 +137,7 @@ void Bitboard::init_board_hash_tag()
     _hash_tag ^= transposition_table._en_passant_file[file_idx(_ep_square)];
 
   if (_side_to_move == Color::Black)
-    _hash_tag ^= transposition_table._black_to_move;
+    _hash_tag ^= transposition_table._toggle_side_to_move;
 }
 
 void Bitboard::init_piece_state()

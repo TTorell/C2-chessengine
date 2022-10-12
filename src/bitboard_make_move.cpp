@@ -225,8 +225,8 @@ void Bitboard::update_hash_tag(uint64_t square, Color p_color, Piecetype p_type)
 // the same piece on an empty square.
 inline void Bitboard::update_hash_tag(uint64_t square1, uint64_t square2, Color p_color, Piecetype p_type)
 {
-  _hash_tag ^= (transposition_table._random_table[bit_idx(square1)][index(p_color)][index(p_type)]
-      ^ transposition_table._random_table[bit_idx(square2)][index(p_color)][index(p_type)]);
+  _hash_tag ^= transposition_table._random_table[bit_idx(square1)][index(p_color)][index(p_type)];
+  _hash_tag ^= transposition_table._random_table[bit_idx(square2)][index(p_color)][index(p_type)];
 }
 
 void Bitboard::update_side_to_move()
@@ -242,7 +242,7 @@ void Bitboard::update_side_to_move()
     _own = &_black_pieces;
     _other = &_white_pieces;
   }
-  _hash_tag ^= transposition_table._black_to_move;
+  _hash_tag ^= transposition_table._toggle_side_to_move;
 }
 
 inline void Bitboard::update_state_after_king_move(const Bitmove& m)
@@ -312,16 +312,18 @@ void Bitboard::make_move(list_ref next_movelist, const Bitmove& m, Takeback_stat
   uint64_t to_square = m.to();
   uint64_t from_square = m.from();
 
-// Clear _ep_square
-  uint64_t tmp_ep_square = _ep_square;
-  if (_ep_square)
-    clear_ep_square();
 
   // Save some takeback values
   tb_state._taken_piece = get_piece_type(to_square);
+  tb_state._hash_tag = _hash_tag;
   tb_state._castling_rights = _castling_rights;
   tb_state._half_move_counter = _half_move_counter;
   tb_state._latest_move = _latest_move;
+
+  // Clear _ep_square
+  uint64_t tmp_ep_square = _ep_square;
+  if (_ep_square)
+    clear_ep_square();
 
   // Remove possible piece of other color on to_square and
   // Then make the move (updates hashtag)
@@ -413,26 +415,17 @@ void Bitboard::make_move(list_ref next_movelist, const Bitmove& m, Takeback_stat
   }
   // Set up the board for other player:
   _latest_move = m;
-
-//  std::cerr << _move_number << ".";
-//  if (_side_to_move == Color::Black)
-//    std::cerr << " ... ";
-//  std::cerr << _last_move << std::endl;
-
   update_side_to_move();
   if (_side_to_move == Color::White)
     _move_number++;
-  if (square_is_threatened(_own->King, false))
+  if (square_is_threatened(_own->King, no_xray_threats_through_king))
     _latest_move.add_property(move_props_check);
+  update_half_move_counter();
   // add_position to game_history
   if (add_to_history)
   {
     history.add_position(_hash_tag);
   }
-
-  // _half_move_counter is saved in takeback-state
-
-  // TODO: Can movelist be taken from takeback_state(search-ply - 1)?
   find_legal_moves(next_movelist, gt);
 }
 
@@ -442,17 +435,13 @@ void Bitboard::takeback_en_passant(const Bitmove& m, const Color moving_side)
   // even if the move will be reversed.
   // _other points to the pieces of the moving side.
   const auto to_square = m.to();
-  const auto from_square = m.from();
   const auto taken_pawn_square = (moving_side == Color::White) ? to_square << 8 : to_square >> 8;
   set_ep_square(to_square);
-  // move back the Pawn that has taken e.p.
-  update_hash_tag(from_square, to_square, moving_side, Piecetype::Pawn);
-  // Put the taken Pawn back.
-  update_hash_tag(taken_pawn_square, other_color(moving_side), Piecetype::Pawn);
+  // Put the pawns back.
+  _other->Pawns ^= (to_square | m.from()); // moving side
+  _own->Pawns |= taken_pawn_square;
   // Update the resulting material diff
   _material_diff += (moving_side == Color::White) ? -pawn_value : pawn_value;
-  _other->Pawns ^= (from_square | to_square); // moving side
-  _own->Pawns |= taken_pawn_square;
 }
 
 void Bitboard::takeback_promotion(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_t)
@@ -464,10 +453,8 @@ void Bitboard::takeback_promotion(const Bitmove& m, const Color moving_side, con
   const auto from_square = m.from();
 
   // Put back the Pawn that has promoted:
-  update_hash_tag(from_square, moving_side, Piecetype::Pawn);
   _other->Pawns |= from_square;
   // Remove the promoted piece:
-  update_hash_tag(to_square, moving_side, m.promotion_piece_type());
   switch (m.promotion_piece_type())
   {
     case Piecetype::Queen:
@@ -487,7 +474,6 @@ void Bitboard::takeback_promotion(const Bitmove& m, const Color moving_side, con
   }
   if (taken_piece_t != Piecetype::Undefined)
   {
-    update_hash_tag(to_square, other_color(moving_side), taken_piece_t);
     switch (taken_piece_t)
     {
       case Piecetype::Queen:
@@ -509,7 +495,6 @@ void Bitboard::takeback_promotion(const Bitmove& m, const Color moving_side, con
         ;
     }
   }
-
   // Update the resulting material diff
   float material_diff_w = pawn_value - piece_values[index(m.promotion_piece_type())] - piece_values[index(taken_piece_t)];
   _material_diff += (moving_side == Color::White) ? material_diff_w : -material_diff_w;
@@ -517,25 +502,18 @@ void Bitboard::takeback_promotion(const Bitmove& m, const Color moving_side, con
 
 void Bitboard::takeback_castling(const Bitmove& m, const Color moving_side)
 {
-  uint64_t rook_square;
-  uint64_t rook_destination;
+  uint64_t rook_squares;
   auto king_squares = (moving_side == Color::White) ? (e1_square | m.to()) : (e8_square | m.to());
   if (file_idx(m.to()) == g)
   {
-    rook_square = (moving_side == Color::White) ? f1_square : f8_square;
-    rook_destination = (moving_side == Color::White) ? h1_square : h8_square;
-    _castling_rights |= (moving_side == Color::White) ? castling_right_WK : castling_right_BK;
+    rook_squares = (moving_side == Color::White) ? (f1_square | h1_square) : (f8_square | h8_square);
   }
   else
   {
-    rook_square = (moving_side == Color::White) ? d1_square : d8_square;
-    rook_destination = (moving_side == Color::White) ? a1_square : a8_square;
-    _castling_rights |= (moving_side == Color::White) ? castling_right_WQ : castling_right_BQ;
+    rook_squares = (moving_side == Color::White) ? (d1_square | a1_square) : (d8_square | a8_square);
   }
   _other->King ^= king_squares;
-  _other->Rooks ^= (rook_square | rook_destination);
-  update_hash_tag(m.to(), m.from(), moving_side, Piecetype::King);
-  update_hash_tag(rook_square, rook_destination, moving_side, Piecetype::Rook);
+  _other->Rooks ^= rook_squares;
   // No change in material_diff.
 }
 
@@ -571,20 +549,21 @@ void Bitboard::takeback_latest_move(list_ref movelist, const Bitmove& m, Gentype
   }
 
   //  Set up the board for other player:
-  _latest_move = tb_state._latest_move;
   update_side_to_move();
   if (_side_to_move == Color::Black)
     _move_number--;
-  // reset the game_history
   if (takeback_from_history)
   {
     history.takeback_latest_move();
   }
+  _hash_tag = tb_state._hash_tag;
+  _latest_move = tb_state._latest_move;
+  _castling_rights = tb_state._castling_rights;
   _half_move_counter = tb_state._half_move_counter;
-  //TODO: Is this right?
+
+  // TODO: Can movelist be taken from takeback_state(search-ply - 1)?
   find_legal_moves(movelist, gt);
 }
 
-}
-// namespace C2_chess
+} // namespace C2_chess
 

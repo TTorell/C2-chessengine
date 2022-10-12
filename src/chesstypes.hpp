@@ -48,6 +48,7 @@ const auto use_max_search_depth = true;
 const auto on_same_line = true;
 const auto on_separate_lines = false;
 const auto xray_threats_through_king_allowed = true;
+const auto no_xray_threats_through_king = false;
 
 
 // It's important that the four promotion-piecetypes

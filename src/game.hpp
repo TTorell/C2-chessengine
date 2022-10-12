@@ -60,6 +60,8 @@ class Game
     void save() const;
     Color get_side_to_move() const;
     uint64_t get_hash_tag() const;
+    uint8_t get_castling_rights() const;
+    uint8_t get_half_move_counter() const;
     float get_material_diff() const;
     Playertype get_playertype(const Color& side) const;
     History_state get_game_history_state()

@@ -101,6 +101,16 @@ float Game::get_material_diff() const
   return _chessboard.get_material_diff();
 }
 
+uint8_t Game::get_castling_rights() const
+{
+  return _chessboard.get_castling_rights();
+}
+
+uint8_t Game::get_half_move_counter() const
+{
+  return _chessboard.get_half_move_counter();
+}
+
 Playertype Game::get_playertype(const Color& side) const
 {
   return _player_type[index(side)];
