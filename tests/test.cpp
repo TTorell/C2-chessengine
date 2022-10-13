@@ -52,6 +52,52 @@ std::string get_FEN_test_position(unsigned int n)
   return "";
 }
 
+void make_and_takeback_move(Game& game, const std::string& uci_move)
+{
+  game.write_chessboard(std::cout, Color::White);
+  auto& bwu = game.get_chessboard();
+  auto saved_hash_tag = bwu.get_hash_tag();
+  auto saved_side_to_move = bwu.get_side_to_move();
+  auto saved_move_number = bwu.get_move_number();
+  auto saved_castling_rights = bwu.get_castling_rights();
+  auto saved_half_move_counter = bwu.get_half_move_counter();
+  auto saved_has_castled_0 = bwu.has_castled(Color::White);
+  auto saved_has_castled_1 = bwu.has_castled(Color::Black);
+  auto saved_ep_square = bwu.get_ep_square();
+  auto saved_material_diff = bwu.get_material_diff();
+  auto saved_latest_move = bwu.get_latest_move();
+  auto saved_all_pieces = bwu.get_all_pieces();
+  auto saved_white_pieces = bwu.get_white_pieces();
+  auto saved_black_pieces = bwu.get_black_pieces();
+  auto saved_own = bwu.get_own();
+  auto saved_other = bwu.get_other();
+
+  game.make_move(uci_move);
+  game.write_chessboard(std::cout, Color::White);
+
+  game.takeback_latest_move();
+  game.write_chessboard(std::cout, Color::White);
+
+  REQUIRE(game.get_castling_rights() == saved_castling_rights);
+  REQUIRE(game.get_material_diff() == saved_material_diff);
+
+  REQUIRE(bwu.get_hash_tag() == saved_hash_tag);
+  REQUIRE(bwu.get_side_to_move()== saved_side_to_move);
+  REQUIRE(bwu.get_move_number()== saved_move_number);
+  REQUIRE(bwu.get_castling_rights()== saved_castling_rights);
+  REQUIRE(bwu.get_half_move_counter()== saved_half_move_counter);
+  REQUIRE(bwu.has_castled(Color::White)== saved_has_castled_0);
+  REQUIRE(bwu.has_castled(Color::Black)== saved_has_castled_1);
+  REQUIRE(bwu.get_ep_square()== saved_ep_square);
+  REQUIRE(bwu.get_material_diff()== saved_material_diff);
+  REQUIRE(bwu.get_latest_move()== saved_latest_move);
+  REQUIRE(bwu.get_all_pieces()== saved_all_pieces);
+  REQUIRE(bwu.get_white_pieces()== saved_white_pieces);
+  REQUIRE(bwu.get_black_pieces()== saved_black_pieces);
+  REQUIRE(bwu.get_own()== saved_own);
+  REQUIRE(bwu.get_other()== saved_other);
+}
+
 } // End of fileprivate namespace
 
 TEST_CASE("perft_test")
@@ -981,104 +1027,32 @@ TEST_CASE("takeback_promotion")
 
   SECTION("Queen promotion on empty square")
   {
-    game.write_chessboard(std::cout, Color::White);
-    auto saved_hash_tag = game.get_hash_tag();
-    auto saved_material_diff = game.get_material_diff();
-    game.make_move("g7g8q");
-    game.write_chessboard(std::cout, Color::White);
-    auto material_diff = game.get_material_diff();
-    REQUIRE(is_close(material_diff, saved_material_diff + queen_value - pawn_value));
-    game.takeback_latest_move();
-    game.write_chessboard(std::cout, Color::White);
-    auto hash_tag = game.get_hash_tag();
-    material_diff = game.get_material_diff();
-    REQUIRE(material_diff == saved_material_diff);
-    REQUIRE(hash_tag == saved_hash_tag);
+    make_and_takeback_move(game, "g7g8q");
   }
 
   SECTION("Bishop promotion on empty square")
   {
-    game.write_chessboard(std::cout, Color::White);
-    auto saved_hash_tag = game.get_hash_tag();
-    auto saved_material_diff = game.get_material_diff();
-    game.make_move("g7g8b");
-    game.write_chessboard(std::cout, Color::White);
-    auto material_diff = game.get_material_diff();
-    REQUIRE(is_close(material_diff, saved_material_diff + bishop_value - pawn_value));
-    game.takeback_latest_move();
-    game.write_chessboard(std::cout, Color::White);
-    auto hash_tag = game.get_hash_tag();
-    material_diff = game.get_material_diff();
-    REQUIRE(material_diff == saved_material_diff);
-    REQUIRE(hash_tag == saved_hash_tag);
+    make_and_takeback_move(game, "g7g8b");
   }
 
   SECTION("Knight promotion taking a Queen")
   {
-    game.write_chessboard(std::cout, Color::White);
-    auto saved_hash_tag = game.get_hash_tag();
-    auto saved_material_diff = game.get_material_diff();
-    game.make_move("g7h8n");
-    game.write_chessboard(std::cout, Color::White);
-    auto material_diff = game.get_material_diff();
-    REQUIRE(is_close(material_diff, saved_material_diff + knight_value - pawn_value + queen_value));
-    game.takeback_latest_move();
-    game.write_chessboard(std::cout, Color::White);
-    auto hash_tag = game.get_hash_tag();
-    material_diff = game.get_material_diff();
-    REQUIRE(material_diff == saved_material_diff);
-    REQUIRE(hash_tag == saved_hash_tag);
+    make_and_takeback_move(game, "g7h8n");
   }
 
   SECTION("Rook promotion taking a rook")
   {
-    game.write_chessboard(std::cout, Color::White);
-    auto saved_hash_tag = game.get_hash_tag();
-    auto saved_material_diff = game.get_material_diff();
-    game.make_move("g7f8r");
-    game.write_chessboard(std::cout, Color::White);
-    auto material_diff = game.get_material_diff();
-    REQUIRE(is_close(material_diff, saved_material_diff + rook_value - pawn_value + rook_value));
-    game.takeback_latest_move();
-    game.write_chessboard(std::cout, Color::White);
-    auto hash_tag = game.get_hash_tag();
-    material_diff = game.get_material_diff();
-    REQUIRE(material_diff == saved_material_diff);
-    REQUIRE(hash_tag == saved_hash_tag);
+    make_and_takeback_move(game, "g7f8r");
   }
 
   SECTION("Bishop promotion taking a knight")
   {
-    game.write_chessboard(std::cout, Color::White);
-    auto saved_hash_tag = game.get_hash_tag();
-    auto saved_material_diff = game.get_material_diff();
-    game.make_move("c7b8b");
-    game.write_chessboard(std::cout, Color::White);
-    auto material_diff = game.get_material_diff();
-    REQUIRE(is_close(material_diff, saved_material_diff + bishop_value - pawn_value + knight_value));
-    game.takeback_latest_move();
-    game.write_chessboard(std::cout, Color::White);
-    auto hash_tag = game.get_hash_tag();
-    material_diff = game.get_material_diff();
-    REQUIRE(material_diff == saved_material_diff);
-    REQUIRE(hash_tag == saved_hash_tag);
+    make_and_takeback_move(game, "c7b8q");
   }
 
   SECTION("Queen promotion taking a bishop")
   {
-    game.write_chessboard(std::cout, Color::White);
-    auto saved_hash_tag = game.get_hash_tag();
-    auto saved_material_diff = game.get_material_diff();
-    game.make_move("c7d8q");
-    game.write_chessboard(std::cout, Color::White);
-    auto material_diff = game.get_material_diff();
-    REQUIRE(is_close(material_diff, saved_material_diff + queen_value - pawn_value + bishop_value));
-    game.takeback_latest_move();
-    game.write_chessboard(std::cout, Color::White);
-    auto hash_tag = game.get_hash_tag();
-    material_diff = game.get_material_diff();
-    REQUIRE(material_diff == saved_material_diff);
-    REQUIRE(hash_tag == saved_hash_tag);
+    make_and_takeback_move(game, "c7d8q");
   }
 }
 
@@ -1094,22 +1068,7 @@ TEST_CASE("takeback_en_passant")
 
   SECTION("d5xe6_ep")
   {
-    game.write_chessboard(std::cout, Color::White);
-    auto saved_hash_tag = game.get_hash_tag();
-    auto saved_material_diff = game.get_material_diff();
-    auto saved_castling_rights = game.get_castling_rights();
-    auto saved_half_move_counter = game.get_half_move_counter();
-
-    game.make_move("d5e6");
-    game.write_chessboard(std::cout, Color::White);
-    REQUIRE(is_close(game.get_material_diff(), saved_material_diff + pawn_value));
-
-    game.takeback_latest_move();
-    game.write_chessboard(std::cout, Color::White);
-    REQUIRE(game.get_castling_rights() == saved_castling_rights);
-    REQUIRE(game.get_material_diff() == saved_material_diff);
-    REQUIRE(game.get_hash_tag() == saved_hash_tag);
-    REQUIRE(game.get_half_move_counter() == saved_half_move_counter);
+    make_and_takeback_move(game, "d5e6");
   }
 }
 
@@ -1125,48 +1084,33 @@ TEST_CASE("takeback_castling")
 
   SECTION("short castling")
   {
-    game.write_chessboard(std::cout, Color::White);
-    auto saved_hash_tag = game.get_hash_tag();
-    auto saved_material_diff = game.get_material_diff();
-    auto saved_castling_rights = game.get_castling_rights();
-    REQUIRE(saved_castling_rights == castling_rights_all);
-
-    game.make_move("e1g1");
-    game.write_chessboard(std::cout, Color::White);
-
-    REQUIRE(game.get_castling_rights() == castling_rights_B);
-    REQUIRE(is_close(game.get_material_diff(), saved_material_diff));
-
-    game.takeback_latest_move();
-    game.write_chessboard(std::cout, Color::White);
-
-    REQUIRE(game.get_castling_rights() == saved_castling_rights);
-    REQUIRE(game.get_material_diff() == saved_material_diff);
-    REQUIRE(game.get_hash_tag() == saved_hash_tag);
+    make_and_takeback_move(game, "e1g1");
   }
 
   SECTION("long castling")
   {
-    game.write_chessboard(std::cout, Color::White);
-    auto saved_hash_tag = game.get_hash_tag();
-    auto saved_material_diff = game.get_material_diff();
-    auto saved_castling_rights = game.get_castling_rights();
-    auto saved_half_move_counter = game.get_half_move_counter();
-    REQUIRE(saved_castling_rights == castling_rights_all);
+    make_and_takeback_move(game, "e1c1");
+  }
+}
 
-    game.make_move("e1c1");
-    game.write_chessboard(std::cout, Color::White);
+TEST_CASE("takeback_normal_move")
+{
+  logfile << "TEST STARTED takeback_normal" << "\n";
+  Config_params config_params;
+  Game game(config_params);
+  game.init();
+  std::string FEN_string = get_FEN_test_position(97);
+  game.read_position_FEN(FEN_string);
+  game.init();
 
-    REQUIRE(game.get_castling_rights() == castling_rights_B);
-    REQUIRE(is_close(game.get_material_diff(), saved_material_diff));
+  SECTION("pawn_move")
+  {
+    make_and_takeback_move(game, "e2e3");
+  }
 
-    game.takeback_latest_move();
-    game.write_chessboard(std::cout, Color::White);
-
-    REQUIRE(game.get_castling_rights() == saved_castling_rights);
-    REQUIRE(game.get_material_diff() == saved_material_diff);
-    REQUIRE(game.get_hash_tag() == saved_hash_tag);
-    REQUIRE(game.get_half_move_counter() == saved_half_move_counter);
+  SECTION("long castling")
+  {
+    make_and_takeback_move(game, "d2d4");
   }
 }
 

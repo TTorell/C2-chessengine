@@ -38,7 +38,6 @@ class Bitboard
     static struct Takeback_element takeback_list[];
     static std::atomic<bool> time_left;
 
-
     uint64_t _hash_tag;
     Color _side_to_move = Color::White;
     uint16_t _move_number;
@@ -64,12 +63,7 @@ class Bitboard
 
     inline void sort_moves(list_ref movelist) const;
 
-    inline void add_move(list_ref movelist,
-                         Piecetype p_type,
-                         uint16_t move_props,
-                         uint64_t from_square,
-                         uint64_t to_square,
-                         Piecetype promotion_p_type = Piecetype::Queen) const;
+    inline void add_move(list_ref movelist, Piecetype p_type, uint16_t move_props, uint64_t from_square, uint64_t to_square, Piecetype promotion_p_type = Piecetype::Queen) const;
 
     bool is_in_movelist(list_ref movelist, const Bitmove& m) const;
 
@@ -137,17 +131,13 @@ class Bitboard
     // ### Protected methods for making a move ###
     // ---------------------------------------
 
-    inline void add_promotion_piece(Piecetype p_type);
-
     //inline void touch_piece(const uint64_t square, const Color color);
 
     inline void remove_taken_piece(const uint64_t square, const Color color);
 
     //inline void remove_pawn(const uint64_t square, const Color color);
 
-    inline void move_piece(uint64_t from_square,
-                           uint64_t to_square,
-                           Piecetype p_type);
+    inline void move_piece(uint64_t from_square, uint64_t to_square, Piecetype p_type);
 
     inline void remove_castling_right(uint8_t cr);
 
@@ -165,13 +155,17 @@ class Bitboard
 
     inline void update_state_after_king_move(const Bitmove& m);
 
-    void takeback_promotion(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_t);
+    void takeback_promotion(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_type);
 
     void takeback_en_passant(const Bitmove& m, const Color moving_side);
 
     void takeback_castling(const Bitmove& m, const Color moving_side);
 
-    void takeback_from_state(Takeback_state& state);
+    void takeback_normal_move(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_type);
+
+    void save_in_takeback_state(Takeback_state& tb_state, const Piecetype taken_piece_type) const;
+
+    void takeback_from_state(const Takeback_state& state);
 
     // ### Protected methods for searching for the best move ###
     // ---------------------------------------------------------
@@ -239,11 +233,7 @@ class Bitboard
     // This make_move() doesn't require a generated movelist.
     void make_move(list_ref next_movelist, const Bitmove& m, Takeback_state& tb_state, Gentype gt = Gentype::All, bool update_history = true);
 
-    void takeback_latest_move(list_ref movelist,
-                        const Bitmove& m,
-                        const Gentype gt,
-                        const Takeback_state& state,
-                        const bool takeback_from_history = true);
+    void takeback_latest_move(list_ref movelist, const Gentype gt, const Takeback_state& state, const bool takeback_from_history = true);
 
     void take_back_latest_move();
 
@@ -339,12 +329,12 @@ class Bitboard
 
     void set_half_move_counter(uint8_t half_move_counter);
 
-    uint8_t get_half_move_counter() const
+    inline uint8_t get_half_move_counter() const
     {
       return _half_move_counter;
     }
 
-    Color get_side_to_move() const
+    inline Color get_side_to_move() const
     {
       return _side_to_move;
     }
@@ -396,7 +386,7 @@ class Bitboard
     std::ostream& write_piece_diagram_style(std::ostream& os, C2_chess::Piecetype p_type, C2_chess::Color side) const;
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
     std::ostream& write(std::ostream& os, const Color from_perspective) const;
-    std::ostream& write_movelist( const list_ref movelist, std::ostream& os, bool same_line = false) const;
+    std::ostream& write_movelist(const list_ref movelist, std::ostream& os, bool same_line = false) const;
     Shared_ostream& write_search_info(Shared_ostream& logfile) const;
 
     void clear_search_info();

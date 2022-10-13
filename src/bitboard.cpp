@@ -728,18 +728,25 @@ Shared_ostream& Bitboard::write_search_info(Shared_ostream& logfile) const
   return logfile;
 }
 
-void Bitboard::takeback_from_state(Takeback_state& state)
+void Bitboard::takeback_from_state(const Takeback_state& tb_state)
 {
-  _hash_tag = state._hash_tag;
-  _castling_rights = state._castling_rights;
-  _half_move_counter = state._half_move_counter;
-  _side_to_move = state._side_to_move;
-  _move_number = state._move_number;
-  _has_castled[0] = state._has_castled_0;
-  _has_castled[1] = state._has_castled_1;
-  _ep_square = state._ep_square;
-  _material_diff = state._material_diff;
-  _latest_move = state._latest_move;
+  _hash_tag = tb_state._hash_tag;
+  _castling_rights = tb_state._castling_rights;
+  _half_move_counter = tb_state._half_move_counter;
+  _has_castled[index(Color::White)] = tb_state._has_castled_w;
+  _has_castled[index(Color::Black)] = tb_state._has_castled_b;
+  _latest_move = tb_state._latest_move;
+}
+
+void Bitboard::save_in_takeback_state(Takeback_state& tb_state, const Piecetype taken_piece_type) const
+{
+  tb_state._taken_piece_type = taken_piece_type;
+  tb_state._hash_tag = _hash_tag;
+  tb_state._castling_rights = _castling_rights;
+  tb_state._half_move_counter = _half_move_counter;
+  tb_state._has_castled_w = _has_castled[index(Color::White)];
+  tb_state._has_castled_b = _has_castled[index(Color::Black)];
+  tb_state._latest_move = _latest_move;
 }
 
 float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply)
@@ -753,12 +760,8 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
                                        _hash_tag,
                                        _castling_rights,
                                        _half_move_counter,
-                                       _side_to_move,
-                                       _move_number,
                                        _has_castled[0],
                                        _has_castled[1],
-                                       _ep_square,
-                                       _material_diff,
                                        _latest_move,
                                        Piecetype::Undefined};
 
@@ -854,12 +857,8 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
                                        _hash_tag,
                                        _castling_rights,
                                        _half_move_counter,
-                                       _side_to_move,
-                                       _move_number,
                                        _has_castled[0],
                                        _has_castled[1],
-                                       _ep_square,
-                                       _material_diff,
                                        _latest_move,
                                        Piecetype::Undefined};
 

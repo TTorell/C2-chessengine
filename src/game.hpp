@@ -68,6 +68,10 @@ class Game
     {
       return _chessboard.get_history_state();
     }
+    Bitboard_with_utils& get_chessboard()
+    {
+      return _chessboard;
+    }
     void set_move_log_col_to_start(Color c);
     void set_castling_state(const Castling_state& cs);
     void set_en_passant_square(int file, int rank);

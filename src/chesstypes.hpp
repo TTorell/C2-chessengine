@@ -50,7 +50,6 @@ const auto on_separate_lines = false;
 const auto xray_threats_through_king_allowed = true;
 const auto no_xray_threats_through_king = false;
 
-
 // It's important that the four promotion-piecetypes
 // Comes first and have index 0 to 3 (00, 01, 10 and 11),
 // because they are represented by only two bits inside
@@ -66,7 +65,7 @@ enum class Piecetype
   Undefined
 };
 
-const float piece_values[7] = {9.0F, 5.0F, 3.0F, 3.0F, 1.0F, 0.0F, 0.0F };
+const float piece_values[7] = {9.0F, 5.0F, 3.0F, 3.0F, 1.0F, 0.0F, 0.0F};
 
 const auto pawn_value = piece_values[index(Piecetype::Pawn)];
 const auto queen_value = piece_values[index(Piecetype::Queen)];
@@ -151,6 +150,25 @@ struct Bitpieces
     uint64_t Pawns;
     uint64_t pieces;
 
+    bool operator ==(const Bitpieces& from) const
+    {
+      if (King != from.King)
+        return false;
+      if (Queens  != from.Queens)
+        return false;
+      if (Rooks  != from.Rooks)
+        return false;
+      if (Bishops  != from.Bishops)
+        return false;
+      if (Knights  != from.Knights)
+        return false;
+      if (Pawns  != from.Pawns)
+        return false;
+      if (pieces  != from.pieces)
+        return false;
+      return true;
+    }
+
     void assemble_pieces()
     {
       pieces = King | Queens | Rooks | Bishops | Knights | Pawns;
@@ -183,28 +201,24 @@ struct Bitmove
     float _evaluation;
 
     Bitmove() :
-        _move(0),
-        _evaluation(0.0)
+        _move(0), _evaluation(0.0)
     {
     }
 
     explicit Bitmove(uint32_t move) :
-        _move(move),
-        _evaluation(0.0)
+        _move(move), _evaluation(0.0)
     {
     }
 
     Bitmove(Piecetype p_type, // bit 25-32
-            uint16_t move_props, // bit 15-24
-            uint64_t from_square, // bit 7-12
-            uint64_t to_square, // bit 1-6
-            Piecetype promotion_pt = Piecetype::Queen) : // bit 13-14
-        _move(0),
-        _evaluation(0.0)
+        uint16_t move_props, // bit 15-24
+        uint64_t from_square, // bit 7-12
+        uint64_t to_square, // bit 1-6
+        Piecetype promotion_pt = Piecetype::Queen) : // bit 13-14
+        _move(0), _evaluation(0.0)
     {
       _move = (static_cast<uint32_t>(index(p_type)) << 24) | (move_props << 14) | static_cast<uint32_t>(index(promotion_pt) << 12)
-              | static_cast<uint32_t>(bit_idx(from_square)) << 6
-              | static_cast<uint32_t>(bit_idx(to_square));
+              | static_cast<uint32_t>(bit_idx(from_square)) << 6 | static_cast<uint32_t>(bit_idx(to_square));
     }
 
     bool operator==(const Bitmove& m) const
@@ -276,18 +290,14 @@ using list_t = std::deque<Bitmove>;
 
 struct Takeback_state
 {
-    list_ptr _movelist = new list_t{};
+    list_ptr _movelist = new list_t {};
     uint64_t _hash_tag;
     uint8_t _castling_rights;
     uint8_t _half_move_counter;
-    Color _side_to_move = Color::White;
-    uint16_t _move_number;
-    bool _has_castled_0;
-    bool _has_castled_1;
-    uint64_t _ep_square = zero;
-    float _material_diff;
+    bool _has_castled_w;
+    bool _has_castled_b;
     Bitmove _latest_move;
-    Piecetype _taken_piece;
+    Piecetype _taken_piece_type;
 };
 
 struct Takeback_element
