@@ -30,6 +30,11 @@ class Bitboard_with_utils: public Bitboard
 
   public:
 
+    Game_history& get_game_history()
+    {
+      return Bitboard::history;
+    }
+
     uint8_t get_castling_rights() const
     {
       return _castling_rights;

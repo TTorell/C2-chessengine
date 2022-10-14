@@ -297,8 +297,8 @@ void Bitboard::make_move(list_ref next_movelist, const Bitmove& m, Takeback_stat
     remove_taken_piece(to_square, other_color(_side_to_move));
   move_piece(from_square, to_square, m.piece_type()); // updates hash-tag
 
-// OK we have moved the piece, now we must
-// look at some special cases.
+  // OK we have moved the piece, now we must
+  // look at some special cases.
   if (m.piece_type() == Piecetype::King)
   {
     update_state_after_king_move(m);

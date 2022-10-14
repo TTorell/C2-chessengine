@@ -71,6 +71,7 @@ void make_and_takeback_move(Game& game, const std::string& uci_move)
   auto saved_black_pieces = bwu.get_black_pieces();
   auto saved_own = bwu.get_own();
   auto saved_other = bwu.get_other();
+  auto saved_game_history = bwu.get_game_history();
 
   game.make_move(uci_move);
   game.write_chessboard(std::cout, Color::White);
@@ -96,6 +97,7 @@ void make_and_takeback_move(Game& game, const std::string& uci_move)
   REQUIRE(bwu.get_black_pieces()== saved_black_pieces);
   REQUIRE(bwu.get_own()== saved_own);
   REQUIRE(bwu.get_other()== saved_other);
+  REQUIRE(bwu.get_game_history() == saved_game_history);
 }
 
 } // End of fileprivate namespace
