@@ -34,7 +34,7 @@ Bitboard Bitboard::search_boards[N_SEARCH_BOARDS_DEFAULT];
 Game_history Bitboard::history;
 
 Bitboard::Bitboard() :
-    _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _latest_move(), _checkers(zero),
+    _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _latest_move(), _taken_piece_type(Piecetype::Undefined), _checkers(zero),
     _pinners(zero), _pinned_pieces(zero), _all_pieces(zero), _white_pieces(), _black_pieces(), _own(nullptr), _other(nullptr), _half_move_counter(0)
 {
   //std::cerr << "BitBoard Default constructor" << std::endl;
@@ -44,8 +44,8 @@ Bitboard::Bitboard() :
 
 Bitboard::Bitboard(const Bitboard& bb) :
     _hash_tag(bb._hash_tag), _side_to_move(bb._side_to_move), _move_number(bb._move_number), _castling_rights(bb._castling_rights), _ep_square(bb._ep_square),
-    _material_diff(bb._material_diff), _latest_move(bb._latest_move), _checkers(bb._checkers), _pinners(bb._pinners), _pinned_pieces(bb._pinned_pieces), _all_pieces(bb._all_pieces),
-    _white_pieces(bb._white_pieces), _black_pieces(bb._black_pieces), _own(nullptr), _other(nullptr), _half_move_counter(bb._half_move_counter)
+    _material_diff(bb._material_diff), _latest_move(bb._latest_move), _taken_piece_type(bb._taken_piece_type), _checkers(bb._checkers), _pinners(bb._pinners), _pinned_pieces(bb._pinned_pieces),
+    _all_pieces(bb._all_pieces), _white_pieces(bb._white_pieces), _black_pieces(bb._black_pieces), _own(nullptr), _other(nullptr), _half_move_counter(bb._half_move_counter)
 {
   //std::cerr << "BitBoard Copy constructor" << std::endl;
   if (_side_to_move == Color::White)
@@ -82,7 +82,7 @@ Bitboard& Bitboard::operator=(const Bitboard& from)
     _material_diff = from._material_diff;
     _latest_move = from._latest_move;
     _half_move_counter = from._half_move_counter;
-
+    _taken_piece_type = from._taken_piece_type;
     // Temporary variables. There's No need to copy them
     // (only used in move generation).
     //_checkers = from._checkers;
@@ -140,15 +140,19 @@ void Bitboard::init_board_hash_tag()
     _hash_tag ^= transposition_table._toggle_side_to_move;
 }
 
-void Bitboard::init_piece_state()
+inline void Bitboard::assemble_pieces()
 {
-  //TODO: REMOVE movelist.clear();
-  _checkers = zero;
-  _pinners = zero;
-  _pinned_pieces = zero;
   _own->assemble_pieces();
   _other->assemble_pieces();
   _all_pieces = _own->pieces | _other->pieces;
+}
+
+inline void Bitboard::init_piece_state()
+{
+  _checkers = zero;
+  _pinners = zero;
+  _pinned_pieces = zero;
+  assemble_pieces();
 }
 
 void Bitboard::init()
@@ -157,7 +161,6 @@ void Bitboard::init()
   history.clear();
   add_position_to_game_history();
   init_piece_state();
-  //find_legal_moves(*get_movelist(0), Gentype::All);
 }
 
 // Initializes the Bitboard position from a text string (Forsyth-Edwards Notation)
@@ -686,13 +689,14 @@ float Bitboard::get_material_diff() const
   return _material_diff;
 }
 
-unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth) const
+unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth)
 {
-  list_ptr next_movelist;
-  list_ptr movelist = get_movelist(search_ply);
+  auto& tb_state = get_tb_state(search_ply);
 
   search_ply++;
-  next_movelist = get_movelist(search_ply);
+
+  auto& next_tb_state = get_tb_state(search_ply);
+
   // Perft-test only counts leaf-nodes on highest depth, not leaf-nodes which happens
   // on lower depth because of mate or stalemate.
   if (search_ply >= max_search_depth)
@@ -701,15 +705,12 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth) 
   }
 
   // Collect the best value from all possible moves
-  for (uint8_t i = 0; i < static_cast<uint8_t>(movelist->size()); i++)
+  for (size_t i = 0; i < tb_state.movelist->size(); i++)
   {
-    // Copy current board into the preallocated board for this search_ply.
-    Bitboard::search_boards[search_ply] = *this;
-
-    // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    search_boards[search_ply].make_move(*next_movelist, (*movelist)[i],get_tb_state(0),  Gentype::All);
-    search_boards[search_ply].perft_test(search_ply, max_search_depth);
-    movelist = get_movelist(search_ply - 1);
+    // Make the selected move and ask min() to evaluate it further.
+    make_move(*next_tb_state.movelist, (*tb_state.movelist)[i], tb_state, Gentype::All);
+    perft_test(search_ply, max_search_depth);
+    takeback_latest_move(tb_state);
   }
 
   return search_info.leaf_node_counter;
@@ -730,23 +731,26 @@ Shared_ostream& Bitboard::write_search_info(Shared_ostream& logfile) const
 
 void Bitboard::takeback_from_state(const Takeback_state& tb_state)
 {
-  _hash_tag = tb_state._hash_tag;
-  _castling_rights = tb_state._castling_rights;
-  _half_move_counter = tb_state._half_move_counter;
-  _has_castled[index(Color::White)] = tb_state._has_castled_w;
-  _has_castled[index(Color::Black)] = tb_state._has_castled_b;
-  _latest_move = tb_state._latest_move;
+  _hash_tag = tb_state.hash_tag;
+  _castling_rights = tb_state.castling_rights;
+  _half_move_counter = tb_state.half_move_counter;
+  _ep_square = tb_state.ep_square;
+  _has_castled[index(Color::White)] = tb_state.has_castled_w;
+  _has_castled[index(Color::Black)] = tb_state.has_castled_b;
+  _latest_move = tb_state.latest_move;
+  _taken_piece_type = tb_state.taken_piece_type;
 }
 
-void Bitboard::save_in_takeback_state(Takeback_state& tb_state, const Piecetype taken_piece_type) const
+void Bitboard::save_in_takeback_state(Takeback_state& tb_state) const
 {
-  tb_state._taken_piece_type = taken_piece_type;
-  tb_state._hash_tag = _hash_tag;
-  tb_state._castling_rights = _castling_rights;
-  tb_state._half_move_counter = _half_move_counter;
-  tb_state._has_castled_w = _has_castled[index(Color::White)];
-  tb_state._has_castled_b = _has_castled[index(Color::Black)];
-  tb_state._latest_move = _latest_move;
+  tb_state.hash_tag = _hash_tag;
+  tb_state.castling_rights = _castling_rights;
+  tb_state.half_move_counter = _half_move_counter;
+  tb_state.ep_square = _ep_square;
+  tb_state.has_castled_w = _has_castled[index(Color::White)];
+  tb_state.has_castled_b = _has_castled[index(Color::Black)];
+  tb_state.latest_move = _latest_move;
+  tb_state.taken_piece_type = _taken_piece_type;
 }
 
 float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply)
@@ -756,13 +760,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
   // Current quiescence-movelist
   list_ptr movelist = get_movelist_Q(search_ply);
   // TODO: s this right?
-  takeback_list[search_ply].state_Q = {get_movelist_Q(search_ply),
-                                       _hash_tag,
-                                       _castling_rights,
-                                       _half_move_counter,
-                                       _has_castled[0],
-                                       _has_castled[1],
-                                       _latest_move,
+  takeback_list[search_ply].state_Q = {get_movelist_Q(search_ply), _hash_tag, _castling_rights, _half_move_counter, _ep_square, _has_castled[0], _has_castled[1], _latest_move,
                                        Piecetype::Undefined};
 
   search_info.node_counter++;
@@ -853,13 +851,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
 
   // Current movelist
   list_ptr movelist = get_movelist(search_ply);
-  takeback_list[search_ply].state_S = {get_movelist(search_ply),
-                                       _hash_tag,
-                                       _castling_rights,
-                                       _half_move_counter,
-                                       _has_castled[0],
-                                       _has_castled[1],
-                                       _latest_move,
+  takeback_list[search_ply].state_S = {get_movelist(search_ply), _hash_tag, _castling_rights, _half_move_counter, _ep_square, _has_castled[0], _has_castled[1], _latest_move,
                                        Piecetype::Undefined};
 
   // Next search_ply and next_movelist:

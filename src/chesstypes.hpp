@@ -290,14 +290,15 @@ using list_t = std::deque<Bitmove>;
 
 struct Takeback_state
 {
-    list_ptr _movelist = new list_t {};
-    uint64_t _hash_tag;
-    uint8_t _castling_rights;
-    uint8_t _half_move_counter;
-    bool _has_castled_w;
-    bool _has_castled_b;
-    Bitmove _latest_move;
-    Piecetype _taken_piece_type;
+    list_ptr movelist = new list_t {};
+    uint64_t hash_tag;
+    uint8_t castling_rights;
+    uint8_t half_move_counter;
+    uint64_t ep_square;
+    bool has_castled_w;
+    bool has_castled_b;
+    Bitmove latest_move;
+    Piecetype taken_piece_type;
 };
 
 struct Takeback_element

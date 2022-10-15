@@ -46,6 +46,7 @@ class Bitboard
     uint64_t _ep_square = zero;
     float _material_diff;
     Bitmove _latest_move;
+    Piecetype _taken_piece_type;
     uint64_t _checkers;
     uint64_t _pinners;
     uint64_t _pinned_pieces;
@@ -58,6 +59,7 @@ class Bitboard
 
     // ### Protected basic Bitboard_functions ###
     // ------------------------------------------
+    void assemble_pieces();
 
     void init_piece_state();
 
@@ -163,7 +165,7 @@ class Bitboard
 
     void takeback_normal_move(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_type);
 
-    void save_in_takeback_state(Takeback_state& tb_state, const Piecetype taken_piece_type) const;
+    void save_in_takeback_state(Takeback_state& tb_state) const;
 
     void takeback_from_state(const Takeback_state& state);
 
@@ -233,7 +235,7 @@ class Bitboard
     // This make_move() doesn't require a generated movelist.
     void make_move(list_ref next_movelist, const Bitmove& m, Takeback_state& tb_state, Gentype gt = Gentype::All, bool update_history = true);
 
-    void takeback_latest_move(list_ref movelist, const Gentype gt, const Takeback_state& state, const bool takeback_from_history = true);
+    void takeback_latest_move(const Takeback_state& state, const bool takeback_from_history = true);
 
     void take_back_latest_move();
 
@@ -341,12 +343,12 @@ class Bitboard
 
     inline list_ptr get_movelist(size_t idx) const
     {
-      return takeback_list[idx].state_S._movelist;
+      return takeback_list[idx].state_S.movelist;
     }
 
     inline list_ptr get_movelist_Q(size_t idx) const
     {
-      return takeback_list[idx].state_Q._movelist;
+      return takeback_list[idx].state_Q.movelist;
     }
 
     inline Takeback_state& get_tb_state(size_t idx) const
@@ -392,7 +394,7 @@ class Bitboard
     void clear_search_info();
     Search_info& get_search_info() const;
 
-    unsigned int perft_test(uint8_t search_ply, uint8_t max_search_plies) const;
+    unsigned int perft_test(uint8_t search_ply, uint8_t max_search_plies);
 
 };
 

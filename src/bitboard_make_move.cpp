@@ -45,7 +45,12 @@ Piecetype Bitboard::get_piece_type(uint64_t square) const
   {
     return Piecetype::King;
   }
-  std::cerr << "Error: Unknown Piecetype." << std::endl;
+//  std::cerr << to_binary_board(square) << std::endl;
+//  std::cerr << to_binary_board(_all_pieces) << std::endl;
+//  std::cerr << to_binary_board(pieces.Knights) << std::endl;
+//  std::cerr << to_binary_board(pieces.Pawns) << std::endl;
+//  std::cerr << to_binary_board(pieces.pieces) << std::endl;
+//  std::cerr << "Error: Unknown Piecetype." << std::endl;
   return Piecetype::Undefined;
 }
 
@@ -187,6 +192,8 @@ inline void Bitboard::set_ep_square(uint64_t ep_square)
 // adding or removing one piece from a square.
 void Bitboard::update_hash_tag(uint64_t square, Color p_color, Piecetype p_type)
 {
+  if (!std::has_single_bit(square))
+    std::cout << "ERROR" << std::endl;
   assert(std::has_single_bit(square));
   _hash_tag ^= transposition_table._random_table[bit_idx(square)][index(p_color)][index(p_type)];
 }
@@ -284,7 +291,9 @@ void Bitboard::make_move(list_ref next_movelist, const Bitmove& m, Takeback_stat
   uint64_t from_square = m.from();
 
   // Save some takeback values
-  save_in_takeback_state(tb_state, get_piece_type(to_square));
+  //std::cerr << m << std::endl;
+  save_in_takeback_state(tb_state);
+  _taken_piece_type = get_piece_type(m.to());
 
   // Clear _ep_square
   uint64_t tmp_ep_square = _ep_square;
@@ -485,7 +494,7 @@ void Bitboard::takeback_castling(const Bitmove& m, const Color moving_side)
 
 void Bitboard::take_back_latest_move()
 {
-  takeback_latest_move(*get_movelist(0), Gentype::All, takeback_list[0].state_S);
+  takeback_latest_move(takeback_list[0].state_S);
 }
 
 void Bitboard::takeback_normal_move(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_type)
@@ -541,10 +550,10 @@ void Bitboard::takeback_normal_move(const Bitmove& m, const Color moving_side, c
     }
   }
   auto material_diff_w = -piece_values[index(taken_piece_type)];
-  _material_diff += (moving_side == Color::White)? material_diff_w : -material_diff_w;
+  _material_diff += (moving_side == Color::White) ? material_diff_w : -material_diff_w;
 }
 
-void Bitboard::takeback_latest_move(list_ref movelist, Gentype gt, const Takeback_state& tb_state, const bool takeback_from_history)
+void Bitboard::takeback_latest_move(const Takeback_state& tb_state, const bool takeback_from_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
 
@@ -566,13 +575,13 @@ void Bitboard::takeback_latest_move(list_ref movelist, Gentype gt, const Takebac
   }
   else if (m.properties() & move_props_promotion)
   {
-    takeback_promotion(m, other_color(_side_to_move), tb_state._taken_piece_type);
+    takeback_promotion(m, other_color(_side_to_move), _taken_piece_type);
   }
   else
   {
-    takeback_normal_move(m, other_color(_side_to_move), tb_state._taken_piece_type);
+    takeback_normal_move(m, other_color(_side_to_move), _taken_piece_type);
   }
-
+  assemble_pieces();
   //  Set up the board for other player:
   update_side_to_move();
   if (_side_to_move == Color::Black)
@@ -583,14 +592,6 @@ void Bitboard::takeback_latest_move(list_ref movelist, Gentype gt, const Takebac
   }
 
   takeback_from_state(tb_state);
-  _hash_tag = tb_state._hash_tag;
-  _latest_move = tb_state._latest_move;
-  _castling_rights = tb_state._castling_rights;
-  _half_move_counter = tb_state._half_move_counter;
-  _has_castled[index(Color::White)] = tb_state._has_castled_w;
-  _has_castled[index(Color::Black)] = tb_state._has_castled_b;
-  // TODO: Can movelist be taken from takeback_state(search-ply - 1)?
-  find_legal_moves(movelist, gt);
 }
 
 } // namespace C2_chess

@@ -595,9 +595,9 @@ std::ostream& operator <<(std::ostream& os, const Takeback_element& element)
 {
   os << "---------------------" << std::endl;
   os << "Negamax:" << std::endl;
-  write_list(element.state_S._movelist, os, on_same_line);
+  write_list(element.state_S.movelist, os, on_same_line);
   os << "Quiescence:" << std::endl;
-  write_list(element.state_Q._movelist, os, on_same_line);
+  write_list(element.state_Q.movelist, os, on_same_line);
   os << "---------------------" << std::endl;
   return os;
 }
