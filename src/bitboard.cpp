@@ -669,7 +669,7 @@ void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
     TT_element& tte = transposition_table.find(bb._hash_tag);
     if (!tte.best_move.is_valid())
       break;
-    bb.make_move(movelist, tte.best_move, takeback_list[0].state_S, Gentype::All, dont_update_history);
+    bb.make_move(tte.best_move, get_tb_state(0), get_tb_state(0), Gentype::All, dont_update_history);
     pv_line.push_back(bb._latest_move);
   }
 }
@@ -708,7 +708,7 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth)
   for (size_t i = 0; i < tb_state.movelist->size(); i++)
   {
     // Make the selected move and ask min() to evaluate it further.
-    make_move(*next_tb_state.movelist, (*tb_state.movelist)[i], tb_state, Gentype::All);
+    make_move((*tb_state.movelist)[i], tb_state, next_tb_state, Gentype::All);
     perft_test(search_ply, max_search_depth);
     takeback_latest_move(tb_state);
   }
@@ -758,10 +758,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
   assert(beta > alpha);
 
   // Current quiescence-movelist
-  list_ptr movelist = get_movelist_Q(search_ply);
-  // TODO: s this right?
-  takeback_list[search_ply].state_Q = {get_movelist_Q(search_ply), _hash_tag, _castling_rights, _half_move_counter, _ep_square, _has_castled[0], _has_castled[1], _latest_move,
-                                       Piecetype::Undefined};
+  auto& tb_state = get_tb_state_Q(search_ply);
 
   search_info.node_counter++;
 
@@ -770,11 +767,10 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
     return 0.0;
   }
 
-  float score =
-      (_side_to_move == Color::White) ? evaluate_position(movelist->size() == 0, _side_to_move, search_ply, dont_evaluate_zero_moves) : -evaluate_position(
-          movelist->size() == 0, _side_to_move, search_ply, dont_evaluate_zero_moves);
+  auto score_w = evaluate_position(tb_state.movelist->size() == 0, _side_to_move, search_ply, dont_evaluate_zero_moves);
+  auto score = (_side_to_move == Color::White) ? score_w : -score_w;
 
-  if (movelist->size() == 0)
+  if (tb_state.movelist->size() == 0)
   {
     return score;
   }
@@ -791,31 +787,24 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
 
   search_ply++;
   // Get a pointer to next movelist
-  list_ptr next_movelist = get_movelist_Q(search_ply);
+  auto& next_tb_state = get_tb_state_Q(search_ply);
 
   float move_score = -infinity;
 
   // Collect the best value from all possible "capture-moves"
-  for (uint8_t i = 0; i < static_cast<uint8_t>(movelist->size()); i++)
+  for (std::size_t i = 0; i < tb_state.movelist->size(); i++)
   {
 
     if (search_ply > search_info.highest_search_ply)
       search_info.highest_search_ply = search_ply;
 
-    // Copy current board into the preallocated board for this search_ply.
-    Bitboard::search_boards[search_ply] = *this;
-
-    // Save history state for current position.
-    History_state saved_history_state = history.get_state();
-
     // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    search_boards[search_ply].make_move(*next_movelist, (*movelist)[i], get_tb_state_Q(search_ply), Gentype::Captures_and_Promotions);
+    make_move((*tb_state.movelist)[i], tb_state, next_tb_state, Gentype::Captures_and_Promotions);
     //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
-    move_score = -search_boards[search_ply].Quiesence_search(search_ply, -beta, -alpha, max_search_ply);
+    move_score = -Quiesence_search(search_ply, -beta, -alpha, max_search_ply);
 
     // Restore game history, state and local movelist to current position.
-    history.takeback_moves(saved_history_state);
-    takeback_from_state(takeback_list[search_ply - 1].state_Q);
+    takeback_latest_move(tb_state);
 
     // Pruning:
     if (move_score > alpha)
@@ -850,13 +839,11 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
   float move_score = -infinity; // Must be lower than lowest evaluation
 
   // Current movelist
-  list_ptr movelist = get_movelist(search_ply);
-  takeback_list[search_ply].state_S = {get_movelist(search_ply), _hash_tag, _castling_rights, _half_move_counter, _ep_square, _has_castled[0], _has_castled[1], _latest_move,
-                                       Piecetype::Undefined};
+  auto& tb_state = get_tb_state(search_ply);
 
   // Next search_ply and next_movelist:
   search_ply++;
-  list_ptr next_movelist = get_movelist(search_ply);
+  auto& next_tb_state = get_tb_state(search_ply);
 
   if (history.is_threefold_repetition())
   {
@@ -886,14 +873,14 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
 
   // If there are no possible moves, the evaluation will check for such things as
   // mate or stalemate which may happen before max_search_ply has been reached.
-  if (movelist->size() == 0)
+  if (tb_state.movelist->size() == 0)
   {
     // ---------------------------------------
     best_move = NO_MOVE;
     element.best_move = NO_MOVE;
     element.best_move._evaluation =
-        (_side_to_move == Color::White) ? evaluate_position(movelist->size() == 0, _side_to_move, search_ply) : -evaluate_position(movelist->size() == 0, _side_to_move,
-                                                                                                                                   search_ply);
+        (_side_to_move == Color::White) ? evaluate_position(tb_state.movelist->size() == 0, _side_to_move, search_ply) :
+            -evaluate_position(tb_state.movelist->size() == 0, _side_to_move, search_ply);
     element.search_ply = search_ply;
     // ---------------------------------------
     return element.best_move._evaluation;
@@ -911,7 +898,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     // counting, so we must subtract one in input parameters here.
     // We also have to generate the first movelist for the Qsearch.
     search_info.node_counter--;
-    find_legal_moves(*get_movelist_Q(search_ply - 1), Gentype::Captures_and_Promotions);
+    find_legal_moves(*get_tb_state_Q(search_ply - 1).movelist, Gentype::Captures_and_Promotions);
     element.best_move._evaluation = Quiesence_search(search_ply - 1, alpha, beta, N_SEARCH_BOARDS_DEFAULT);
     element.search_ply = search_ply;
     return element.best_move._evaluation;
@@ -919,23 +906,14 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
 
   Bitmove best_move_dummy;
   // Collect the best value from all possible moves
-  for (uint8_t i = 0; i < static_cast<uint8_t>(movelist->size()); i++)
+  for (size_t i = 0; i < tb_state.movelist->size(); i++)
   {
-    // Copy current board into the preallocated board for this search_ply.
-    Bitboard::search_boards[search_ply] = *this;
-
-    // Save history state for current position.
-    History_state saved_history_state = history.get_state();
-
-    // Make the selected move on the "ply-board" and ask min() to evaluate it further.
-    search_boards[search_ply].make_move(*next_movelist, (*movelist)[i], get_tb_state_Q(search_ply), Gentype::All);
-    //merge level_boards[search_ply].make_move((*_movelist)[i], (search_ply < max_search_ply)? Gentype::All:Gentype::Captures);
-    //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
-    move_score = -search_boards[search_ply].negamax_with_pruning(search_ply, -beta, -alpha, best_move_dummy, search_depth);
+    // Make the selected move and ask min() to evaluate it further.
+    make_move((*tb_state.movelist)[i], tb_state, next_tb_state, Gentype::All);
+    move_score = -negamax_with_pruning(search_ply, -beta, -alpha, best_move_dummy, search_depth);
 
     // Restore game history and state to current position.
-    history.takeback_moves(saved_history_state);
-    takeback_from_state(takeback_list[search_ply - 1].state_S);
+    takeback_latest_move(tb_state);
 
     // Pruning:
     if (move_score >= beta)
@@ -953,7 +931,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     {
       // Update alpha value.
       // We have found a better move.
-      best_move = (*movelist)[i];
+      best_move = (*tb_state.movelist)[i];
       best_move._evaluation = move_score;
       alpha = move_score;
     }

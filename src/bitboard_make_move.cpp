@@ -276,22 +276,22 @@ inline void Bitboard::update_state_after_king_move(const Bitmove& m)
   }
 }
 
-void Bitboard::make_move(list_ref movelist, uint8_t i, Takeback_state& tb_state, Gentype gt, bool add_to_history)
+void Bitboard::make_move(const size_t i, Takeback_state& tb_state, Takeback_state& next_tb_state, const Gentype gt, const bool add_to_history)
 {
-  assert(i < movelist.size());
-  make_move(movelist, movelist[i], tb_state, gt, add_to_history);
+  assert(i < tb_state.movelist->size());
+  make_move((*tb_state.movelist)[i], tb_state, next_tb_state, gt, add_to_history);
 }
 
 // The move must be valid, but doesn't have to be in _movelist.
 // _movelist may be empty, not generated yet.
-void Bitboard::make_move(list_ref next_movelist, const Bitmove& m, Takeback_state& tb_state, Gentype gt, bool add_to_history)
+void Bitboard::make_move(const Bitmove& m, Takeback_state& tb_state, Takeback_state& next_tb_state, const Gentype gt, const bool add_to_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
   uint64_t to_square = m.to();
   uint64_t from_square = m.from();
 
   // Save some takeback values
-  //std::cerr << m << std::endl;
+  std::cerr << m << std::endl;
   save_in_takeback_state(tb_state);
   _taken_piece_type = get_piece_type(m.to());
 
@@ -401,7 +401,7 @@ void Bitboard::make_move(list_ref next_movelist, const Bitmove& m, Takeback_stat
   {
     history.add_position(_hash_tag);
   }
-  find_legal_moves(next_movelist, gt);
+  find_legal_moves(*next_tb_state.movelist, gt);
 }
 
 void Bitboard::takeback_en_passant(const Bitmove& m, const Color moving_side)
@@ -492,9 +492,9 @@ void Bitboard::takeback_castling(const Bitmove& m, const Color moving_side)
   // No change in material_diff.
 }
 
-void Bitboard::take_back_latest_move()
+void Bitboard::takeback_latest_move()
 {
-  takeback_latest_move(takeback_list[0].state_S);
+  takeback_latest_move(get_tb_state(0));
 }
 
 void Bitboard::takeback_normal_move(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_type)

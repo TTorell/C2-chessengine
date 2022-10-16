@@ -323,15 +323,15 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   if (best_move.is_valid())
   {
     //TODO: Is this right?
-    _chessboard.make_move(*_chessboard.get_movelist(0), best_move, _chessboard.get_tb_state(0));
-    _move_log.push_back(_chessboard.last_move());
+    _chessboard.make_move(best_move, _chessboard.get_tb_state(0), _chessboard.get_tb_state(0), Gentype::All);
+    _move_log.push_back(_chessboard.get_latest_move());
   }
   //TODO: Is this right?
   actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
 
   // Stop possibly running timer by setting time_left to false.
   _chessboard.set_time_left(false);
-  return _chessboard.last_move();
+  return _chessboard.get_latest_move();
 }
 
 Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_params, const bool apply_max_search_depth)
@@ -399,8 +399,8 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
     Bitmove best_move = find_best_move(_score, max_search_depth);
     if (best_move.is_valid())
     {
-      _chessboard.make_move(*_chessboard.get_movelist(0), best_move, _chessboard.get_tb_state(0));
-      _move_log.push_back(_chessboard.last_move());
+      _chessboard.make_move(best_move, _chessboard.get_tb_state(0), _chessboard.get_tb_state(0), Gentype::All);
+      _move_log.push_back(_chessboard.get_latest_move());
     }
   }
   actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
@@ -408,7 +408,7 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
   // Stop possibly running timer by setting time_left to false.
   _chessboard.set_time_left(false);
 
-  return _chessboard.last_move();
+  return _chessboard.get_latest_move();
 }
 
 bool Game::has_time_left()
@@ -483,8 +483,8 @@ void Game::figure_out_last_move(const Bitboard& new_position)
       start_new_game();
       return;
     }
-    _chessboard.make_move(*_chessboard.get_movelist(0), m, _chessboard.get_tb_state(0));
-    _move_log.push_back(_chessboard.last_move());
+    _chessboard.make_move(m, _chessboard.get_tb_state(0), _chessboard.get_tb_state(0), Gentype::All);
+    _move_log.push_back(_chessboard.get_last_move());
     actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
   }
 }
@@ -585,12 +585,12 @@ int Game::read_position_FEN(const std::string& FEN_string)
 void Game::make_move(const std::string& move)
 {
   _chessboard.make_UCI_move(move);
-  _move_log.push_back(_chessboard.last_move());
+  _move_log.push_back(_chessboard.get_latest_move());
 }
 
 void Game::takeback_latest_move()
 {
-  _chessboard.take_back_latest_move();
+  _chessboard.takeback_latest_move();
   _move_log.pop();
 }
 

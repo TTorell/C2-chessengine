@@ -225,7 +225,7 @@ class Bitboard
     // Looks up the i:th move in movelist and makes it.
     // move_no just keeps track of the full move number
     // in the game.
-    void make_move(list_ref movelist, uint8_t i, Takeback_state& tb_state, Gentype gt = Gentype::All, bool update_history = true);
+    void make_move(const std::size_t i, Takeback_state& tb_state, Takeback_state& next_tb_state, const Gentype gt, const bool add_to_history = true);
 
     // Only for the command-line interface, where the user
     // is prompted to enter the new move on the keyboard,
@@ -233,11 +233,11 @@ class Bitboard
     int make_move(Playertype player_type);
 
     // This make_move() doesn't require a generated movelist.
-    void make_move(list_ref next_movelist, const Bitmove& m, Takeback_state& tb_state, Gentype gt = Gentype::All, bool update_history = true);
+    void make_move(const Bitmove& m, Takeback_state& tb_state, Takeback_state& next_tb_state, const Gentype gt, const bool add_to_history = true);
 
-    void takeback_latest_move(const Takeback_state& state, const bool takeback_from_history = true);
+    void takeback_latest_move();
 
-    void take_back_latest_move();
+    void takeback_latest_move(const Takeback_state& tb_state, const bool takeback_from_history = true);
 
     // All properties of a move are not decided immediately,
     // but some of them (check for instance) are set after the
@@ -246,7 +246,7 @@ class Bitboard
     // in _last_move. These move-properties are mostly for the
     // presentation of the move in text, and unnecessary for
     // other purposes.
-    Bitmove last_move() const
+    Bitmove get_last_move() const
     {
       return _latest_move;
     }
