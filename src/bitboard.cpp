@@ -140,14 +140,14 @@ void Bitboard::init_board_hash_tag()
     _hash_tag ^= transposition_table._toggle_side_to_move;
 }
 
-inline void Bitboard::assemble_pieces()
+void Bitboard::assemble_pieces()
 {
   _own->assemble_pieces();
   _other->assemble_pieces();
   _all_pieces = _own->pieces | _other->pieces;
 }
 
-inline void Bitboard::init_piece_state()
+void Bitboard::init_piece_state()
 {
   _checkers = zero;
   _pinners = zero;
@@ -669,7 +669,7 @@ void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
     TT_element& tte = transposition_table.find(bb._hash_tag);
     if (!tte.best_move.is_valid())
       break;
-    bb.make_move(tte.best_move, get_tb_state(0), get_tb_state(0), Gentype::All, dont_update_history);
+    bb.make_move(tte.best_move, get_tb_state(N_SEARCH_BOARDS_DEFAULT - 1), get_tb_state(N_SEARCH_BOARDS_DEFAULT - 1), Gentype::All, dont_update_history);
     pv_line.push_back(bb._latest_move);
   }
 }
@@ -786,7 +786,6 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
   }
 
   search_ply++;
-  // Get a pointer to next movelist
   auto& next_tb_state = get_tb_state_Q(search_ply);
 
   float move_score = -infinity;

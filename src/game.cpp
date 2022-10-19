@@ -290,7 +290,6 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   {
     _chessboard.switch_tt_tables();
     local_best_move = find_best_move(_score, search_depth);
-
     // Has the search on this ply been aborted by time limit?
     if (local_best_move == SEARCH_HAS_BEEN_INTERRUPTED)
     {

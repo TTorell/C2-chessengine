@@ -45,12 +45,6 @@ Piecetype Bitboard::get_piece_type(uint64_t square) const
   {
     return Piecetype::King;
   }
-//  std::cerr << to_binary_board(square) << std::endl;
-//  std::cerr << to_binary_board(_all_pieces) << std::endl;
-//  std::cerr << to_binary_board(pieces.Knights) << std::endl;
-//  std::cerr << to_binary_board(pieces.Pawns) << std::endl;
-//  std::cerr << to_binary_board(pieces.pieces) << std::endl;
-//  std::cerr << "Error: Unknown Piecetype." << std::endl;
   return Piecetype::Undefined;
 }
 
@@ -192,8 +186,6 @@ inline void Bitboard::set_ep_square(uint64_t ep_square)
 // adding or removing one piece from a square.
 void Bitboard::update_hash_tag(uint64_t square, Color p_color, Piecetype p_type)
 {
-  if (!std::has_single_bit(square))
-    std::cout << "ERROR" << std::endl;
   assert(std::has_single_bit(square));
   _hash_tag ^= transposition_table._random_table[bit_idx(square)][index(p_color)][index(p_type)];
 }
@@ -291,7 +283,6 @@ void Bitboard::make_move(const Bitmove& m, Takeback_state& tb_state, Takeback_st
   uint64_t from_square = m.from();
 
   // Save some takeback values
-  std::cerr << m << std::endl;
   save_in_takeback_state(tb_state);
   _taken_piece_type = get_piece_type(m.to());
 
@@ -557,12 +548,9 @@ void Bitboard::takeback_latest_move(const Takeback_state& tb_state, const bool t
 {
   assert((_own->pieces & _other->pieces) == zero);
 
-  // Keeping the definition of to_square and from_square from the move,
+  // Keeping the definition of to_square and from_square from the move itself,
   // even if the move will be reversed.
   // _side_to_move is the side that didn't make the move.
-
-  //  std::cout << "takeback_move: " << m << std::endl << to_binary_board(from_square) << std::endl << to_binary_board(to_square) << std::endl <<
-  //  to_binary_board(_other->pieces) << std::endl;
 
   auto m = _latest_move;
   if (m.properties() & move_props_en_passant)
