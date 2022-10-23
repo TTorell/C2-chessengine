@@ -680,6 +680,27 @@ TEST_CASE("find_best_move")
   game.init();
   Go_params go_params; // All members in go_params are set to zero.
 
+  SECTION("examining: giving away pawn")
+  {
+    std::string FEN_string = get_FEN_test_position(91);
+    game.read_position_FEN(FEN_string);
+    game.init();
+    go_params.movetime = 10000000; // milliseconds
+    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    std::stringstream ss;
+    ss << bestmove;
+    REQUIRE(ss.str() == "Ke5-d4");
+    game.read_position_FEN(reverse_FEN_string(FEN_string));
+    game.init();
+    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    ss.clear();
+    ss.str("");
+    ss << bestmove;
+    REQUIRE(ss.str() == "Ke4-d5");
+  }
+
   SECTION("examining:_strange_queen-move1")
   {
     std::string FEN_string = get_FEN_test_position(94);
@@ -743,26 +764,6 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Qg6-g3");
   }
 
-  SECTION("examining: giving away pawn")
-  {
-    std::string FEN_string = get_FEN_test_position(91);
-    game.read_position_FEN(FEN_string);
-    game.init();
-    go_params.movetime = 100000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    std::stringstream ss;
-    ss << bestmove;
-    REQUIRE(ss.str() == "Ke5-d4");
-    game.read_position_FEN(reverse_FEN_string(FEN_string));
-    game.init();
-    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    ss.clear();
-    ss.str("");
-    ss << bestmove;
-    REQUIRE(ss.str() == "Ke4-d5");
-  }
 
   SECTION("examining: missing a mate")
   {

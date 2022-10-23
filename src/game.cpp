@@ -268,7 +268,7 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   std::vector<Bitmove> pv_line;
 
   // Keep track of how much time we have spent.
-  auto time_taken_ms{0.0 };
+  auto time_taken_ms{0.0};
   steady_clock.tic();
 
   if (is_close(movetime_ms, 0.0))
@@ -319,13 +319,13 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
       break;
   }
 
-  if (best_move.is_valid())
-  {
-    //TODO: Is this right?
-    _chessboard.make_move(best_move, _chessboard.get_tb_state(0), _chessboard.get_tb_state(0), Gentype::All);
-    _move_log.push_back(_chessboard.get_latest_move());
-  }
+  assert(best_move.is_valid());
   //TODO: Is this right?
+  _chessboard.make_move(best_move, _chessboard.get_tb_state(0), _chessboard.get_tb_state(0), Gentype::All);
+  _move_log.push_back(_chessboard.get_latest_move());
+
+  // Just write to logfile or command-line if position is mate or stalemate.
+  // when command-line play, also stop the the game in that case.
   actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
 
   // Stop possibly running timer by setting time_left to false.

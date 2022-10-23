@@ -30,8 +30,8 @@ namespace C2_chess
 Current_time steady_clock;
 std::atomic<bool> Bitboard::time_left(false);
 struct Takeback_element Bitboard::takeback_list[N_SEARCH_BOARDS_DEFAULT] {};
-Bitboard Bitboard::search_boards[N_SEARCH_BOARDS_DEFAULT];
 Game_history Bitboard::history;
+Transposition_table Bitboard::transposition_table;
 
 Bitboard::Bitboard() :
     _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _latest_move(), _taken_piece_type(Piecetype::Undefined), _checkers(zero),
@@ -907,6 +907,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
   // Collect the best value from all possible moves
   for (size_t i = 0; i < tb_state.movelist->size(); i++)
   {
+    //std::cerr << static_cast<int>(search_ply) << " : " << i << " : " << (*tb_state.movelist)[i] << std::endl;
     // Make the selected move and ask min() to evaluate it further.
     make_move((*tb_state.movelist)[i], tb_state, next_tb_state, Gentype::All);
     move_score = -negamax_with_pruning(search_ply, -beta, -alpha, best_move_dummy, search_depth);

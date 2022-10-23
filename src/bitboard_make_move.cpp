@@ -13,8 +13,6 @@
 namespace C2_chess
 {
 
-Transposition_table Bitboard::transposition_table;
-
 Piecetype Bitboard::get_piece_type(uint64_t square) const
 {
   if ((square & _all_pieces) == zero)

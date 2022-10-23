@@ -34,7 +34,6 @@ class Bitboard
     // Static declarations, incomplete type.
     static Transposition_table transposition_table;
     static Game_history history;
-    static Bitboard search_boards[];
     static struct Takeback_element takeback_list[];
     static std::atomic<bool> time_left;
 
