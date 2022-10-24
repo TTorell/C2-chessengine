@@ -481,11 +481,6 @@ void Bitboard::takeback_castling(const Bitmove& m, const Color moving_side)
   // No change in material_diff.
 }
 
-void Bitboard::takeback_latest_move()
-{
-  takeback_latest_move(get_tb_state(0));
-}
-
 void Bitboard::takeback_normal_move(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_type)
 {
   // Move the piece back:
@@ -578,6 +573,11 @@ void Bitboard::takeback_latest_move(const Takeback_state& tb_state, const bool t
   }
 
   takeback_from_state(tb_state);
+}
+
+void Bitboard::takeback_latest_move()
+{
+  takeback_latest_move(get_tb_state(0));
 }
 
 } // namespace C2_chess

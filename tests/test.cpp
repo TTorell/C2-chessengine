@@ -83,35 +83,37 @@ void make_and_takeback_move(Game& game, const std::string& uci_move)
   REQUIRE(game.get_material_diff() == saved_material_diff);
 
   REQUIRE(bwu.get_hash_tag() == saved_hash_tag);
-  REQUIRE(bwu.get_side_to_move()== saved_side_to_move);
-  REQUIRE(bwu.get_move_number()== saved_move_number);
-  REQUIRE(bwu.get_castling_rights()== saved_castling_rights);
-  REQUIRE(bwu.get_half_move_counter()== saved_half_move_counter);
-  REQUIRE(bwu.has_castled(Color::White)== saved_has_castled_0);
-  REQUIRE(bwu.has_castled(Color::Black)== saved_has_castled_1);
-  REQUIRE(bwu.get_ep_square()== saved_ep_square);
-  REQUIRE(bwu.get_material_diff()== saved_material_diff);
-  REQUIRE(bwu.get_latest_move()== saved_latest_move);
-  REQUIRE(bwu.get_all_pieces()== saved_all_pieces);
-  REQUIRE(bwu.get_white_pieces()== saved_white_pieces);
-  REQUIRE(bwu.get_black_pieces()== saved_black_pieces);
-  REQUIRE(bwu.get_own()== saved_own);
-  REQUIRE(bwu.get_other()== saved_other);
+  REQUIRE(bwu.get_side_to_move() == saved_side_to_move);
+  REQUIRE(bwu.get_move_number() == saved_move_number);
+  REQUIRE(bwu.get_castling_rights() == saved_castling_rights);
+  REQUIRE(bwu.get_half_move_counter() == saved_half_move_counter);
+  REQUIRE(bwu.has_castled(Color::White) == saved_has_castled_0);
+  REQUIRE(bwu.has_castled(Color::Black) == saved_has_castled_1);
+  REQUIRE(bwu.get_ep_square() == saved_ep_square);
+  REQUIRE(bwu.get_material_diff() == saved_material_diff);
+  REQUIRE(bwu.get_latest_move() == saved_latest_move);
+  REQUIRE(bwu.get_all_pieces() == saved_all_pieces);
+  REQUIRE(bwu.get_white_pieces() == saved_white_pieces);
+  REQUIRE(bwu.get_black_pieces() == saved_black_pieces);
+  REQUIRE(bwu.get_own() == saved_own);
+  REQUIRE(bwu.get_other() == saved_other);
   REQUIRE(bwu.get_game_history() == saved_game_history);
 }
 
 } // End of fileprivate namespace
 
-TEST_CASE("perft_test")
+TEST_CASE("perft_test") // A thorough move-generation test with public test-data from the web.
 {
   // An example-line from the file perftsuite.epd looks like this:
   // "101k7/8/7p/8/8/6P1/8/K7 b - - 0 1 ;D1 4 ;D2 16 ;D3 101 ;D4 637 ;D5 4354 ;D6 29679"
   // A three characters long line-number directly followed by the FEN-string of the position,
-  // followed by a blank and a semicolon. Then comes the number of nodes searced for
+  // followed by a blank and a semicolon. Then comes the number of nodes searched for
   // depth 1 to 6.
   // We can skip the first three characters and the last blank in each token, if we add an
   // extra blank to the line and split the line with semicolon as delimiter).
-  size_t max_depth = 4; // Should be 7 to fully run all pert-test, but that takes time.
+  // max_depth should be 6 to fully run all pert-test, but that takes time,
+  // so for a regression test I set it to 4 after testing through all 6 depths.
+  size_t max_depth = 4;
   uint64_t timediff;
   //nst bool init_pieces = true;
   const bool same_line = true;
@@ -180,7 +182,7 @@ TEST_CASE("perft_test")
   }
 }
 
-TEST_CASE("Move_generation")
+TEST_CASE("move_generation")
 {
   uint64_t timediff;
   std::string arg = "";
@@ -221,7 +223,85 @@ TEST_CASE("Move_generation")
   std::cout << "It took " << timediff << " nanoseconds." << std::endl;
 }
 
-TEST_CASE("Castling_rights")
+TEST_CASE("history")
+{
+  Bitboard_with_utils bwu;
+  bwu.clear_game_history();
+  for (auto hash_tag = zero; hash_tag < 256; hash_tag++)
+  {
+    bwu.add_position_to_game_history(hash_tag);
+    REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
+    REQUIRE(bwu.get_history_state()._n_repeated_positions == zero);
+    REQUIRE(bwu.get_history_state()._n_plies == hash_tag + 1);
+  }
+  for (std::size_t n_plies = 256; n_plies > 0; n_plies--)
+  {
+    bwu.takeback_from_game_history();
+    REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
+    REQUIRE(bwu.get_history_state()._n_repeated_positions == zero);
+    REQUIRE(bwu.get_history_state()._n_plies == n_plies - 1);
+  }
+
+  for (auto hash_tag = zero; hash_tag < 256; hash_tag++)
+  {
+    bwu.add_position_to_game_history(hash_tag);
+    bwu.add_position_to_game_history(hash_tag);
+    REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
+    REQUIRE(bwu.get_history_state()._n_repeated_positions == hash_tag + 1);
+    REQUIRE(bwu.get_history_state()._n_plies == 2 * (hash_tag + 1));
+  }
+  size_t tmp = 256;
+  for (std::size_t n_plies = 256; n_plies > 0; n_plies--)
+  {
+    bwu.takeback_from_game_history();
+    REQUIRE(bwu.get_history_state()._n_plies == 256 + n_plies - 1);
+    REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
+    if (n_plies % 2 == 0)
+    {
+      tmp--;
+    }
+    REQUIRE(bwu.get_history_state()._n_repeated_positions == tmp);
+  }
+
+  auto saved_history_state = bwu.get_history_state();
+  bwu.add_position_to_game_history(709870987);
+  bwu.add_position_to_game_history(709870988);
+  bwu.add_position_to_game_history(709870989);
+  bwu.add_position_to_game_history(709870990);
+  bwu.reset_history_state(saved_history_state);
+  REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
+  REQUIRE(bwu.get_history_state()._n_repeated_positions == 128);
+  REQUIRE(bwu.get_history_state()._n_plies == 256);
+  // Or a little simpler:
+  REQUIRE(bwu.get_history_state() == saved_history_state);
+}
+
+TEST_CASE("history_three-fold_repetition")
+{
+  std::string FEN_string = get_FEN_test_position(82);
+  Bitboard_with_utils chessboard;
+  chessboard.init();
+  REQUIRE(chessboard.read_position(FEN_string) == 0);
+  chessboard.clear_game_history();
+  chessboard.add_position_to_game_history(chessboard.get_hash_tag());
+  chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
+  chessboard.make_UCI_move("a6b6");
+  chessboard.make_UCI_move("a8b8");
+  REQUIRE(chessboard.is_threefold_repetition() == false);
+  chessboard.make_UCI_move("b6a6");
+  chessboard.make_UCI_move("b8a8");
+  REQUIRE(chessboard.is_threefold_repetition() == false);
+  chessboard.make_UCI_move("a6b6");
+  chessboard.make_UCI_move("a8b8");
+  REQUIRE(chessboard.is_threefold_repetition() == false);
+  chessboard.make_UCI_move("b6a6");
+  chessboard.make_UCI_move("b8a8");
+  REQUIRE(chessboard.is_threefold_repetition() == true);
+  chessboard.takeback_from_game_history();
+  REQUIRE(chessboard.is_threefold_repetition() == false);
+}
+
+TEST_CASE("castling_rights")
 {
   // Load test position 71
   std::string FEN_string = get_FEN_test_position(71);
@@ -680,7 +760,28 @@ TEST_CASE("find_best_move")
   game.init();
   Go_params go_params; // All members in go_params are set to zero.
 
-  SECTION("examining: giving away pawn")
+  SECTION("examining_strange_threefold_repetition")
+  {
+    std::string FEN_string = get_FEN_test_position(98);
+    game.read_position_FEN(FEN_string);
+    game.init();
+    go_params.movetime = 10000000; // milliseconds
+    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    std::stringstream ss;
+    ss << bestmove;
+    REQUIRE(ss.str() == "Bc8-e6");
+    game.read_position_FEN(reverse_FEN_string(FEN_string));
+    game.init();
+    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    ss.clear();
+    ss.str("");
+    ss << bestmove;
+    REQUIRE(ss.str() == "Bc1-e3");
+  }
+
+  SECTION("examining_giving_away_pawn")
   {
     std::string FEN_string = get_FEN_test_position(91);
     game.read_position_FEN(FEN_string);
@@ -701,7 +802,7 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Ke4-d5");
   }
 
-  SECTION("examining:_strange_queen-move1")
+  SECTION("examining_strange_queen-move1")
   {
     std::string FEN_string = get_FEN_test_position(94);
     game.read_position_FEN(FEN_string);
@@ -722,7 +823,7 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Ng1-h3");
   }
 
-  SECTION("mate in one")
+  SECTION("mate_in_one")
   {
     std::string FEN_string = get_FEN_test_position(90);
     game.read_position_FEN(FEN_string);
@@ -764,8 +865,7 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Qg6-g3");
   }
 
-
-  SECTION("examining: missing a mate")
+  SECTION("examining_missing_a_mate")
   {
     std::string FEN_string = get_FEN_test_position(89);
     game.read_position_FEN(FEN_string);
@@ -786,7 +886,7 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Ke2-d1");
   }
 
-  SECTION("strangulation mate")
+  SECTION("strangulation_mate")
   {
     std::string FEN_string = get_FEN_test_position(73);
     game.read_position_FEN(FEN_string);
@@ -808,7 +908,7 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Nc2-a3+");
   }
 
-  SECTION("examining: strange queen-move")
+  SECTION("examining_strange_queen-move")
   {
     std::string FEN_string = get_FEN_test_position(78);
     game.read_position_FEN(FEN_string);
@@ -829,7 +929,7 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Nb1-d2");
   }
 
-  SECTION("examining: strange rook-move")
+  SECTION("examining_strange_rook-move")
   {
     std::string FEN_string = get_FEN_test_position(80);
     game.read_position_FEN(FEN_string);
@@ -875,7 +975,7 @@ TEST_CASE("50-moves-rule")
   REQUIRE(chessboard.is_draw_by_50_moves() == false);
   chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
 
-  SECTION("pawn move")
+  SECTION("pawn_move")
   {
     chessboard.make_UCI_move("h3h4");
     REQUIRE(chessboard.get_half_move_counter() == 0);
@@ -889,14 +989,14 @@ TEST_CASE("50-moves-rule")
     REQUIRE(chessboard.is_draw_by_50_moves() == false);
   }
 
-  SECTION("other move")
+  SECTION("other_move")
   {
     chessboard.make_UCI_move("a6b6");
     REQUIRE(chessboard.get_half_move_counter() == 50);
     REQUIRE(chessboard.is_draw_by_50_moves() == true);
   }
 
-  SECTION("some moves")
+  SECTION("some_moves")
   {
     chessboard.make_UCI_move("a6b6");
     chessboard.make_UCI_move("a8b8");
@@ -906,29 +1006,6 @@ TEST_CASE("50-moves-rule")
     REQUIRE(chessboard.is_draw_by_50_moves() == true);
   }
 
-}
-
-TEST_CASE("three-fold repetition")
-{
-  std::string FEN_string = get_FEN_test_position(82);
-  Bitboard_with_utils chessboard;
-  chessboard.init();
-  REQUIRE(chessboard.read_position(FEN_string) == 0);
-  chessboard.clear_game_history();
-  chessboard.add_position_to_game_history();
-  chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
-  chessboard.make_UCI_move("a6b6");
-  chessboard.make_UCI_move("a8b8");
-  REQUIRE(chessboard.is_threefold_repetition() == false);
-  chessboard.make_UCI_move("b6a6");
-  chessboard.make_UCI_move("b8a8");
-  REQUIRE(chessboard.is_threefold_repetition() == false);
-  chessboard.make_UCI_move("a6b6");
-  chessboard.make_UCI_move("a8b8");
-  REQUIRE(chessboard.is_threefold_repetition() == false);
-  chessboard.make_UCI_move("b6a6");
-  chessboard.make_UCI_move("b8a8");
-  REQUIRE(chessboard.is_threefold_repetition() == true);
 }
 
 TEST_CASE("figure_out_last_move_1")
@@ -942,7 +1019,7 @@ TEST_CASE("figure_out_last_move_1")
   game.write_diagram(std::cout);
   game.write_movelist(std::cout);
 
-  SECTION("En passant")
+  SECTION("En_passant")
   {
     FEN_string = get_FEN_test_position(83);
     REQUIRE(game.read_position_FEN(FEN_string) == 0);
@@ -952,7 +1029,7 @@ TEST_CASE("figure_out_last_move_1")
     REQUIRE(ss.str().starts_with("1.e5xf6 e.p."));
   }
 
-  SECTION("Normal move")
+  SECTION("Normal_move")
   {
     FEN_string = get_FEN_test_position(84);
     REQUIRE(game.read_position_FEN(FEN_string) == 0);
@@ -985,7 +1062,7 @@ TEST_CASE("figure_out_last_move_2")
     REQUIRE(ss.str().starts_with("1.Rh1xh7+"));
   }
 
-  SECTION("Short castling")
+  SECTION("Short_castling")
   {
     FEN_string = get_FEN_test_position(87);
     REQUIRE(game.read_position_FEN(FEN_string) == 0);
@@ -994,7 +1071,7 @@ TEST_CASE("figure_out_last_move_2")
     REQUIRE(ss.str().starts_with("1.0-0"));
   }
 
-  SECTION("long castling")
+  SECTION("long_castling")
   {
     FEN_string = get_FEN_test_position(88);
     REQUIRE(game.read_position_FEN(FEN_string) == 0);
@@ -1085,12 +1162,12 @@ TEST_CASE("takeback_castling")
   game.read_position_FEN(FEN_string);
   game.init();
 
-  SECTION("short castling")
+  SECTION("short_castling")
   {
     make_and_takeback_move(game, "e1g1");
   }
 
-  SECTION("long castling")
+  SECTION("long_castling")
   {
     make_and_takeback_move(game, "e1c1");
   }
@@ -1111,7 +1188,7 @@ TEST_CASE("takeback_normal_move")
     make_and_takeback_move(game, "e2e3");
   }
 
-  SECTION("long castling")
+  SECTION("long_castling")
   {
     make_and_takeback_move(game, "d2d4");
   }

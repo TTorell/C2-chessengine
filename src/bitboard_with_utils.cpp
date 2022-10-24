@@ -526,5 +526,19 @@ std::ostream& Bitboard_with_utils::write_movelist(std::ostream& os, const bool s
   return os;
 }
 
+void Bitboard_with_utils::add_position_to_game_history(const uint64_t hash_tag)
+{
+  history.add_position(hash_tag);
+}
+
+void Bitboard_with_utils::takeback_from_game_history()
+{
+  history.takeback_latest_move();
+}
+void Bitboard_with_utils::reset_history_state(const History_state& saved_history_state)
+{
+  history.takeback_moves(saved_history_state);
+}
+
 } // End namespace C2_chess
 

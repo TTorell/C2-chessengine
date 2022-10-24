@@ -13,7 +13,7 @@
 namespace
 {
 const uint64_t MAX_HISTORY_PLIES = 1024;
-const uint64_t MAX_REPEATED_POSITIONS = 50;
+const uint64_t MAX_REPEATED_POSITIONS = 256;
 }
 
 namespace C2_chess
@@ -144,6 +144,7 @@ class Game_history
         }
       }
       _state._n_plies--;
+      _state._is_threefold_repetiotion = false;
     }
 
     void add_position(uint64_t position_key)

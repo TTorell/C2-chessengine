@@ -127,6 +127,12 @@ class Bitboard_with_utils: public Bitboard
       history.clear();
     }
 
+    void add_position_to_game_history(const uint64_t hash_tag);
+
+    void takeback_from_game_history();
+
+    void reset_history_state(const History_state& saved_history_state);
+
     std::ostream& write_movelist(std::ostream& os, const bool same_line) const;
 
 };
