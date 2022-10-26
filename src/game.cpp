@@ -321,7 +321,7 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
 
   assert(best_move.is_valid());
   //TODO: Is this right?
-  _chessboard.make_move(best_move, _chessboard.get_tb_state(0), _chessboard.get_tb_state(0), Gentype::All);
+  _chessboard.make_move(best_move, _chessboard.get_takeback_state(0), _chessboard.get_takeback_state(0), Gentype::All);
   _move_log.push_back(_chessboard.get_latest_move());
 
   // Just write to logfile or command-line if position is mate or stalemate.
@@ -398,7 +398,7 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
     Bitmove best_move = find_best_move(_score, max_search_depth);
     if (best_move.is_valid())
     {
-      _chessboard.make_move(best_move, _chessboard.get_tb_state(0), _chessboard.get_tb_state(0), Gentype::All);
+      _chessboard.make_move(best_move, _chessboard.get_takeback_state(0), _chessboard.get_takeback_state(0), Gentype::All);
       _move_log.push_back(_chessboard.get_latest_move());
     }
   }
@@ -482,8 +482,8 @@ void Game::figure_out_last_move(const Bitboard& new_position)
       start_new_game();
       return;
     }
-    _chessboard.make_move(m, _chessboard.get_tb_state(0), _chessboard.get_tb_state(0), Gentype::All);
-    _move_log.push_back(_chessboard.get_last_move());
+    _chessboard.make_move(m, _chessboard.get_takeback_state(0), _chessboard.get_takeback_state(0), Gentype::All);
+    _move_log.push_back(_chessboard.get_latest_move());
     actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
   }
 }

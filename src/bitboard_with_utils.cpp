@@ -151,7 +151,7 @@ void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move)
     i++;
   }
   if (found == true)
-    make_move(i, get_tb_state(0), get_tb_state(0), Gentype::All);
+    make_move(i, get_takeback_state(0), get_takeback_state(0), Gentype::All);
   else
     assert(false);
 }
@@ -409,7 +409,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
   Piecetype p_type;
   Piecetype promotion_pt;
   uint16_t move_props = move_props_none;
-  uint64_t new_all_pieces = new_position.all_pieces();
+  uint64_t new_all_pieces = new_position.get_all_pieces();
   uint64_t piece_diff = _all_pieces ^ new_all_pieces;
 
   if (new_position.get_half_move_counter() != 0 && new_position.get_half_move_counter() != get_half_move_counter() + 1)
@@ -439,7 +439,7 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
       if ((from_square & _own->Pawns) && ((rank_idx(from_square) == ((_side_to_move == Color::Black) ? 2 : 7))))
         move_props |= move_props_promotion;
       //to_square = _own->pieces ^ new_position.other()->pieces; // TODO: _other->pieces ^ new_position.own()->pieces ?
-      to_square = _other->pieces ^ new_position.own()->pieces;
+      to_square = _other->pieces ^ new_position.get_own_pieces()->pieces;
       break;
     case 2:
       // not a capture
@@ -538,6 +538,11 @@ void Bitboard_with_utils::takeback_from_game_history()
 void Bitboard_with_utils::reset_history_state(const History_state& saved_history_state)
 {
   history.takeback_moves(saved_history_state);
+}
+
+void Bitboard_with_utils::takeback_latest_move()
+{
+  Bitboard::takeback_latest_move(get_takeback_state(0));
 }
 
 } // End namespace C2_chess

@@ -364,11 +364,6 @@ void Bitboard::update_half_move_counter()
     _half_move_counter++;
 }
 
-void Bitboard::set_half_move_counter(uint8_t half_move_counter)
-{
-  _half_move_counter = half_move_counter;
-}
-
 bool Bitboard::is_draw_by_50_moves() const
 {
   return _half_move_counter >= 50;
@@ -669,7 +664,7 @@ void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
     TT_element& tte = transposition_table.find(bb._hash_tag);
     if (!tte.best_move.is_valid())
       break;
-    bb.make_move(tte.best_move, get_tb_state(N_SEARCH_BOARDS_DEFAULT - 1), get_tb_state(N_SEARCH_BOARDS_DEFAULT - 1), Gentype::All, dont_update_history);
+    bb.make_move(tte.best_move, get_takeback_state(N_SEARCH_BOARDS_DEFAULT - 1), get_takeback_state(N_SEARCH_BOARDS_DEFAULT - 1), Gentype::All, dont_update_history);
     pv_line.push_back(bb._latest_move);
   }
 }
@@ -684,18 +679,13 @@ Search_info& Bitboard::get_search_info() const
   return search_info;
 }
 
-float Bitboard::get_material_diff() const
-{
-  return _material_diff;
-}
-
 unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth)
 {
-  auto& tb_state = get_tb_state(search_ply);
+  auto& tb_state = get_takeback_state(search_ply);
 
   search_ply++;
 
-  auto& next_tb_state = get_tb_state(search_ply);
+  auto& next_tb_state = get_takeback_state(search_ply);
 
   // Perft-test only counts leaf-nodes on highest depth, not leaf-nodes which happens
   // on lower depth because of mate or stalemate.
@@ -758,7 +748,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
   assert(beta > alpha);
 
   // Current quiescence-movelist
-  auto& tb_state = get_tb_state_Q(search_ply);
+  auto& tb_state = get_takeback_state_Q(search_ply);
 
   search_info.node_counter++;
 
@@ -786,7 +776,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
   }
 
   search_ply++;
-  auto& next_tb_state = get_tb_state_Q(search_ply);
+  auto& next_tb_state = get_takeback_state_Q(search_ply);
 
   float move_score = -infinity;
 
@@ -838,11 +828,11 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
   float move_score = -infinity; // Must be lower than lowest evaluation
 
   // Current movelist
-  auto& tb_state = get_tb_state(search_ply);
+  auto& tb_state = get_takeback_state(search_ply);
 
   // Next search_ply and next_movelist:
   search_ply++;
-  auto& next_tb_state = get_tb_state(search_ply);
+  auto& next_tb_state = get_takeback_state(search_ply);
 
   if (history.is_threefold_repetition())
   {
@@ -897,7 +887,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     // counting, so we must subtract one in input parameters here.
     // We also have to generate the first movelist for the Qsearch.
     search_info.node_counter--;
-    find_legal_moves(*get_tb_state_Q(search_ply - 1).movelist, Gentype::Captures_and_Promotions);
+    find_legal_moves(*get_takeback_state_Q(search_ply - 1).movelist, Gentype::Captures_and_Promotions);
     element.best_move._evaluation = Quiesence_search(search_ply - 1, alpha, beta, N_SEARCH_BOARDS_DEFAULT);
     element.search_ply = search_ply;
     return element.best_move._evaluation;

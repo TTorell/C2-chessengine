@@ -62,6 +62,11 @@ class Bitboard
 
     void init_piece_state();
 
+    void add_position_to_game_history()
+    {
+      history.add_position(_hash_tag);
+    }
+
     inline void sort_moves(list_ref movelist) const;
 
     inline void add_move(list_ref movelist, Piecetype p_type, uint16_t move_props, uint64_t from_square, uint64_t to_square, Piecetype promotion_p_type = Piecetype::Queen) const;
@@ -154,6 +159,8 @@ class Bitboard
 
     void update_side_to_move();
 
+    void update_half_move_counter();
+
     inline void update_state_after_king_move(const Bitmove& m);
 
     void takeback_promotion(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_type);
@@ -168,8 +175,12 @@ class Bitboard
 
     void takeback_from_state(const Takeback_state& state);
 
+    void takeback_latest_move(const Takeback_state& tb_state, const bool takeback_from_history = true);
+
     // ### Protected methods for searching for the best move ###
     // ---------------------------------------------------------
+
+    static void start_timer(double time);
 
     void count_pawns_in_centre(float& sum, float weight) const;
 
@@ -184,6 +195,20 @@ class Bitboard
     float evaluate_position(const bool movelist_is_empty, Color for_side, uint8_t search_ply, bool evaluate_zero_moves = true) const;
 
     void get_pv_line(std::vector<Bitmove>& pv_line) const;
+
+    void clear_PV_table();
+
+    inline Takeback_state& get_takeback_state(size_t idx) const
+    {
+      return takeback_list[idx].state_S;
+    }
+
+    inline Takeback_state& get_takeback_state_Q(size_t idx) const
+    {
+      return takeback_list[idx].state_Q;
+    }
+
+    float Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply);
 
   public:
 
@@ -234,41 +259,16 @@ class Bitboard
     // This make_move() doesn't require a generated movelist.
     void make_move(const Bitmove& m, Takeback_state& tb_state, Takeback_state& next_tb_state, const Gentype gt, const bool add_to_history = true);
 
-    void takeback_latest_move();
-
-    void takeback_latest_move(const Takeback_state& tb_state, const bool takeback_from_history = true);
-
     // All properties of a move are not decided immediately,
-    // but some of them (check for instance) are set after the
-    // move has been made and the position has been initialized
-    // for the other player. So we save the move, until then,
-    // in _last_move. These move-properties are mostly for the
-    // presentation of the move in text, and unnecessary for
-    // other purposes.
-    Bitmove get_last_move() const
-    {
-      return _latest_move;
-    }
-
-    void set_mate()
-    {
-      _latest_move.add_property(move_props_mate);
-    }
-
-    void set_stalemate()
-    {
-      _latest_move.add_property(move_props_stalemate);
-    }
-
-    void set_draw_by_repetition()
-    {
-      _latest_move.add_property(move_props_draw_by_repetition);
-    }
-
-    void set_draw_by_50_moves()
-    {
-      _latest_move.add_property(move_props_draw_by_50_moves);
-    }
+    // the "check" property is set after the move has been made
+    // and the position has been initialized for the other player.
+    // So we save the move, until then, in _latest_move.
+    // The check-property is mostly for the presentation of the
+    // move in text, and unnecessary for other purposes.
+//    Bitmove get_latest_move() const
+//    {
+//      return _latest_move;
+//    }
 
     // The chess-engine keeps track of the game, which is
     // not necessary, but nice to see in the log-files.
@@ -276,64 +276,48 @@ class Bitboard
     // FEN-string in the "set position" UCI-command) we need
     // to compare two positions and the following methods
     // came in handy.
-    uint64_t all_pieces() const
+    uint64_t get_all_pieces() const
     {
       return _all_pieces;
     }
 
-    Bitpieces* other() const
-    {
-      return _other;
-    }
-
-    Bitpieces* own() const
+    Bitpieces* get_own_pieces() const
     {
       return _own;
     }
 
-    // A slow way of determining the piecetype of a piece on
-    // given square. Should not be used inside the search-loop.
-    Piecetype get_piece_type(uint64_t square) const;
-
-    float get_material_diff() const;
+    Bitpieces* get_other_pieces() const
+    {
+      return _other;
+    }
 
     uint16_t get_move_number() const
     {
       return _move_number;
     }
 
-    void set_move_number(uint16_t move_number)
+    inline uint8_t get_half_move_counter() const
     {
-      _move_number = move_number;
+      return _half_move_counter;
     }
+
+    // Probably a somewhat slow way of determining the piecetype of
+    // a piece on given square. Should not be used inside the search-loop,
+    // but that's hard to avoid.
+    Piecetype get_piece_type(uint64_t square) const;
 
     // ### Public methods for the search of best move. ###
     // ---------------------------------------------------
 
     void set_time_left(bool value);
 
-    static void start_timer(double time);
+    bool has_time_left();
 
     void start_timer_thread(const double time);
-
-    bool has_time_left();
 
     void clear_transposition_table(map_tag map = map_tag::Current);
 
     void switch_tt_tables();
-
-    void clear_PV_table();
-
-    //TODO: REMOVE inline void clear_movelist(list_ref movelist);
-
-    void update_half_move_counter();
-
-    void set_half_move_counter(uint8_t half_move_counter);
-
-    inline uint8_t get_half_move_counter() const
-    {
-      return _half_move_counter;
-    }
 
     inline Color get_side_to_move() const
     {
@@ -345,27 +329,7 @@ class Bitboard
       return takeback_list[idx].state_S.movelist;
     }
 
-    inline list_ptr get_movelist_Q(size_t idx) const
-    {
-      return takeback_list[idx].state_Q.movelist;
-    }
-
-    inline Takeback_state& get_tb_state(size_t idx) const
-    {
-      return takeback_list[idx].state_S;
-    }
-
-    inline Takeback_state& get_tb_state_Q(size_t idx) const
-    {
-      return takeback_list[idx].state_Q;
-    }
-
     bool is_draw_by_50_moves() const;
-
-    void add_position_to_game_history()
-    {
-      history.add_position(_hash_tag);
-    }
 
     inline bool is_threefold_repetition() const
     {
@@ -374,15 +338,10 @@ class Bitboard
 
     void init_material_evaluation();
 
-    History_state get_history_state() const
-    {
-      return history.get_state();
-    }
-
-    float Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply);
-
     // Search function
     float negamax_with_pruning(uint8_t level, float alpha, float beta, Bitmove& best_move, const uint8_t max_search_ply);
+
+    unsigned int perft_test(uint8_t search_ply, uint8_t max_search_plies);
 
     std::ostream& write_piece_diagram_style(std::ostream& os, C2_chess::Piecetype p_type, C2_chess::Color side) const;
     std::ostream& write_piece(std::ostream& os, uint64_t square) const;
@@ -392,8 +351,6 @@ class Bitboard
 
     void clear_search_info();
     Search_info& get_search_info() const;
-
-    unsigned int perft_test(uint8_t search_ply, uint8_t max_search_plies);
 
 };
 

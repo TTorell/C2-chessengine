@@ -85,6 +85,36 @@ class Bitboard_with_utils: public Bitboard
       return _other;
     }
 
+    float get_material_diff() const
+    {
+      return _material_diff;
+    }
+
+    History_state get_history_state() const
+    {
+      return history.get_state();
+    }
+
+    void set_mate()
+    {
+      _latest_move.add_property(move_props_mate);
+    }
+
+    void set_stalemate()
+    {
+      _latest_move.add_property(move_props_stalemate);
+    }
+
+    void set_draw_by_repetition()
+    {
+      _latest_move.add_property(move_props_draw_by_repetition);
+    }
+
+    void set_draw_by_50_moves()
+    {
+      _latest_move.add_property(move_props_draw_by_50_moves);
+    }
+
     std::ostream& write_cmdline_style(std::ostream& os, const Color from_perspective) const;
 
     int add_mg_test_position(const std::string& filename);
@@ -129,9 +159,21 @@ class Bitboard_with_utils: public Bitboard
 
     void add_position_to_game_history(const uint64_t hash_tag);
 
+    void takeback_latest_move();
+
     void takeback_from_game_history();
 
     void reset_history_state(const History_state& saved_history_state);
+
+    Takeback_state& get_takeback_state(size_t idx) const
+    {
+      return takeback_list[idx].state_S;
+    }
+
+    Takeback_state& get_takeback_state_Q(size_t idx) const
+    {
+      return takeback_list[idx].state_Q;
+    }
 
     std::ostream& write_movelist(std::ostream& os, const bool same_line) const;
 
