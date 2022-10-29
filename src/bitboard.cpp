@@ -29,7 +29,7 @@ namespace C2_chess
 
 Current_time steady_clock;
 std::atomic<bool> Bitboard::time_left(false);
-struct Takeback_element Bitboard::takeback_list[N_SEARCH_BOARDS_DEFAULT] {};
+struct Takeback_element Bitboard::takeback_list[N_SEARCH_PLIES_DEFAULT] {};
 Game_history Bitboard::history;
 Transposition_table Bitboard::transposition_table;
 
@@ -664,7 +664,7 @@ void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
     TT_element& tte = transposition_table.find(bb._hash_tag);
     if (!tte.best_move.is_valid())
       break;
-    bb.make_move(tte.best_move, get_takeback_state(N_SEARCH_BOARDS_DEFAULT - 1), get_takeback_state(N_SEARCH_BOARDS_DEFAULT - 1), Gentype::All, dont_update_history);
+    bb.make_move(tte.best_move, get_takeback_state(N_SEARCH_PLIES_DEFAULT - 1), get_takeback_state(N_SEARCH_PLIES_DEFAULT - 1), Gentype::All, dont_update_history);
     pv_line.push_back(bb._latest_move);
   }
 }
@@ -888,7 +888,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     // We also have to generate the first movelist for the Qsearch.
     search_info.node_counter--;
     find_legal_moves(*get_takeback_state_Q(search_ply - 1).movelist, Gentype::Captures_and_Promotions);
-    element.best_move._evaluation = Quiesence_search(search_ply - 1, alpha, beta, N_SEARCH_BOARDS_DEFAULT);
+    element.best_move._evaluation = Quiesence_search(search_ply - 1, alpha, beta, N_SEARCH_PLIES_DEFAULT);
     element.search_ply = search_ply;
     return element.best_move._evaluation;
   }

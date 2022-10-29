@@ -30,7 +30,8 @@ class Game
     //    PGN_info _pgn_info;
     Config_params& _config_params;
     bool _playing;
-  public:
+    void send_uci_info( unsigned int search_time_ms, const std::vector<Bitmove>& pv_line);
+    public:
     Game(Config_params& config_params);
     Game(Color side, Config_params& config_params);
     Game(const Game&) = delete;
@@ -52,7 +53,7 @@ class Game
     void actions_after_a_move(const bool movelist_is_empty);
     void start();
     Bitmove find_best_move(float& score, unsigned int max_search_ply);
-    Bitmove incremental_search(const double movetime, unsigned int max_depth = N_SEARCH_BOARDS_DEFAULT/2);
+    Bitmove incremental_search(const double movetime, unsigned int max_depth = N_SEARCH_PLIES_DEFAULT/2);
     Bitmove engine_go(const Config_params& config_params, const Go_params& go_params, const bool apply_max_search_depth = false);
     //void start_timer_thread(const std::string& max_search_time);
     bool has_time_left();

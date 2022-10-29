@@ -21,6 +21,7 @@
 #include <bitset>
 #include <cmath>
 
+#include "magic_enum.hpp"
 #include "chesstypes.hpp"
 
 namespace fs = std::filesystem;
@@ -334,6 +335,9 @@ inline uint64_t diagonal_squares(uint64_t square)
 {
   return to_diagonal(square) | to_anti_diagonal(square);
 }
+
+std::string uci_move(const Bitmove& m);
+std::string uci_pv_line(const std::vector<Bitmove>& pv_line);
 
 class Config_params;
 

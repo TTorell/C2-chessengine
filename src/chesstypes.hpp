@@ -5,6 +5,7 @@
 #include <bit>
 #include <cassert>
 #include <ostream>
+#include <sstream>
 #include <limits>
 #include <deque>
 
@@ -39,7 +40,7 @@ const auto eval_max = 100.0F;
 const auto eval_min = -eval_max;
 const auto epsilon = 0.00000001F;
 
-const auto N_SEARCH_BOARDS_DEFAULT = 38U;
+const auto N_SEARCH_PLIES_DEFAULT = 64U;
 
 const auto dont_update_history = false;
 const auto init_pieces = true;

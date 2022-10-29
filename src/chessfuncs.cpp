@@ -147,6 +147,53 @@ void require_m(bool bo, std::string File, std::string method, int line, const Bi
 #define close_pipe _pclose
 #endif
 
+std::string uci_move(const Bitmove& m)
+{
+  std::stringstream ss;
+  ss << static_cast<char>('a' + file_idx(m.from())) << static_cast<int>(rank_idx(m.from())) <<
+     static_cast<char>('a' + file_idx(m.to())) << static_cast<int>(rank_idx(m.to()));
+  if (m.properties() & move_props_promotion)
+  {
+    switch (m.promotion_piece_type())
+    {
+    case Piecetype::Queen:
+      ss << "q";
+      break;
+    case Piecetype::Rook:
+      ss << "r";
+      break;
+    case Piecetype::Knight:
+      ss << "n";
+      break;
+    case Piecetype::Bishop:
+      ss << "b" << std::endl;
+      break;
+    default:
+      std::cerr << "Invalid promotion piece-type: "
+                << magic_enum::enum_name(m.promotion_piece_type())
+                << std::endl;
+      assert(false);
+    }
+  }
+  return ss.str();
+}
+
+std::string uci_pv_line(const std::vector<Bitmove>& pv_line)
+{
+  std::stringstream ss;
+  bool first = true;
+  for (const Bitmove& move : pv_line)
+  {
+    if (first)
+    {
+      ss << uci_move(move);
+      first = false;
+    }
+    else ss << " " << uci_move(move);
+  }
+  return ss.str();
+}
+
 // Run a shell-command and return it's output as a string.
 // This function returns the output (stdout and stderr) from a command in the environment
 // you run the program from.

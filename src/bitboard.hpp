@@ -194,8 +194,6 @@ class Bitboard
 
     float evaluate_position(const bool movelist_is_empty, Color for_side, uint8_t search_ply, bool evaluate_zero_moves = true) const;
 
-    void get_pv_line(std::vector<Bitmove>& pv_line) const;
-
     void clear_PV_table();
 
     inline Takeback_state& get_takeback_state(size_t idx) const
@@ -308,6 +306,8 @@ class Bitboard
 
     // ### Public methods for the search of best move. ###
     // ---------------------------------------------------
+
+    void get_pv_line(std::vector<Bitmove>& pv_line) const;
 
     void set_time_left(bool value);
 

@@ -291,7 +291,7 @@ int Bitboard::make_move(Playertype player)
     first = false;
     cmdline << "(Just enter from-square and to-square," << "\n" <<
             "like: "
-            << "e2e4, or g7g8Q if it's a propmotion.)" << "\n";
+            << "e2e4, or g7g8q if it's a propmotion.)" << "\n";
     cmdline << "Your move: ";
     std::cin >> move_string;
     if (move_string.size() < 4 || move_string.size() > 5)

@@ -11,6 +11,7 @@
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 #include "circular_fifo.hpp"
+#include "magic_enum.hpp"
 
 namespace C2_chess
 {

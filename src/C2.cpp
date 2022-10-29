@@ -30,7 +30,7 @@ void close_threads(std::thread& input_thread, std::thread& output_thread);
 
 void print_help_txt();
 
-std::string engine_style(const Bitmove& move);
+std::string uci_style(const Bitmove& move);
 
 // Global booleans which can be set to false to stop input and output threads
 // and to tell if the engine succeeded to open the command_log.txt file, where
@@ -118,40 +118,6 @@ void print_help_txt()
           "C2 Without arguments will start the chess-engine" << "\n" << "\n";
 }
 
-std::string engine_style(const Bitmove& move)
-{
-  std::stringstream ss;
-  ss << static_cast<char>('a' + file_idx(move.from())) << static_cast<int>(rank_idx(move.from())) <<
-     static_cast<char>('a' + file_idx(move.to())) << static_cast<int>(rank_idx(move.to()));
-  if (move.properties() & move_props_promotion)
-  {
-    switch (move.promotion_piece_type())
-    {
-    case Piecetype::Queen:
-      ss << "q";
-      break;
-    case Piecetype::Rook:
-      ss << "r";
-      break;
-    case Piecetype::Knight:
-      ss << "n";
-      break;
-    case Piecetype::Bishop:
-      ss << "b" << std::endl;
-      break;
-    default:
-      std::cerr << "Invalid promotion piece-type: "
-                << magic_enum::enum_name(move.promotion_piece_type())
-                << std::endl;
-      Shared_ostream& logfile = *(Shared_ostream::get_instance());
-      logfile << ("Invalid promotion piece-type: "s)
-              << magic_enum::enum_name(move.promotion_piece_type())
-              << "\n";
-      assert(false);
-    }
-  }
-  return ss.str();
-}
 
 } // End of namespace C2_chess
 
@@ -244,7 +210,7 @@ int main(int argc, char* argv[])
     {
       // (try to) Find the best move in the position
       Bitmove bestmove = game.engine_go(config_params, Uci.get_go_params());
-      output_buffer.put("bestmove " + engine_style(bestmove));
+      output_buffer.put("bestmove " + uci_move(bestmove));
       continue;
     }
 

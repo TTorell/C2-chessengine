@@ -22,26 +22,14 @@ namespace C2_chess
 {
 
 Game::Game(Config_params& config_params) :
-    _is_first_position(true),
-    _move_log(),
-    _chessboard(),
-    _player_type {Playertype::Human, Playertype::Computer},
-    _score(0),
-    _config_params(config_params),
-    _playing(false)
+    _is_first_position(true), _move_log(), _chessboard(), _player_type {Playertype::Human, Playertype::Computer}, _score(0), _config_params(config_params), _playing(false)
 {
-   //std::cerr << "Game::Game(Config_params& config_params)" << std::endl;
+  //std::cerr << "Game::Game(Config_params& config_params)" << std::endl;
   _chessboard.read_position(start_position_FEN, init_pieces);
 }
 
 Game::Game(Color side, Config_params& config_params) :
-    _is_first_position(true),
-    _move_log(),
-    _chessboard(),
-    _player_type {Playertype::Human, Playertype::Computer},
-    _score(0),
-    _config_params(config_params),
-    _playing(false)
+    _is_first_position(true), _move_log(), _chessboard(), _player_type {Playertype::Human, Playertype::Computer}, _score(0), _config_params(config_params), _playing(false)
 {
   //std::cerr << "Game::Game(Color side, Config_params& config_params)" << std::endl;
   _player_type[index(side)] = Playertype::Human;
@@ -49,16 +37,8 @@ Game::Game(Color side, Config_params& config_params) :
   _chessboard.read_position(start_position_FEN, init_pieces);
 }
 
-Game::Game(Playertype pt1,
-           Playertype pt2,
-           Config_params& config_params) :
-    _is_first_position(true),
-    _move_log(),
-    _chessboard(),
-    _player_type{pt1, pt2 },
-    _score(0),
-    _config_params(config_params),
-    _playing(false)
+Game::Game(Playertype pt1, Playertype pt2, Config_params& config_params) :
+    _is_first_position(true), _move_log(), _chessboard(), _player_type {pt1, pt2}, _score(0), _config_params(config_params), _playing(false)
 {
   //std::cerr << "Game::Game(Playertype pt1, Playertype pt2, Config_params& config_params)" << std::endl;
   _chessboard.read_position(start_position_FEN, true);
@@ -176,8 +156,8 @@ void Game::actions_after_a_move(const bool movelist_is_empty)
   if (is_close(evaluation, eval_max) || is_close(evaluation, eval_min))
   {
     _chessboard.set_mate();
-    cmdline << (is_close(evaluation, eval_max)? "1 - 0, black was mated":"0 - 1, white was mated") << "\n" << "\n";
-    logfile << (is_close(evaluation, eval_max)? "1 - 0, black was mated":"0 - 1, white was mated") << "\n";
+    cmdline << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n" << "\n";
+    logfile << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
     _playing = false;
   }
   else if (is_close(evaluation, 0.0F) && movelist_is_empty)
@@ -249,6 +229,13 @@ Bitmove Game::find_best_move(float& score, unsigned int search_depth)
   return best_move;
 }
 
+void Game::send_uci_info(unsigned int search_time_ms, const std::vector<Bitmove>& pv_line)
+{
+  auto info = _chessboard.get_search_info();
+  std::cout << "info score cp " << static_cast<int>(info.score * 100.0) << " depth " << info.max_search_depth << " nodes " << info.node_counter << " time " << search_time_ms
+            << " pv " << uci_pv_line(pv_line) << std::endl;
+}
+
 Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_depth)
 {
   // Incremental search, to have a best-move available as quickly
@@ -258,8 +245,8 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   // If movetime is zero we search infinitely until the GUI sends a stop command,
   // or the predefined search-boards limit has been reached.
 
-  // We will need some search-boards for Quiescense-search too.
-  const unsigned int max_search_depth = std::min((N_SEARCH_BOARDS_DEFAULT / 2), max_depth);
+  // We will need some takeback-states for Quiescense-search too, so:
+  const unsigned int max_search_depth = std::min((N_SEARCH_PLIES_DEFAULT / 2), max_depth);
 
   Bitmove best_move;
   Bitmove local_best_move; // Best move from a specific search-depth.
@@ -268,7 +255,7 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   std::vector<Bitmove> pv_line;
 
   // Keep track of how much time we have spent.
-  auto time_taken_ms{0.0};
+  auto time_taken_ms {0.0};
   steady_clock.tic();
 
   if (is_close(movetime_ms, 0.0))
@@ -285,7 +272,6 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
 
   _chessboard.clear_transposition_table(map_tag::Both);
 
-  // We will need some search-boards for Quiescense-search too.
   for (unsigned int search_depth = 1; search_depth <= max_search_depth; search_depth++)
   {
     _chessboard.switch_tt_tables();
@@ -296,7 +282,7 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
       logfile << "Time is out! or a stop-command has been received.\n";
       if (search_depth == 1)
       {
-        // The search has been interrupted on lowest level.
+        // The search has been interrupted on lowest search_depth.
         // No best move has been found at all. What to do?
         // Just return the first move, maybe.
         logfile << "Search was interrupted on lowest search depth." << "\n";
@@ -315,8 +301,11 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
       break;
 
     time_taken_ms = static_cast<double>(steady_clock.toc_us()) / 1000.0;
-    if (time_taken_ms > movetime_ms / 2.0)
+    // TODO: Make it clear that movetime_ms == 0 means infinite search.
+    if ((!is_close(movetime_ms, 0.0)) && time_taken_ms > movetime_ms / 2.0)
       break;
+    _chessboard.get_pv_line(pv_line);
+    send_uci_info(static_cast<int>(time_taken_ms), pv_line);
   }
 
   assert(best_move.is_valid());
@@ -328,7 +317,7 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   // when command-line play, also stop the the game in that case.
   actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
 
-  // Stop possibly running timer by setting time_left to false.
+  // Stop possibly running timer-thread by setting time_left to false.
   _chessboard.set_time_left(false);
   return _chessboard.get_latest_move();
 }
@@ -381,8 +370,7 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
       while (moves_left_approx < 10)
         moves_left_approx += 20;
       bool is_white_to_move = (_chessboard.get_side_to_move() == Color::White);
-      double time = (is_white_to_move) ? go_params.wtime + moves_left_approx * go_params.winc :
-                                         go_params.btime + moves_left_approx * go_params.binc;
+      double time = (is_white_to_move) ? go_params.wtime + moves_left_approx * go_params.winc : go_params.btime + moves_left_approx * go_params.binc;
       return incremental_search(time / moves_left_approx);
     }
     else
@@ -452,13 +440,13 @@ void Game::figure_out_last_move(const Bitboard& new_position)
         logfile << "Move-colors didn't match." << "\n";
         break;
       case -4:
-        case -5:
+      case -5:
         logfile << "En passant problems." << "\n";
         break;
       case -6:
-        case -7:
-        case -8:
-        case -9:
+      case -7:
+      case -8:
+      case -9:
         logfile << "Castling problems." << "\n";
         break;
       case -10:
