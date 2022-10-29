@@ -257,6 +257,8 @@ class Bitboard
     // This make_move() doesn't require a generated movelist.
     void make_move(const Bitmove& m, Takeback_state& tb_state, Takeback_state& next_tb_state, const Gentype gt, const bool add_to_history = true);
 
+    void new_make_move(const Bitmove& m, Takeback_state& tb_state, const bool add_to_history = true);
+
     // All properties of a move are not decided immediately,
     // the "check" property is set after the move has been made
     // and the position has been initialized for the other player.
