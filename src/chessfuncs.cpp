@@ -638,16 +638,7 @@ std::ostream& operator <<(std::ostream& os, const Search_info& si)
   return os;
 }
 
-std::ostream& operator <<(std::ostream& os, const Takeback_element& element)
-{
-  os << "---------------------" << std::endl;
-  os << "Negamax:" << std::endl;
-  write_list(element.state_S.movelist, os, on_same_line);
-  os << "Quiescence:" << std::endl;
-  write_list(element.state_Q.movelist, os, on_same_line);
-  os << "---------------------" << std::endl;
-  return os;
-}
+
 
 std::ostream& operator <<(std::ostream& os, History_state hs)
 {

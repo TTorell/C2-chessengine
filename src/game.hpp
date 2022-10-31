@@ -50,7 +50,7 @@ class Game
     void clear_move_log(Color col_to_move, uint16_t move_number);
     void setup_pieces();
     void init_board_hash_tag();
-    void actions_after_a_move(const bool movelist_is_empty);
+    void actions_after_a_move();
     void start();
     Bitmove find_best_move(float& score, unsigned int max_search_ply);
     Bitmove incremental_search(const double movetime, unsigned int max_depth = N_SEARCH_PLIES_DEFAULT/2);
@@ -82,14 +82,14 @@ class Game
     std::ostream& write_diagram(std::ostream& os) const;
     Shared_ostream& write_diagram(Shared_ostream& sos) const;
     std::ostream& write_movelog(std::ostream& os) const;
-    std::ostream& write_movelist(std::ostream& os) const;
+    std::ostream& write_movelist(std::ostream& os);
     void play_on_cmd_line(Config_params& config_params);
     void figure_out_last_move(const Bitboard& new_position);
     void start_new_game();
     int read_position(const std::string& filename);
     int make_a_move(float& score, const uint8_t max_search_ply);
-    void make_move(const std::string& move);
-    void takeback_latest_move();
+    void make_move(const std::string& move, Takeback_state& tb_state);
+    void takeback_latest_move(Takeback_state& tb_state);
 };
 
 } // namespace C2_chess

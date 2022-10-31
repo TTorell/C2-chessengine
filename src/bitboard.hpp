@@ -34,7 +34,7 @@ class Bitboard
     // Static declarations, incomplete type.
     static Transposition_table transposition_table;
     static Game_history history;
-    static struct Takeback_element takeback_list[];
+    //static struct Takeback_element takeback_list[];
     static std::atomic<bool> time_left;
 
     uint64_t _hash_tag;
@@ -192,19 +192,21 @@ class Bitboard
 
     int count_threats_to_square(uint64_t square, Color side) const;
 
-    float evaluate_position(const bool movelist_is_empty, Color for_side, uint8_t search_ply, bool evaluate_zero_moves = true) const;
+    float evaluate_empty_movelist(int search_ply) const;
+
+    float evaluate_position() const;
 
     void clear_PV_table();
 
-    inline Takeback_state& get_takeback_state(size_t idx) const
-    {
-      return takeback_list[idx].state_S;
-    }
-
-    inline Takeback_state& get_takeback_state_Q(size_t idx) const
-    {
-      return takeback_list[idx].state_Q;
-    }
+//    inline Takeback_state& get_takeback_state(size_t idx) const
+//    {
+//      return takeback_list[idx].state_S;
+//    }
+//
+//    inline Takeback_state& get_takeback_state_Q(size_t idx) const
+//    {
+//      return takeback_list[idx].state_Q;
+//    }
 
     float Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply);
 
@@ -228,7 +230,6 @@ class Bitboard
       _ep_square = zero;
       _castling_rights = castling_rights_none;
       _material_diff = 0.0;
-      //TODO: REMOVE movelist.clear();
     }
 
     // Reads the position from a text-string, with some
@@ -245,17 +246,15 @@ class Bitboard
     // ------------------------------------
 
     // Looks up the i:th move in movelist and makes it.
-    // move_no just keeps track of the full move number
-    // in the game.
-    void make_move(const std::size_t i, Takeback_state& tb_state, Takeback_state& next_tb_state, const Gentype gt, const bool add_to_history = true);
+    void make_move(const size_t i, Takeback_state& tb_state);
 
     // Only for the command-line interface, where the user
     // is prompted to enter the new move on the keyboard,
     // if he's on turn.
     int make_move(Playertype player_type);
 
-    // This make_move() doesn't require a generated movelist.
-    void make_move(const Bitmove& m, Takeback_state& tb_state, Takeback_state& next_tb_state, const Gentype gt, const bool add_to_history = true);
+//    // This make_move() doesn't require a generated movelist.
+//    void make_move(const Bitmove& m, Takeback_state& tb_state, Takeback_state& next_tb_state, const Gentype gt, const bool add_to_history = true);
 
     void new_make_move(const Bitmove& m, Takeback_state& tb_state, const bool add_to_history = true);
 
@@ -326,10 +325,10 @@ class Bitboard
       return _side_to_move;
     }
 
-    inline list_ptr get_movelist(size_t idx) const
-    {
-      return takeback_list[idx].state_S.movelist;
-    }
+//    inline list_ptr get_movelist(size_t idx) const
+//    {
+//      return takeback_list[idx].state_S.movelist;
+//    }
 
     bool is_draw_by_50_moves() const;
 

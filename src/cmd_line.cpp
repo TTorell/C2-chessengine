@@ -203,7 +203,8 @@ int Game::make_a_move(float& score, const uint8_t max_search_ply)
       std::cout << "Black was check mated." << std::endl; // TODO
       return 0;
     }
-    _chessboard.make_move(best_move, _chessboard.get_takeback_state(0), _chessboard.get_takeback_state(0), Gentype::All);
+    Takeback_state tb_state_dummy;
+    _chessboard.new_make_move(best_move, tb_state_dummy);
     return 0;
   }
 }
@@ -221,7 +222,7 @@ void Game::start()
 // use in the Zobrist hash transposition-table.
   init_board_hash_tag();
 // Generate all moves.
-  _chessboard.find_legal_moves(*_chessboard.get_movelist(0), Gentype::All);
+//  _chessboard.find_legal_moves(*_chessboard.get_movelist(0), Gentype::All);
 // Tell the engine that there are no time limits.
 // The time it takes is defined by the max_searh_level
   _chessboard.set_time_left(true);
@@ -233,8 +234,6 @@ void Game::start()
     uint64_t nsec_start = current_time.nanoseconds();
     if (_player_type[index(_chessboard.get_side_to_move())] == Playertype::Human)
     {
-//      cmdline << "Hashtag: " << _chessboard.get_hash_tag() << "\n";
-//      cmdline << "Material evaluation: " << _chessboard.get_material_evaluation() << "\n";
       if (make_a_move(_score, max_search_ply) != 0)
       {
         cmdline << "Stopped playing" << "\n";
@@ -242,7 +241,7 @@ void Game::start()
       }
       // Update the movelog of the game.
       _move_log.push_back(_chessboard.get_latest_move());
-      actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
+      actions_after_a_move();
     }
     else
     {
@@ -348,10 +347,13 @@ int Bitboard::make_move(Playertype player)
     if (to_square & _other->pieces)
       move_props = move_props_capture;
     Bitmove m(p_type, move_props, from_square, to_square, promotion_piecetype);
-    if (!is_in_movelist(*get_movelist(0), m))
+    list_t movelist;
+    find_legal_moves(movelist, Gentype::All);
+    if (!is_in_movelist(movelist, m))
       continue;
     //  Move is OK,make it
-    make_move(m, get_takeback_state(0), get_takeback_state(0), Gentype::All);
+    Takeback_state tb_state_dummy;
+    new_make_move(m, tb_state_dummy);
     return 0;
   } // while not read
 }

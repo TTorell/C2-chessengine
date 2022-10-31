@@ -29,13 +29,14 @@ namespace C2_chess
 
 Current_time steady_clock;
 std::atomic<bool> Bitboard::time_left(false);
-struct Takeback_element Bitboard::takeback_list[N_SEARCH_PLIES_DEFAULT] {};
+//struct Takeback_element Bitboard::takeback_list[N_SEARCH_PLIES_DEFAULT] {};
 Game_history Bitboard::history;
 Transposition_table Bitboard::transposition_table;
 
 Bitboard::Bitboard() :
-    _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _latest_move(), _taken_piece_type(Piecetype::Undefined), _checkers(zero),
-    _pinners(zero), _pinned_pieces(zero), _all_pieces(zero), _white_pieces(), _black_pieces(), _own(nullptr), _other(nullptr), _half_move_counter(0)
+    _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _latest_move(),
+    _taken_piece_type(Piecetype::Undefined), _checkers(zero), _pinners(zero), _pinned_pieces(zero), _all_pieces(zero), _white_pieces(), _black_pieces(), _own(nullptr),
+    _other(nullptr), _half_move_counter(0)
 {
   //std::cerr << "BitBoard Default constructor" << std::endl;
   _own = &_white_pieces;
@@ -44,8 +45,9 @@ Bitboard::Bitboard() :
 
 Bitboard::Bitboard(const Bitboard& bb) :
     _hash_tag(bb._hash_tag), _side_to_move(bb._side_to_move), _move_number(bb._move_number), _castling_rights(bb._castling_rights), _ep_square(bb._ep_square),
-    _material_diff(bb._material_diff), _latest_move(bb._latest_move), _taken_piece_type(bb._taken_piece_type), _checkers(bb._checkers), _pinners(bb._pinners), _pinned_pieces(bb._pinned_pieces),
-    _all_pieces(bb._all_pieces), _white_pieces(bb._white_pieces), _black_pieces(bb._black_pieces), _own(nullptr), _other(nullptr), _half_move_counter(bb._half_move_counter)
+    _material_diff(bb._material_diff), _latest_move(bb._latest_move), _taken_piece_type(bb._taken_piece_type), _checkers(bb._checkers), _pinners(bb._pinners),
+    _pinned_pieces(bb._pinned_pieces), _all_pieces(bb._all_pieces), _white_pieces(bb._white_pieces), _black_pieces(bb._black_pieces), _own(nullptr), _other(nullptr),
+    _half_move_counter(bb._half_move_counter)
 {
   //std::cerr << "BitBoard Copy constructor" << std::endl;
   if (_side_to_move == Color::White)
@@ -520,30 +522,28 @@ void Bitboard::count_center_control(float& sum, float weight) const
   sum += counter * weight;
 }
 
-float Bitboard::evaluate_position(const bool movelist_is_empty, Color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
+float Bitboard::evaluate_empty_movelist(int search_ply) const
 {
-  if (evaluate_zero_moves && movelist_is_empty)
+  if (_latest_move.properties() & move_props_check) // TODO: Check if this always has been set?
   {
-    // if (square_is_threatened(_own->King, false))
-    if (_latest_move.properties() & move_props_check) // TODO: Check if this always has been set?
-    {
-      // This is checkmate, we want to evaluate the quickest way to mate higher
-      // so we add/subtract level.
-      return (col_to_move == Color::White) ? (eval_min + search_ply) : (eval_max - search_ply);
-    }
-    else
-    {
-      // This must be stalemate
-      return 0.0;
-    }
+    // This is checkmate, we want to evaluate the quickest way to mate higher
+    // so we add/subtract level.
+    return (_side_to_move == Color::White) ? (eval_min + search_ply) : (eval_max - search_ply);
   }
+  else
+  {
+    // This must be stalemate
+    return 0.0;
+  }
+}
+
+float Bitboard::evaluate_position() const
+{
   // Start with a very small number in sum, just so we don't return 0.0 in an
   // equal position. 0.0 is reserved for stalemate.
   float sum = epsilon;
   sum += _material_diff;
-  //count_material(sum, 0.95F, ot);
   count_center_control(sum, 0.02F);
-  //count_possible_moves(sum, 0.01F, col_to_move); // of doubtful value.
   count_development(sum, 0.05F);
   count_pawns_in_centre(sum, 0.03F);
   count_castling(sum, 0.10F);
@@ -649,16 +649,15 @@ std::ostream& Bitboard::write_movelist(const list_ref movelist, std::ostream& os
 
 void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
 {
-  //TODO: Is this righ?
-  list_t movelist;
   pv_line.clear();
   Bitboard bb = *this;
+  Takeback_state tb_state_dummy;
   for (int i = 0; i < 20; i++)
   {
     TT_element& tte = transposition_table.find(bb._hash_tag);
-    if (!tte.best_move.is_valid())
+    if (!tte.best_move.is_valid() || tte.search_ply != i + 1)
       break;
-    bb.make_move(tte.best_move, get_takeback_state(N_SEARCH_PLIES_DEFAULT - 1), get_takeback_state(N_SEARCH_PLIES_DEFAULT - 1), Gentype::All, dont_update_history);
+    bb.new_make_move(tte.best_move, tb_state_dummy, dont_update_history);
     pv_line.push_back(bb._latest_move);
   }
 }
@@ -701,7 +700,7 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth)
 
 Shared_ostream& Bitboard::write_search_info(Shared_ostream& logfile) const
 {
-  logfile << "Evaluated on depth:" << static_cast<int>(search_info.max_search_depth) << " " << static_cast<int>(search_info.leaf_node_counter) << " nodes in "
+  logfile << "Evaluated on depth:" << static_cast<int>(search_info.max_search_depth) << " " << static_cast<int>(search_info.node_counter) << " nodes in "
           << search_info.time_taken << " milliseconds.\n";
   std::stringstream ss;
   std::vector<Bitmove> pv_line;
@@ -747,16 +746,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
     return 0.0;
   }
 
-  std::deque<Bitmove> movelist;
-  find_legal_moves(movelist, Gentype::Captures_and_Promotions);
-
-  auto score_w = evaluate_position(movelist.size() == 0, _side_to_move, search_ply, dont_evaluate_zero_moves);
-  auto score = (_side_to_move == Color::White) ? score_w : -score_w;
-
-  if (movelist.size() == 0)
-  {
-    return score;
-  }
+  auto score = (_side_to_move == Color::White)? evaluate_position() : -evaluate_position();
 
   if (score >= beta)
   {
@@ -770,9 +760,10 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
 
   search_ply++;
 
-  float move_score = -infinity;
-
+  auto move_score = -infinity;
   Takeback_state tb_state;
+  std::deque<Bitmove> movelist;
+  find_legal_moves(movelist, Gentype::Captures_and_Promotions);
   // Collect the best value from all possible "capture-moves"
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
@@ -785,7 +776,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
     //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
     move_score = -Quiesence_search(search_ply, -beta, -alpha, max_search_ply);
 
-    // Restore game history, state and local movelist to current position.
+    // Restore game history and state to current position.
     takeback_latest_move(tb_state);
 
     // Pruning:
@@ -870,16 +861,14 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
   std::deque<Bitmove> movelist;
   find_legal_moves(movelist, Gentype::All);
 
-  // If there are no possible moves, later evaluation will check for such things as
+  // If there are no possible moves, evaluation will check for such things as
   // mate or stalemate which may happen before max_search_ply has been reached.
   if (movelist.size() == 0)
   {
     // ---------------------------------------
     best_move = NO_MOVE;
     element.best_move = NO_MOVE;
-    element.best_move._evaluation =
-        (_side_to_move == Color::White) ? evaluate_position(movelist.size() == 0, _side_to_move, search_ply) :
-            -evaluate_position(movelist.size() == 0, _side_to_move, search_ply);
+    element.best_move._evaluation = (_side_to_move == Color::White) ? evaluate_empty_movelist(search_ply) : -evaluate_empty_movelist(search_ply);
     element.search_ply = search_ply;
     // ---------------------------------------
     return element.best_move._evaluation;

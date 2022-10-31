@@ -127,21 +127,28 @@ class Bitboard_with_utils: public Bitboard
 
     void make_UCI_move(const std::string& UCI_move);
 
-    float evaluate_position(Color col_to_move, uint8_t level, bool evaluate_zero_moves = true) const;
+    void make_UCI_move(const std::string& UCI_move, Takeback_state& tb_state);
+
+    float evaluate_empty_movelist(int search_ply) const;
+
+    float evaluate_position() const;
 
     Bitmove get_first_move()
     {
       //TODO: Is this right:
-      auto movelist = get_movelist(0);
-      assert(movelist->size() > 0);
-      return (*movelist)[0];
+      list_t movelist;
+      find_legal_moves(movelist, Gentype::All);
+      assert(movelist.size() > 0);
+      return movelist[0];
     }
 
-    int get_move_index(const Bitmove& move) const
+    int get_move_index(const Bitmove& move)
     {
       int idx = 0;
       //TODO: Is this right:
-      for (const Bitmove& m : *get_movelist(0))
+      list_t movelist;
+      find_legal_moves(movelist, Gentype::All);
+      for (const Bitmove& m : movelist)
       {
         if (m == move)
           return idx;
@@ -159,23 +166,23 @@ class Bitboard_with_utils: public Bitboard
 
     void add_position_to_game_history(const uint64_t hash_tag);
 
-    void takeback_latest_move();
+    void takeback_latest_move(Takeback_state& tb_state);
 
     void takeback_from_game_history();
 
     void reset_history_state(const History_state& saved_history_state);
 
-    Takeback_state& get_takeback_state(size_t idx) const
-    {
-      return takeback_list[idx].state_S;
-    }
+//    Takeback_state& get_takeback_state(size_t idx) const
+//    {
+//      return takeback_list[idx].state_S;
+//    }
+//
+//    Takeback_state& get_takeback_state_Q(size_t idx) const
+//    {
+//      return takeback_list[idx].state_Q;
+//    }
 
-    Takeback_state& get_takeback_state_Q(size_t idx) const
-    {
-      return takeback_list[idx].state_Q;
-    }
-
-    std::ostream& write_movelist(std::ostream& os, const bool same_line) const;
+    std::ostream& write_movelist(std::ostream& os, const bool same_line);
 
 };
 

@@ -128,12 +128,19 @@ std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::ve
   }
   return stripped_moves;
 }
-
 void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move)
+{
+  Takeback_state tb_state_dummy;
+  make_UCI_move(UCI_move, tb_state_dummy);
+}
+
+void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move, Takeback_state& tb_state)
 {
   std::stringstream out_moves;
   //TODO: Is this right?
-  write_movelist(out_moves, on_separate_lines); // writes from movelist(0)
+  list_t movelist;
+  find_legal_moves(movelist, Gentype::All);
+  Bitboard::write_movelist(movelist, out_moves, on_separate_lines);
   std::vector<std::string> out_moves_vector;
   std::string out_move = "";
   while (std::getline(out_moves, out_move))
@@ -151,7 +158,9 @@ void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move)
     i++;
   }
   if (found == true)
-    make_move(i, get_takeback_state(0), get_takeback_state(0), Gentype::All);
+  {
+    Bitboard::make_move(i, tb_state);
+  }
   else
     assert(false);
 }
@@ -187,11 +196,11 @@ int Bitboard_with_utils::add_mg_test_position(const std::string& filename)
   read_position(FEN_string);
   init_piece_state();
   write(std::cout, Color::White);
-  //TODO:Is this right?
-  find_legal_moves(*get_movelist(0), Gentype::All);
+  list_t movelist;
+  find_legal_moves(movelist, Gentype::All);
   std::cout << "Possible moves are:" << std::endl;
   //TODO:Is this right?
-  write_movelist(std::cout, on_same_line);
+  Bitboard::write_movelist(movelist, std::cout, on_same_line);
   if (question_to_user("Is this correct?\nIf so, would you like to add the position\nas a new test case? [y/n]: ", "^[yY].*$"))
   {
     std::ofstream ofs;
@@ -223,16 +232,15 @@ bool Bitboard_with_utils::run_mg_test_case(uint32_t testnum, const std::string& 
 
   uint64_t start = now.nanoseconds();
 
-  //TODO: Is this right?
-  find_legal_moves(*get_movelist(0), gt);
-
+  list_t movelist;
+  find_legal_moves(movelist, gt);
   uint64_t stop = now.nanoseconds();
   std::cout << "Move generation took " << stop - start << " nanoseconds." << std::endl;
 
   // Compare output and reference moves, first build a vector of "output-moves".
   std::stringstream out_moves;
   //TODO: Is this right?
-  write_movelist(out_moves, on_separate_lines); // Writes from movelist(0).
+  Bitboard::write_movelist(movelist, out_moves, on_separate_lines); // Writes from movelist(0).
   std::vector<std::string> out_moves_vector;
   std::string out_move = "";
   while (std::getline(out_moves, out_move))
@@ -396,10 +404,14 @@ uint64_t Bitboard_with_utils::find_legal_squares(uint64_t sq, uint64_t mask, uin
   return Bitboard::find_legal_squares(sq, mask);
 }
 
-float Bitboard_with_utils::evaluate_position(Color col_to_move, uint8_t search_ply, bool evaluate_zero_moves) const
+float Bitboard_with_utils::evaluate_empty_movelist(int search_ply) const
 {
-  //TODO: Is this right?
-  return Bitboard::evaluate_position((get_movelist(0)->size() == 0), col_to_move, search_ply, evaluate_zero_moves);
+  return Bitboard::evaluate_empty_movelist(search_ply);
+}
+
+float Bitboard_with_utils::evaluate_position() const
+{
+  return Bitboard::evaluate_position();
 }
 
 int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitmove& m) const
@@ -519,10 +531,11 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
   return 0;
 }
 
-std::ostream& Bitboard_with_utils::write_movelist(std::ostream& os, const bool same_line) const
+std::ostream& Bitboard_with_utils::write_movelist(std::ostream& os, const bool same_line)
 {
-  //TODO: is this right?
-  Bitboard::write_movelist(*get_movelist(0), os, same_line);
+  list_t movelist;
+  find_legal_moves(movelist, Gentype::All);
+  Bitboard::write_movelist(movelist, os, same_line);
   return os;
 }
 
@@ -540,9 +553,9 @@ void Bitboard_with_utils::reset_history_state(const History_state& saved_history
   history.takeback_moves(saved_history_state);
 }
 
-void Bitboard_with_utils::takeback_latest_move()
+void Bitboard_with_utils::takeback_latest_move(Takeback_state& tb_state)
 {
-  Bitboard::takeback_latest_move(get_takeback_state(0));
+  Bitboard::takeback_latest_move(tb_state);
 }
 
 } // End namespace C2_chess

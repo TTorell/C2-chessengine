@@ -53,7 +53,7 @@ void Game::init()
   _is_first_position = true;
   _move_log.clear_and_init(_chessboard.get_side_to_move(), _chessboard.get_move_number());
   _chessboard.init();
-  _chessboard.find_legal_moves(*_chessboard.get_movelist(0), Gentype::All);
+//  _chessboard.find_legal_moves(*_chessboard.get_movelist(0), Gentype::All);
 }
 
 void Game::clear_move_log(Color col_to_start, uint16_t move_number)
@@ -130,7 +130,7 @@ std::ostream& Game::write_movelog(std::ostream& os) const
   return os;
 }
 
-std::ostream& Game::write_movelist(std::ostream& os) const
+std::ostream& Game::write_movelist(std::ostream& os)
 {
   _chessboard.write_movelist(os, true);
   return os;
@@ -141,7 +141,7 @@ void Game::init_board_hash_tag()
   _chessboard.init_board_hash_tag();
 }
 
-void Game::actions_after_a_move(const bool movelist_is_empty)
+void Game::actions_after_a_move()
 {
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
@@ -152,31 +152,36 @@ void Game::actions_after_a_move(const bool movelist_is_empty)
   write_diagram(cmdline);
   write_diagram(logfile);
 
-  float evaluation = _chessboard.evaluate_position(_chessboard.get_side_to_move(), 0);
-  if (is_close(evaluation, eval_max) || is_close(evaluation, eval_min))
+  list_t movelist;
+  _chessboard.find_legal_moves(movelist, Gentype::All);
+  if (movelist.size() == 0)
   {
-    _chessboard.set_mate();
-    cmdline << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n" << "\n";
-    logfile << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
-    _playing = false;
+    float evaluation = _chessboard.evaluate_empty_movelist(0);
+    if (is_close(evaluation, eval_max) || is_close(evaluation, eval_min))
+    {
+      _chessboard.set_mate();
+      cmdline << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n" << "\n";
+      logfile << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
+      _playing = false;
+    }
+    else if (is_close(evaluation, 0.0F))
+    {
+      _chessboard.set_stalemate();
+      cmdline << "1/2 - 1/2 draw by stalemate" << "\n";
+      logfile << "1/2 - 1/2 draw by stalemate" << "\n";
+      _playing = false;
+    }
   }
-  else if (is_close(evaluation, 0.0F) && movelist_is_empty)
+  else
   {
-    _chessboard.set_stalemate();
-    cmdline << "1/2 - 1/2 draw by stalemate" << "\n";
-    logfile << "1/2 - 1/2 draw by stalemate" << "\n";
-    _playing = false;
-  }
-  else if (is_close(evaluation, 0.0F) && _chessboard.is_threefold_repetition())
-  {
-    _chessboard.set_draw_by_repetition();
-    cmdline << "1/2 - 1/2 draw by repetition" << "\n";
-    logfile << "1/2 - 1/2 draw by repetition" << "\n";
-    _playing = false;
-  }
-  else // Normal position
-  {
-    if (_chessboard.is_draw_by_50_moves())
+    if (_chessboard.is_threefold_repetition())
+    {
+      _chessboard.set_draw_by_repetition();
+      cmdline << "1/2 - 1/2 draw by repetition" << "\n";
+      logfile << "1/2 - 1/2 draw by repetition" << "\n";
+      _playing = false;
+    }
+    else if (_chessboard.is_draw_by_50_moves())
     {
       _chessboard.set_draw_by_50_moves();
       cmdline << "1/2 - 1/2 draw by the fifty-move rule" << "\n";
@@ -184,8 +189,6 @@ void Game::actions_after_a_move(const bool movelist_is_empty)
       _playing = false;
     }
   }
-  // cmdline <<"Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
-  // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
 }
 
 Bitmove Game::find_best_move(float& score, unsigned int search_depth)
@@ -310,12 +313,13 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
 
   assert(best_move.is_valid());
   //TODO: Is this right?
-  _chessboard.make_move(best_move, _chessboard.get_takeback_state(0), _chessboard.get_takeback_state(0), Gentype::All);
+  Takeback_state tb_state_dummy;
+  _chessboard.new_make_move(best_move, tb_state_dummy);
   _move_log.push_back(_chessboard.get_latest_move());
 
   // Just write to logfile or command-line if position is mate or stalemate.
   // when command-line play, also stop the the game in that case.
-  actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
+  actions_after_a_move();
 
   // Stop possibly running timer-thread by setting time_left to false.
   _chessboard.set_time_left(false);
@@ -386,11 +390,12 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
     Bitmove best_move = find_best_move(_score, max_search_depth);
     if (best_move.is_valid())
     {
-      _chessboard.make_move(best_move, _chessboard.get_takeback_state(0), _chessboard.get_takeback_state(0), Gentype::All);
+      Takeback_state tb_state_dummy;
+      _chessboard.new_make_move(best_move, tb_state_dummy);
       _move_log.push_back(_chessboard.get_latest_move());
     }
   }
-  actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
+  actions_after_a_move();
 
   // Stop possibly running timer by setting time_left to false.
   _chessboard.set_time_left(false);
@@ -470,21 +475,23 @@ void Game::figure_out_last_move(const Bitboard& new_position)
       start_new_game();
       return;
     }
-    _chessboard.make_move(m, _chessboard.get_takeback_state(0), _chessboard.get_takeback_state(0), Gentype::All);
+    Takeback_state tb_state_dummy;
+    _chessboard.new_make_move(m, tb_state_dummy);
     _move_log.push_back(_chessboard.get_latest_move());
-    actions_after_a_move(_chessboard.get_movelist(0)->size() == 0);
+    actions_after_a_move();
   }
 }
 
 int Game::read_position(const Position_params& params)
 {
   //Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  Takeback_state tb_state_dummy;
   read_position_FEN(params.FEN_string);
   if (params.moves)
   {
     for (const std::string& move : params.move_list)
     {
-      make_move(move);
+      make_move(move, tb_state_dummy);
     }
   }
   // write_diagram(logfile) << "\n";
@@ -569,15 +576,15 @@ int Game::read_position_FEN(const std::string& FEN_string)
   return 0;
 }
 
-void Game::make_move(const std::string& move)
+void Game::make_move(const std::string& move, Takeback_state& tb_state)
 {
-  _chessboard.make_UCI_move(move);
+  _chessboard.make_UCI_move(move, tb_state);
   _move_log.push_back(_chessboard.get_latest_move());
 }
 
-void Game::takeback_latest_move()
+void Game::takeback_latest_move(Takeback_state& tb_state)
 {
-  _chessboard.takeback_latest_move();
+  _chessboard.takeback_latest_move(tb_state);
   _move_log.pop();
 }
 

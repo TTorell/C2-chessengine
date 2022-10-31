@@ -291,7 +291,6 @@ using list_t = std::deque<Bitmove>;
 
 struct Takeback_state
 {
-    list_ptr movelist = new list_t {};
     uint64_t hash_tag;
     uint8_t castling_rights;
     uint8_t half_move_counter;
@@ -302,12 +301,6 @@ struct Takeback_state
     Piecetype taken_piece_type;
 };
 
-struct Takeback_element
-{
-    Takeback_state state_S; // For Negamax search;
-    Takeback_state state_Q; // For Quiescence search;
-    friend std::ostream& operator<<(std::ostream& os, const Takeback_element& element);
-};
 
 // The returned best_move from a search can contain a valid move of course,
 // but it can also contain the following information.
