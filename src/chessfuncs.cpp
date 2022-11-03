@@ -72,8 +72,24 @@ std::string get_logfile_name()
   while (std::filesystem::exists(ss.str()));
   return ss.str();
 }
-#include <iostream>
-#include <algorithm>
+
+bool is_sorted_descending(list_ref movelist)
+{
+  auto first = true;
+  Bitmove previous;
+  for (const auto& move : movelist)
+  {
+    if (first)
+    {
+      previous = move;
+      first = false;
+      continue;
+    }
+    if (move.evaluation() > previous.evaluation())
+      return false;
+  }
+  return true;
+}
 
 bool is_positive_number(const std::string& s)
 {

@@ -278,7 +278,7 @@ struct Bitmove
 
     friend std::ostream& operator<<(std::ostream& os, const Bitmove& m);
 
-    bool is_valid()
+    bool is_valid() const
     {
       return _move > last_none_valid_move_constant; // Bigger than DRAW_BY_50_MOVES_RULE._move.
     }

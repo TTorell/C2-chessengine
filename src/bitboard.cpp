@@ -739,6 +739,7 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
 {
   assert(beta > alpha);
 
+//  std::cout << "Q" << std::endl;
   search_info.node_counter++;
 
   if (history.is_threefold_repetition() || is_draw_by_50_moves())
@@ -760,10 +761,11 @@ float Bitboard::Quiesence_search(uint8_t search_ply, float alpha, float beta, ui
 
   search_ply++;
 
-  auto move_score = -infinity;
   Takeback_state tb_state;
   std::deque<Bitmove> movelist;
   find_legal_moves(movelist, Gentype::Captures_and_Promotions);
+
+  auto move_score = -infinity;
   // Collect the best value from all possible "capture-moves"
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
@@ -808,9 +810,18 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
 {
 
   assert(beta > alpha);
-  search_info.node_counter++;
-  float move_score = -infinity; // Must be lower than lowest evaluation
+  best_move = NO_MOVE;
+  if (search_ply == search_depth)
+  {
+    // Quiesence search.
+    // It takes over the searching and the node counting from here,
+    search_info.leaf_node_counter++;
+    auto evaluation = Quiesence_search(search_ply, alpha, beta, N_SEARCH_PLIES_DEFAULT);
+    //std::cout << "Q search " << evaluation << std::endl;
+    return evaluation;
+  }
 
+  search_info.node_counter++;
   search_ply++;
 
   if (history.is_threefold_repetition())
@@ -835,49 +846,36 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
     {
       search_info.hash_hits++;
       best_move = element.best_move;
+//      std::cout << "Hash hit " << best_move << " " << element.best_move._evaluation << std::endl;
+//      std::cout << "element.search_ply " << element.search_ply << " search_ply " << static_cast<int>(search_ply) << std::endl;
       return element.best_move._evaluation;
     }
   }
 
-  if (search_ply == search_depth + 1)
-  {
-    // Quiesence search.
-    // It takes over the searching and the node counting from here,
-    search_info.leaf_node_counter++;
-    best_move = NO_MOVE;
-    element.best_move = NO_MOVE;
-
-    // Quiesence_search will increment the search_ply and the node
-    // counting, so we must subtract one in input parameters here.
-    search_info.node_counter--;
-
-    element.best_move._evaluation = Quiesence_search(search_ply - 1, alpha, beta, N_SEARCH_PLIES_DEFAULT);
-    element.search_ply = search_ply;
-    return element.best_move._evaluation;
-  }
-
+  // Now it's time to generate all possible moves in the position
   Bitmove best_move_dummy;
   Takeback_state tb_state;
   std::deque<Bitmove> movelist;
   find_legal_moves(movelist, Gentype::All);
 
-  // If there are no possible moves, evaluation will check for such things as
+  // If there are no possible moves, evaluate_empty_movelist() will check for such things as
   // mate or stalemate which may happen before max_search_ply has been reached.
   if (movelist.size() == 0)
   {
     // ---------------------------------------
-    best_move = NO_MOVE;
-    element.best_move = NO_MOVE;
+    element.best_move = UNDEFINED_MOVE;
     element.best_move._evaluation = (_side_to_move == Color::White) ? evaluate_empty_movelist(search_ply) : -evaluate_empty_movelist(search_ply);
     element.search_ply = search_ply;
     // ---------------------------------------
     return element.best_move._evaluation;
   }
 
+  float move_score = -infinity; // Must be lower than lowest evaluation
   // Collect the best value from all possible moves
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
     // Make the selected move and ask min() to evaluate it further.
+    //std::cout << static_cast<int>(search_ply) << " " << magic_enum::enum_name(_side_to_move) << " " << movelist[i] << std::endl;
     new_make_move(movelist[i], tb_state);
     move_score = -negamax_with_pruning(search_ply, -beta, -alpha, best_move_dummy, search_depth);
 
@@ -894,6 +892,13 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
       search_info.beta_cutoffs++;
       if (i == 0)
         search_info.first_beta_cutoffs++;
+      // Save beta-killers for next move ordering.
+      if ((movelist[i].properties() & move_props_capture) == 0 &&
+          (movelist[i].properties() & move_props_promotion) == 0)
+      {
+        _beta_killers[1][search_ply] = _beta_killers[0][search_ply];
+        _beta_killers[0][search_ply] = movelist[i];
+      }
       return beta;
     }
     if (move_score > alpha)
@@ -901,6 +906,7 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
       // Update alpha value.
       // We have found a better move.
       best_move = (movelist)[i];
+//      std::cout << "alpha best_move " << best_move << std::endl;
       best_move._evaluation = move_score;
       alpha = move_score;
     }
@@ -915,12 +921,20 @@ float Bitboard::negamax_with_pruning(uint8_t search_ply, float alpha, float beta
       return 0.0;
     }
   }
-  // Save evaluation of the position to the cash and return the best
+  // Save evaluation of the position to the TT-cash and return the best
   // value among the possible moves.
+  // If we haven't found any best_move (better than the original alpha)
+  // then best_move isn't valid.
   // ---------------------------------------
-  element.best_move = best_move;
-  element.best_move._evaluation = alpha;
-  element.search_ply = search_ply;
+  if (best_move.is_valid())
+  {
+    element.best_move = best_move;
+    element.best_move._evaluation = alpha;
+    element.search_ply = search_ply;
+//    std::cout << "best_move: " << best_move << " " << alpha << std::endl;
+  }
+//  else
+//    std::cout << "best_move: NO_MOVE" << std::endl;
   // ---------------------------------------
   return alpha;
 }

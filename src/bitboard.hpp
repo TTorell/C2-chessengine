@@ -31,10 +31,9 @@ namespace C2_chess
 class Bitboard
 {
   protected:
-    // Static declarations, incomplete type.
+    // Static declarations
     static Transposition_table transposition_table;
     static Game_history history;
-    //static struct Takeback_element takeback_list[];
     static std::atomic<bool> time_left;
 
     uint64_t _hash_tag;
@@ -45,10 +44,15 @@ class Bitboard
     uint64_t _ep_square = zero;
     float _material_diff;
     Bitmove _latest_move;
+
+    uint8_t _search_ply;
     Piecetype _taken_piece_type;
     uint64_t _checkers;
     uint64_t _pinners;
     uint64_t _pinned_pieces;
+    Bitmove _previous_search_best_move;
+    Bitmove _beta_killers[2][N_SEARCH_PLIES_DEFAULT];
+
     uint64_t _all_pieces;
     Bitpieces _white_pieces;
     Bitpieces _black_pieces;

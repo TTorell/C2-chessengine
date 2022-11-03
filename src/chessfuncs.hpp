@@ -181,6 +181,8 @@ std::string to_binary(const T& x)
 
 bool is_positive_number(const std::string& s);
 
+bool is_sorted_descending(list_ref movelist);
+
 inline uint8_t file_idx(uint8_t bit_idx)
 {
   assert(bit_idx < 64);

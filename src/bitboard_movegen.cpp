@@ -990,35 +990,22 @@ inline void Bitboard::add_move(list_ref movelist, Piecetype p_type, uint16_t mov
   // If it is, Then give it a high evaluation for the move-ordering,
   // so it'll be sorted as the first move.
 
-  // Playing around. Testing that decltype(auto) also adds reference qualifier (and const/volatile),
-  // which only "auto" wouldn't do.
-  decltype(auto) tte = transposition_table.find(_hash_tag, map_tag::Previous);
-  //  std::cout << type_name<decltype(tte)>() << std::endl;
-  //  // Gives "C2_chess::TT_element&" as it should.
-  //
-  //  // std::cout << type_name<decltype(start_position_FEN)>() << std::endl;
-  //  // Gives "std::string const".
-  //
-  //  typename2() gives a different output (maybe more detailed)
-  //  std::cout << type_name2<decltype(start_position_FEN)>() << std::endl;
-  //  // Gives "const std::basic_string<char>", which also seems OK.
-  if (tte.is_initialized())
+  if (_previous_search_best_move.is_valid())
   {
-    if (tte.best_move == new_move)
+    if (new_move == _previous_search_best_move)
     {
-      //std::cout << "Sorting, best move: " << tte.best_move << ":" << new_move << std::endl;
+      //std::cout << "Sorting, best move: " << _previous_search_best_move << ":" << new_move << std::endl;
       new_move._evaluation = infinity;
       movelist.push_front(new_move);
       return;
     }
-    else
-    {
-      //std::cout << "Not Equal" << std::endl;
-    }
   }
-  else
+
+  if (new_move == _beta_killers[0][_search_ply] || new_move == _beta_killers[1][_search_ply])
   {
-    //std::cout << "TT-element hasn't been initialized" << std::endl;
+    new_move._evaluation = 0.5;
+    movelist.push_front(new_move);
+    return;
   }
 
   if (move_props == move_props_none)
@@ -1072,6 +1059,20 @@ inline void Bitboard::sort_moves(list_ref movelist) const
 
 void Bitboard::find_legal_moves(list_ref movelist, Gentype gt)
 {
+  // What did the previous search have to say about best_move in this position?
+  // Playing around. Testing that decltype(auto) also adds reference qualifier (and const/volatile),
+  // which only "auto" wouldn't do.
+  decltype(auto) tte = transposition_table.find(_hash_tag, map_tag::Previous);
+  //  std::cout << type_name<decltype(tte)>() << std::endl;
+  //  // Gives "C2_chess::TT_element&" as it should.
+  //
+  //  // std::cout << type_name<decltype(start_position_FEN)>() << std::endl;
+  //  // Gives "std::string const".
+  //
+  //  typename2() gives a different output (maybe more detailed)
+  //  std::cout << type_name2<decltype(start_position_FEN)>() << std::endl;
+  //  // Gives "const std::basic_string<char>", which also seems OK.
+  _previous_search_best_move = tte.best_move;
   movelist.clear();
   init_piece_state();
   //  if ((_own->pieces & _other->pieces) != zero)

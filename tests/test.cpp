@@ -224,6 +224,22 @@ TEST_CASE("move_generation")
   std::cout << "It took " << timediff << " nanoseconds." << std::endl;
 }
 
+TEST_CASE("move-ordering")
+{
+  std::string FEN_string = get_FEN_test_position(75);
+  Bitboard_with_utils chessboard;
+  chessboard.init();
+  REQUIRE(chessboard.read_position(FEN_string, init_pieces) == 0);
+  chessboard.write(std::cout, Color::White);
+  chessboard.write_movelist(std::cout, true) << std::endl;
+  list_t movelist;
+  chessboard.find_legal_moves(movelist, Gentype::All);
+  std::cout << "-------" << std::endl;
+  for (const auto& move : movelist)
+    std::cout << move._evaluation << std::endl;
+  REQUIRE(is_sorted_descending(movelist));
+}
+
 TEST_CASE("history")
 {
   Bitboard_with_utils bwu;
@@ -763,27 +779,6 @@ TEST_CASE("find_best_move")
   game.init();
   Go_params go_params; // All members in go_params are set to zero.
 
-  SECTION("examining_strange_threefold_repetition")
-  {
-    std::string FEN_string = get_FEN_test_position(98);
-    game.read_position_FEN(FEN_string);
-    game.init();
-    go_params.movetime = 10000000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    std::stringstream ss;
-    ss << bestmove;
-    REQUIRE(ss.str() == "Bc8-e6");
-    game.read_position_FEN(reverse_FEN_string(FEN_string));
-    game.init();
-    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    ss.clear();
-    ss.str("");
-    ss << bestmove;
-    REQUIRE(ss.str() == "Bc1-e3");
-  }
-
   SECTION("examining_giving_away_pawn")
   {
     std::string FEN_string = get_FEN_test_position(91);
@@ -805,172 +800,177 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Ke4-d5");
   }
 
-  SECTION("examining_strange_queen-move1")
-  {
-    std::string FEN_string = get_FEN_test_position(94);
-    game.read_position_FEN(FEN_string);
-    game.init();
-    go_params.movetime = 10000000; // 10000 seconds should be enough even for debug-compiled executable
-    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    std::stringstream ss;
-    ss << bestmove;
-    REQUIRE(ss.str() == "Ng8-h6");
-    game.read_position_FEN(reverse_FEN_string(FEN_string));
-    game.init();
-    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    ss.clear();
-    ss.str("");
-    ss << bestmove;
-    REQUIRE(ss.str() == "Ng1-h3");
-  }
+//  SECTION("examining_strange_threefold_repetition")
+//  {
+//    std::string FEN_string = get_FEN_test_position(98);
+//    game.read_position_FEN(FEN_string);
+//    game.init();
+//    go_params.movetime = 10000000; // milliseconds
+//    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    std::stringstream ss;
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Bc8-e6");
+//    game.read_position_FEN(reverse_FEN_string(FEN_string));
+//    game.init();
+//    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    ss.clear();
+//    ss.str("");
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Bc1-e3");
+//  }
+//
+//  SECTION("examining_strange_queen-move1")
+//  {
+//    std::string FEN_string = get_FEN_test_position(94);
+//    game.read_position_FEN(FEN_string);
+//    game.init();
+//    go_params.movetime = 10000000; // 10000 seconds should be enough even for debug-compiled executable
+//    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    std::stringstream ss;
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Ng8-h6");
+//    game.read_position_FEN(reverse_FEN_string(FEN_string));
+//    game.init();
+//    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    ss.clear();
+//    ss.str("");
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Ng1-h3");
+//  }
+//
+//  SECTION("mate_in_one")
+//  {
+//    std::string FEN_string = get_FEN_test_position(90);
+//    game.read_position_FEN(FEN_string);
+//    game.init();
+//    go_params.movetime = 100000; // milliseconds
+//    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    std::stringstream ss;
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Qd8-h4+ mate");
+//    game.read_position_FEN(reverse_FEN_string(FEN_string));
+//    game.init();
+//    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    ss.clear();
+//    ss.str("");
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Qd1-h5+ mate");
+//  }
+//
+//  SECTION("Qg6_mate_in_two")
+//  {
+//    std::string FEN_string = get_FEN_test_position(93);
+//    game.read_position_FEN(FEN_string);
+//    game.init();
+//    go_params.movetime = 100000; // milliseconds
+//    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    std::stringstream ss;
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Qg3-g6");
+//    game.read_position_FEN(reverse_FEN_string(FEN_string));
+//    game.init();
+//    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    ss.clear();
+//    ss.str("");
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Qg6-g3");
+//  }
+//
+//  SECTION("examining_missing_a_mate")
+//  {
+//    std::string FEN_string = get_FEN_test_position(89);
+//    game.read_position_FEN(FEN_string);
+//    game.init();
+//    go_params.movetime = 100000; // milliseconds
+//    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    std::stringstream ss;
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Ke7-d8");
+//    game.read_position_FEN(reverse_FEN_string(FEN_string));
+//    game.init();
+//    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    ss.clear();
+//    ss.str("");
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Ke2-d1");
+//  }
+//
+//  SECTION("strangulation_mate")
+//  {
+//    std::string FEN_string = get_FEN_test_position(73);
+//    game.read_position_FEN(FEN_string);
+//    game.init();
+//    go_params.movetime = 100000; // milliseconds
+//    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    REQUIRE(game.get_game_history_state() == History_state{2, 0, 0});
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    std::stringstream ss;
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Nc7-a6+");
+//    game.read_position_FEN(reverse_FEN_string(FEN_string));
+//    game.init();
+//    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    ss.clear();
+//    ss.str("");
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Nc2-a3+");
+//  }
+//
+//  SECTION("examining_strange_queen-move")
+//  {
+//    std::string FEN_string = get_FEN_test_position(78);
+//    game.read_position_FEN(FEN_string);
+//    game.init();
+//    go_params.movetime = 100000; // milliseconds
+//    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    std::stringstream ss;
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Nb8-d7");
+//    game.read_position_FEN(reverse_FEN_string(FEN_string));
+//    game.init();
+//    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    ss.clear();
+//    ss.str("");
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Nb1-d2");
+//  }
+//
+//  SECTION("examining_strange_rook-move")
+//  {
+//    std::string FEN_string = get_FEN_test_position(80);
+//    game.read_position_FEN(FEN_string);
+//    game.init();
+//    go_params.movetime = 100000; // milliseconds
+//    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    std::stringstream ss;
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Nd3-c1+");
+//    std::cout << FEN_string << std::endl;
+//    std::cout << reverse_FEN_string(FEN_string) << std::endl;
+//    game.read_position_FEN(reverse_FEN_string(FEN_string));
+//    game.init();
+//    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+//    std::cout << "Best move: " << bestmove << std::endl;
+//    ss.clear();
+//    ss.str("");
+//    ss << bestmove;
+//    REQUIRE(ss.str() == "Rc1-c5");
+//  }
 
-  SECTION("mate_in_one")
-  {
-    std::string FEN_string = get_FEN_test_position(90);
-    game.read_position_FEN(FEN_string);
-    game.init();
-    go_params.movetime = 100000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    std::stringstream ss;
-    ss << bestmove;
-    REQUIRE(ss.str() == "Qd8-h4+ mate");
-    game.read_position_FEN(reverse_FEN_string(FEN_string));
-    game.init();
-    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    ss.clear();
-    ss.str("");
-    ss << bestmove;
-    REQUIRE(ss.str() == "Qd1-h5+ mate");
-  }
-
-  SECTION("Qg6_mate_in_two")
-  {
-    std::string FEN_string = get_FEN_test_position(93);
-    game.read_position_FEN(FEN_string);
-    game.init();
-    go_params.movetime = 100000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    std::stringstream ss;
-    ss << bestmove;
-    REQUIRE(ss.str() == "Qg3-g6");
-    game.read_position_FEN(reverse_FEN_string(FEN_string));
-    game.init();
-    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    ss.clear();
-    ss.str("");
-    ss << bestmove;
-    REQUIRE(ss.str() == "Qg6-g3");
-  }
-
-  SECTION("examining_missing_a_mate")
-  {
-    std::string FEN_string = get_FEN_test_position(89);
-    game.read_position_FEN(FEN_string);
-    game.init();
-    go_params.movetime = 100000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    std::stringstream ss;
-    ss << bestmove;
-    REQUIRE(ss.str() == "Ke7-d8");
-    game.read_position_FEN(reverse_FEN_string(FEN_string));
-    game.init();
-    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    ss.clear();
-    ss.str("");
-    ss << bestmove;
-    REQUIRE(ss.str() == "Ke2-d1");
-  }
-
-  SECTION("strangulation_mate")
-  {
-    std::string FEN_string = get_FEN_test_position(73);
-    game.read_position_FEN(FEN_string);
-    game.init();
-    go_params.movetime = 100000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    REQUIRE(game.get_game_history_state() == History_state{2, 0, 0});
-    std::cout << "Best move: " << bestmove << std::endl;
-    std::stringstream ss;
-    ss << bestmove;
-    REQUIRE(ss.str() == "Nc7-a6+");
-    game.read_position_FEN(reverse_FEN_string(FEN_string));
-    game.init();
-    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    ss.clear();
-    ss.str("");
-    ss << bestmove;
-    REQUIRE(ss.str() == "Nc2-a3+");
-  }
-
-  SECTION("examining_strange_queen-move")
-  {
-    std::string FEN_string = get_FEN_test_position(78);
-    game.read_position_FEN(FEN_string);
-    game.init();
-    go_params.movetime = 100000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    std::stringstream ss;
-    ss << bestmove;
-    REQUIRE(ss.str() == "Nb8-d7");
-    game.read_position_FEN(reverse_FEN_string(FEN_string));
-    game.init();
-    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    ss.clear();
-    ss.str("");
-    ss << bestmove;
-    REQUIRE(ss.str() == "Nb1-d2");
-  }
-
-  SECTION("examining_strange_rook-move")
-  {
-    std::string FEN_string = get_FEN_test_position(80);
-    game.read_position_FEN(FEN_string);
-    game.init();
-    go_params.movetime = 100000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    std::stringstream ss;
-    ss << bestmove;
-    REQUIRE(ss.str() == "Nd3-c1+");
-    std::cout << FEN_string << std::endl;
-    std::cout << reverse_FEN_string(FEN_string) << std::endl;
-    game.read_position_FEN(reverse_FEN_string(FEN_string));
-    game.init();
-    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    ss.clear();
-    ss.str("");
-    ss << bestmove;
-    REQUIRE(ss.str() == "Rc1-c5");
-  }
-
-}
-
-TEST_CASE("move-ordering")
-{
-  std::string FEN_string = get_FEN_test_position(75);
-  Bitboard_with_utils chessboard;
-  chessboard.init();
-  REQUIRE(chessboard.read_position(FEN_string, init_pieces) == 0);
-  chessboard.write(std::cout, Color::White);
-  chessboard.write_movelist(std::cout, true) << std::endl;
-  list_t movelist;
-  chessboard.find_legal_moves(movelist, Gentype::All);
-  std::cout << "-------" << std::endl;
-  for (const auto& move : movelist)
-    std::cout << move._evaluation << std::endl;
-  // TODO: is_sorted()
 }
 
 TEST_CASE("50-moves-rule")
