@@ -105,6 +105,11 @@ class Bitboard_with_utils: public Bitboard
       _latest_move.add_property(move_props_stalemate);
     }
 
+    void set_search_ply(uint8_t search_ply)
+    {
+      _search_ply = search_ply;
+    }
+
     void set_draw_by_repetition()
     {
       _latest_move.add_property(move_props_draw_by_repetition);

@@ -200,7 +200,8 @@ Bitmove Game::find_best_move(float& score, unsigned int search_depth)
   _chessboard.clear_transposition_table();
   Bitmove best_move;
   steady_clock.tic();
-  score = _chessboard.negamax_with_pruning(0, -infinity, infinity, best_move, search_depth);
+  _chessboard.set_search_ply(0);
+  score = _chessboard.negamax_with_pruning(-infinity, infinity, best_move, search_depth);
   _chessboard.get_search_info().time_taken = steady_clock.toc_ms();
   _chessboard.get_search_info().score = score;
   if (_chessboard.get_side_to_move() == Color::White)

@@ -192,7 +192,8 @@ int Game::make_a_move(float& score, const uint8_t max_search_ply)
     Bitmove best_move;
     _chessboard.clear_transposition_table();
     _chessboard.init_material_evaluation();
-    score = _chessboard.negamax_with_pruning(0, -infinity, infinity, best_move, max_search_ply);
+    _chessboard.set_search_ply(0);
+    score = _chessboard.negamax_with_pruning(-infinity, infinity, best_move, max_search_ply);
     if (best_move == NO_MOVE && is_close(score, -100.0F))
     {
       std::cout << "White was check mated." << std::endl; // TODO

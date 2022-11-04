@@ -391,6 +391,8 @@ void Bitboard::new_make_move(const Bitmove& m, Takeback_state& tb_state, const b
   {
     history.add_position(_hash_tag);
   }
+  // Increase search-ply (in case we are inside a search operation).
+  _search_ply++;
 }
 
 void Bitboard::takeback_en_passant(const Bitmove& m, const Color moving_side)
@@ -573,6 +575,8 @@ void Bitboard::takeback_latest_move(const Takeback_state& tb_state, const bool t
   }
 
   takeback_from_state(tb_state);
+  // Decrease search-ply (in case we are inside a search operation).
+  _search_ply--;
 }
 
 } // namespace C2_chess

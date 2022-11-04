@@ -212,7 +212,7 @@ class Bitboard
 //      return takeback_list[idx].state_Q;
 //    }
 
-    float Quiesence_search(uint8_t search_ply, float alpha, float beta, uint8_t max_search_ply);
+    float Quiesence_search(float alpha, float beta, uint8_t max_search_ply);
 
   public:
 
@@ -344,7 +344,7 @@ class Bitboard
     void init_material_evaluation();
 
     // Search function
-    float negamax_with_pruning(uint8_t level, float alpha, float beta, Bitmove& best_move, const uint8_t max_search_ply);
+    float negamax_with_pruning(float alpha, float beta, Bitmove& best_move, const uint8_t max_search_ply);
 
     unsigned int perft_test(uint8_t search_ply, uint8_t max_search_plies);
 
