@@ -453,6 +453,86 @@ void Bitboard::count_development(float& sum, float weight) const
   sum += counter * weight;
 }
 
+int Bitboard::count_KNP_threats_to_center_squares() const
+{
+  int count = 0;
+  // Check Pawn-threats
+  count += std::popcount(pawn_center_control_W_pattern & _white_pieces.Pawns);
+  count -= std::popcount(pawn_center_control_B_pattern & _black_pieces.Pawns);
+
+  // Check Knight-threats
+  count += std::popcount(knight_center_control_pattern1 & _white_pieces.Knights);
+  count -= std::popcount(knight_center_control_pattern1 & _black_pieces.Knights);
+  count += 2 * std::popcount(knight_center_control_pattern2 & _white_pieces.Knights);
+  count -= 2 * std::popcount(knight_center_control_pattern2 & _black_pieces.Knights);
+
+  // Check King-threats
+  if (king_center_control_pattern1 & _white_pieces.King)
+  {
+    count++;
+  }
+  if (king_center_control_pattern1 & _black_pieces.King)
+  {
+    count--;
+  }
+  if (king_center_control_pattern2 & _white_pieces.King)
+  {
+    count += 2;
+  }
+  if (king_center_control_pattern2 & _black_pieces.King)
+  {
+    count -= 2;
+  }
+  if (center_squares & _white_pieces.King)
+  {
+    count += 3;
+  }
+  if (center_squares & _black_pieces.King)
+  {
+    count -= 3;
+  }
+  return count;
+}
+
+int Bitboard::count_QRB_threats_to_square(uint64_t to_square, Color side) const
+{
+  uint64_t possible_attackers;
+  uint64_t attacker;
+  uint64_t tmp_all_pieces = _all_pieces;
+
+  const Bitpieces& pieces = (side == Color::White) ? _white_pieces : _black_pieces;
+
+  int count = 0;
+
+  // Check threats on file and rank
+  if (pieces.Queens | pieces.Rooks)
+  {
+    // Check threats on file and rank
+    uint64_t to_ortogonal_squares = ortogonal_squares(to_square);
+    possible_attackers = to_ortogonal_squares & (pieces.Queens | pieces.Rooks);
+    while (possible_attackers)
+    {
+      attacker = popright_square(possible_attackers);
+      if ((between(to_square, attacker, to_ortogonal_squares) & tmp_all_pieces) == zero)
+        count++;
+    }
+  }
+
+  // Check diagonal threats
+  if (pieces.Queens | pieces.Bishops)
+  {
+    uint64_t to_diagonal_squares = diagonal_squares(to_square);
+    possible_attackers = to_diagonal_squares & (pieces.Queens | pieces.Bishops);
+    while (possible_attackers)
+    {
+      attacker = popright_square(possible_attackers);
+      if ((between(to_square, attacker, to_diagonal_squares, true) & tmp_all_pieces) == zero)
+        count++;
+    }
+  }
+  return count;
+}
+
 int Bitboard::count_threats_to_square(uint64_t to_square, Color side) const
 {
   uint64_t possible_attackers;
@@ -511,12 +591,14 @@ void Bitboard::count_center_control(float& sum, float weight) const
 {
   uint64_t center_square;
   int counter = 0;
-  uint64_t tmp_center_squares = center_squares;
+  counter += count_KNP_threats_to_center_squares();
+  uint64_t
+  tmp_center_squares = center_squares;
   while (tmp_center_squares)
   {
     center_square = popright_square(tmp_center_squares);
-    counter += count_threats_to_square(center_square, Color::White);
-    counter -= count_threats_to_square(center_square, Color::Black);
+    counter += count_QRB_threats_to_square(center_square, Color::White);
+    counter -= count_QRB_threats_to_square(center_square, Color::Black);
   }
   sum += counter * weight;
 }

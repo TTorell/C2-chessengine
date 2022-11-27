@@ -207,6 +207,10 @@ class Bitboard
 
     void count_development(float& sum, float weight) const;
 
+    int count_KNP_threats_to_center_squares() const;
+
+    int count_QRB_threats_to_square(uint64_t to_square, Color side) const;
+
     void count_center_control(float& sum, float weight) const;
 
     int count_threats_to_square(uint64_t square, Color side) const;

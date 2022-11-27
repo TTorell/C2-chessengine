@@ -418,6 +418,16 @@ constexpr int e4_square_idx = std::countr_zero(e4_square);
 constexpr uint64_t castling_empty_squares_K = (row_1 | row_8) & (f_file | g_file);
 constexpr uint64_t castling_empty_squares_Q = (row_1 | row_8) & (b_file | c_file | d_file);
 
+// Patterns for counting central control
+constexpr uint64_t pawn_center_control_W_pattern = (row_3 | row_4) & (c_file | d_file | e_file | f_file);
+constexpr uint64_t pawn_center_control_B_pattern = pawn_center_control_W_pattern >> 16;
+constexpr uint64_t knight_center_control_pattern1 = ((row_3 | row_6) & (b_file | d_file | e_file | g_file)) | ((row_4 | row_5) & (b_file | c_file | f_file | g_file)) | ((row_2 | row_7) & (c_file | d_file | e_file | f_file));
+constexpr uint64_t knight_center_control_pattern2 = (row_3 | row_6) & (c_file | f_file);
+constexpr uint64_t king_center_control_pattern1 = (row_3 | row_6) & (c_file | f_file);
+constexpr uint64_t king_center_control_pattern2 = ((row_4 | row_5) & (c_file | f_file)) | ((row_3 | row_6) & (d_file | e_file));
+
+
+
 // Generate diagonals and anti-diagonals in compile-time
 constexpr uint64_t di(int i)
 {

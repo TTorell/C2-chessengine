@@ -1005,8 +1005,8 @@ inline void Bitboard::add_move(list_ref movelist, Piecetype p_type, Piecetype ca
   // If it is, Then give it a high evaluation for the move-ordering,
   // so it'll be sorted as the first move.
 
-  if (_previous_search_best_move.is_valid())
-  {
+//  if (_previous_search_best_move.is_valid())
+//  {
     if (new_move == _previous_search_best_move)
     {
       //std::cout << "Sorting, best move: " << _previous_search_best_move << ":" << new_move << std::endl;
@@ -1014,7 +1014,7 @@ inline void Bitboard::add_move(list_ref movelist, Piecetype p_type, Piecetype ca
       movelist.push_front(new_move);
       return;
     }
-  }
+//  }
 
   if (new_move == _beta_killers[0][_search_ply])
   {
@@ -1104,7 +1104,14 @@ void Bitboard::find_legal_moves(list_ref movelist, Gentype gt)
   //  typename2() gives a different output (maybe more detailed)
   //  std::cout << type_name2<decltype(start_position_FEN)>() << std::endl;
   //  // Gives "const std::basic_string<char>", which also seems OK.
-  _previous_search_best_move = tte.best_move;
+  if (tte.is_initialized() && tte.search_ply <= _search_ply)
+  {
+    _previous_search_best_move = tte.best_move;
+  }
+  else
+  {
+    _previous_search_best_move = NO_MOVE;
+  }
   movelist.clear();
   init_piece_state();
   assert((_own->pieces & _other->pieces) == zero);

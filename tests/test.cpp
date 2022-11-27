@@ -968,7 +968,7 @@ TEST_CASE("find_best_move")
     ss.clear();
     ss.str("");
     ss << bestmove;
-    REQUIRE(ss.str() == "Nd6-c4");
+    REQUIRE(ss.str() == "Rc1-c5");
   }
 
 }
@@ -1201,6 +1201,23 @@ TEST_CASE("takeback_normal_move")
   {
     make_and_takeback_move(game, "d2d4");
   }
+}
+
+TEST_CASE("print_patterns")
+{
+  logfile << "TEST STARTED print_patterns" << "\n";
+  std::cout << "pawn_center_control_W_pattern" << std::endl;
+  std::cout << to_binary_board(pawn_center_control_W_pattern) << std::endl;
+  std::cout << "pawn_center_control_B_pattern" << std::endl;
+  std::cout << to_binary_board(pawn_center_control_B_pattern) << std::endl;
+  std::cout << "king_center_control_pattern1" << std::endl;
+  std::cout << to_binary_board(king_center_control_pattern1) << std::endl;
+  std::cout << "king_center_control_pattern2" << std::endl;
+  std::cout << to_binary_board(king_center_control_pattern2) << std::endl;
+  std::cout << "knight_center_control_pattern1" << std::endl;
+  std::cout << to_binary_board(knight_center_control_pattern1) << std::endl;
+  std::cout << "knight_center_control_pattern2" << std::endl;
+  std::cout << to_binary_board(knight_center_control_pattern2) << std::endl;
 }
 
 //  Game game(config_params);
