@@ -46,22 +46,22 @@ Piecetype Bitboard::get_piece_type(uint64_t square) const
   return Piecetype::Undefined;
 }
 
-inline void Bitboard::remove_taken_piece(const uint64_t square, const Color piece_color)
+inline void Bitboard::remove_taken_piece(const uint64_t square, const Color piece_color, const Piecetype p_type)
 {
   assert(std::has_single_bit(square));
+  assert(p_type != Piecetype::Undefined);
 
   // The reference "&" is very important here!
   // Otherwise we'll only update a copied instance.
   auto& pieces = (piece_color == Color::White) ? _white_pieces : _black_pieces;
-  auto piecetype = Piecetype::Undefined;
 
   if (pieces.Pawns & square)
   {
-    pieces.Pawns ^= square, piecetype = Piecetype::Pawn;
+    pieces.Pawns ^= square;
   }
   else if (pieces.Rooks & square)
   {
-    pieces.Rooks ^= square, piecetype = Piecetype::Rook;
+    pieces.Rooks ^= square;
     // update castling rights if needed
     switch (square)
     {
@@ -83,22 +83,21 @@ inline void Bitboard::remove_taken_piece(const uint64_t square, const Color piec
   }
   else if (pieces.Bishops & square)
   {
-    pieces.Bishops ^= square, piecetype = Piecetype::Bishop;
+    pieces.Bishops ^= square;
   }
   else if (pieces.Knights & square)
   {
-    pieces.Knights ^= square, piecetype = Piecetype::Knight;
+    pieces.Knights ^= square;
   }
   else if (pieces.Queens & square)
   {
-    pieces.Queens ^= square, piecetype = Piecetype::Queen;
+    pieces.Queens ^= square;
   }
-  assert(piecetype != Piecetype::Undefined);
-  update_hash_tag(square, piece_color, piecetype);
-  _material_diff += (piece_color == Color::White) ? -piece_values[index(piecetype)] : piece_values[index(piecetype)];
+  update_hash_tag(square, piece_color, p_type);
+  _material_diff += (piece_color == Color::White) ? -piece_values[index(p_type)] : piece_values[index(p_type)];
 }
 
-inline void Bitboard::place_piece(Piecetype p_type, const uint64_t square, Color color)
+inline void Bitboard::place_piece(const uint64_t square, const Color color, const Piecetype p_type)
 {
   auto pieces = (color == Color::White) ? _white_pieces : _black_pieces;
   switch (p_type)
@@ -282,7 +281,6 @@ void Bitboard::new_make_move(const Bitmove& m, Takeback_state& tb_state, const b
 
   // Save some takeback values
   save_in_takeback_state(tb_state);
-  _taken_piece_type = get_piece_type(m.to());
 
   // Clear _ep_square
   uint64_t tmp_ep_square = _ep_square;
@@ -292,7 +290,7 @@ void Bitboard::new_make_move(const Bitmove& m, Takeback_state& tb_state, const b
   // Remove possible piece of other color on to_square and
   // Then make the move (updates hashtag)
   if (to_square & _other->pieces)
-    remove_taken_piece(to_square, other_color(_side_to_move));
+    remove_taken_piece(to_square, other_color(_side_to_move), m.capture_piece_type());
   move_piece(from_square, to_square, m.piece_type()); // updates hash-tag
 
   // OK we have moved the piece, now we must
@@ -410,7 +408,7 @@ void Bitboard::takeback_en_passant(const Bitmove& m, const Color moving_side)
   _material_diff += (moving_side == Color::White) ? -pawn_value : pawn_value;
 }
 
-void Bitboard::takeback_promotion(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_t)
+void Bitboard::takeback_promotion(const Bitmove& m, const Color moving_side)
 {
   // Keeping the definition of to_square and from_square from the move,
   // even if the move will be reversed.
@@ -438,9 +436,9 @@ void Bitboard::takeback_promotion(const Bitmove& m, const Color moving_side, con
     default:
       ;
   }
-  if (taken_piece_t != Piecetype::Undefined)
+  if (m.capture_piece_type() != Piecetype::Undefined)
   {
-    switch (taken_piece_t)
+    switch (m.capture_piece_type())
     {
       case Piecetype::Queen:
         _own->Queens ^= to_square;
@@ -462,7 +460,7 @@ void Bitboard::takeback_promotion(const Bitmove& m, const Color moving_side, con
     }
   }
   // Update the resulting material diff
-  float material_diff_w = pawn_value - piece_values[index(m.promotion_piece_type())] - piece_values[index(taken_piece_t)];
+  float material_diff_w = pawn_value - piece_values[index(m.promotion_piece_type())] - piece_values[index(m.capture_piece_type())];
   _material_diff += (moving_side == Color::White) ? material_diff_w : -material_diff_w;
 }
 
@@ -483,7 +481,7 @@ void Bitboard::takeback_castling(const Bitmove& m, const Color moving_side)
   // No change in material_diff.
 }
 
-void Bitboard::takeback_normal_move(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_type)
+void Bitboard::takeback_normal_move(const Bitmove& m, const Color moving_side)
 {
   // Move the piece back:
   auto piece_squares = m.to() | m.from();
@@ -511,10 +509,10 @@ void Bitboard::takeback_normal_move(const Bitmove& m, const Color moving_side, c
       ;
   }
   // Put back the taken piece:
-  if (taken_piece_type != Piecetype::Undefined)
+  if (m.capture_piece_type() != Piecetype::Undefined)
   {
     assert(m.properties() & move_props_capture);
-    switch (taken_piece_type)
+    switch (m.capture_piece_type())
     {
       case Piecetype::Queen:
         _own->Queens ^= m.to();
@@ -535,7 +533,7 @@ void Bitboard::takeback_normal_move(const Bitmove& m, const Color moving_side, c
         assert(false);
     }
   }
-  auto material_diff_w = -piece_values[index(taken_piece_type)];
+  auto material_diff_w = -piece_values[index(m.capture_piece_type())];
   _material_diff += (moving_side == Color::White) ? material_diff_w : -material_diff_w;
 }
 
@@ -558,11 +556,11 @@ void Bitboard::takeback_latest_move(const Takeback_state& tb_state, const bool t
   }
   else if (m.properties() & move_props_promotion)
   {
-    takeback_promotion(m, other_color(_side_to_move), _taken_piece_type);
+    takeback_promotion(m, other_color(_side_to_move));
   }
   else
   {
-    takeback_normal_move(m, other_color(_side_to_move), _taken_piece_type);
+    takeback_normal_move(m, other_color(_side_to_move));
   }
   assemble_pieces();
   //  Set up the board for other player:

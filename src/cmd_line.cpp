@@ -191,6 +191,7 @@ int Game::make_a_move(float& score, const uint8_t max_search_ply)
   {
     Bitmove best_move;
     _chessboard.clear_transposition_table();
+    _chessboard.clear_search_vars();
     _chessboard.init_material_evaluation();
     _chessboard.set_search_ply(0);
     score = _chessboard.negamax_with_pruning(-infinity, infinity, best_move, max_search_ply);
@@ -328,7 +329,7 @@ int Bitboard::make_move(Playertype player)
       continue;
     case Piecetype::Pawn:
       if (to_square & _ep_square)
-        move_props |= move_props_en_passant;
+        move_props |= move_props_en_passant | move_props_capture;
       break;
     case Piecetype::King:
       if (_side_to_move == Color::White)
@@ -346,8 +347,8 @@ int Bitboard::make_move(Playertype player)
       ;
     }
     if (to_square & _other->pieces)
-      move_props = move_props_capture;
-    Bitmove m(p_type, move_props, from_square, to_square, promotion_piecetype);
+      move_props |= move_props_capture;
+    Bitmove m(p_type, get_piece_type(to_square), move_props, from_square, to_square, promotion_piecetype);
     list_t movelist;
     find_legal_moves(movelist, Gentype::All);
     if (!is_in_movelist(movelist, m))

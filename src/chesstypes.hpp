@@ -155,17 +155,17 @@ struct Bitpieces
     {
       if (King != from.King)
         return false;
-      if (Queens  != from.Queens)
+      if (Queens != from.Queens)
         return false;
-      if (Rooks  != from.Rooks)
+      if (Rooks != from.Rooks)
         return false;
-      if (Bishops  != from.Bishops)
+      if (Bishops != from.Bishops)
         return false;
-      if (Knights  != from.Knights)
+      if (Knights != from.Knights)
         return false;
-      if (Pawns  != from.Pawns)
+      if (Pawns != from.Pawns)
         return false;
-      if (pieces  != from.pieces)
+      if (pieces != from.pieces)
         return false;
       return true;
     }
@@ -211,15 +211,16 @@ struct Bitmove
     {
     }
 
-    Bitmove(Piecetype p_type, // bit 25-32
+    Bitmove(Piecetype p_type, // bit 28-32, (only needs three bits actually)
+        Piecetype capture_p_type, // bit 25-27
         uint16_t move_props, // bit 15-24
         uint64_t from_square, // bit 7-12
         uint64_t to_square, // bit 1-6
         Piecetype promotion_pt = Piecetype::Queen) : // bit 13-14
         _move(0), _evaluation(0.0)
     {
-      _move = (static_cast<uint32_t>(index(p_type)) << 24) | (move_props << 14) | static_cast<uint32_t>(index(promotion_pt) << 12)
-              | static_cast<uint32_t>(bit_idx(from_square)) << 6 | static_cast<uint32_t>(bit_idx(to_square));
+      _move = (static_cast<uint32_t>(index(p_type)) << 27) | (static_cast<uint32_t>(index(capture_p_type)) << 24) | (move_props << 14)
+              | (static_cast<uint32_t>(index(promotion_pt) << 12)) | (static_cast<uint32_t>(bit_idx(from_square)) << 6) | (static_cast<uint32_t>(bit_idx(to_square)));
     }
 
     bool operator==(const Bitmove& m) const
@@ -231,7 +232,7 @@ struct Bitmove
 
     bool operator <(const Bitmove& m) const
     {
-      // Sort in descending order
+      // Operand for sorting in descending order
       return m._evaluation < _evaluation;
     }
 
@@ -255,9 +256,14 @@ struct Bitmove
       return (_move >> 14) & 0x03FF;
     }
 
+    Piecetype capture_piece_type() const
+    {
+      return static_cast<Piecetype>((_move >> 24) & 0x07);
+    }
+
     Piecetype piece_type() const
     {
-      return static_cast<Piecetype>(_move >> 24);
+      return static_cast<Piecetype>(_move >> 27);
     }
 
     void add_property(uint16_t property)
@@ -289,19 +295,6 @@ using list_ptr = std::deque<Bitmove>*;
 using list_ref = std::deque<Bitmove>&;
 using list_t = std::deque<Bitmove>;
 
-struct Takeback_state
-{
-    uint64_t hash_tag;
-    uint8_t castling_rights;
-    uint8_t half_move_counter;
-    uint64_t ep_square;
-    bool has_castled_w;
-    bool has_castled_b;
-    Bitmove latest_move;
-    Piecetype taken_piece_type;
-};
-
-
 // The returned best_move from a search can contain a valid move of course,
 // but it can also contain the following information.
 const Bitmove NO_MOVE(0);
@@ -311,6 +304,17 @@ const Bitmove UNDEFINED_MOVE(1);
 const Bitmove DRAW_BY_THREEFOLD_REPETITION(2);
 const Bitmove DRAW_BY_50_MOVES_RULE(3);
 const Bitmove SEARCH_HAS_BEEN_INTERRUPTED(last_none_valid_move_constant); // currently 4
+
+struct Takeback_state
+{
+    uint64_t hash_tag;
+    uint8_t castling_rights;
+    uint8_t half_move_counter;
+    uint64_t ep_square;
+    bool has_castled_w;
+    bool has_castled_b;
+    Bitmove latest_move;
+};
 
 // constexpr is a way of telling the compiler
 // that we wish these expressions to be calculated

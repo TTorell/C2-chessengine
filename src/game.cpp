@@ -275,6 +275,7 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   }
 
   _chessboard.clear_transposition_table(map_tag::Both);
+  _chessboard.clear_search_vars();
 
   for (unsigned int search_depth = 1; search_depth <= max_search_depth; search_depth++)
   {
@@ -313,7 +314,6 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   }
 
   assert(best_move.is_valid());
-  //TODO: Is this right?
   Takeback_state tb_state_dummy;
   _chessboard.new_make_move(best_move, tb_state_dummy);
   _move_log.push_back(_chessboard.get_latest_move());

@@ -471,6 +471,11 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
           from_square = _own->Pawns & piece_diff;
           p_type = Piecetype::Pawn;
           move_props |= move_props_capture | move_props_en_passant;
+          // Breaking the pattern with a special treatment of e.p.
+          // (The capture_pieace_type can't be found on to_square, as it
+          // can in all other cases, see below, after the switch statement.)
+          m = Bitmove(p_type, Piecetype::Pawn, move_props, from_square, to_square);
+          return 0;
         }
         else
           return -4;
@@ -522,11 +527,11 @@ int Bitboard_with_utils::figure_out_last_move(const Bitboard& new_position, Bitm
   if (move_props & move_props_promotion)
   {
     promotion_pt = new_position.get_piece_type(to_square);
-    m = Bitmove(p_type, move_props, from_square, to_square, promotion_pt);
+    m = Bitmove(p_type, get_piece_type(to_square), move_props, from_square, to_square, promotion_pt);
   }
   else
   {
-    m = Bitmove(p_type, move_props, from_square, to_square);
+    m = Bitmove(p_type, get_piece_type(to_square), move_props, from_square, to_square);
   }
   return 0;
 }

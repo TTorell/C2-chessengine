@@ -32,21 +32,36 @@ class Bitboard
 {
   protected:
     // Static declarations
+
+    // transposition_table is a hash-table storing evaluations and best-moves for
+    // already searched positions during a search-operation, so the evaluation of
+    // a position doesn't have to be recalculated if it appears again during the
+    // search. The information is also used to retrieve the PV-moves used in the
+    // move-ordering, essential for the pruning of the "search-tree".
     static Transposition_table transposition_table;
+
+    // history stores the move-history in the game as well as during a search-operation.
+    // Needed for instance to decide "threefold-draw".
     static Game_history history;
+
+    // search_cash keeps track of moves which have increased alpha during the search.
+    // The information is used during move-ordering.
+    static int alpha_move_cash[2][7][64]; // [color][piecetype][square_index]
+
+    // Thread-safe boolean, telling if there's more time to think
+    // or if a move must be returned as fast as possible.
     static std::atomic<bool> time_left;
 
-    uint64_t _hash_tag;
+    uint64_t _hash_tag; // Unique Zobrist hash-tag of the position.
     Color _side_to_move = Color::White;
     uint16_t _move_number;
     uint8_t _castling_rights = castling_rights_none;
     bool _has_castled[2];
-    uint64_t _ep_square = zero;
-    float _material_diff;
+    uint64_t _ep_square = zero; // Square to which an en passant move is possible.
+    float _material_diff; // Holds the material evaluation of the position.
     Bitmove _latest_move;
 
     uint8_t _search_ply;
-    Piecetype _taken_piece_type;
     uint64_t _checkers;
     uint64_t _pinners;
     uint64_t _pinned_pieces;
@@ -73,7 +88,7 @@ class Bitboard
 
     inline void sort_moves(list_ref movelist) const;
 
-    inline void add_move(list_ref movelist, Piecetype p_type, uint16_t move_props, uint64_t from_square, uint64_t to_square, Piecetype promotion_p_type = Piecetype::Queen) const;
+    inline void add_move(list_ref movelist, Piecetype p_type, Piecetype capture_p_type, uint16_t move_props, uint64_t from_square, uint64_t to_square, Piecetype promotion_p_type = Piecetype::Queen) const;
 
     bool is_in_movelist(list_ref movelist, const Bitmove& m) const;
 
@@ -143,7 +158,7 @@ class Bitboard
 
     //inline void touch_piece(const uint64_t square, const Color color);
 
-    inline void remove_taken_piece(const uint64_t square, const Color color);
+    inline void remove_taken_piece(const uint64_t square, const Color color, const Piecetype piece_type);
 
     //inline void remove_pawn(const uint64_t square, const Color color);
 
@@ -151,7 +166,7 @@ class Bitboard
 
     inline void remove_castling_right(uint8_t cr);
 
-    inline void place_piece(Piecetype p_type, const uint64_t square, Color color);
+    inline void place_piece(const uint64_t square, const Color color, const Piecetype p_type);
 
     inline void clear_ep_square();
 
@@ -167,13 +182,13 @@ class Bitboard
 
     inline void update_state_after_king_move(const Bitmove& m);
 
-    void takeback_promotion(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_type);
+    void takeback_promotion(const Bitmove& m, const Color moving_side);
 
     void takeback_en_passant(const Bitmove& m, const Color moving_side);
 
     void takeback_castling(const Bitmove& m, const Color moving_side);
 
-    void takeback_normal_move(const Bitmove& m, const Color moving_side, const Piecetype taken_piece_type);
+    void takeback_normal_move(const Bitmove& m, const Color moving_side);
 
     void save_in_takeback_state(Takeback_state& tb_state) const;
 
@@ -329,11 +344,6 @@ class Bitboard
       return _side_to_move;
     }
 
-//    inline list_ptr get_movelist(size_t idx) const
-//    {
-//      return takeback_list[idx].state_S.movelist;
-//    }
-
     bool is_draw_by_50_moves() const;
 
     inline bool is_threefold_repetition() const
@@ -355,6 +365,7 @@ class Bitboard
     Shared_ostream& write_search_info(Shared_ostream& logfile) const;
 
     void clear_search_info();
+    void clear_search_vars();
     Search_info& get_search_info() const;
 
 };

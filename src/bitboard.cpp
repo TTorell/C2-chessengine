@@ -32,11 +32,11 @@ std::atomic<bool> Bitboard::time_left(false);
 //struct Takeback_element Bitboard::takeback_list[N_SEARCH_PLIES_DEFAULT] {};
 Game_history Bitboard::history;
 Transposition_table Bitboard::transposition_table;
+int Bitboard::alpha_move_cash[2][7][64] {0};
 
 Bitboard::Bitboard() :
-    _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _latest_move(),
-    _taken_piece_type(Piecetype::Undefined), _checkers(zero), _pinners(zero), _pinned_pieces(zero), _all_pieces(zero), _white_pieces(), _black_pieces(), _own(nullptr),
-    _other(nullptr), _half_move_counter(0)
+    _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _latest_move(), _search_ply(0),
+    _checkers(zero), _pinners(zero), _pinned_pieces(zero), _all_pieces(zero), _white_pieces(), _black_pieces(), _own(nullptr), _other(nullptr), _half_move_counter(0)
 {
   //std::cerr << "BitBoard Default constructor" << std::endl;
   _own = &_white_pieces;
@@ -45,7 +45,7 @@ Bitboard::Bitboard() :
 
 Bitboard::Bitboard(const Bitboard& bb) :
     _hash_tag(bb._hash_tag), _side_to_move(bb._side_to_move), _move_number(bb._move_number), _castling_rights(bb._castling_rights), _ep_square(bb._ep_square),
-    _material_diff(bb._material_diff), _latest_move(bb._latest_move), _taken_piece_type(bb._taken_piece_type), _checkers(bb._checkers), _pinners(bb._pinners),
+    _material_diff(bb._material_diff), _latest_move(bb._latest_move), _search_ply(bb._search_ply), _checkers(bb._checkers), _pinners(bb._pinners),
     _pinned_pieces(bb._pinned_pieces), _all_pieces(bb._all_pieces), _white_pieces(bb._white_pieces), _black_pieces(bb._black_pieces), _own(nullptr), _other(nullptr),
     _half_move_counter(bb._half_move_counter)
 {
@@ -84,7 +84,6 @@ Bitboard& Bitboard::operator=(const Bitboard& from)
     _material_diff = from._material_diff;
     _latest_move = from._latest_move;
     _half_move_counter = from._half_move_counter;
-    _taken_piece_type = from._taken_piece_type;
     // Temporary variables. There's No need to copy them
     // (only used in move generation).
     //_checkers = from._checkers;
@@ -655,7 +654,7 @@ void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
   for (int i = 0; i < 20; i++)
   {
     TT_element& tte = transposition_table.find(bb._hash_tag);
-    if (!tte.best_move.is_valid() || tte.search_ply != i + 1)
+    if (!tte.best_move.is_valid() || tte.search_ply != i)
       break;
     bb.new_make_move(tte.best_move, tb_state_dummy, dont_update_history);
     pv_line.push_back(bb._latest_move);
@@ -665,6 +664,12 @@ void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
 void Bitboard::clear_search_info()
 {
   memset(&search_info, 0, sizeof(Search_info));
+}
+
+void Bitboard::clear_search_vars()
+{
+  memset(alpha_move_cash, 0, 2 * 7 * 64);
+  memset(_beta_killers, 0, 2 * 64);
 }
 
 Search_info& Bitboard::get_search_info() const
@@ -700,8 +705,8 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth)
 
 Shared_ostream& Bitboard::write_search_info(Shared_ostream& logfile) const
 {
-  logfile << "Evaluated on depth:" << static_cast<int>(search_info.max_search_depth) << " " << static_cast<int>(search_info.node_counter) << " nodes in "
-          << search_info.time_taken << " milliseconds.\n";
+  logfile << "Evaluated on depth:" << static_cast<int>(search_info.max_search_depth) << " " << static_cast<int>(search_info.node_counter) << " nodes in " << search_info.time_taken
+          << " milliseconds.\n";
   std::stringstream ss;
   std::vector<Bitmove> pv_line;
   get_pv_line(pv_line);
@@ -720,7 +725,6 @@ void Bitboard::takeback_from_state(const Takeback_state& tb_state)
   _has_castled[index(Color::White)] = tb_state.has_castled_w;
   _has_castled[index(Color::Black)] = tb_state.has_castled_b;
   _latest_move = tb_state.latest_move;
-  _taken_piece_type = tb_state.taken_piece_type;
 }
 
 void Bitboard::save_in_takeback_state(Takeback_state& tb_state) const
@@ -732,7 +736,6 @@ void Bitboard::save_in_takeback_state(Takeback_state& tb_state) const
   tb_state.has_castled_w = _has_castled[index(Color::White)];
   tb_state.has_castled_b = _has_castled[index(Color::Black)];
   tb_state.latest_move = _latest_move;
-  tb_state.taken_piece_type = _taken_piece_type;
 }
 
 float Bitboard::Quiesence_search(float alpha, float beta, uint8_t max_search_ply)
@@ -747,7 +750,7 @@ float Bitboard::Quiesence_search(float alpha, float beta, uint8_t max_search_ply
     return 0.0;
   }
 
-  auto score = (_side_to_move == Color::White)? evaluate_position() : -evaluate_position();
+  auto score = (_side_to_move == Color::White) ? evaluate_position() : -evaluate_position();
 
   if (score >= beta)
   {
@@ -823,7 +826,6 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
   }
 
   search_info.node_counter++;
-  //search_ply++;
 
   if (history.is_threefold_repetition())
   {
@@ -894,8 +896,7 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
       if (i == 0)
         search_info.first_beta_cutoffs++;
       // Save beta-killers for next move ordering.
-      if ((movelist[i].properties() & move_props_capture) == 0 &&
-          (movelist[i].properties() & move_props_promotion) == 0)
+      if ((movelist[i].properties() & move_props_capture) == 0 && (movelist[i].properties() & move_props_promotion) == 0)
       {
         _beta_killers[1][_search_ply] = _beta_killers[0][_search_ply];
         _beta_killers[0][_search_ply] = movelist[i];
@@ -910,6 +911,7 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
 //      std::cout << "alpha best_move " << best_move << std::endl;
       best_move._evaluation = move_score;
       alpha = move_score;
+      alpha_move_cash[index(_side_to_move)][index(best_move.piece_type())][bit_idx(best_move.from())] += search_depth - _search_ply;
     }
 
     // Somewhere we have to check if time is up, or if the chess-engine
