@@ -418,16 +418,6 @@ constexpr int e4_square_idx = std::countr_zero(e4_square);
 constexpr uint64_t castling_empty_squares_K = (row_1 | row_8) & (f_file | g_file);
 constexpr uint64_t castling_empty_squares_Q = (row_1 | row_8) & (b_file | c_file | d_file);
 
-// Patterns for counting central control
-constexpr uint64_t pawn_center_control_W_pattern = (row_3 | row_4) & (c_file | d_file | e_file | f_file);
-constexpr uint64_t pawn_center_control_B_pattern = pawn_center_control_W_pattern >> 16;
-constexpr uint64_t knight_center_control_pattern1 = ((row_3 | row_6) & (b_file | d_file | e_file | g_file)) | ((row_4 | row_5) & (b_file | c_file | f_file | g_file)) | ((row_2 | row_7) & (c_file | d_file | e_file | f_file));
-constexpr uint64_t knight_center_control_pattern2 = (row_3 | row_6) & (c_file | f_file);
-constexpr uint64_t king_center_control_pattern1 = (row_3 | row_6) & (c_file | f_file);
-constexpr uint64_t king_center_control_pattern2 = ((row_4 | row_5) & (c_file | f_file)) | ((row_3 | row_6) & (d_file | e_file));
-
-
-
 // Generate diagonals and anti-diagonals in compile-time
 constexpr uint64_t di(int i)
 {
@@ -468,6 +458,27 @@ constexpr uint64_t ad(const int i)
 }
 
 constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14)};
+
+// Patterns for counting central control
+constexpr uint64_t pawn_center_control_W_pattern = (row_3 | row_4) & (c_file | d_file | e_file | f_file);
+constexpr uint64_t pawn_center_control_B_pattern = pawn_center_control_W_pattern >> 16;
+constexpr uint64_t knight_center_control_pattern1 = ((row_3 | row_6) & (b_file | d_file | e_file | g_file)) | ((row_4 | row_5) & (b_file | c_file | f_file | g_file)) | ((row_2 | row_7) & (c_file | d_file | e_file | f_file));
+constexpr uint64_t knight_center_control_pattern2 = (row_3 | row_6) & (c_file | f_file);
+constexpr uint64_t king_center_control_pattern1 = (row_3 | row_6) & (c_file | f_file);
+constexpr uint64_t king_center_control_pattern2 = ((row_4 | row_5) & (c_file | f_file)) | ((row_3 | row_6) & (d_file | e_file));
+constexpr uint64_t rook_center_control_pattern = ((row_4 | row_5) | (d_file | e_file)) & ~center_squares;
+constexpr uint64_t east_of_center = king_side & ~e_file;
+constexpr uint64_t west_of_center = queen_side & ~d_file;
+constexpr uint64_t south_of_center = lower_board_half & ~row_4;
+constexpr uint64_t north_of_center = upper_board_half & ~row_5;
+
+constexpr uint64_t north_west_of_center = north_of_center & west_of_center;
+constexpr uint64_t north_east_of_center = north_of_center & east_of_center;
+constexpr uint64_t south_west_of_center = south_of_center & west_of_center;
+constexpr uint64_t south_east_of_center = south_of_center & east_of_center;
+
+constexpr uint64_t bishop_center_control_pattern1 = (diagonal[6] | diagonal[8] | anti_diagonal[6] | anti_diagonal[8]) & ~center_squares;
+constexpr uint64_t bishop_center_control_pattern2 = (diagonal[7] | anti_diagonal[7]) & ~center_squares;
 
 } // namespace C2_chess
 #endif

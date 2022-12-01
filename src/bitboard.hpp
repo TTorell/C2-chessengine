@@ -19,6 +19,7 @@
 #include <bitset>
 #include <deque>
 #include <atomic>
+#include <functional>
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 #include "transposition_table.hpp"
@@ -207,13 +208,15 @@ class Bitboard
 
     void count_development(float& sum, float weight) const;
 
-    int count_KNP_threats_to_center_squares() const;
+    //int count_QRB_threats_to_center_square(uint64_t to_square, Color side) const;
 
-    int count_QRB_threats_to_square(uint64_t to_square, Color side) const;
+    int count_threats_to_center_squares(const Bitpieces& pieces, const uint64_t pawn_pattern) const;
 
-    void count_center_control(float& sum, float weight) const;
+    int walk_into_center(const uint64_t from_sq, const int n_center_sqs, std::function<void(uint64_t&)> shift_func) const;
 
-    int count_threats_to_square(uint64_t square, Color side) const;
+    //int count_QRB_threats_to_center_squares(const Bitpieces& pieces) const;
+
+    //int count_threats_to_square(uint64_t square, Color side) const;
 
     float evaluate_empty_movelist(int search_ply) const;
 

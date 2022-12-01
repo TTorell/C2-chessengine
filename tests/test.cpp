@@ -1218,6 +1218,28 @@ TEST_CASE("print_patterns")
   std::cout << to_binary_board(knight_center_control_pattern1) << std::endl;
   std::cout << "knight_center_control_pattern2" << std::endl;
   std::cout << to_binary_board(knight_center_control_pattern2) << std::endl;
+  std::cout << "rook_center_control_pattern" << std::endl;
+  std::cout << to_binary_board(rook_center_control_pattern) << std::endl;
+  std::cout << "west_of_center" << std::endl;
+  std::cout << to_binary_board(west_of_center) << std::endl;
+  std::cout << "east_of_center" << std::endl;
+  std::cout << to_binary_board(east_of_center) << std::endl;
+  std::cout << "south_of_center" << std::endl;
+  std::cout << to_binary_board(south_of_center) << std::endl;
+  std::cout << "north_of_center" << std::endl;
+  std::cout << to_binary_board(north_of_center) << std::endl;
+  std::cout << "north_west_of_center" << std::endl;
+  std::cout << to_binary_board(north_west_of_center) << std::endl;
+  std::cout << "north_east_of_center" << std::endl;
+  std::cout << to_binary_board(north_east_of_center) << std::endl;
+  std::cout << "south_west_of_center" << std::endl;
+  std::cout << to_binary_board(south_west_of_center) << std::endl;
+  std::cout << "south_east_of_center" << std::endl;
+  std::cout << to_binary_board(south_east_of_center) << std::endl;
+  std::cout << "bishop_center_control_pattern1" << std::endl;
+  std::cout << to_binary_board(bishop_center_control_pattern1) << std::endl;
+  std::cout << "bishop_center_control_pattern2" << std::endl;
+  std::cout << to_binary_board(bishop_center_control_pattern2) << std::endl;
 }
 
 //  Game game(config_params);

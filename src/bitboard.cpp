@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <atomic>
+#include <functional>
 #include <cstring>
 #include "chessfuncs.hpp"
 #include "chesstypes.hpp"
@@ -453,155 +454,207 @@ void Bitboard::count_development(float& sum, float weight) const
   sum += counter * weight;
 }
 
-int Bitboard::count_KNP_threats_to_center_squares() const
+int Bitboard::walk_into_center(const uint64_t from_sq, const int n_center_sqs, std::function<void(uint64_t&)> shift_func) const
 {
-  int count = 0;
+  auto count = 0;
+  auto all_pieces = _white_pieces.pieces | _black_pieces.pieces;
+  uint64_t sq = from_sq;
+  for (shift_func(sq); count < n_center_sqs; shift_func(sq))
+  {
+    count += (sq & center_squares) ? 1 : 0;
+    if (sq & all_pieces)
+      return count;
+  }
+  return count;
+}
+
+int Bitboard::count_threats_to_center_squares(const Bitpieces& pieces, const uint64_t pawn_pattern) const
+{
+  auto count = 0;
   // Check Pawn-threats
-  count += std::popcount(pawn_center_control_W_pattern & _white_pieces.Pawns);
-  count -= std::popcount(pawn_center_control_B_pattern & _black_pieces.Pawns);
+  count += std::popcount(pawn_pattern & pieces.Pawns);
 
   // Check Knight-threats
-  count += std::popcount(knight_center_control_pattern1 & _white_pieces.Knights);
-  count -= std::popcount(knight_center_control_pattern1 & _black_pieces.Knights);
-  count += 2 * std::popcount(knight_center_control_pattern2 & _white_pieces.Knights);
-  count -= 2 * std::popcount(knight_center_control_pattern2 & _black_pieces.Knights);
+  count += std::popcount(knight_center_control_pattern1 & pieces.Knights);
+  count += 2 * std::popcount(knight_center_control_pattern2 & pieces.Knights);
 
   // Check King-threats
-  if (king_center_control_pattern1 & _white_pieces.King)
+  if (king_center_control_pattern1 & pieces.King)
   {
     count++;
   }
-  if (king_center_control_pattern1 & _black_pieces.King)
-  {
-    count--;
-  }
-  if (king_center_control_pattern2 & _white_pieces.King)
+  if (king_center_control_pattern2 & pieces.King)
   {
     count += 2;
   }
-  if (king_center_control_pattern2 & _black_pieces.King)
+
+  auto squares = rook_center_control_pattern & (pieces.Queens | pieces.Rooks);
+  while (squares)
   {
-    count -= 2;
+    auto from_square = popright_square(squares);
+    if (from_square & west_of_center)
+    {
+      count += walk_into_center(from_square, 2, &go_east);
+    }
+    else if (from_square & east_of_center)
+    {
+      count += walk_into_center(from_square, 2, &go_west);
+    }
+    else if (from_square & south_of_center)
+    {
+      count += walk_into_center(from_square, 2, &go_north);
+    }
+    else
+    {
+      count += walk_into_center(from_square, 2, &go_south);
+    }
   }
-  if (center_squares & _white_pieces.King)
+  squares = bishop_center_control_pattern1 & (pieces.Queens | pieces.Bishops);
+  while (squares)
   {
-    count += 3;
+    auto from_square = popright_square(squares);
+    if (from_square & south_west_of_center)
+    {
+      count += walk_into_center(from_square, 1, &go_north_east);
+    }
+    else if (from_square & north_west_of_center)
+    {
+      count += walk_into_center(from_square, 1, &go_south_east);
+    }
+    else if (from_square & south_east_of_center)
+    {
+      count += walk_into_center(from_square, 1, &go_north_west);
+    }
+    else
+    {
+      count += walk_into_center(from_square, 1, &go_south_west);
+    }
   }
-  if (center_squares & _black_pieces.King)
+  squares = bishop_center_control_pattern2 & (pieces.Queens | pieces.Bishops);
+  while (squares)
   {
-    count -= 3;
+    auto from_square = popright_square(squares);
+    if (from_square & south_west_of_center)
+    {
+      count += walk_into_center(from_square, 2, &go_north_east);
+    }
+    else if (from_square & north_west_of_center)
+    {
+      count += walk_into_center(from_square, 2, &go_south_east);
+    }
+    else if (from_square & south_east_of_center)
+    {
+      count += walk_into_center(from_square, 2, &go_north_west);
+    }
+    else
+    {
+      count += walk_into_center(from_square, 2, &go_south_west);
+    }
   }
+
+  // Check pieces inside the center
+  count += 3 * std::popcount(center_squares & (pieces.King | pieces.Queens));
+  count += 2 * std::popcount(center_squares & pieces.Rooks);
+  count += std::popcount(center_squares & pieces.Bishops);
+
+  // Pawns in center have already been handled and knights
+  // in the center threatens no center squares.
+
   return count;
 }
 
-int Bitboard::count_QRB_threats_to_square(uint64_t to_square, Color side) const
-{
-  uint64_t possible_attackers;
-  uint64_t attacker;
-  uint64_t tmp_all_pieces = _all_pieces;
+//int Bitboard::count_QRB_threats_to_center_square(uint64_t to_square, Color side) const
+//{
+//  uint64_t possible_attackers;
+//  uint64_t attacker;
+//  uint64_t tmp_all_pieces = _all_pieces;
+//
+//  const Bitpieces& pieces = (side == Color::White) ? _white_pieces : _black_pieces;
+//
+//  int count = 0;
+//
+//  // Check threats on file and rank
+//  if (pieces.Queens | pieces.Rooks)
+//  {
+//    // Check threats on file and rank
+//    uint64_t to_ortogonal_squares = ortogonal_squares(to_square);
+//    possible_attackers = to_ortogonal_squares & (pieces.Queens | pieces.Rooks);
+//    while (possible_attackers)
+//    {
+//      attacker = popright_square(possible_attackers);
+//      if ((between(to_square, attacker, to_ortogonal_squares) & tmp_all_pieces) == zero)
+//        count++;
+//    }
+//  }
+//
+//  // Check diagonal threats
+//  if (pieces.Queens | pieces.Bishops)
+//  {
+//    uint64_t to_diagonal_squares = diagonal_squares(to_square);
+//    possible_attackers = to_diagonal_squares & (pieces.Queens | pieces.Bishops);
+//    while (possible_attackers)
+//    {
+//      attacker = popright_square(possible_attackers);
+//      if ((between(to_square, attacker, to_diagonal_squares, true) & tmp_all_pieces) == zero)
+//        count++;
+//    }
+//  }
+//  return count;
+//}
 
-  const Bitpieces& pieces = (side == Color::White) ? _white_pieces : _black_pieces;
-
-  int count = 0;
-
-  // Check threats on file and rank
-  if (pieces.Queens | pieces.Rooks)
-  {
-    // Check threats on file and rank
-    uint64_t to_ortogonal_squares = ortogonal_squares(to_square);
-    possible_attackers = to_ortogonal_squares & (pieces.Queens | pieces.Rooks);
-    while (possible_attackers)
-    {
-      attacker = popright_square(possible_attackers);
-      if ((between(to_square, attacker, to_ortogonal_squares) & tmp_all_pieces) == zero)
-        count++;
-    }
-  }
-
-  // Check diagonal threats
-  if (pieces.Queens | pieces.Bishops)
-  {
-    uint64_t to_diagonal_squares = diagonal_squares(to_square);
-    possible_attackers = to_diagonal_squares & (pieces.Queens | pieces.Bishops);
-    while (possible_attackers)
-    {
-      attacker = popright_square(possible_attackers);
-      if ((between(to_square, attacker, to_diagonal_squares, true) & tmp_all_pieces) == zero)
-        count++;
-    }
-  }
-  return count;
-}
-
-int Bitboard::count_threats_to_square(uint64_t to_square, Color side) const
-{
-  uint64_t possible_attackers;
-  uint64_t attacker;
-  uint64_t tmp_all_pieces = _all_pieces;
-  uint8_t f_idx = file_idx(to_square);
-
-  const Bitpieces& pieces = (side == Color::White) ? _white_pieces : _black_pieces;
-
-  int count = 0;
-  // Check Pawn-threats
-  if (pieces.Pawns)
-  {
-    if ((f_idx != h) && (pieces.Pawns & ((side == Color::White) ? to_square << 7 : to_square >> 9)))
-      count++;
-    if ((f_idx != a) && (pieces.Pawns & ((side == Color::White) ? to_square << 9 : to_square >> 7)))
-      count++;
-  }
-
-  // Check Knight-threats
-  count += std::popcount((adjust_pattern(knight_pattern, to_square) & pieces.Knights));
-
-  // Check King-threats
-  count += std::popcount(adjust_pattern(king_pattern, to_square) & pieces.King);
-
-  // Check threats on file and rank
-  if (pieces.Queens | pieces.Rooks)
-  {
-    // Check threats on file and rank
-    uint64_t to_ortogonal_squares = ortogonal_squares(to_square);
-    possible_attackers = to_ortogonal_squares & (pieces.Queens | pieces.Rooks);
-    while (possible_attackers)
-    {
-      attacker = popright_square(possible_attackers);
-      if ((between(to_square, attacker, to_ortogonal_squares) & tmp_all_pieces) == zero)
-        count++;
-    }
-  }
-
-  // Check diagonal threats
-  if (pieces.Queens | pieces.Bishops)
-  {
-    uint64_t to_diagonal_squares = diagonal_squares(to_square);
-    possible_attackers = to_diagonal_squares & (pieces.Queens | pieces.Bishops);
-    while (possible_attackers)
-    {
-      attacker = popright_square(possible_attackers);
-      if ((between(to_square, attacker, to_diagonal_squares, true) & tmp_all_pieces) == zero)
-        count++;
-    }
-  }
-  return count;
-}
-
-void Bitboard::count_center_control(float& sum, float weight) const
-{
-  uint64_t center_square;
-  int counter = 0;
-  counter += count_KNP_threats_to_center_squares();
-  uint64_t
-  tmp_center_squares = center_squares;
-  while (tmp_center_squares)
-  {
-    center_square = popright_square(tmp_center_squares);
-    counter += count_QRB_threats_to_square(center_square, Color::White);
-    counter -= count_QRB_threats_to_square(center_square, Color::Black);
-  }
-  sum += counter * weight;
-}
+//int Bitboard::count_threats_to_square(uint64_t to_square, Color side) const
+//{
+//  uint64_t possible_attackers;
+//  uint64_t attacker;
+//  uint64_t tmp_all_pieces = _all_pieces;
+//  uint8_t f_idx = file_idx(to_square);
+//
+//  const Bitpieces& pieces = (side == Color::White) ? _white_pieces : _black_pieces;
+//
+//  int count = 0;
+//// Check Pawn-threats
+//  if (pieces.Pawns)
+//  {
+//    if ((f_idx != h) && (pieces.Pawns & ((side == Color::White) ? to_square << 7 : to_square >> 9)))
+//      count++;
+//    if ((f_idx != a) && (pieces.Pawns & ((side == Color::White) ? to_square << 9 : to_square >> 7)))
+//      count++;
+//  }
+//
+//// Check Knight-threats
+//  count += std::popcount((adjust_pattern(knight_pattern, to_square) & pieces.Knights));
+//
+//// Check King-threats
+//  count += std::popcount(adjust_pattern(king_pattern, to_square) & pieces.King);
+//
+//// Check threats on file and rank
+//  if (pieces.Queens | pieces.Rooks)
+//  {
+//    // Check threats on file and rank
+//    uint64_t to_ortogonal_squares = ortogonal_squares(to_square);
+//    possible_attackers = to_ortogonal_squares & (pieces.Queens | pieces.Rooks);
+//    while (possible_attackers)
+//    {
+//      attacker = popright_square(possible_attackers);
+//      if ((between(to_square, attacker, to_ortogonal_squares) & tmp_all_pieces) == zero)
+//        count++;
+//    }
+//  }
+//
+//// Check diagonal threats
+//  if (pieces.Queens | pieces.Bishops)
+//  {
+//    uint64_t to_diagonal_squares = diagonal_squares(to_square);
+//    possible_attackers = to_diagonal_squares & (pieces.Queens | pieces.Bishops);
+//    while (possible_attackers)
+//    {
+//      attacker = popright_square(possible_attackers);
+//      if ((between(to_square, attacker, to_diagonal_squares, true) & tmp_all_pieces) == zero)
+//        count++;
+//    }
+//  }
+//  return count;
+//}
 
 float Bitboard::evaluate_empty_movelist(int search_ply) const
 {
@@ -620,11 +673,14 @@ float Bitboard::evaluate_empty_movelist(int search_ply) const
 
 float Bitboard::evaluate_position() const
 {
-  // Start with a very small number in sum, just so we don't return 0.0 in an
-  // equal position. 0.0 is reserved for stalemate.
+// Start with a very small number in sum, just so we don't return 0.0 in an
+// equal position. 0.0 is reserved for stalemate.
   float sum = epsilon;
   sum += _material_diff;
-  count_center_control(sum, 0.02F);
+
+  //count center control
+  sum += 0.02F * count_threats_to_center_squares(_white_pieces, pawn_center_control_W_pattern);
+  sum -= 0.02F * count_threats_to_center_squares(_black_pieces, pawn_center_control_B_pattern);
   count_development(sum, 0.05F);
   count_pawns_in_centre(sum, 0.03F);
   count_castling(sum, 0.10F);
@@ -763,8 +819,8 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth)
 {
   search_ply++;
 
-  // Perft-test only counts leaf-nodes on highest depth, not leaf-nodes which happens
-  // on lower depth because of mate or stalemate.
+// Perft-test only counts leaf-nodes on highest depth, not leaf-nodes which happens
+// on lower depth because of mate or stalemate.
   if (search_ply >= max_search_depth)
   {
     return ++search_info.leaf_node_counter;
@@ -773,7 +829,7 @@ unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth)
   Takeback_state tb_state;
   list_t movelist;
   find_legal_moves(movelist, Gentype::All);
-  // Collect the best value from all possible moves
+// Collect the best value from all possible moves
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
     // Make the selected move and ask min() to evaluate it further.
@@ -844,14 +900,14 @@ float Bitboard::Quiesence_search(float alpha, float beta, uint8_t max_search_ply
     alpha = score;
   }
 
-  //search_ply++;
+//search_ply++;
 
   Takeback_state tb_state;
   list_t movelist;
   find_legal_moves(movelist, Gentype::Captures_and_Promotions);
 
   auto move_score = -infinity;
-  // Collect the best value from all possible "capture-moves"
+// Collect the best value from all possible "capture-moves"
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
 
@@ -921,7 +977,7 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
     return 0.0;
   }
 
-  // Check if position and evaluation is already in the hash_table
+// Check if position and evaluation is already in the hash_table
   TT_element& element = transposition_table.find(_hash_tag);
   if (element.is_initialized())
   {
@@ -937,14 +993,14 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
     }
   }
 
-  // Now it's time to generate all possible moves in the position
+// Now it's time to generate all possible moves in the position
   Bitmove best_move_dummy;
   Takeback_state tb_state;
   list_t movelist;
   find_legal_moves(movelist, Gentype::All);
 
-  // If there are no possible moves, evaluate_empty_movelist() will check for such things as
-  // mate or stalemate which may happen before max_search_ply has been reached.
+// If there are no possible moves, evaluate_empty_movelist() will check for such things as
+// mate or stalemate which may happen before max_search_ply has been reached.
   if (movelist.size() == 0)
   {
     // ---------------------------------------
@@ -956,7 +1012,7 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
   }
 
   float move_score = -infinity; // Must be lower than lowest evaluation
-  // Collect the best value from all possible moves
+// Collect the best value from all possible moves
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
     // Make the selected move and ask min() to evaluate it further.
@@ -1006,11 +1062,11 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
       return 0.0;
     }
   }
-  // Save evaluation of the position to the TT-cash and return the best
-  // value among the possible moves.
-  // If we haven't found any best_move (better than the original alpha)
-  // then best_move isn't valid.
-  // ---------------------------------------
+// Save evaluation of the position to the TT-cash and return the best
+// value among the possible moves.
+// If we haven't found any best_move (better than the original alpha)
+// then best_move isn't valid.
+// ---------------------------------------
   if (best_move.is_valid())
   {
     element.best_move = best_move;
@@ -1020,7 +1076,7 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
   }
 //  else
 //    std::cout << "best_move: NO_MOVE" << std::endl;
-  // ---------------------------------------
+// ---------------------------------------
   return alpha;
 }
 

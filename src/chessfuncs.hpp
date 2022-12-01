@@ -338,6 +338,46 @@ inline uint64_t diagonal_squares(uint64_t square)
   return to_diagonal(square) | to_anti_diagonal(square);
 }
 
+inline void go_east(uint64_t& square)
+{
+  square >>= 1;
+}
+
+inline void go_west(uint64_t& square)
+{
+  square <<= 1;
+}
+
+inline void go_north(uint64_t& square)
+{
+  square >>= 8;
+}
+
+inline void go_south(uint64_t& square)
+{
+  square <<= 8;
+}
+
+inline void go_north_west(uint64_t& square)
+{
+  square >>= 7;
+}
+
+inline void go_north_east(uint64_t& square)
+{
+  square >>= 9;
+}
+
+inline void go_south_west(uint64_t& square)
+{
+  square <<= 9;
+}
+
+inline void go_south_east(uint64_t& square)
+{
+  square <<= 7;
+}
+
 std::string uci_move(const Bitmove& m);
 std::string uci_pv_line(const std::vector<Bitmove>& pv_line);
 
