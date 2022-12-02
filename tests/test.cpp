@@ -1255,6 +1255,52 @@ TEST_CASE("print_patterns")
   std::cout << to_binary_board(bishop_center_control_pattern2) << std::endl;
 }
 
+TEST_CASE("print_evaluations")
+{
+  std::string line;
+  auto filename = "tests/test_positions/FEN_test_positions.txt"s;
+  std::ifstream ifs(filename);
+  if (!ifs.is_open())
+  {
+    std::cerr << "Couldn't open file " << filename << std::endl;
+    return;
+  }
+  std::vector<unsigned int> failed_testcases;
+  unsigned int testnum = 1;
+
+  while (std::getline(ifs, line))
+  {
+    // Skip empty lines and lines starting with a blank.
+    //std::cout << "single_testnum: " << single_testnum << ", " << "testnum: " << testnum << std::endl;
+    if ((line.empty()) || line[0] == ' ')
+      continue;
+
+    // In this case each line in FEN_test_positions.txt contains the FEN-string
+    // followed by a list of all legal moves in the position at the end.
+    // Extract the actual FEN_string:
+    // Match the first 6 tokens in the string.
+    std::vector<std::string> matches;
+    regexp_grep(line, "^([^\\s]+\\s){5}[^\\s]+", matches);
+    std::string FEN_string = matches[0];
+    // std::cout << "FEN_string1: " << FEN_string << std::endl;
+    Config_params config_params;
+    Game game(config_params);
+    game.read_position_FEN(FEN_string);
+    game.init();
+    auto evaluation = game.get_chessboard().evaluate_position();
+    std::cout << "testpos" << (int)testnum << ".pgn" << std::endl;
+    std::cout << evaluation << std::endl;
+    std::string reversed_FEN_string = reverse_FEN_string(matches[0]);
+    game.read_position_FEN(reversed_FEN_string);
+    game.init();
+    evaluation = game.get_chessboard().evaluate_position();
+    std::cout << "testpos" << (int)testnum << ".pgn reversed" << std::endl;
+    std::cout << evaluation << std::endl;
+
+    testnum++;
+  }
+}
+
 //  Game game(config_params);
 //  game.init();
 //  Go_params go_params; // All members in go_params are set to zero.
