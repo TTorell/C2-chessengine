@@ -678,6 +678,7 @@ TEST_CASE("evaluation")
   REQUIRE(fabs(evaluation - 2.93) < 0.01);
   chessboard.make_UCI_move("f1c4");
   evaluation = chessboard.evaluate_position();
+  chessboard.write(std::cout, Color::White);
   REQUIRE(fabs(evaluation - 3.0) < 0.01);
   chessboard.make_UCI_move("e8c8");
   evaluation = chessboard.evaluate_position();
@@ -1220,6 +1221,7 @@ TEST_CASE("print_patterns")
   std::cout << to_binary_board(knight_center_control_pattern2) << std::endl;
   std::cout << "rook_center_control_pattern" << std::endl;
   std::cout << to_binary_board(rook_center_control_pattern) << std::endl;
+
   std::cout << "west_of_center" << std::endl;
   std::cout << to_binary_board(west_of_center) << std::endl;
   std::cout << "east_of_center" << std::endl;
@@ -1228,6 +1230,7 @@ TEST_CASE("print_patterns")
   std::cout << to_binary_board(south_of_center) << std::endl;
   std::cout << "north_of_center" << std::endl;
   std::cout << to_binary_board(north_of_center) << std::endl;
+
   std::cout << "north_west_of_center" << std::endl;
   std::cout << to_binary_board(north_west_of_center) << std::endl;
   std::cout << "north_east_of_center" << std::endl;
@@ -1236,6 +1239,16 @@ TEST_CASE("print_patterns")
   std::cout << to_binary_board(south_west_of_center) << std::endl;
   std::cout << "south_east_of_center" << std::endl;
   std::cout << to_binary_board(south_east_of_center) << std::endl;
+
+  std::cout << "bishop_north_west_of_center" << std::endl;
+  std::cout << to_binary_board(bishop_north_west_of_center) << std::endl;
+  std::cout << "bishop_north_east_of_center" << std::endl;
+  std::cout << to_binary_board(bishop_north_east_of_center) << std::endl;
+  std::cout << "bishop_south_west_of_center" << std::endl;
+  std::cout << to_binary_board(bishop_south_west_of_center) << std::endl;
+  std::cout << "bishop_south_east_of_center" << std::endl;
+  std::cout << to_binary_board(bishop_south_east_of_center) << std::endl;
+
   std::cout << "bishop_center_control_pattern1" << std::endl;
   std::cout << to_binary_board(bishop_center_control_pattern1) << std::endl;
   std::cout << "bishop_center_control_pattern2" << std::endl;

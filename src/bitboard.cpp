@@ -513,15 +513,15 @@ int Bitboard::count_threats_to_center_squares(const Bitpieces& pieces, const uin
   while (squares)
   {
     auto from_square = popright_square(squares);
-    if (from_square & south_west_of_center)
+    if (from_square & bishop_south_west_of_center)
     {
       count += walk_into_center(from_square, 1, &go_north_east);
     }
-    else if (from_square & north_west_of_center)
+    else if (from_square & bishop_north_west_of_center)
     {
       count += walk_into_center(from_square, 1, &go_south_east);
     }
-    else if (from_square & south_east_of_center)
+    else if (from_square & bishop_south_east_of_center)
     {
       count += walk_into_center(from_square, 1, &go_north_west);
     }

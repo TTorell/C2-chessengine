@@ -477,6 +477,11 @@ constexpr uint64_t north_east_of_center = north_of_center & east_of_center;
 constexpr uint64_t south_west_of_center = south_of_center & west_of_center;
 constexpr uint64_t south_east_of_center = south_of_center & east_of_center;
 
+constexpr uint64_t bishop_north_west_of_center = upper_board_half & queen_side & ~center_squares;
+constexpr uint64_t bishop_north_east_of_center = upper_board_half & king_side & ~center_squares;
+constexpr uint64_t bishop_south_west_of_center = lower_board_half & queen_side & ~center_squares;
+constexpr uint64_t bishop_south_east_of_center = lower_board_half & king_side & ~center_squares;
+
 constexpr uint64_t bishop_center_control_pattern1 = (diagonal[6] | diagonal[8] | anti_diagonal[6] | anti_diagonal[8]) & ~center_squares;
 constexpr uint64_t bishop_center_control_pattern2 = (diagonal[7] | anti_diagonal[7]) & ~center_squares;
 
