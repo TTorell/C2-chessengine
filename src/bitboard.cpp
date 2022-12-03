@@ -679,13 +679,11 @@ float Bitboard::evaluate_position() const
   sum += _material_diff;
 
   //count center control
-  auto ccc = count_threats_to_center_squares(_white_pieces, pawn_center_control_W_pattern) -
-      count_threats_to_center_squares(_black_pieces, pawn_center_control_B_pattern);
-  sum += ccc * 0.02F;
+  sum += (count_threats_to_center_squares(_white_pieces, pawn_center_control_W_pattern) -
+      count_threats_to_center_squares(_black_pieces, pawn_center_control_B_pattern)) * 0.02F;
   count_development(sum, 0.05F);
   count_pawns_in_centre(sum, 0.03F);
   count_castling(sum, 0.10F);
-  std::cerr << sum << std::endl;
   return sum;
 }
 
