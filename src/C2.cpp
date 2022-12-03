@@ -30,7 +30,7 @@ void close_threads(std::thread& input_thread, std::thread& output_thread);
 
 void print_help_txt();
 
-std::string engine_style(const Bitmove& move);
+std::string uci_style(const Bitmove& move);
 
 // Global booleans which can be set to false to stop input and output threads
 // and to tell if the engine succeeded to open the command_log.txt file, where
@@ -118,42 +118,6 @@ void print_help_txt()
           "C2 Without arguments will start the chess-engine" << "\n" << "\n";
 }
 
-std::string engine_style(const Bitmove& move)
-{
-  std::stringstream ss;
-  ss << static_cast<char>('a' + file_idx(move.from())) << static_cast<int>(rank_idx(move.from())) <<
-     static_cast<char>('a' + file_idx(move.to())) << static_cast<int>(rank_idx(move.to()));
-  if (move.properties() & move_props_promotion)
-  {
-    switch (move.promotion_piece_type())
-    {
-    using enum Piecetype;
-
-    case Queen:
-      ss << "q";
-      break;
-    case Rook:
-      ss << "r";
-      break;
-    case Knight:
-      ss << "n";
-      break;
-    case Bishop:
-      ss << "b" << std::endl;
-      break;
-    default:
-      std::cerr << "Invalid promotion piece-type: "
-                << magic_enum::enum_name(move.promotion_piece_type())
-                << std::endl;
-      Shared_ostream& logfile = *(Shared_ostream::get_instance());
-      logfile << ("Invalid promotion piece-type: "s)
-              << magic_enum::enum_name(move.promotion_piece_type())
-              << "\n";
-      assert(false);
-    }
-  }
-  return ss.str();
-}
 
 } // End of namespace C2_chess
 
@@ -161,7 +125,6 @@ using namespace C2_chess;
 
 int main(int argc, char* argv[])
 {
-
 // The engine can log all communication with GUI, and
 // other stuff to a logfile.
 // This requires that the engine has been started by
@@ -216,6 +179,7 @@ int main(int argc, char* argv[])
 
   // Create an instance of the Game class.
   Game game(config_params);
+  game.init();
 
   // Thread which receives input commands and puts them in the
   // ipput_buffer, While the main engine process is "thinking"
@@ -245,11 +209,11 @@ int main(int argc, char* argv[])
 
     auto uci_command = Uci.parse_command(command, output_buffer, config_params);
 
-    if (uci_command == go)
+    if (uci_command == UCI_cmd::go)
     {
       // (try to) Find the best move in the position
       Bitmove bestmove = game.engine_go(config_params, Uci.get_go_params());
-      output_buffer.put("bestmove " + engine_style(bestmove));
+      output_buffer.put("bestmove " + uci_move(bestmove));
       continue;
     }
 
@@ -258,23 +222,23 @@ int main(int argc, char* argv[])
     // (or pondering, which isn't implemented yet).
     // but the commands are also put in the input-buffer for
     // this main-thread to read.
-    if (uci_command == quit)
+    if (uci_command == UCI_cmd::quit)
     {
       break;
     }
-    if (uci_command == stop)
+    if (uci_command == UCI_cmd::stop)
     {
       // We have already stopped searching when we reach this code,
       // because the searching also runs in this thread.
       continue;
     }
 
-    if (uci_command == position)
+    if (uci_command == UCI_cmd::position)
     {
       game.read_position(Uci.get_position_params());
     }
 
-    if (uci_command == ucinewgame)
+    if (uci_command == UCI_cmd::ucinewgame)
     {
       // We have nothing to clean up before starting a new game.
       // It will be taken care of when the first position is sent
@@ -286,7 +250,7 @@ int main(int argc, char* argv[])
     }
 
     // this is a homemade command specific for this engine.
-    if (uci_command == cmd)
+    if (uci_command == UCI_cmd::cmd)
     {
       close_threads(input_thread, output_thread);
       // Tell the cmdline instance to be ready for
@@ -296,7 +260,7 @@ int main(int argc, char* argv[])
       play_on_cmd_line(config_params);
       break;
     }
-    if (uci_command == unknown)
+    if (uci_command == UCI_cmd::unknown)
     {
       logfile << "Unknown UCI-command:\n" << command << "\n";
       continue;

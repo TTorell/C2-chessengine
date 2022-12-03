@@ -191,8 +191,10 @@ int Game::make_a_move(float& score, const uint8_t max_search_ply)
   {
     Bitmove best_move;
     _chessboard.clear_transposition_table();
+    _chessboard.clear_search_vars();
     _chessboard.init_material_evaluation();
-    score = _chessboard.negamax_with_pruning(0, -infinity, infinity, best_move, max_search_ply);
+    _chessboard.set_search_ply(0);
+    score = _chessboard.negamax_with_pruning(-infinity, infinity, best_move, max_search_ply);
     if (best_move == NO_MOVE && is_close(score, -100.0F))
     {
       std::cout << "White was check mated." << std::endl; // TODO
@@ -203,7 +205,8 @@ int Game::make_a_move(float& score, const uint8_t max_search_ply)
       std::cout << "Black was check mated." << std::endl; // TODO
       return 0;
     }
-    _chessboard.make_move(best_move);
+    Takeback_state tb_state_dummy;
+    _chessboard.new_make_move(best_move, tb_state_dummy);
     return 0;
   }
 }
@@ -221,7 +224,7 @@ void Game::start()
 // use in the Zobrist hash transposition-table.
   init_board_hash_tag();
 // Generate all moves.
-  _chessboard.find_legal_moves(Gentype::All);
+//  _chessboard.find_legal_moves(*_chessboard.get_movelist(0), Gentype::All);
 // Tell the engine that there are no time limits.
 // The time it takes is defined by the max_searh_level
   _chessboard.set_time_left(true);
@@ -233,15 +236,13 @@ void Game::start()
     uint64_t nsec_start = current_time.nanoseconds();
     if (_player_type[index(_chessboard.get_side_to_move())] == Playertype::Human)
     {
-//      cmdline << "Hashtag: " << _chessboard.get_hash_tag() << "\n";
-//      cmdline << "Material evaluation: " << _chessboard.get_material_evaluation() << "\n";
       if (make_a_move(_score, max_search_ply) != 0)
       {
         cmdline << "Stopped playing" << "\n";
         _playing = false;
       }
       // Update the movelog of the game.
-      _move_log.push_back(_chessboard.last_move());
+      _move_log.push_back(_chessboard.get_latest_move());
       actions_after_a_move();
     }
     else
@@ -257,10 +258,9 @@ void Game::start()
     logfile << "time spent thinking: " << timediff / 1.0e9 << " seconds" << "\n";
   }
 }
-
-bool Bitboard::is_in_movelist(const Bitmove& m) const
+bool Bitboard::is_in_movelist(list_ref movelist, const Bitmove& m) const
 {
-  for (const Bitmove& move : _movelist)
+  for (const Bitmove& move : movelist)
   {
     if (m == move)
       return true;
@@ -292,7 +292,7 @@ int Bitboard::make_move(Playertype player)
     first = false;
     cmdline << "(Just enter from-square and to-square," << "\n" <<
             "like: "
-            << "e2e4, or g7g8Q if it's a propmotion.)" << "\n";
+            << "e2e4, or g7g8q if it's a propmotion.)" << "\n";
     cmdline << "Your move: ";
     std::cin >> move_string;
     if (move_string.size() < 4 || move_string.size() > 5)
@@ -325,14 +325,13 @@ int Bitboard::make_move(Playertype player)
     p_type = get_piece_type(from_square);
     switch (p_type)
     {
-    using enum Piecetype;
-    case Undefined:
+    case Piecetype::Undefined:
       continue;
-    case Pawn:
+    case Piecetype::Pawn:
       if (to_square & _ep_square)
-        move_props |= move_props_en_passant;
+        move_props |= move_props_en_passant | move_props_capture;
       break;
-    case King:
+    case Piecetype::King:
       if (_side_to_move == Color::White)
       {
         if ((from_square & e1_square) && (to_square & (g1_square | c1_square)))
@@ -348,107 +347,95 @@ int Bitboard::make_move(Playertype player)
       ;
     }
     if (to_square & _other->pieces)
-      move_props = move_props_capture;
-    Bitmove m(p_type, move_props, from_square, to_square, promotion_piecetype);
-    if (!is_in_movelist(m))
+      move_props |= move_props_capture;
+    Bitmove m(p_type, get_piece_type(to_square), move_props, from_square, to_square, promotion_piecetype);
+    list_t movelist;
+    find_legal_moves(movelist, Gentype::All);
+    if (!is_in_movelist(movelist, m))
       continue;
     //  Move is OK,make it
-    make_move(m);
+    Takeback_state tb_state_dummy;
+    new_make_move(m, tb_state_dummy);
     return 0;
   } // while not read
 }
 
 
-std::ostream& write_piece_diagram_style(std::ostream& os, C2_chess::Piecetype p_type, C2_chess::Color side)
+std::ostream& Bitboard_with_utils::write_cmdline_style(std::ostream& os, const Color from_perspective) const
+{
+  if (from_perspective == Color::White)
+  {
+    os << "###################" << std::endl;
+    for (int i = 8; i >= 1; i--)
+    {
+      os << "#";
+      for (int j = a; j <= h; j++)
+      {
+        os << "|";
+        uint64_t square = file[j] & rank[i];
+        if (square & _own->pieces)
+          write_piece_diagram_style(os, get_piece_type(square), _side_to_move);
+        else if (square & _other->pieces)
+          write_piece_diagram_style(os, get_piece_type(square), other_color(_side_to_move));
+        else
+          os << "-";
+      }
+      os << "|#" << " " << i << std::endl;
+    }
+    os << "###################" << std::endl;
+    os << "  a b c d e f g h " << std::endl;
+  }
+  else // From blacks point of view
+  {
+    os << "###################" << std::endl;
+    for (int i = 1; i <= 8; i++)
+    {
+      os << "#";
+      for (int j = h; j >= a; j--)
+      {
+        os << "|";
+        uint64_t square = file[j] & rank[i];
+        if (square & _own->pieces)
+          write_piece_diagram_style(os, get_piece_type(square), _side_to_move);
+        else if (square & _other->pieces)
+          write_piece_diagram_style(os, get_piece_type(square), other_color(_side_to_move));
+        else
+          os << "-";
+      }
+      os << "|#" << " " << i << std::endl;
+    }
+    os << "###################" << std::endl;
+    os << "  h g f e d c b a " << std::endl;
+  }
+  return os;
+}
+
+std::ostream& Bitboard::write_piece_diagram_style(std::ostream& os, C2_chess::Piecetype p_type, C2_chess::Color side) const
 {
   switch (p_type)
   {
-  using enum C2_chess::Piecetype;
-  using enum C2_chess::Color;
-  case King:
-    os << ((side == White) ? ("\u2654") : ("\u265A"));
+  case Piecetype::King:
+    os << ((side == Color::White) ? ("\u2654") : ("\u265A"));
     break;
-  case Queen:
-    os << ((side == White) ? ("\u2655") : ("\u265B"));
+  case Piecetype::Queen:
+    os << ((side == Color::White) ? ("\u2655") : ("\u265B"));
     break;
-  case Rook:
-    os << ((side == White) ? ("\u2656") : ("\u265C"));
+  case Piecetype::Rook:
+    os << ((side == Color::White) ? ("\u2656") : ("\u265C"));
     break;
-  case Bishop:
-    os << ((side == White) ? ("\u2657") : ("\u265D"));
+  case Piecetype::Bishop:
+    os << ((side == Color::White) ? ("\u2657") : ("\u265D"));
     break;
-  case Knight:
-    os << ((side == White) ? ("\u2658") : ("\u265E"));
+  case Piecetype::Knight:
+    os << ((side == Color::White) ? ("\u2658") : ("\u265E"));
     break;
-  case Pawn:
-    os << ((side == White) ? ("\u2659") : ("\u265F"));
+  case Piecetype::Pawn:
+    os << ((side == Color::White) ? ("\u2659") : ("\u265F"));
     break;
   default:
     std::cerr << "Undefined piece type: " << magic_enum::enum_name(p_type) << std::endl;
     Shared_ostream& logfile = *(Shared_ostream::get_instance());
     logfile << "Undefined piece type: " << magic_enum::enum_name(p_type) << "\n";
-    assert(false);
-  }
-  return os;
-}
-
-std::ostream& Bitboard_with_utils::write_cmdline_style(std::ostream& os, Outputtype ot, Color from_perspective) const
-{
-  switch (ot)
-  {
-  using enum Outputtype;
-  case Debug:
-    break;
-  case Cmd_line_diagram:
-    if (from_perspective == Color::White)
-    {
-      os << "###################" << std::endl;
-      for (int i = 8; i >= 1; i--)
-      {
-        os << "#";
-        for (int j = a; j <= h; j++)
-        {
-          os << "|";
-          uint64_t square = file[j] & rank[i];
-          if (square & _own->pieces)
-            write_piece_diagram_style(os, get_piece_type(square), _side_to_move);
-          else if (square & _other->pieces)
-            write_piece_diagram_style(os, get_piece_type(square), other_color(_side_to_move));
-          else
-            os << "-";
-        }
-        os << "|#" << " " << i << std::endl;
-      }
-      os << "###################" << std::endl;
-      os << "  a b c d e f g h " << std::endl;
-    }
-    else // From blacks point of view
-    {
-      os << "###################" << std::endl;
-      for (int i = 1; i <= 8; i++)
-      {
-        os << "#";
-        for (int j = h; j >= a; j--)
-        {
-          os << "|";
-          uint64_t square = file[j] & rank[i];
-          if (square & _own->pieces)
-            write_piece_diagram_style(os, get_piece_type(square), _side_to_move);
-          else if (square & _other->pieces)
-            write_piece_diagram_style(os, get_piece_type(square), other_color(_side_to_move));
-          else
-            os << "-";
-        }
-        os << "|#" << " " << i << std::endl;
-      }
-      os << "###################" << std::endl;
-      os << "  h g f e d c b a " << std::endl;
-    }
-    break;
-  default:
-    os << "Sorry: Output type not implemented yet: " << magic_enum::enum_name(ot) << std::endl;
-    Shared_ostream& logfile = *(Shared_ostream::get_instance());
-    logfile << "Sorry: Output type not implemented yet: " << magic_enum::enum_name(ot) << "\n";
     assert(false);
   }
   return os;

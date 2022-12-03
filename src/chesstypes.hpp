@@ -5,7 +5,9 @@
 #include <bit>
 #include <cassert>
 #include <ostream>
+#include <sstream>
 #include <limits>
+#include <deque>
 
 using namespace std::string_literals;
 
@@ -38,12 +40,21 @@ const auto eval_max = 100.0F;
 const auto eval_min = -eval_max;
 const auto epsilon = 0.00000001F;
 
-const auto N_SEARCH_BOARDS_DEFAULT = 38U;
+const auto N_SEARCH_PLIES_DEFAULT = 64U;
+
 const auto dont_update_history = false;
+const auto init_pieces = true;
 const auto dont_evaluate_zero_moves = false;
 const auto use_max_search_depth = true;
 const auto on_same_line = true;
+const auto on_separate_lines = false;
+const auto xray_threats_through_king_allowed = true;
+const auto no_xray_threats_through_king = false;
 
+// It's important that the four promotion-piecetypes
+// Comes first and have index 0 to 3 (00, 01, 10 and 11),
+// because they are represented by only two bits inside
+// the Bitmove struct.
 enum class Piecetype
 {
   Queen,
@@ -58,6 +69,11 @@ enum class Piecetype
 const float piece_values[7] = {9.0F, 5.0F, 3.0F, 3.0F, 1.0F, 0.0F, 0.0F};
 
 const auto pawn_value = piece_values[index(Piecetype::Pawn)];
+const auto queen_value = piece_values[index(Piecetype::Queen)];
+const auto rook_value = piece_values[index(Piecetype::Rook)];
+const auto knight_value = piece_values[index(Piecetype::Knight)];
+const auto bishop_value = piece_values[index(Piecetype::Bishop)];
+const auto king_value = piece_values[index(Piecetype::King)];
 
 enum class Color
 {
@@ -76,14 +92,6 @@ enum class Gentype
   All,
   Captures,
   Captures_and_Promotions
-};
-
-enum class Outputtype
-{
-  Verbose,
-  Silent,
-  Debug,
-  Cmd_line_diagram
 };
 
 // Castling rights
@@ -143,6 +151,25 @@ struct Bitpieces
     uint64_t Pawns;
     uint64_t pieces;
 
+    bool operator ==(const Bitpieces& from) const
+    {
+      if (King != from.King)
+        return false;
+      if (Queens != from.Queens)
+        return false;
+      if (Rooks != from.Rooks)
+        return false;
+      if (Bishops != from.Bishops)
+        return false;
+      if (Knights != from.Knights)
+        return false;
+      if (Pawns != from.Pawns)
+        return false;
+      if (pieces != from.pieces)
+        return false;
+      return true;
+    }
+
     void assemble_pieces()
     {
       pieces = King | Queens | Rooks | Bishops | Knights | Pawns;
@@ -175,28 +202,25 @@ struct Bitmove
     float _evaluation;
 
     Bitmove() :
-        _move(0),
-        _evaluation(0.0)
+        _move(0), _evaluation(0.0)
     {
     }
 
     explicit Bitmove(uint32_t move) :
-        _move(move),
-        _evaluation(0.0)
+        _move(move), _evaluation(0.0)
     {
     }
 
-    Bitmove(Piecetype p_type, // bit 25-32
-            uint16_t move_props, // bit 15-24
-            uint64_t from_square, // bit 7-12
-            uint64_t to_square, // bit 1-6
-            Piecetype promotion_pt = Piecetype::Queen) : // bit 13-14
-        _move(0),
-        _evaluation(0.0)
+    Bitmove(Piecetype p_type, // bit 28-32, (only needs three bits actually)
+        Piecetype capture_p_type, // bit 25-27
+        uint16_t move_props, // bit 15-24
+        uint64_t from_square, // bit 7-12
+        uint64_t to_square, // bit 1-6
+        Piecetype promotion_pt = Piecetype::Queen) : // bit 13-14
+        _move(0), _evaluation(0.0)
     {
-      _move = (static_cast<uint32_t>(index(p_type)) << 24) | (move_props << 14) | static_cast<uint32_t>(index(promotion_pt) << 12)
-              | static_cast<uint32_t>(bit_idx(from_square)) << 6
-              | static_cast<uint32_t>(bit_idx(to_square));
+      _move = (static_cast<uint32_t>(index(p_type)) << 27) | (static_cast<uint32_t>(index(capture_p_type)) << 24) | (move_props << 14)
+              | (static_cast<uint32_t>(index(promotion_pt) << 12)) | (static_cast<uint32_t>(bit_idx(from_square)) << 6) | (static_cast<uint32_t>(bit_idx(to_square)));
     }
 
     bool operator==(const Bitmove& m) const
@@ -208,7 +232,7 @@ struct Bitmove
 
     bool operator <(const Bitmove& m) const
     {
-      // Sort in descending order
+      // Operand for sorting in descending order
       return m._evaluation < _evaluation;
     }
 
@@ -232,9 +256,14 @@ struct Bitmove
       return (_move >> 14) & 0x03FF;
     }
 
+    Piecetype capture_piece_type() const
+    {
+      return static_cast<Piecetype>((_move >> 24) & 0x07);
+    }
+
     Piecetype piece_type() const
     {
-      return static_cast<Piecetype>(_move >> 24);
+      return static_cast<Piecetype>(_move >> 27);
     }
 
     void add_property(uint16_t property)
@@ -255,11 +284,16 @@ struct Bitmove
 
     friend std::ostream& operator<<(std::ostream& os, const Bitmove& m);
 
-    bool is_valid()
+    bool is_valid() const
     {
       return _move > last_none_valid_move_constant; // Bigger than DRAW_BY_50_MOVES_RULE._move.
     }
 };
+
+// Movelist types:
+using list_ptr = std::deque<Bitmove>*;
+using list_ref = std::deque<Bitmove>&;
+using list_t = std::deque<Bitmove>;
 
 // The returned best_move from a search can contain a valid move of course,
 // but it can also contain the following information.
@@ -270,6 +304,17 @@ const Bitmove UNDEFINED_MOVE(1);
 const Bitmove DRAW_BY_THREEFOLD_REPETITION(2);
 const Bitmove DRAW_BY_50_MOVES_RULE(3);
 const Bitmove SEARCH_HAS_BEEN_INTERRUPTED(last_none_valid_move_constant); // currently 4
+
+struct Takeback_state
+{
+    uint64_t hash_tag;
+    uint8_t castling_rights;
+    uint8_t half_move_counter;
+    uint64_t ep_square;
+    bool has_castled_w;
+    bool has_castled_b;
+    Bitmove latest_move;
+};
 
 // constexpr is a way of telling the compiler
 // that we wish these expressions to be calculated
@@ -413,6 +458,32 @@ constexpr uint64_t ad(const int i)
 }
 
 constexpr uint64_t anti_diagonal[15] = {ad(0), ad(1), ad(2), ad(3), ad(4), ad(5), ad(6), ad(7), ad(8), ad(9), ad(10), ad(11), ad(12), ad(13), ad(14)};
+
+// Patterns for counting central control
+constexpr uint64_t pawn_center_control_W_pattern = (row_3 | row_4) & (c_file | d_file | e_file | f_file);
+constexpr uint64_t pawn_center_control_B_pattern = pawn_center_control_W_pattern >> 16;
+constexpr uint64_t knight_center_control_pattern1 = ((row_3 | row_6) & (b_file | d_file | e_file | g_file)) | ((row_4 | row_5) & (b_file | c_file | f_file | g_file)) | ((row_2 | row_7) & (c_file | d_file | e_file | f_file));
+constexpr uint64_t knight_center_control_pattern2 = (row_3 | row_6) & (c_file | f_file);
+constexpr uint64_t king_center_control_pattern1 = (row_3 | row_6) & (c_file | f_file);
+constexpr uint64_t king_center_control_pattern2 = ((row_4 | row_5) & (c_file | f_file)) | ((row_3 | row_6) & (d_file | e_file));
+constexpr uint64_t rook_center_control_pattern = ((row_4 | row_5) | (d_file | e_file)) & ~center_squares;
+constexpr uint64_t east_of_center = king_side & ~e_file;
+constexpr uint64_t west_of_center = queen_side & ~d_file;
+constexpr uint64_t south_of_center = lower_board_half & ~row_4;
+constexpr uint64_t north_of_center = upper_board_half & ~row_5;
+
+constexpr uint64_t north_west_of_center = north_of_center & west_of_center;
+constexpr uint64_t north_east_of_center = north_of_center & east_of_center;
+constexpr uint64_t south_west_of_center = south_of_center & west_of_center;
+constexpr uint64_t south_east_of_center = south_of_center & east_of_center;
+
+constexpr uint64_t bishop_north_west_of_center = upper_board_half & queen_side & ~center_squares;
+constexpr uint64_t bishop_north_east_of_center = upper_board_half & king_side & ~center_squares;
+constexpr uint64_t bishop_south_west_of_center = lower_board_half & queen_side & ~center_squares;
+constexpr uint64_t bishop_south_east_of_center = lower_board_half & king_side & ~center_squares;
+
+constexpr uint64_t bishop_center_control_pattern1 = (diagonal[6] | diagonal[8] | anti_diagonal[6] | anti_diagonal[8]) & ~center_squares;
+constexpr uint64_t bishop_center_control_pattern2 = (diagonal[7] | anti_diagonal[7]) & ~center_squares;
 
 } // namespace C2_chess
 #endif

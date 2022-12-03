@@ -52,21 +52,71 @@ std::string get_FEN_test_position(unsigned int n)
   return "";
 }
 
+void make_and_takeback_move(Game& game, const std::string& uci_move)
+{
+  game.write_chessboard(std::cout, Color::White);
+  auto& bwu = game.get_chessboard();
+  auto saved_hash_tag = bwu.get_hash_tag();
+  auto saved_side_to_move = bwu.get_side_to_move();
+  auto saved_move_number = bwu.get_move_number();
+  auto saved_castling_rights = bwu.get_castling_rights();
+  auto saved_half_move_counter = bwu.get_half_move_counter();
+  auto saved_has_castled_0 = bwu.has_castled(Color::White);
+  auto saved_has_castled_1 = bwu.has_castled(Color::Black);
+  auto saved_ep_square = bwu.get_ep_square();
+  auto saved_material_diff = bwu.get_material_diff();
+  auto saved_latest_move = bwu.get_latest_move();
+  auto saved_all_pieces = bwu.get_all_pieces();
+  auto saved_white_pieces = bwu.get_white_pieces();
+  auto saved_black_pieces = bwu.get_black_pieces();
+  auto saved_own = bwu.get_own();
+  auto saved_other = bwu.get_other();
+  auto saved_game_history = bwu.get_game_history();
+
+  Takeback_state tb_state;
+  game.make_move(uci_move, tb_state);
+  game.write_chessboard(std::cout, Color::White);
+
+  game.takeback_latest_move(tb_state);
+  game.write_chessboard(std::cout, Color::White);
+
+  REQUIRE(game.get_castling_rights() == saved_castling_rights);
+  REQUIRE(game.get_material_diff() == saved_material_diff);
+
+  REQUIRE(bwu.get_hash_tag() == saved_hash_tag);
+  REQUIRE(bwu.get_side_to_move() == saved_side_to_move);
+  REQUIRE(bwu.get_move_number() == saved_move_number);
+  REQUIRE(bwu.get_castling_rights() == saved_castling_rights);
+  REQUIRE(bwu.get_half_move_counter() == saved_half_move_counter);
+  REQUIRE(bwu.has_castled(Color::White) == saved_has_castled_0);
+  REQUIRE(bwu.has_castled(Color::Black) == saved_has_castled_1);
+  REQUIRE(bwu.get_ep_square() == saved_ep_square);
+  REQUIRE(bwu.get_material_diff() == saved_material_diff);
+  REQUIRE(bwu.get_latest_move() == saved_latest_move);
+  REQUIRE(bwu.get_all_pieces() == saved_all_pieces);
+  REQUIRE(bwu.get_white_pieces() == saved_white_pieces);
+  REQUIRE(bwu.get_black_pieces() == saved_black_pieces);
+  REQUIRE(bwu.get_own() == saved_own);
+  REQUIRE(bwu.get_other() == saved_other);
+  REQUIRE(bwu.get_game_history() == saved_game_history);
+}
+
 } // End of fileprivate namespace
 
-TEST_CASE("perft_test")
+TEST_CASE("perft_test") // A thorough move-generation test with public test-data from the web.
 {
   // An example-line from the file perftsuite.epd looks like this:
   // "101k7/8/7p/8/8/6P1/8/K7 b - - 0 1 ;D1 4 ;D2 16 ;D3 101 ;D4 637 ;D5 4354 ;D6 29679"
   // A three characters long line-number directly followed by the FEN-string of the position,
-  // followed by a blank and a semicolon. Then comes the number of nodes searced for
+  // followed by a blank and a semicolon. Then comes the number of nodes searched for
   // depth 1 to 6.
   // We can skip the first three characters and the last blank in each token, if we add an
   // extra blank to the line and split the line with semicolon as delimiter).
-
-  size_t max_depth = 4; // Should be 7 to run all pert-test, but that takes time.
+  // max_depth should be 6 to fully run all pert-test, but that takes time,
+  // so for a regression test I set it to 4 after testing through all 6 depths.
+  size_t max_depth = 4;
   uint64_t timediff;
-  const bool init_pieces = true;
+  //nst bool init_pieces = true;
   const bool same_line = true;
   std::string line;
   std::string filename = "tests/test_positions/perftsuite.epd";
@@ -95,30 +145,27 @@ TEST_CASE("perft_test")
     write_vector(input_vector, std::cout);
 
     Bitboard bb;
+    bb.init();
     bb.read_position(input_vector[0], init_pieces);
-    bb.find_legal_moves(Gentype::All);
-    for (size_t max_search_plies = 2; max_search_plies <= max_depth; max_search_plies++)
+    //bb.find_legal_moves(*bb.get_movelist(0), Gentype::All);
+    for (size_t max_search_depth = 2; max_search_depth <= max_depth; max_search_depth++)
     {
       bb.clear_search_info();
       steady_clock.tic();
-      unsigned long int n_searched_nodes = bb.perft_test(0, max_search_plies);
+      unsigned long int n_searched_nodes = bb.perft_test(0, max_search_depth);
       timediff = steady_clock.toc_us();
-      if (n_searched_nodes != static_cast<unsigned int>(std::stol(input_vector[max_search_plies - 1])))
+      if (n_searched_nodes != static_cast<unsigned int>(std::stol(input_vector[max_search_depth - 1])))
       {
         failed = true;
-        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_plies - 1
-                  << " failed. "
-                  << n_searched_nodes << " : " << input_vector[max_search_plies - 1]
+        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_depth - 1 << " failed. " << n_searched_nodes << " : " << input_vector[max_search_depth - 1]
                   << std::endl;
       }
       else
       {
-        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_plies - 1
-                  << " passed. "
-                  << "n_leaf_nodes = " << n_searched_nodes << ". It took " << timediff
+        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_depth - 1 << " passed. " << "n_leaf_nodes = " << n_searched_nodes << ". It took " << timediff
                   << " micro seconds." << std::endl;
       }
-      REQUIRE(n_searched_nodes  == static_cast<unsigned int>(std::stoi(input_vector[max_search_plies - 1])));
+      REQUIRE(n_searched_nodes == static_cast<unsigned int>(std::stoi(input_vector[max_search_depth - 1])));
     }
     if (failed)
     {
@@ -136,7 +183,7 @@ TEST_CASE("perft_test")
   }
 }
 
-TEST_CASE("Move_generation")
+TEST_CASE("move_generation")
 {
   uint64_t timediff;
   std::string arg = "";
@@ -151,6 +198,7 @@ TEST_CASE("Move_generation")
   const char* const preferred_test_exec_dir = "/home/torsten/eclipse-workspace/C2-chessengine";
   REQUIRE(check_execution_dir(preferred_test_exec_dir));
   Bitboard_with_utils chessboard;
+  chessboard.init();
   unsigned int single_testnum = 0;
   if (arg != "" && arg != "all")
   {
@@ -176,33 +224,130 @@ TEST_CASE("Move_generation")
   std::cout << "It took " << timediff << " nanoseconds." << std::endl;
 }
 
-TEST_CASE("Castling_wrights")
+TEST_CASE("move-ordering")
 {
-// Load test position 71
+  std::string FEN_string = get_FEN_test_position(75);
+  Bitboard_with_utils chessboard;
+  chessboard.init();
+  REQUIRE(chessboard.read_position(FEN_string, init_pieces) == 0);
+  chessboard.write(std::cout, Color::White);
+  chessboard.write_movelist(std::cout, true) << std::endl;
+  list_t movelist;
+  chessboard.find_legal_moves(movelist, Gentype::All);
+  std::cout << "-------" << std::endl;
+  for (const auto& move : movelist)
+    std::cout << move._evaluation << std::endl;
+  REQUIRE(is_sorted_descending(movelist));
+}
+
+TEST_CASE("history")
+{
+  Bitboard_with_utils bwu;
+  bwu.clear_game_history();
+  for (auto hash_tag = zero; hash_tag < 256; hash_tag++)
+  {
+    bwu.add_position_to_game_history(hash_tag);
+    REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
+    REQUIRE(bwu.get_history_state()._n_repeated_positions == zero);
+    REQUIRE(bwu.get_history_state()._n_plies == hash_tag + 1);
+  }
+  for (std::size_t n_plies = 256; n_plies > 0; n_plies--)
+  {
+    bwu.takeback_from_game_history();
+    REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
+    REQUIRE(bwu.get_history_state()._n_repeated_positions == zero);
+    REQUIRE(bwu.get_history_state()._n_plies == n_plies - 1);
+  }
+
+  for (auto hash_tag = zero; hash_tag < 256; hash_tag++)
+  {
+    bwu.add_position_to_game_history(hash_tag);
+    bwu.add_position_to_game_history(hash_tag);
+    REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
+    REQUIRE(bwu.get_history_state()._n_repeated_positions == hash_tag + 1);
+    REQUIRE(bwu.get_history_state()._n_plies == 2 * (hash_tag + 1));
+  }
+  size_t tmp = 256;
+  for (std::size_t n_plies = 256; n_plies > 0; n_plies--)
+  {
+    bwu.takeback_from_game_history();
+    REQUIRE(bwu.get_history_state()._n_plies == 256 + n_plies - 1);
+    REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
+    if (n_plies % 2 == 0)
+    {
+      tmp--;
+    }
+    REQUIRE(bwu.get_history_state()._n_repeated_positions == tmp);
+  }
+
+  auto saved_history_state = bwu.get_history_state();
+  bwu.add_position_to_game_history(709870987);
+  bwu.add_position_to_game_history(709870988);
+  bwu.add_position_to_game_history(709870989);
+  bwu.add_position_to_game_history(709870990);
+  bwu.reset_history_state(saved_history_state);
+  REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
+  REQUIRE(bwu.get_history_state()._n_repeated_positions == 128);
+  REQUIRE(bwu.get_history_state()._n_plies == 256);
+  // Or a little simpler:
+  REQUIRE(bwu.get_history_state() == saved_history_state);
+}
+
+TEST_CASE("history_three-fold_repetition")
+{
+  std::string FEN_string = get_FEN_test_position(82);
+  Bitboard_with_utils chessboard;
+  chessboard.init();
+  REQUIRE(chessboard.read_position(FEN_string) == 0);
+  chessboard.clear_game_history();
+  chessboard.add_position_to_game_history(chessboard.get_hash_tag());
+  Takeback_state tb_state_dummy;
+  //chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
+  chessboard.make_UCI_move("a6b6", tb_state_dummy);
+  chessboard.make_UCI_move("a8b8", tb_state_dummy);
+  REQUIRE(chessboard.is_threefold_repetition() == false);
+  chessboard.make_UCI_move("b6a6", tb_state_dummy);
+  chessboard.make_UCI_move("b8a8", tb_state_dummy);
+  REQUIRE(chessboard.is_threefold_repetition() == false);
+  chessboard.make_UCI_move("a6b6", tb_state_dummy);
+  chessboard.make_UCI_move("a8b8", tb_state_dummy);
+  REQUIRE(chessboard.is_threefold_repetition() == false);
+  chessboard.make_UCI_move("b6a6", tb_state_dummy);
+  chessboard.make_UCI_move("b8a8", tb_state_dummy);
+  REQUIRE(chessboard.is_threefold_repetition() == true);
+  chessboard.takeback_from_game_history();
+  REQUIRE(chessboard.is_threefold_repetition() == false);
+}
+
+TEST_CASE("castling_rights")
+{
+  // Load test position 71
+  Takeback_state tb_state_dummy;
   std::string FEN_string = get_FEN_test_position(71);
   Bitboard_with_utils chessboard;
+  chessboard.init();
   REQUIRE(chessboard.read_position(FEN_string) == 0);
   REQUIRE(chessboard.get_castling_rights() == castling_rights_all);
-  chessboard.find_legal_moves(Gentype::All);
-  chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
-  chessboard.write_movelist(std::cout, true) << std::endl;
+  //chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
+  chessboard.write(std::cout, Color::White);
+  chessboard.write_movelist(std::cout, on_same_line) << std::endl;
 
   SECTION("Rh1xh8 taking Rook at h8 etc")
   {
-// Rh1xh8: Both sides looses KS castling
+    // Rh1xh8: Both sides looses KS castling
     chessboard.make_UCI_move("h1h8");
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BQ | castling_right_WQ));
 
-// Black King steps away loosing right to casle QS as well.
+    // Black King steps away loosing right to casle QS as well.
     chessboard.make_UCI_move("e8f7");
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_right_WQ);
-// White castles queen-side
+    // White castles queen-side
     chessboard.make_UCI_move("e1c1");
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
   }
@@ -212,11 +357,11 @@ TEST_CASE("Castling_wrights")
     SECTION("Queenside-Kingside")
     {
       chessboard.make_UCI_move("e1c1"); // 0-0-0
-      chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+      chessboard.write(std::cout, Color::White);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ));
       chessboard.make_UCI_move("e8g8"); // ...0-0
-      chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+      chessboard.write(std::cout, Color::White);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
     }
@@ -224,11 +369,11 @@ TEST_CASE("Castling_wrights")
     SECTION("Kingside-Queenside")
     {
       chessboard.make_UCI_move("e1g1"); // 0-0
-      chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+      chessboard.write(std::cout, Color::White);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ));
       chessboard.make_UCI_move("e8c8"); // ... 0-0-0
-      chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+      chessboard.write(std::cout, Color::White);
       chessboard.write_movelist(std::cout, true) << std::endl;
       REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
     }
@@ -237,19 +382,19 @@ TEST_CASE("Castling_wrights")
   SECTION("Rook moves, but no capture")
   {
     chessboard.make_UCI_move("a1b1"); // Ra1-b1
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ | castling_right_WK));
     chessboard.make_UCI_move("h8g8"); // ...Rh8-g8
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BQ | castling_right_WK));
     chessboard.make_UCI_move("h1g1"); // ...Rh1-g1
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_right_BQ);
     chessboard.make_UCI_move("a8b8"); // ...Ra8-b8
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
   }
@@ -257,20 +402,20 @@ TEST_CASE("Castling_wrights")
   SECTION("King moves")
   {
     chessboard.make_UCI_move("e1d1"); // Ke1-d1
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == (castling_right_BK | castling_right_BQ));
     chessboard.make_UCI_move("e8e7"); // ... Ke8-e7
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
 // Kings move back
     chessboard.make_UCI_move("d1e1"); // Kd1-e1
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
     chessboard.make_UCI_move("e7e8"); // ... Ke7-e8
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
 
@@ -278,20 +423,20 @@ TEST_CASE("Castling_wrights")
 
 // Make another King_move
     chessboard.make_UCI_move("e1e2"); // Ke1-e2
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
     chessboard.make_UCI_move("e8d8"); // ... Ke8-d8
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
 // and move back again
     chessboard.make_UCI_move("e2e1"); // Ke2-e1
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
     chessboard.make_UCI_move("d8e8"); // ... Kd8-e8
-    chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
+    chessboard.write(std::cout, Color::White);
     chessboard.write_movelist(std::cout, true) << std::endl;
     REQUIRE(chessboard.get_castling_rights() == castling_rights_none);
 
@@ -302,6 +447,7 @@ TEST_CASE("Castling_wrights")
 TEST_CASE("Bitboard between")
 {
   Bitboard_with_utils chessboard;
+  chessboard.init();
   uint64_t squares = between(e8_square, e1_square, e_file | row_8);
 // std::cout << to_binary_board(squares) << std::endl;
   REQUIRE(squares == (e_file ^ (e8_square | e1_square)));
@@ -479,120 +625,122 @@ TEST_CASE("evaluation")
   float evaluation;
   Current_time now;
   Bitboard_with_utils chessboard;
+  chessboard.init();
   chessboard.read_position(start_position_FEN);
-  chessboard.find_legal_moves(Gentype::All);
-  REQUIRE(fabs(chessboard.evaluate_position(Color::White, 7)) < 0.01);
+  //chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
+  REQUIRE(fabs(chessboard.evaluate_position()) < 0.01);
   chessboard.make_UCI_move("e2e4");
   now.tic();
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   time_taken = now.toc_ns();
   std::cout << "evaluation-time: " << time_taken << " nanoseconds." << std::endl;
   REQUIRE(fabs(evaluation - 0.05) < 0.01);
   chessboard.make_UCI_move("e7e5");
-  REQUIRE(fabs(chessboard.evaluate_position(Color::White, 7)) < 0.01);
+  REQUIRE(fabs(chessboard.evaluate_position()) < 0.01);
   chessboard.make_UCI_move("g1f3");
   now.tic();
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   time_taken = now.toc_ns();
   std::cout << "evaluation-time: " << time_taken << " nanoseconds." << std::endl;
   REQUIRE(fabs(evaluation - 0.09) < 0.01);
   chessboard.make_UCI_move("b8c6");
-  REQUIRE(fabs(chessboard.evaluate_position(Color::White, 7)) < 0.01);
+  REQUIRE(fabs(chessboard.evaluate_position()) < 0.01);
   chessboard.make_UCI_move("d2d4");
   now.tic();
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   time_taken = now.toc_ns();
   std::cout << "evaluation-time: " << time_taken << " nanoseconds." << std::endl;
   REQUIRE(fabs(evaluation - 0.07) < 0.01);
   chessboard.make_UCI_move("d7d5");
-  REQUIRE(fabs(chessboard.evaluate_position(Color::White, 7)) < 0.01);
+  REQUIRE(fabs(chessboard.evaluate_position()) < 0.01);
   chessboard.make_UCI_move("e4d5");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 1.03) < 0.01);
   chessboard.make_UCI_move("e5d4");
-  REQUIRE(fabs(chessboard.evaluate_position(Color::White, 7)) < 0.01);
+  REQUIRE(fabs(chessboard.evaluate_position()) < 0.01);
   chessboard.make_UCI_move("d5c6");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 2.99) < 0.01);
   chessboard.make_UCI_move("b7c6");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 1.97) < 0.01);
   chessboard.make_UCI_move("d1d4");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 3.03) < 0.01);
   chessboard.make_UCI_move("d8d4");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation + 6.04) < 0.01);
   chessboard.make_UCI_move("f3d4");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 2.98) < 0.01);
   chessboard.make_UCI_move("c8h3");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 2.93) < 0.01);
   chessboard.make_UCI_move("f1c4");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
+  chessboard.write(std::cout, Color::White);
   REQUIRE(fabs(evaluation - 3.0) < 0.01);
   chessboard.make_UCI_move("e8c8");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 2.81) < 0.01);
   chessboard.make_UCI_move("e1g1");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 2.96) < 0.01);
   chessboard.make_UCI_move("d8d4");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation + 0.04) < 0.01);
   chessboard.make_UCI_move("g2h3");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 2.96) < 0.01);
   chessboard.make_UCI_move("d4c4");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation + 0.06) < 0.01);
   chessboard.make_UCI_move("f1e1");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation + 0.02) < 0.01);
   chessboard.make_UCI_move("g8f6");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation + 0.11) < 0.01);
   chessboard.make_UCI_move("c1g5");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation + 0.06) < 0.01);
   chessboard.make_UCI_move("c4c2");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation + 1.02) < 0.01);
   chessboard.make_UCI_move("b1c3");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation + 0.93) < 0.01);
   chessboard.make_UCI_move("c2f2");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation + 1.93) < 0.01);
   chessboard.make_UCI_move("g1f2");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 3.07) < 0.01);
   chessboard.make_UCI_move("h7h6");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 3.07) < 0.01);
   chessboard.make_UCI_move("g5f6");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 6.15) < 0.01);
   chessboard.make_UCI_move("g7f6");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 3.09) < 0.01);
   chessboard.make_UCI_move("c3e4");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 3.03) < 0.01);
   chessboard.make_UCI_move("h6h5");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 3.03) < 0.01);
   chessboard.make_UCI_move("e4c5");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 3.07) < 0.01);
   chessboard.make_UCI_move("h8g8");
-  evaluation = chessboard.evaluate_position(Color::White, 7);
+  evaluation = chessboard.evaluate_position();
   REQUIRE(fabs(evaluation - 3.02) < 0.01);
   chessboard.make_UCI_move("e1e8");
-  evaluation = chessboard.evaluate_position(Color::Black, 7);
+  evaluation = chessboard.evaluate_empty_movelist(7);
   REQUIRE(is_close(evaluation, 93.0F));
-  evaluation = chessboard.evaluate_position(Color::Black, 1);
+  evaluation = chessboard.evaluate_empty_movelist(1);
   REQUIRE(is_close(evaluation, 99.0F));
 }
 
@@ -602,40 +750,84 @@ TEST_CASE("evaluation, mate and stalemate")
   // Load test position 72
   std::string FEN_string = get_FEN_test_position(72);
   Bitboard_with_utils chessboard;
+  chessboard.init();
   REQUIRE(chessboard.read_position(FEN_string) == 0);
-  chessboard.find_legal_moves(Gentype::All);
+  //chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
 
   SECTION("mate")
   {
     chessboard.make_UCI_move("c8c1");
-    evaluation = chessboard.evaluate_position(Color::White, 6);
+    evaluation = chessboard.evaluate_empty_movelist(6);
     REQUIRE(evaluation == Approx(-94.0F).margin(0.0001).epsilon(1e-12));
-    evaluation = chessboard.evaluate_position(Color::White, 1);
+    evaluation = chessboard.evaluate_empty_movelist(1);
     REQUIRE(evaluation == Approx(-99.0F).margin(0.0001).epsilon(1e-12));
   }
 
   SECTION("stalemate")
   {
     chessboard.make_UCI_move("c8g8");
-    evaluation = chessboard.evaluate_position(Color::White, 7);
+    evaluation = chessboard.evaluate_empty_movelist(1);
     REQUIRE(evaluation == Approx(0.0F).margin(0.0001).epsilon(1e-12));
   }
 }
 
 TEST_CASE("find_best_move")
 {
-  logfile << "TEST STARTED" << "\n";
+  logfile << "TEST STARTED find_best_move" << "\n";
   Config_params config_params;
   config_params.set_config_param("max_search_depth", "6");
   Game game(config_params);
+  game.init();
   Go_params go_params; // All members in go_params are set to zero.
 
-  SECTION("examining:_strange_queen-move1")
+  SECTION("examining_giving_away_pawn") // fixed
+  {
+    std::string FEN_string = get_FEN_test_position(91);
+    game.read_position_FEN(FEN_string);
+    game.init();
+    go_params.movetime = 10000000; // milliseconds
+    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    std::stringstream ss;
+    ss << bestmove;
+    REQUIRE(ss.str() == "Be4-a8");
+    game.read_position_FEN(reverse_FEN_string(FEN_string));
+    game.init();
+    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    ss.clear();
+    ss.str("");
+    ss << bestmove;
+    REQUIRE(ss.str() == "Be5-h8");
+  }
+
+  SECTION("examining_strange_threefold_repetition") // fixed
+  {
+    std::string FEN_string = get_FEN_test_position(98);
+    game.read_position_FEN(FEN_string);
+    game.init();
+    go_params.movetime = 10000000; // milliseconds
+    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    std::stringstream ss;
+    ss << bestmove;
+    REQUIRE(ss.str() == "Bc8-e6");
+    game.read_position_FEN(reverse_FEN_string(FEN_string));
+    game.init();
+    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    ss.clear();
+    ss.str("");
+    ss << bestmove;
+    REQUIRE(ss.str() == "Bc1-e3");
+  }
+
+  SECTION("examining_strange_queen-move1") // fixed
   {
     std::string FEN_string = get_FEN_test_position(94);
     game.read_position_FEN(FEN_string);
     game.init();
-    go_params.movetime = 100000; // 100 seconds should be enough even for debug-compiled executable
+    go_params.movetime = 10000000; // 10000 seconds should be enough even for debug-compiled executable
     Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
@@ -651,7 +843,7 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Ng1-h3");
   }
 
-  SECTION("mate in one")
+  SECTION("mate_in_one")
   {
     std::string FEN_string = get_FEN_test_position(90);
     game.read_position_FEN(FEN_string);
@@ -678,7 +870,7 @@ TEST_CASE("find_best_move")
     game.read_position_FEN(FEN_string);
     game.init();
     go_params.movetime = 100000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params,  go_params, use_max_search_depth);
+    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
@@ -693,28 +885,7 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Qg6-g3");
   }
 
-  SECTION("examining: giving away pawn")
-  {
-    std::string FEN_string = get_FEN_test_position(91);
-    game.read_position_FEN(FEN_string);
-    game.init();
-    go_params.movetime = 100000; // milliseconds
-    Bitmove bestmove = game.engine_go(config_params,  go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    std::stringstream ss;
-    ss << bestmove;
-    REQUIRE(ss.str() == "Ke5-e6");
-    game.read_position_FEN(reverse_FEN_string(FEN_string));
-    game.init();
-    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
-    std::cout << "Best move: " << bestmove << std::endl;
-    ss.clear();
-    ss.str("");
-    ss << bestmove;
-    REQUIRE(ss.str() == "Ke4-d5");
-  }
-
-  SECTION("examining: missing a mate")
+  SECTION("examining_missing_a_mate") // fixed
   {
     std::string FEN_string = get_FEN_test_position(89);
     game.read_position_FEN(FEN_string);
@@ -735,7 +906,7 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Ke2-d1");
   }
 
-  SECTION("strangulation mate")
+  SECTION("strangulation_mate")
   {
     std::string FEN_string = get_FEN_test_position(73);
     game.read_position_FEN(FEN_string);
@@ -757,7 +928,7 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Nc2-a3+");
   }
 
-  SECTION("examining: strange queen-move")
+  SECTION("examining_strange_queen-move")
   {
     std::string FEN_string = get_FEN_test_position(78);
     game.read_position_FEN(FEN_string);
@@ -767,7 +938,7 @@ TEST_CASE("find_best_move")
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Nb8-d7");
+    REQUIRE(ss.str() == "Bc8-b7");
     game.read_position_FEN(reverse_FEN_string(FEN_string));
     game.init();
     bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
@@ -775,10 +946,10 @@ TEST_CASE("find_best_move")
     ss.clear();
     ss.str("");
     ss << bestmove;
-    REQUIRE(ss.str() == "Nb1-d2");
+    REQUIRE(ss.str() == "Bc1-b2");
   }
 
-  SECTION("examining: strange rook-move")
+  SECTION("examining_strange_rook-move")
   {
     std::string FEN_string = get_FEN_test_position(80);
     game.read_position_FEN(FEN_string);
@@ -788,7 +959,7 @@ TEST_CASE("find_best_move")
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Nd3-c1+");
+    REQUIRE(ss.str() == "Rc8-c4");
     std::cout << FEN_string << std::endl;
     std::cout << reverse_FEN_string(FEN_string) << std::endl;
     game.read_position_FEN(reverse_FEN_string(FEN_string));
@@ -803,26 +974,17 @@ TEST_CASE("find_best_move")
 
 }
 
-TEST_CASE("move-ordering")
-{
-  std::string FEN_string = get_FEN_test_position(75);
-  Bitboard_with_utils chessboard;
-  REQUIRE(chessboard.read_position(FEN_string) == 0);
-  chessboard.find_legal_moves(Gentype::All);
-  chessboard.write(std::cout, Outputtype::Cmd_line_diagram, Color::White);
-  chessboard.write_movelist(std::cout, true) << std::endl;
-}
-
 TEST_CASE("50-moves-rule")
 {
   std::string FEN_string = get_FEN_test_position(82);
   Bitboard_with_utils chessboard;
-  REQUIRE(chessboard.read_position(FEN_string) == 0);
+  chessboard.init();
+  REQUIRE(chessboard.read_position(FEN_string, init_pieces) == 0);
   REQUIRE(chessboard.get_half_move_counter() == 49);
   REQUIRE(chessboard.is_draw_by_50_moves() == false);
-  chessboard.find_legal_moves(Gentype::All);
+  //chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
 
-  SECTION("pawn move")
+  SECTION("pawn_move")
   {
     chessboard.make_UCI_move("h3h4");
     REQUIRE(chessboard.get_half_move_counter() == 0);
@@ -836,14 +998,14 @@ TEST_CASE("50-moves-rule")
     REQUIRE(chessboard.is_draw_by_50_moves() == false);
   }
 
-  SECTION("other move")
+  SECTION("other_move")
   {
     chessboard.make_UCI_move("a6b6");
     REQUIRE(chessboard.get_half_move_counter() == 50);
     REQUIRE(chessboard.is_draw_by_50_moves() == true);
   }
 
-  SECTION("some moves")
+  SECTION("some_moves")
   {
     chessboard.make_UCI_move("a6b6");
     chessboard.make_UCI_move("a8b8");
@@ -855,53 +1017,35 @@ TEST_CASE("50-moves-rule")
 
 }
 
-TEST_CASE("three-fold repetition")
-{
-  std::string FEN_string = get_FEN_test_position(82);
-  Bitboard_with_utils chessboard;
-  REQUIRE(chessboard.read_position(FEN_string) == 0);
-  chessboard.clear_game_history();
-  chessboard.add_position_to_game_history();
-  chessboard.find_legal_moves(Gentype::All);
-  chessboard.make_UCI_move("a6b6");
-  chessboard.make_UCI_move("a8b8");
-  REQUIRE(chessboard.is_threefold_repetition() == false);
-  chessboard.make_UCI_move("b6a6");
-  chessboard.make_UCI_move("b8a8");
-  REQUIRE(chessboard.is_threefold_repetition() == false);
-  chessboard.make_UCI_move("a6b6");
-  chessboard.make_UCI_move("a8b8");
-  REQUIRE(chessboard.is_threefold_repetition() == false);
-  chessboard.make_UCI_move("b6a6");
-  chessboard.make_UCI_move("b8a8");
-  REQUIRE(chessboard.is_threefold_repetition() == true);
-}
-
 TEST_CASE("figure_out_last_move_1")
 {
   logfile << "\n";
   Config_params config_params;
   Game game(config_params);
+  game.init();
   std::string FEN_string = get_FEN_test_position(62);
   REQUIRE(game.read_position_FEN(FEN_string) == 0);
   game.write_diagram(std::cout);
   game.write_movelist(std::cout);
 
-  SECTION("En passant")
+  SECTION("En_passant")
   {
     FEN_string = get_FEN_test_position(83);
     REQUIRE(game.read_position_FEN(FEN_string) == 0);
     std::stringstream ss;
     game.write_movelog(ss);
-    REQUIRE(ss.str().starts_with("1.e5xf6 e.p."));
+    game.write_movelog(std::cout);
+    REQUIRE("kallee5xf6 e.p.kkk"s.find("e5xf6 e.p.", 0) != std::string::npos);
+    REQUIRE(ss.str().find("1.e5xf6 e.p.") != std::string::npos);
   }
 
-  SECTION("Normal move")
+  SECTION("Normal_move")
   {
     FEN_string = get_FEN_test_position(84);
     REQUIRE(game.read_position_FEN(FEN_string) == 0);
     std::stringstream ss;
     game.write_movelog(ss);
+    game.write_movelog(std::cerr);
     REQUIRE(ss.str().starts_with("1.Kd4-d5"));
   }
 
@@ -913,6 +1057,7 @@ TEST_CASE("figure_out_last_move_2")
   logfile << "\n";
   Config_params config_params;
   Game game(config_params);
+  game.init();
   std::string FEN_string = get_FEN_test_position(85);
   REQUIRE(game.read_position_FEN(FEN_string) == 0);
   game.write_diagram(std::cout);
@@ -927,7 +1072,7 @@ TEST_CASE("figure_out_last_move_2")
     REQUIRE(ss.str().starts_with("1.Rh1xh7+"));
   }
 
-  SECTION("Short castling")
+  SECTION("Short_castling")
   {
     FEN_string = get_FEN_test_position(87);
     REQUIRE(game.read_position_FEN(FEN_string) == 0);
@@ -936,7 +1081,7 @@ TEST_CASE("figure_out_last_move_2")
     REQUIRE(ss.str().starts_with("1.0-0"));
   }
 
-  SECTION("long castling")
+  SECTION("long_castling")
   {
     FEN_string = get_FEN_test_position(88);
     REQUIRE(game.read_position_FEN(FEN_string) == 0);
@@ -957,22 +1102,215 @@ TEST_CASE("sizeof_Bitmove")
 {
   REQUIRE(sizeof(Bitmove) == 8);
   REQUIRE(alignof(Bitmove) == 4);
-};
+}
+;
 
-TEST_CASE("takeback_castling")
+TEST_CASE("takeback_promotion")
 {
-  logfile << "TEST STARTED" << "\n";
+  logfile << "TEST STARTED takeback_promotion" << "\n";
   Config_params config_params;
-  config_params.set_config_param("max_search_depth", "8");
   Game game(config_params);
-  Go_params go_params; // All members in go_params are set to zero.
-
+  game.init();
   std::string FEN_string = get_FEN_test_position(95);
   game.read_position_FEN(FEN_string);
   game.init();
 
+  SECTION("Queen promotion on empty square")
+  {
+    make_and_takeback_move(game, "g7g8q");
+  }
+
+  SECTION("Bishop promotion on empty square")
+  {
+    make_and_takeback_move(game, "g7g8b");
+  }
+
+  SECTION("Knight promotion taking a Queen")
+  {
+    make_and_takeback_move(game, "g7h8n");
+  }
+
+  SECTION("Rook promotion taking a rook")
+  {
+    make_and_takeback_move(game, "g7f8r");
+  }
+
+  SECTION("Bishop promotion taking a knight")
+  {
+    make_and_takeback_move(game, "c7b8q");
+  }
+
+  SECTION("Queen promotion taking a bishop")
+  {
+    make_and_takeback_move(game, "c7d8q");
+  }
 }
 
+TEST_CASE("takeback_en_passant")
+{
+  logfile << "TEST STARTED takeback_en_passant" << "\n";
+  Config_params config_params;
+  Game game(config_params);
+  game.init();
+  std::string FEN_string = get_FEN_test_position(96);
+  game.read_position_FEN(FEN_string);
+  game.init();
+
+  SECTION("d5xe6_ep")
+  {
+    make_and_takeback_move(game, "d5e6");
+  }
+}
+
+TEST_CASE("takeback_castling")
+{
+  logfile << "TEST STARTED takeback_castling" << "\n";
+  Config_params config_params;
+  Game game(config_params);
+  game.init();
+  std::string FEN_string = get_FEN_test_position(97);
+  game.read_position_FEN(FEN_string);
+  game.init();
+
+  SECTION("short_castling")
+  {
+    make_and_takeback_move(game, "e1g1");
+  }
+
+  SECTION("long_castling")
+  {
+    make_and_takeback_move(game, "e1c1");
+  }
+}
+
+TEST_CASE("takeback_normal_move")
+{
+  logfile << "TEST STARTED takeback_normal" << "\n";
+  Config_params config_params;
+  Game game(config_params);
+  game.init();
+  std::string FEN_string = get_FEN_test_position(97);
+  game.read_position_FEN(FEN_string);
+  game.init();
+
+  SECTION("pawn_move")
+  {
+    make_and_takeback_move(game, "e2e3");
+  }
+
+  SECTION("long_castling")
+  {
+    make_and_takeback_move(game, "d2d4");
+  }
+}
+
+TEST_CASE("print_patterns")
+{
+  logfile << "TEST STARTED print_patterns" << "\n";
+  std::cout << "pawn_center_control_W_pattern" << std::endl;
+  std::cout << to_binary_board(pawn_center_control_W_pattern) << std::endl;
+  std::cout << "pawn_center_control_B_pattern" << std::endl;
+  std::cout << to_binary_board(pawn_center_control_B_pattern) << std::endl;
+  std::cout << "king_center_control_pattern1" << std::endl;
+  std::cout << to_binary_board(king_center_control_pattern1) << std::endl;
+  std::cout << "king_center_control_pattern2" << std::endl;
+  std::cout << to_binary_board(king_center_control_pattern2) << std::endl;
+  std::cout << "knight_center_control_pattern1" << std::endl;
+  std::cout << to_binary_board(knight_center_control_pattern1) << std::endl;
+  std::cout << "knight_center_control_pattern2" << std::endl;
+  std::cout << to_binary_board(knight_center_control_pattern2) << std::endl;
+  std::cout << "rook_center_control_pattern" << std::endl;
+  std::cout << to_binary_board(rook_center_control_pattern) << std::endl;
+
+  std::cout << "west_of_center" << std::endl;
+  std::cout << to_binary_board(west_of_center) << std::endl;
+  std::cout << "east_of_center" << std::endl;
+  std::cout << to_binary_board(east_of_center) << std::endl;
+  std::cout << "south_of_center" << std::endl;
+  std::cout << to_binary_board(south_of_center) << std::endl;
+  std::cout << "north_of_center" << std::endl;
+  std::cout << to_binary_board(north_of_center) << std::endl;
+
+  std::cout << "north_west_of_center" << std::endl;
+  std::cout << to_binary_board(north_west_of_center) << std::endl;
+  std::cout << "north_east_of_center" << std::endl;
+  std::cout << to_binary_board(north_east_of_center) << std::endl;
+  std::cout << "south_west_of_center" << std::endl;
+  std::cout << to_binary_board(south_west_of_center) << std::endl;
+  std::cout << "south_east_of_center" << std::endl;
+  std::cout << to_binary_board(south_east_of_center) << std::endl;
+
+  std::cout << "bishop_north_west_of_center" << std::endl;
+  std::cout << to_binary_board(bishop_north_west_of_center) << std::endl;
+  std::cout << "bishop_north_east_of_center" << std::endl;
+  std::cout << to_binary_board(bishop_north_east_of_center) << std::endl;
+  std::cout << "bishop_south_west_of_center" << std::endl;
+  std::cout << to_binary_board(bishop_south_west_of_center) << std::endl;
+  std::cout << "bishop_south_east_of_center" << std::endl;
+  std::cout << to_binary_board(bishop_south_east_of_center) << std::endl;
+
+  std::cout << "bishop_center_control_pattern1" << std::endl;
+  std::cout << to_binary_board(bishop_center_control_pattern1) << std::endl;
+  std::cout << "bishop_center_control_pattern2" << std::endl;
+  std::cout << to_binary_board(bishop_center_control_pattern2) << std::endl;
+}
+
+TEST_CASE("print_evaluations")
+{
+  std::string line;
+  auto filename = "tests/test_positions/FEN_test_positions.txt"s;
+  std::ifstream ifs(filename);
+  if (!ifs.is_open())
+  {
+    std::cerr << "Couldn't open file " << filename << std::endl;
+    return;
+  }
+  std::vector<unsigned int> failed_testcases;
+  unsigned int testnum = 1;
+
+  while (std::getline(ifs, line))
+  {
+    // Skip empty lines and lines starting with a blank.
+    //std::cout << "single_testnum: " << single_testnum << ", " << "testnum: " << testnum << std::endl;
+    if ((line.empty()) || line[0] == ' ')
+      continue;
+
+    // In this case each line in FEN_test_positions.txt contains the FEN-string
+    // followed by a list of all legal moves in the position at the end.
+    // Extract the actual FEN_string:
+    // Match the first 6 tokens in the string.
+    std::vector<std::string> matches;
+    regexp_grep(line, "^([^\\s]+\\s){5}[^\\s]+", matches);
+    std::string FEN_string = matches[0];
+    // std::cout << "FEN_string1: " << FEN_string << std::endl;
+    Config_params config_params;
+    Game game(config_params);
+    game.read_position_FEN(FEN_string);
+    game.init();
+    auto evaluation = game.get_chessboard().evaluate_position();
+    std::cout << "testpos" << (int)testnum << ".pgn" << std::endl;
+    std::cout << evaluation << std::endl;
+    std::string reversed_FEN_string = reverse_FEN_string(matches[0]);
+    game.read_position_FEN(reversed_FEN_string);
+    game.init();
+    evaluation = game.get_chessboard().evaluate_position();
+    std::cout << "testpos" << (int)testnum << ".pgn reversed" << std::endl;
+    std::cout << evaluation << std::endl;
+
+    testnum++;
+  }
+}
+
+//  Game game(config_params);
+//  game.init();
+//  Go_params go_params; // All members in go_params are set to zero.
+//
+//  std::string FEN_string = get_FEN_test_position(95);
+//  game.read_position_FEN(FEN_string);
+//  game.init();
+//
+//}
+//
 //TEST_CASE("timing basic functions")
 //{
 //  CurrentTime now;

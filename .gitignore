@@ -8,6 +8,7 @@ src/.project
 command_log.txt
 testlog.txt
 C2_log*
+Vice_log*
 .externalToolBuilders/
 src/CMakeSettings.json
 Debug/

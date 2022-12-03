@@ -21,6 +21,7 @@
 #include <bitset>
 #include <cmath>
 
+#include "magic_enum.hpp"
 #include "chesstypes.hpp"
 
 namespace fs = std::filesystem;
@@ -124,6 +125,23 @@ inline unsigned int LOG2(const T& val)
 #endif
 
 template<typename T>
+std::ostream& write_list(const std::deque<T>* list, std::ostream& os, bool same_line = false)
+{
+  bool first = true;
+  for (const T& element : *list)
+  {
+    if (!first && same_line)
+      os << " ";
+    os << element;
+    if (!same_line)
+      os << std::endl;
+    first = false;
+  }
+  os << std::endl;
+  return os;
+}
+
+template<typename T>
 std::ostream& write_vector(const std::vector<T>& list, std::ostream& os, bool same_line = false)
 {
   bool first = true;
@@ -162,6 +180,8 @@ std::string to_binary(const T& x)
 }
 
 bool is_positive_number(const std::string& s);
+
+bool is_sorted_descending(list_ref movelist);
 
 inline uint8_t file_idx(uint8_t bit_idx)
 {
@@ -288,7 +308,10 @@ inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diago
 
 inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
 {
-  assert(pattern && std::has_single_bit(center_square));
+  assert(pattern);
+  //if (!std::has_single_bit(center_square))
+  //  std::cerr << "here" << std::endl;
+  assert(std::has_single_bit(center_square));
   uint64_t squares;
   int shift = bit_idx(center_square) - e4_square_idx;
   squares = (shift >= 0) ? (pattern << shift) : (pattern >> -shift);
@@ -314,6 +337,49 @@ inline uint64_t diagonal_squares(uint64_t square)
 {
   return to_diagonal(square) | to_anti_diagonal(square);
 }
+
+inline void go_east(uint64_t& square)
+{
+  square >>= 1;
+}
+
+inline void go_west(uint64_t& square)
+{
+  square <<= 1;
+}
+
+inline void go_north(uint64_t& square)
+{
+  square >>= 8;
+}
+
+inline void go_south(uint64_t& square)
+{
+  square <<= 8;
+}
+
+inline void go_north_west(uint64_t& square)
+{
+  square >>= 7;
+}
+
+inline void go_north_east(uint64_t& square)
+{
+  square >>= 9;
+}
+
+inline void go_south_west(uint64_t& square)
+{
+  square <<= 9;
+}
+
+inline void go_south_east(uint64_t& square)
+{
+  square <<= 7;
+}
+
+std::string uci_move(const Bitmove& m);
+std::string uci_pv_line(const std::vector<Bitmove>& pv_line);
 
 class Config_params;
 

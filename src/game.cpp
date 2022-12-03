@@ -22,46 +22,26 @@ namespace C2_chess
 {
 
 Game::Game(Config_params& config_params) :
-    _is_first_position(true),
-    _move_log(),
-    _chessboard(),
-    _player_type {Playertype::Human, Playertype::Computer},
-    _score(0),
-    _config_params(config_params),
-    _playing(false)
+    _is_first_position(true), _move_log(), _chessboard(), _player_type {Playertype::Human, Playertype::Computer}, _score(0), _config_params(config_params), _playing(false)
 {
-  _chessboard.read_position(start_position_FEN);
-  init();
+  //std::cerr << "Game::Game(Config_params& config_params)" << std::endl;
+  _chessboard.read_position(start_position_FEN, init_pieces);
 }
 
 Game::Game(Color side, Config_params& config_params) :
-    _is_first_position(true),
-    _move_log(),
-    _chessboard(),
-    _player_type {Playertype::Human, Playertype::Computer},
-    _score(0),
-    _config_params(config_params),
-    _playing(false)
+    _is_first_position(true), _move_log(), _chessboard(), _player_type {Playertype::Human, Playertype::Computer}, _score(0), _config_params(config_params), _playing(false)
 {
+  //std::cerr << "Game::Game(Color side, Config_params& config_params)" << std::endl;
   _player_type[index(side)] = Playertype::Human;
   _player_type[index(other_color(side))] = Playertype::Computer;
-  _chessboard.read_position(start_position_FEN, true);
-  init();
+  _chessboard.read_position(start_position_FEN, init_pieces);
 }
 
-Game::Game(Playertype pt1,
-           Playertype pt2,
-           Config_params& config_params) :
-    _is_first_position(true),
-    _move_log(),
-    _chessboard(),
-    _player_type{pt1, pt2 },
-    _score(0),
-    _config_params(config_params),
-    _playing(false)
+Game::Game(Playertype pt1, Playertype pt2, Config_params& config_params) :
+    _is_first_position(true), _move_log(), _chessboard(), _player_type {pt1, pt2}, _score(0), _config_params(config_params), _playing(false)
 {
+  //std::cerr << "Game::Game(Playertype pt1, Playertype pt2, Config_params& config_params)" << std::endl;
   _chessboard.read_position(start_position_FEN, true);
-  init();
 }
 
 Game::~Game()
@@ -73,6 +53,7 @@ void Game::init()
   _is_first_position = true;
   _move_log.clear_and_init(_chessboard.get_side_to_move(), _chessboard.get_move_number());
   _chessboard.init();
+//  _chessboard.find_legal_moves(*_chessboard.get_movelist(0), Gentype::All);
 }
 
 void Game::clear_move_log(Color col_to_start, uint16_t move_number)
@@ -85,14 +66,39 @@ void Game::setup_pieces()
   _chessboard.read_position(start_position_FEN);
 }
 
-Color Game::get_col_to_move() const
+Color Game::get_side_to_move() const
 {
   return _chessboard.get_side_to_move();
 }
 
-std::ostream& Game::write_chessboard(std::ostream& os, Outputtype ot, Color from_perspective) const
+uint64_t Game::get_hash_tag() const
 {
-  Bitboard_with_utils(_chessboard).write(os, ot, from_perspective);
+  return _chessboard.get_hash_tag();
+}
+
+float Game::get_material_diff() const
+{
+  return _chessboard.get_material_diff();
+}
+
+uint8_t Game::get_castling_rights() const
+{
+  return _chessboard.get_castling_rights();
+}
+
+uint8_t Game::get_half_move_counter() const
+{
+  return _chessboard.get_half_move_counter();
+}
+
+Playertype Game::get_playertype(const Color& side) const
+{
+  return _player_type[index(side)];
+}
+
+std::ostream& Game::write_chessboard(std::ostream& os, const Color from_perspective) const
+{
+  Bitboard_with_utils(_chessboard).write(os, from_perspective);
   return os;
 }
 
@@ -100,12 +106,12 @@ std::ostream& Game::write_diagram(std::ostream& os) const
 {
   Bitboard_with_utils bwu(_chessboard);
   if (_player_type[index(Color::White)] == Playertype::Human)
-    bwu.write(os, Outputtype::Cmd_line_diagram, Color::White) << std::endl;
+    bwu.write(os, Color::White) << std::endl;
   else if (_player_type[index(Color::Black)] == Playertype::Human)
-    bwu.write(os, Outputtype::Cmd_line_diagram, Color::Black) << std::endl;
+    bwu.write(os, Color::Black) << std::endl;
   else
     // The computer is playing itself
-    bwu.write(os, Outputtype::Cmd_line_diagram, Color::White) << std::endl;
+    bwu.write(os, Color::White) << std::endl;
   return os;
 }
 
@@ -124,7 +130,7 @@ std::ostream& Game::write_movelog(std::ostream& os) const
   return os;
 }
 
-std::ostream& Game::write_movelist(std::ostream& os) const
+std::ostream& Game::write_movelist(std::ostream& os)
 {
   _chessboard.write_movelist(os, true);
   return os;
@@ -146,31 +152,36 @@ void Game::actions_after_a_move()
   write_diagram(cmdline);
   write_diagram(logfile);
 
-  float evaluation = _chessboard.evaluate_position(_chessboard.get_side_to_move(), 0);
-  if (is_close(evaluation, eval_max) || is_close(evaluation, eval_min))
+  list_t movelist;
+  _chessboard.find_legal_moves(movelist, Gentype::All);
+  if (movelist.size() == 0)
   {
-    _chessboard.set_mate();
-    cmdline << (is_close(evaluation, eval_max)? "1 - 0, black was mated":"0 - 1, white was mated") << "\n" << "\n";
-    logfile << (is_close(evaluation, eval_max)? "1 - 0, black was mated":"0 - 1, white was mated") << "\n";
-    _playing = false;
+    float evaluation = _chessboard.evaluate_empty_movelist(0);
+    if (is_close(evaluation, eval_max) || is_close(evaluation, eval_min))
+    {
+      _chessboard.set_mate();
+      cmdline << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n" << "\n";
+      logfile << (is_close(evaluation, eval_max) ? "1 - 0, black was mated" : "0 - 1, white was mated") << "\n";
+      _playing = false;
+    }
+    else if (is_close(evaluation, 0.0F))
+    {
+      _chessboard.set_stalemate();
+      cmdline << "1/2 - 1/2 draw by stalemate" << "\n";
+      logfile << "1/2 - 1/2 draw by stalemate" << "\n";
+      _playing = false;
+    }
   }
-  else if (is_close(evaluation, 0.0F) && _chessboard.get_no_of_moves() == 0)
+  else
   {
-    _chessboard.set_stalemate();
-    cmdline << "1/2 - 1/2 draw by stalemate" << "\n";
-    logfile << "1/2 - 1/2 draw by stalemate" << "\n";
-    _playing = false;
-  }
-  else if (is_close(evaluation, 0.0F) && _chessboard.is_threefold_repetition())
-  {
-    _chessboard.set_draw_by_repetition();
-    cmdline << "1/2 - 1/2 draw by repetition" << "\n";
-    logfile << "1/2 - 1/2 draw by repetition" << "\n";
-    _playing = false;
-  }
-  else // Normal position
-  {
-    if (_chessboard.is_draw_by_50_moves())
+    if (_chessboard.is_threefold_repetition())
+    {
+      _chessboard.set_draw_by_repetition();
+      cmdline << "1/2 - 1/2 draw by repetition" << "\n";
+      logfile << "1/2 - 1/2 draw by repetition" << "\n";
+      _playing = false;
+    }
+    else if (_chessboard.is_draw_by_50_moves())
     {
       _chessboard.set_draw_by_50_moves();
       cmdline << "1/2 - 1/2 draw by the fifty-move rule" << "\n";
@@ -178,8 +189,6 @@ void Game::actions_after_a_move()
       _playing = false;
     }
   }
-  // cmdline <<"Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
-  // logfile << "Time_diff_sum = " << (int)_chessboard.get_time_diff_sum() << "\n";
 }
 
 Bitmove Game::find_best_move(float& score, unsigned int search_depth)
@@ -191,7 +200,8 @@ Bitmove Game::find_best_move(float& score, unsigned int search_depth)
   _chessboard.clear_transposition_table();
   Bitmove best_move;
   steady_clock.tic();
-  score = _chessboard.negamax_with_pruning(0, -infinity, infinity, best_move, search_depth);
+  _chessboard.set_search_ply(0);
+  score = _chessboard.negamax_with_pruning(-infinity, infinity, best_move, search_depth);
   _chessboard.get_search_info().time_taken = steady_clock.toc_ms();
   _chessboard.get_search_info().score = score;
   if (_chessboard.get_side_to_move() == Color::White)
@@ -223,6 +233,13 @@ Bitmove Game::find_best_move(float& score, unsigned int search_depth)
   return best_move;
 }
 
+void Game::send_uci_info(unsigned int search_time_ms, const std::vector<Bitmove>& pv_line)
+{
+  auto info = _chessboard.get_search_info();
+  std::cout << "info score cp " << static_cast<int>(info.score * 100.0) << " depth " << info.max_search_depth << " nodes " << info.node_counter << " time " << search_time_ms
+            << " pv " << uci_pv_line(pv_line) << std::endl;
+}
+
 Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_depth)
 {
   // Incremental search, to have a best-move available as quickly
@@ -232,8 +249,8 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   // If movetime is zero we search infinitely until the GUI sends a stop command,
   // or the predefined search-boards limit has been reached.
 
-  // We will need some search-boards for Quiescense-search too.
-  const unsigned int max_search_depth = std::min((N_SEARCH_BOARDS_DEFAULT / 2), max_depth);
+  // We will need some takeback-states for Quiescense-search too, so:
+  const unsigned int max_search_depth = std::min((N_SEARCH_PLIES_DEFAULT / 2), max_depth);
 
   Bitmove best_move;
   Bitmove local_best_move; // Best move from a specific search-depth.
@@ -242,7 +259,7 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   std::vector<Bitmove> pv_line;
 
   // Keep track of how much time we have spent.
-  auto time_taken_ms{0.0 };
+  auto time_taken_ms {0.0};
   steady_clock.tic();
 
   if (is_close(movetime_ms, 0.0))
@@ -258,20 +275,19 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   }
 
   _chessboard.clear_transposition_table(map_tag::Both);
+  _chessboard.clear_search_vars();
 
-  // We will need some search-boards for Quiescense-search too.
   for (unsigned int search_depth = 1; search_depth <= max_search_depth; search_depth++)
   {
     _chessboard.switch_tt_tables();
     local_best_move = find_best_move(_score, search_depth);
-
     // Has the search on this ply been aborted by time limit?
     if (local_best_move == SEARCH_HAS_BEEN_INTERRUPTED)
     {
       logfile << "Time is out! or a stop-command has been received.\n";
       if (search_depth == 1)
       {
-        // The search has been interrupted on lowest level.
+        // The search has been interrupted on lowest search_depth.
         // No best move has been found at all. What to do?
         // Just return the first move, maybe.
         logfile << "Search was interrupted on lowest search depth." << "\n";
@@ -290,20 +306,25 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
       break;
 
     time_taken_ms = static_cast<double>(steady_clock.toc_us()) / 1000.0;
-    if (time_taken_ms > movetime_ms / 2.0)
+    // TODO: Make it clear that movetime_ms == 0 means infinite search.
+    if ((!is_close(movetime_ms, 0.0)) && time_taken_ms > movetime_ms / 2.0)
       break;
+    _chessboard.get_pv_line(pv_line);
+    send_uci_info(static_cast<int>(time_taken_ms), pv_line);
   }
 
-  if (best_move.is_valid())
-  {
-    _chessboard.make_move(best_move);
-    _move_log.push_back(_chessboard.last_move());
-  }
+  assert(best_move.is_valid());
+  Takeback_state tb_state_dummy;
+  _chessboard.new_make_move(best_move, tb_state_dummy);
+  _move_log.push_back(_chessboard.get_latest_move());
+
+  // Just write to logfile or command-line if position is mate or stalemate.
+  // when command-line play, also stop the the game in that case.
   actions_after_a_move();
 
-  // Stop possibly running timer by setting time_left to false.
+  // Stop possibly running timer-thread by setting time_left to false.
   _chessboard.set_time_left(false);
-  return _chessboard.last_move();
+  return _chessboard.get_latest_move();
 }
 
 Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_params, const bool apply_max_search_depth)
@@ -354,8 +375,7 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
       while (moves_left_approx < 10)
         moves_left_approx += 20;
       bool is_white_to_move = (_chessboard.get_side_to_move() == Color::White);
-      double time = (is_white_to_move) ? go_params.wtime + moves_left_approx * go_params.winc :
-                                         go_params.btime + moves_left_approx * go_params.binc;
+      double time = (is_white_to_move) ? go_params.wtime + moves_left_approx * go_params.winc : go_params.btime + moves_left_approx * go_params.binc;
       return incremental_search(time / moves_left_approx);
     }
     else
@@ -371,8 +391,9 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
     Bitmove best_move = find_best_move(_score, max_search_depth);
     if (best_move.is_valid())
     {
-      _chessboard.make_move(best_move);
-      _move_log.push_back(_chessboard.last_move());
+      Takeback_state tb_state_dummy;
+      _chessboard.new_make_move(best_move, tb_state_dummy);
+      _move_log.push_back(_chessboard.get_latest_move());
     }
   }
   actions_after_a_move();
@@ -380,7 +401,7 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
   // Stop possibly running timer by setting time_left to false.
   _chessboard.set_time_left(false);
 
-  return _chessboard.last_move();
+  return _chessboard.get_latest_move();
 }
 
 bool Game::has_time_left()
@@ -391,11 +412,6 @@ bool Game::has_time_left()
 void Game::set_time_left(bool value)
 {
   _chessboard.set_time_left(value);
-}
-
-Playertype Game::get_playertype(const Color& side) const
-{
-  return _player_type[index(side)];
 }
 
 void Game::start_new_game()
@@ -430,13 +446,13 @@ void Game::figure_out_last_move(const Bitboard& new_position)
         logfile << "Move-colors didn't match." << "\n";
         break;
       case -4:
-        case -5:
+      case -5:
         logfile << "En passant problems." << "\n";
         break;
       case -6:
-        case -7:
-        case -8:
-        case -9:
+      case -7:
+      case -8:
+      case -9:
         logfile << "Castling problems." << "\n";
         break;
       case -10:
@@ -460,8 +476,9 @@ void Game::figure_out_last_move(const Bitboard& new_position)
       start_new_game();
       return;
     }
-    _chessboard.make_move(m);
-    _move_log.push_back(_chessboard.last_move());
+    Takeback_state tb_state_dummy;
+    _chessboard.new_make_move(m, tb_state_dummy);
+    _move_log.push_back(_chessboard.get_latest_move());
     actions_after_a_move();
   }
 }
@@ -469,12 +486,13 @@ void Game::figure_out_last_move(const Bitboard& new_position)
 int Game::read_position(const Position_params& params)
 {
   //Shared_ostream& logfile = *(Shared_ostream::get_instance());
+  Takeback_state tb_state_dummy;
   read_position_FEN(params.FEN_string);
   if (params.moves)
   {
     for (const std::string& move : params.move_list)
     {
-      make_move(move);
+      make_move(move, tb_state_dummy);
     }
   }
   // write_diagram(logfile) << "\n";
@@ -550,20 +568,25 @@ int Game::read_position(const std::string& filename)
 
 int Game::read_position_FEN(const std::string& FEN_string)
 {
-// TODO: read new position to temporary board, so
-// we can call figure_out_last_move().
   Bitboard new_position;
-  if (new_position.read_position(FEN_string, true) != 0) // true means init_piece_state().
+  if (new_position.read_position(FEN_string, init_pieces) != 0)
     return -1;
+  new_position.init();
   figure_out_last_move(new_position);
-//  _chessboard.find_legal_moves(gentype::all);
+  //  _chessboard.find_legal_moves(gentype::all);
   return 0;
 }
 
-void Game::make_move(const std::string& move)
+void Game::make_move(const std::string& move, Takeback_state& tb_state)
 {
-  _chessboard.make_UCI_move(move);
-  _move_log.push_back(_chessboard.last_move());
+  _chessboard.make_UCI_move(move, tb_state);
+  _move_log.push_back(_chessboard.get_latest_move());
+}
+
+void Game::takeback_latest_move(Takeback_state& tb_state)
+{
+  _chessboard.takeback_latest_move(tb_state);
+  _move_log.pop();
 }
 
 } // namespace C2_chess

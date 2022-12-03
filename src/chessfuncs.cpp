@@ -72,8 +72,24 @@ std::string get_logfile_name()
   while (std::filesystem::exists(ss.str()));
   return ss.str();
 }
-#include <iostream>
-#include <algorithm>
+
+bool is_sorted_descending(list_ref movelist)
+{
+  auto first = true;
+  Bitmove previous;
+  for (const auto& move : movelist)
+  {
+    if (first)
+    {
+      previous = move;
+      first = false;
+      continue;
+    }
+    if (move.evaluation() > previous.evaluation())
+      return false;
+  }
+  return true;
+}
 
 bool is_positive_number(const std::string& s)
 {
@@ -147,6 +163,53 @@ void require_m(bool bo, std::string File, std::string method, int line, const Bi
 #define close_pipe _pclose
 #endif
 
+std::string uci_move(const Bitmove& m)
+{
+  std::stringstream ss;
+  ss << static_cast<char>('a' + file_idx(m.from())) << static_cast<int>(rank_idx(m.from())) <<
+     static_cast<char>('a' + file_idx(m.to())) << static_cast<int>(rank_idx(m.to()));
+  if (m.properties() & move_props_promotion)
+  {
+    switch (m.promotion_piece_type())
+    {
+    case Piecetype::Queen:
+      ss << "q";
+      break;
+    case Piecetype::Rook:
+      ss << "r";
+      break;
+    case Piecetype::Knight:
+      ss << "n";
+      break;
+    case Piecetype::Bishop:
+      ss << "b" << std::endl;
+      break;
+    default:
+      std::cerr << "Invalid promotion piece-type: "
+                << magic_enum::enum_name(m.promotion_piece_type())
+                << std::endl;
+      assert(false);
+    }
+  }
+  return ss.str();
+}
+
+std::string uci_pv_line(const std::vector<Bitmove>& pv_line)
+{
+  std::stringstream ss;
+  bool first = true;
+  for (const Bitmove& move : pv_line)
+  {
+    if (first)
+    {
+      ss << uci_move(move);
+      first = false;
+    }
+    else ss << " " << uci_move(move);
+  }
+  return ss.str();
+}
+
 // Run a shell-command and return it's output as a string.
 // This function returns the output (stdout and stderr) from a command in the environment
 // you run the program from.
@@ -180,9 +243,9 @@ std::pair<std::string, int> exec(const char* cmd)
   std::string result;
   int return_code = -1;
   auto pclose_wrapper = [&return_code](FILE* File)
-                                       {
-                                         return_code = close_pipe(File);
-                                       };
+  {
+    return_code = close_pipe(File);
+  };
   {
     // scope is important, have to make sure the pointer goes out of scope first
     const std::unique_ptr<FILE, decltype(pclose_wrapper)> pipe(open_pipe(cmd, "r"), pclose_wrapper);
@@ -202,13 +265,8 @@ bool check_execution_dir(const std::string& preferred_exec_dir)
   const std::pair<std::string, int> process_return = exec("pwd 2>&1");
   if (process_return.second != 0)
   {
-    std::cerr << "ERROR: could not execute command \"pwd\"" << std::endl
-              << "program exited with status code "
-              << process_return.second << std::endl
-              << "captured stdout and stderr; "
-              << std::endl
-              << process_return.first
-              << std::endl;
+    std::cerr << "ERROR: could not execute command \"pwd\"" << std::endl << "program exited with status code " << process_return.second << std::endl
+              << "captured stdout and stderr; " << std::endl << process_return.first << std::endl;
     return false;
   }
   std::string current_dir = process_return.first;
@@ -358,16 +416,11 @@ void print_filetype(std::ostream& os, const fs::file_status& s)
 
 void print_filepermissions(fs::perms p)
 {
-  std::cerr << ((p & fs::perms::owner_read) != fs::perms::none ? "r" : "-")
-            << ((p & fs::perms::owner_write) != fs::perms::none ? "w" : "-")
-            << ((p & fs::perms::owner_exec) != fs::perms::none ? "x" : "-")
-            << ((p & fs::perms::group_read) != fs::perms::none ? "r" : "-")
-            << ((p & fs::perms::group_write) != fs::perms::none ? "w" : "-")
-            << ((p & fs::perms::group_exec) != fs::perms::none ? "x" : "-")
-            << ((p & fs::perms::others_read) != fs::perms::none ? "r" : "-")
-            << ((p & fs::perms::others_write) != fs::perms::none ? "w" : "-")
-            << ((p & fs::perms::others_exec) != fs::perms::none ? "x" : "-")
-            << '\n';
+  std::cerr << ((p & fs::perms::owner_read) != fs::perms::none ? "r" : "-") << ((p & fs::perms::owner_write) != fs::perms::none ? "w" : "-")
+            << ((p & fs::perms::owner_exec) != fs::perms::none ? "x" : "-") << ((p & fs::perms::group_read) != fs::perms::none ? "r" : "-")
+            << ((p & fs::perms::group_write) != fs::perms::none ? "w" : "-") << ((p & fs::perms::group_exec) != fs::perms::none ? "x" : "-")
+            << ((p & fs::perms::others_read) != fs::perms::none ? "r" : "-") << ((p & fs::perms::others_write) != fs::perms::none ? "w" : "-")
+            << ((p & fs::perms::others_exec) != fs::perms::none ? "x" : "-") << '\n';
 }
 
 bool is_regular_read_OK(const fs::path& filepath)
@@ -388,9 +441,7 @@ bool is_regular_read_OK(const fs::path& filepath)
   if (access(filepath.c_str(), R_OK) != 0)
   {
     perror("Error");
-    std::cout << filepath << " is an existing, regular file, " << std::endl
-              << "but the program isn't permitted to read it."
-              << std::endl;
+    std::cout << filepath << " is an existing, regular file, " << std::endl << "but the program isn't permitted to read it." << std::endl;
     print_filepermissions(fs::status(filepath).permissions());
 #ifdef __linux__
     std::string cmd = "ls -l " + filepath.string();
@@ -415,9 +466,7 @@ bool is_regular_write_OK(const fs::path& filepath)
     if (access(filepath.c_str(), W_OK) != 0)
     {
       perror("Error");
-      std::cout << filepath << " is an existing, regular file, " << std::endl
-                << "and the program isn't permitted to write to it."
-                << std::endl;
+      std::cout << filepath << " is an existing, regular file, " << std::endl << "and the program isn't permitted to write to it." << std::endl;
 #ifdef __linux__
       std::string cmd = "ls -l " + filepath.string();
       std::cout << get_stdout_from_cmd(cmd) << std::endl;
@@ -598,14 +647,14 @@ std::vector<std::string> reverse_moves(const std::vector<std::string>& moves)
 std::ostream& operator <<(std::ostream& os, const Search_info& si)
 {
   os << "score: " << si.get_score() << std::endl;
-  os << "beta_cutoffs: " << static_cast<int>(si.beta_cutoffs) << " first_beta_cutoffs: "
-     << std::fixed << std::setprecision(1)
-     << static_cast<float>(si.first_beta_cutoffs) / static_cast<float>(si.beta_cutoffs) * 100.0F
-     << "%" << std::endl;
+  os << "beta_cutoffs: " << static_cast<int>(si.beta_cutoffs) << " first_beta_cutoffs: " << std::fixed << std::setprecision(1)
+     << static_cast<float>(si.first_beta_cutoffs) / static_cast<float>(si.beta_cutoffs) * 100.0F << "%" << std::endl;
   os << "hash_hits:" << static_cast<int>(si.hash_hits) << std::endl;
   os << "highest quiescense search-ply:" << static_cast<int>(si.highest_search_ply) << std::endl;
   return os;
 }
+
+
 
 std::ostream& operator <<(std::ostream& os, History_state hs)
 {
