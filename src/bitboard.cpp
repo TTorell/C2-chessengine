@@ -658,7 +658,7 @@ int Bitboard::count_threats_to_center_squares(const Bitpieces& pieces, const uin
 
 float Bitboard::evaluate_empty_movelist(int search_ply) const
 {
-  if (_latest_move.properties() & move_props_check) // TODO: Check if this always has been set?
+  if (_latest_move.properties() & move_props_check)
   {
     // This is checkmate, we want to evaluate the quickest way to mate higher
     // so we add/subtract level.
@@ -675,15 +675,17 @@ float Bitboard::evaluate_position() const
 {
 // Start with a very small number in sum, just so we don't return 0.0 in an
 // equal position. 0.0 is reserved for stalemate.
-  float sum = epsilon;
+  auto sum = epsilon;
   sum += _material_diff;
 
   //count center control
-  sum += 0.02F * count_threats_to_center_squares(_white_pieces, pawn_center_control_W_pattern);
-  sum -= 0.02F * count_threats_to_center_squares(_black_pieces, pawn_center_control_B_pattern);
+  auto ccc = count_threats_to_center_squares(_white_pieces, pawn_center_control_W_pattern) -
+      count_threats_to_center_squares(_black_pieces, pawn_center_control_B_pattern);
+  sum += ccc * 0.02F;
   count_development(sum, 0.05F);
   count_pawns_in_centre(sum, 0.03F);
   count_castling(sum, 0.10F);
+  std::cerr << sum << std::endl;
   return sum;
 }
 
