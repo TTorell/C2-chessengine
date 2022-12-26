@@ -306,24 +306,60 @@ inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diago
 //  return idx;
 //}
 
-inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square)
+inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square, uint64_t pattern_center_idx = e4_square_idx)
 {
   assert(pattern);
-  //if (!std::has_single_bit(center_square))
-  //  std::cerr << "here" << std::endl;
   assert(std::has_single_bit(center_square));
   uint64_t squares;
-  int shift = bit_idx(center_square) - e4_square_idx;
+  int shift = bit_idx(center_square) - pattern_center_idx;
   squares = (shift >= 0) ? (pattern << shift) : (pattern >> -shift);
   // Remove squares in the pattern which may have
   // been shifted over to the other side of the board.
   // (the pattern is max 5 bits wide, so we can remove
   // two files regardless of if center_square is on a-,
   // or b-file etc).
-  if (to_file(center_square) & a_b_files)
+  if (center_square & a_b_files)
     squares &= not_g_h_files;
-  else if (to_file(center_square) & g_h_files)
+  else if (center_square & g_h_files)
     squares &= not_a_b_files;
+  return squares;
+}
+
+inline uint64_t adjust_passer_pattern(uint64_t pattern, uint64_t center_square, uint64_t pattern_center_idx = e4_square_idx)
+{
+  assert(pattern);
+  assert(std::has_single_bit(center_square));
+  uint64_t squares;
+  int shift = bit_idx(center_square) - pattern_center_idx;
+  squares = (shift >= 0) ? (pattern << shift) : (pattern >> -shift);
+  // Remove squares in the pattern which may have
+  // been shifted over to the other side of the board.
+  // (the pattern is max 5 bits wide, so we can remove
+  // two files regardless of if center_square is on a-,
+  // or b-file etc).
+  if (center_square & a_file)
+    squares &= not_h_file;
+  else if (center_square & h_file)
+    squares &= not_a_file;
+  return squares;
+}
+
+inline uint64_t adjust_isolani_pattern(uint64_t pattern, uint64_t center_square)
+{
+  assert(pattern);
+  assert(std::has_single_bit(center_square));
+  uint64_t squares;
+  int shift = file_idx(center_square) - e_file_idx;
+  squares = (shift >= 0) ? (pattern >> shift) : (pattern << -shift);
+  // Remove squares in the pattern which may have
+  // been shifted over to the other side of the board.
+  // (the pattern is max 5 bits wide, so we can remove
+  // two files regardless of if center_square is on a-,
+  // or b-file etc).
+  if (center_square & a_file)
+    squares &= not_h_file;
+  else if (center_square & h_file)
+    squares &= not_a_file;
   return squares;
 }
 

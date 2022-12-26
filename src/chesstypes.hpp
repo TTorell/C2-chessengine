@@ -414,6 +414,7 @@ constexpr uint64_t king_pattern = ((d_file | e_file | f_file) & (row_3 | row_4 |
 // Knight-moves, with the knight placed at e4
 constexpr uint64_t knight_pattern = ((d_file | f_file) & (row_6 | row_2)) | ((c_file | g_file) & (row_3 | row_5));
 constexpr int e4_square_idx = std::countr_zero(e4_square);
+constexpr int e_file_idx = 7 - (std::countr_zero(e2_square) & 7);
 
 constexpr uint64_t castling_empty_squares_K = (row_1 | row_8) & (f_file | g_file);
 constexpr uint64_t castling_empty_squares_Q = (row_1 | row_8) & (b_file | c_file | d_file);
@@ -484,6 +485,11 @@ constexpr uint64_t bishop_south_east_of_center = lower_board_half & king_side & 
 
 constexpr uint64_t bishop_center_control_pattern1 = (diagonal[6] | diagonal[8] | anti_diagonal[6] | anti_diagonal[8]) & ~center_squares;
 constexpr uint64_t bishop_center_control_pattern2 = (diagonal[7] | anti_diagonal[7]) & ~center_squares;
+
+// Patterns for passed and isolated pawns
+constexpr uint64_t isolated_pawn_pattern = d_file | f_file;
+constexpr uint64_t passed_pawn_pattern_W = (d_file | e_file | f_file) & ~(row_1 | row_2 | row_8);
+constexpr uint64_t passed_pawn_pattern_B = (d_file | e_file | f_file) & ~(row_1 | row_7 | row_8);
 
 } // namespace C2_chess
 #endif

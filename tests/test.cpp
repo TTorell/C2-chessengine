@@ -1266,6 +1266,17 @@ TEST_CASE("print_patterns")
   std::cout << to_binary_board(bishop_center_control_pattern1) << std::endl;
   std::cout << "bishop_center_control_pattern2" << std::endl;
   std::cout << to_binary_board(bishop_center_control_pattern2) << std::endl;
+  std::cout << "isolated_pawn_pattern" << std::endl;
+  std::cout << to_binary_board(isolated_pawn_pattern) << std::endl;
+  std::cout << "passed_pawn_pattern_w" << std::endl;
+  std::cout << to_binary_board(passed_pawn_pattern_W) << std::endl;
+  std::cout << "passed_pawn_pattern_B" << std::endl;
+  std::cout << to_binary_board(passed_pawn_pattern_B) << std::endl;
+  std::cout << "d4-adjusted passed_pawn_pattern_B" << std::endl;
+  std::cout << to_binary_board(adjust_passer_pattern(passed_pawn_pattern_B, d4_square, bit_idx(e7_square))) << std::endl;
+  std::cout << "d4-adjusted passed_pawn_pattern_W" << std::endl;
+  std::cout << to_binary_board(adjust_passer_pattern(passed_pawn_pattern_W, d4_square, bit_idx(e2_square))) << std::endl;
+
 }
 
 TEST_CASE("print_evaluations")
@@ -1300,15 +1311,16 @@ TEST_CASE("print_evaluations")
     Game game(config_params);
     game.read_position_FEN(FEN_string);
     game.init();
-    auto evaluation = game.get_chessboard().evaluate_position();
+    auto evaluation1 = game.get_chessboard().evaluate_position();
     std::cout << "testpos" << (int)testnum << ".pgn" << std::endl;
-    std::cout << evaluation << std::endl;
+    std::cout << evaluation1 << std::endl;
     std::string reversed_FEN_string = reverse_FEN_string(matches[0]);
     game.read_position_FEN(reversed_FEN_string);
     game.init();
-    evaluation = game.get_chessboard().evaluate_position();
+    auto evaluation2 = game.get_chessboard().evaluate_position();
     std::cout << "testpos" << (int)testnum << ".pgn reversed" << std::endl;
-    std::cout << evaluation << std::endl;
+    std::cout << evaluation2 << std::endl;
+    CHECK(is_close(evaluation1, -evaluation2, 1e-5F));
 
     testnum++;
   }

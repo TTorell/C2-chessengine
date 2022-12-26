@@ -274,7 +274,7 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
     //std::this_thread::sleep_for(std::chrono::microseconds(200));
   }
 
-  _chessboard.clear_transposition_table(map_tag::Both);
+  _chessboard.clear_transposition_table(Table::Both);
   _chessboard.clear_search_vars();
 
   for (unsigned int search_depth = 1; search_depth <= max_search_depth; search_depth++)

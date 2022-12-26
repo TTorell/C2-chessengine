@@ -1094,7 +1094,7 @@ void Bitboard::find_legal_moves(list_ref movelist, Gentype gt)
   // What did the previous search have to say about best_move in this position?
   // Playing around. Testing that decltype(auto) also adds reference qualifier (and const/volatile),
   // which only "auto" wouldn't do.
-  decltype(auto) tte = transposition_table.find(_hash_tag, map_tag::Previous);
+  decltype(auto) tte = transposition_table.find(_hash_tag, Table::Previous);
   //  std::cout << type_name<decltype(tte)>() << std::endl;
   //  // Gives "C2_chess::TT_element&" as it should.
   //
@@ -1104,9 +1104,9 @@ void Bitboard::find_legal_moves(list_ref movelist, Gentype gt)
   //  typename2() gives a different output (maybe more detailed)
   //  std::cout << type_name2<decltype(start_position_FEN)>() << std::endl;
   //  // Gives "const std::basic_string<char>", which also seems OK.
-  if (tte.is_initialized() && tte.search_ply <= _search_ply)
+  if (tte.is_initialized() && tte._search_ply <= _search_ply)
   {
-    _previous_search_best_move = tte.best_move;
+    _previous_search_best_move = tte._best_move;
   }
   else
   {

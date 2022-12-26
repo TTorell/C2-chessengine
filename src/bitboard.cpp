@@ -32,7 +32,7 @@ Current_time steady_clock;
 std::atomic<bool> Bitboard::time_left(false);
 //struct Takeback_element Bitboard::takeback_list[N_SEARCH_PLIES_DEFAULT] {};
 Game_history Bitboard::history;
-Transposition_table Bitboard::transposition_table;
+TT Bitboard::transposition_table(4000000);
 int Bitboard::alpha_move_cash[2][7][64] {0};
 
 Bitboard::Bitboard() :
@@ -341,9 +341,9 @@ int Bitboard::read_position(const std::string& FEN_string, const bool initialize
   return 0;
 }
 
-void Bitboard::clear_transposition_table(map_tag map)
+void Bitboard::clear_transposition_table(Table table)
 {
-  transposition_table.clear(map);
+  transposition_table.clear(table);
 }
 
 void Bitboard::switch_tt_tables()
@@ -564,98 +564,36 @@ int Bitboard::count_threats_to_center_squares(const Bitpieces& pieces, const uin
   return count;
 }
 
-//int Bitboard::count_QRB_threats_to_center_square(uint64_t to_square, Color side) const
-//{
-//  uint64_t possible_attackers;
-//  uint64_t attacker;
-//  uint64_t tmp_all_pieces = _all_pieces;
-//
-//  const Bitpieces& pieces = (side == Color::White) ? _white_pieces : _black_pieces;
-//
-//  int count = 0;
-//
-//  // Check threats on file and rank
-//  if (pieces.Queens | pieces.Rooks)
-//  {
-//    // Check threats on file and rank
-//    uint64_t to_ortogonal_squares = ortogonal_squares(to_square);
-//    possible_attackers = to_ortogonal_squares & (pieces.Queens | pieces.Rooks);
-//    while (possible_attackers)
-//    {
-//      attacker = popright_square(possible_attackers);
-//      if ((between(to_square, attacker, to_ortogonal_squares) & tmp_all_pieces) == zero)
-//        count++;
-//    }
-//  }
-//
-//  // Check diagonal threats
-//  if (pieces.Queens | pieces.Bishops)
-//  {
-//    uint64_t to_diagonal_squares = diagonal_squares(to_square);
-//    possible_attackers = to_diagonal_squares & (pieces.Queens | pieces.Bishops);
-//    while (possible_attackers)
-//    {
-//      attacker = popright_square(possible_attackers);
-//      if ((between(to_square, attacker, to_diagonal_squares, true) & tmp_all_pieces) == zero)
-//        count++;
-//    }
-//  }
-//  return count;
-//}
-
-//int Bitboard::count_threats_to_square(uint64_t to_square, Color side) const
-//{
-//  uint64_t possible_attackers;
-//  uint64_t attacker;
-//  uint64_t tmp_all_pieces = _all_pieces;
-//  uint8_t f_idx = file_idx(to_square);
-//
-//  const Bitpieces& pieces = (side == Color::White) ? _white_pieces : _black_pieces;
-//
-//  int count = 0;
-//// Check Pawn-threats
-//  if (pieces.Pawns)
-//  {
-//    if ((f_idx != h) && (pieces.Pawns & ((side == Color::White) ? to_square << 7 : to_square >> 9)))
-//      count++;
-//    if ((f_idx != a) && (pieces.Pawns & ((side == Color::White) ? to_square << 9 : to_square >> 7)))
-//      count++;
-//  }
-//
-//// Check Knight-threats
-//  count += std::popcount((adjust_pattern(knight_pattern, to_square) & pieces.Knights));
-//
-//// Check King-threats
-//  count += std::popcount(adjust_pattern(king_pattern, to_square) & pieces.King);
-//
-//// Check threats on file and rank
-//  if (pieces.Queens | pieces.Rooks)
-//  {
-//    // Check threats on file and rank
-//    uint64_t to_ortogonal_squares = ortogonal_squares(to_square);
-//    possible_attackers = to_ortogonal_squares & (pieces.Queens | pieces.Rooks);
-//    while (possible_attackers)
-//    {
-//      attacker = popright_square(possible_attackers);
-//      if ((between(to_square, attacker, to_ortogonal_squares) & tmp_all_pieces) == zero)
-//        count++;
-//    }
-//  }
-//
-//// Check diagonal threats
-//  if (pieces.Queens | pieces.Bishops)
-//  {
-//    uint64_t to_diagonal_squares = diagonal_squares(to_square);
-//    possible_attackers = to_diagonal_squares & (pieces.Queens | pieces.Bishops);
-//    while (possible_attackers)
-//    {
-//      attacker = popright_square(possible_attackers);
-//      if ((between(to_square, attacker, to_diagonal_squares, true) & tmp_all_pieces) == zero)
-//        count++;
-//    }
-//  }
-//  return count;
-//}
+int Bitboard::count_passers_and_isolanis() const
+{
+  int count = 0;
+  uint64_t pawn_square;
+  uint64_t pattern;
+  uint64_t pawns = _white_pieces.Pawns;
+  while (pawns)
+  {
+    pawn_square = popright_square(pawns);
+    // double pawns
+    count -= std::popcount(to_file(pawn_square) & _white_pieces.Pawns) - 1;
+    // isolated pawns
+    pattern = adjust_isolani_pattern(isolated_pawn_pattern, pawn_square);
+    count -= (pattern & _white_pieces.Pawns) ? 0 : 1;
+    // passed_pawns
+    pattern = adjust_passer_pattern(passed_pawn_pattern_W, pawn_square, bit_idx(e2_square));
+    count += (pattern & _black_pieces.Pawns) ? 0 : rank_idx(pawn_square) - 1;
+  }
+  pawns = _black_pieces.Pawns;
+  while (pawns)
+  {
+    pawn_square = popright_square(pawns);
+    count += std::popcount(to_file(pawn_square) & _black_pieces.Pawns) - 1;
+    pattern = adjust_isolani_pattern(isolated_pawn_pattern, pawn_square);
+    count += (pattern & _black_pieces.Pawns) ? 0 : 1;
+    pattern = adjust_passer_pattern(passed_pawn_pattern_B, pawn_square, bit_idx(e7_square));
+    count -= (pattern & _white_pieces.Pawns) ? 0 : 8-rank_idx(pawn_square);
+  }
+  return count;
+}
 
 float Bitboard::evaluate_empty_movelist(int search_ply) const
 {
@@ -680,11 +618,11 @@ float Bitboard::evaluate_position() const
   sum += _material_diff;
 
   //count center control
-  sum += (count_threats_to_center_squares(_white_pieces, pawn_center_control_W_pattern) -
-      count_threats_to_center_squares(_black_pieces, pawn_center_control_B_pattern)) * 0.02F;
+  sum += (count_threats_to_center_squares(_white_pieces, pawn_center_control_W_pattern) - count_threats_to_center_squares(_black_pieces, pawn_center_control_B_pattern)) * 0.02F;
   count_development(sum, 0.05F);
   count_pawns_in_centre(sum, 0.03F);
   count_castling(sum, 0.10F);
+  sum += count_passers_and_isolanis() * 0.05F;
   return sum;
 }
 
@@ -792,10 +730,10 @@ void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
   Takeback_state tb_state_dummy;
   for (int i = 0; i < 20; i++)
   {
-    TT_element& tte = transposition_table.find(bb._hash_tag);
-    if (!tte.best_move.is_valid() || tte.search_ply != i)
+    TT_elem& tte = transposition_table.find(bb._hash_tag);
+    if (!tte._best_move.is_valid() || tte._search_ply != i)
       break;
-    bb.new_make_move(tte.best_move, tb_state_dummy, dont_update_history);
+    bb.new_make_move(tte._best_move, tb_state_dummy, dont_update_history);
     pv_line.push_back(bb._latest_move);
   }
 }
@@ -978,42 +916,39 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
     return 0.0;
   }
 
-// Check if position and evaluation is already in the hash_table
-  TT_element& element = transposition_table.find(_hash_tag);
-  if (element.is_initialized())
+  // Check if position and evaluation is already in the hash_table
+  TT_elem& element = transposition_table.find(_hash_tag);
+  if (element.is_valid(_hash_tag))
   {
     // The position was found in the transposition table,
     // but is the evaluation good enough?
-    if (element.search_ply <= _search_ply)
+    if (element._search_ply <= _search_ply)
     {
       search_info.hash_hits++;
-      best_move = element.best_move;
-//      std::cout << "Hash hit " << best_move << " " << element.best_move._evaluation << std::endl;
-//      std::cout << "element.search_ply " << element.search_ply << " search_ply " << static_cast<int>(search_ply) << std::endl;
-      return element.best_move._evaluation;
+      best_move = element._best_move;
+      return element._best_move._evaluation;
     }
   }
 
-// Now it's time to generate all possible moves in the position
+  // Now it's time to generate all possible moves in the position
   Bitmove best_move_dummy;
   Takeback_state tb_state;
   list_t movelist;
   find_legal_moves(movelist, Gentype::All);
 
-// If there are no possible moves, evaluate_empty_movelist() will check for such things as
-// mate or stalemate which may happen before max_search_ply has been reached.
+  // If there are no possible moves, evaluate_empty_movelist() will check for such things as
+  // mate or stalemate which may happen before max_search_ply has been reached.
   if (movelist.size() == 0)
   {
     // ---------------------------------------
-    element.best_move = UNDEFINED_MOVE;
-    element.best_move._evaluation = (_side_to_move == Color::White) ? evaluate_empty_movelist(_search_ply) : -evaluate_empty_movelist(_search_ply);
-    element.search_ply = _search_ply;
+    float evaluation = (_side_to_move == Color::White) ? evaluate_empty_movelist(_search_ply) : -evaluate_empty_movelist(_search_ply);
+    element.set(_hash_tag, UNDEFINED_MOVE, evaluation, _search_ply);
     // ---------------------------------------
-    return element.best_move._evaluation;
+    return element._best_move._evaluation;
   }
 
   float move_score = -infinity; // Must be lower than lowest evaluation
-// Collect the best value from all possible moves
+  // Collect the best value from all possible moves
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
     // Make the selected move and ask min() to evaluate it further.
@@ -1047,7 +982,6 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
       // Update alpha value.
       // We have found a better move.
       best_move = (movelist)[i];
-//      std::cout << "alpha best_move " << best_move << std::endl;
       best_move._evaluation = move_score;
       alpha = move_score;
       alpha_move_cash[index(_side_to_move)][index(best_move.piece_type())][bit_idx(best_move.from())] += search_depth - _search_ply;
@@ -1063,21 +997,15 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
       return 0.0;
     }
   }
-// Save evaluation of the position to the TT-cash and return the best
-// value among the possible moves.
-// If we haven't found any best_move (better than the original alpha)
-// then best_move isn't valid.
-// ---------------------------------------
+
+  // Save evaluation of the position to the TT-cash and return the best
+  // value among the possible moves.
+  // If we haven't found any best_move (better than the original alpha)
+  // then best_move isn't valid.
   if (best_move.is_valid())
   {
-    element.best_move = best_move;
-    element.best_move._evaluation = alpha;
-    element.search_ply = _search_ply;
-//    std::cout << "best_move: " << best_move << " " << alpha << std::endl;
+    element.set(_hash_tag, best_move, alpha, _search_ply);
   }
-//  else
-//    std::cout << "best_move: NO_MOVE" << std::endl;
-// ---------------------------------------
   return alpha;
 }
 

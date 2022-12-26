@@ -26,6 +26,18 @@
 #include "game_history.hpp"
 #include "shared_ostream.hpp"
 
+// using a hash-table built on a std::unordered_map
+ using TT = C2_chess::Transposition_table;
+ using TT_elem = C2_chess::TT_element;
+
+// An experiment with a more traditional hash-table:
+// (It's a little faster for reasonably shallow search-depths, but the cash-elements often
+// gets overwritten on higher search-depths resulting in calculation of more
+// nodes and shorter extracted PV-lines. Also, each hash-element gets bigger because
+// the hash-tag itself must also be stored in each element.)
+//using TT = C2_chess::Transposition_table_2;
+//using TT_elem = C2_chess::TT_element_2;
+
 namespace C2_chess
 {
 
@@ -39,7 +51,7 @@ class Bitboard
     // a position doesn't have to be recalculated if it appears again during the
     // search. The information is also used to retrieve the PV-moves used in the
     // move-ordering, essential for the pruning of the "search-tree".
-    static Transposition_table transposition_table;
+    static TT transposition_table;
 
     // history stores the move-history in the game as well as during a search-operation.
     // Needed for instance to decide "threefold-draw".
@@ -216,29 +228,17 @@ class Bitboard
 
     //int count_QRB_threats_to_center_square(uint64_t to_square, Color side) const;
 
-    int count_threats_to_center_squares(const Bitpieces& pieces, const uint64_t pawn_pattern) const;
-
     int walk_into_center(const uint64_t from_sq, const int n_center_sqs, std::function<void(uint64_t&)> shift_func) const;
 
-    //int count_QRB_threats_to_center_squares(const Bitpieces& pieces) const;
+    int count_threats_to_center_squares(const Bitpieces& pieces, const uint64_t pawn_pattern) const;
 
-    //int count_threats_to_square(uint64_t square, Color side) const;
+    int count_passers_and_isolanis() const;
 
     float evaluate_empty_movelist(int search_ply) const;
 
     float evaluate_position() const;
 
     void clear_PV_table();
-
-//    inline Takeback_state& get_takeback_state(size_t idx) const
-//    {
-//      return takeback_list[idx].state_S;
-//    }
-//
-//    inline Takeback_state& get_takeback_state_Q(size_t idx) const
-//    {
-//      return takeback_list[idx].state_Q;
-//    }
 
     float Quiesence_search(float alpha, float beta, uint8_t max_search_ply);
 
@@ -348,7 +348,7 @@ class Bitboard
 
     void start_timer_thread(const double time);
 
-    void clear_transposition_table(map_tag map = map_tag::Current);
+    void clear_transposition_table(Table table = Table::Current);
 
     void switch_tt_tables();
 
