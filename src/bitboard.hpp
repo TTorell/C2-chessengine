@@ -27,16 +27,16 @@
 #include "shared_ostream.hpp"
 
 // using a hash-table built on a std::unordered_map
- using TT = C2_chess::Transposition_table;
- using TT_elem = C2_chess::TT_element;
+// using TT = C2_chess::Transposition_table;
+// using TT_elem = C2_chess::TT_element;
 
 // An experiment with a more traditional hash-table:
 // (It's a little faster for reasonably shallow search-depths, but the cash-elements often
 // gets overwritten on higher search-depths resulting in calculation of more
 // nodes and shorter extracted PV-lines. Also, each hash-element gets bigger because
 // the hash-tag itself must also be stored in each element.)
-//using TT = C2_chess::Transposition_table_2;
-//using TT_elem = C2_chess::TT_element_2;
+using TT = C2_chess::Transposition_table_2;
+using TT_elem = C2_chess::TT_element_2;
 
 namespace C2_chess
 {

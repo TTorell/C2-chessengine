@@ -622,7 +622,7 @@ float Bitboard::evaluate_position() const
   count_development(sum, 0.05F);
   count_pawns_in_centre(sum, 0.03F);
   count_castling(sum, 0.10F);
-  sum += count_passers_and_isolanis() * 0.05F;
+  sum += count_passers_and_isolanis() * 0.02F;
   return sum;
 }
 
