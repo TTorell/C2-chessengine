@@ -1265,8 +1265,11 @@ TEST_CASE("print_patterns")
   std::cout << to_binary_board(bishop_center_control_pattern1) << std::endl;
   std::cout << "bishop_center_control_pattern2" << std::endl;
   std::cout << to_binary_board(bishop_center_control_pattern2) << std::endl;
-  std::cout << "isolated_pawn_pattern" << std::endl;
-  std::cout << to_binary_board(isolated_pawn_pattern) << std::endl;
+  for (int i = a; i <= h; i++)
+  {
+    std::cout << "isolated_pawn_pattern[" << i << "]" << std::endl;
+    std::cout << to_binary_board(isolani_pattern[i]) << std::endl;
+  }
   std::cout << "passed_pawn_pattern_w" << std::endl;
   std::cout << to_binary_board(passed_pawn_pattern_W) << std::endl;
   std::cout << "passed_pawn_pattern_B" << std::endl;

@@ -1010,7 +1010,7 @@ inline void Bitboard::add_move(list_ref movelist, Piecetype p_type, Piecetype ca
     if (new_move == _previous_search_best_move)
     {
       //std::cout << "Sorting, best move: " << _previous_search_best_move << ":" << new_move << std::endl;
-      new_move._evaluation = infinity;
+      new_move._evaluation = infinite;
       movelist.push_front(new_move);
       return;
     }

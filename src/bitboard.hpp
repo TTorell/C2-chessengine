@@ -27,16 +27,16 @@
 #include "shared_ostream.hpp"
 
 // using a hash-table built on a std::unordered_map
-// using TT = C2_chess::Transposition_table;
-// using TT_elem = C2_chess::TT_element;
+using TT = C2_chess::Transposition_table;
+using TT_elem = C2_chess::TT_element;
 
 // An experiment with a more traditional hash-table:
 // (It's a little faster for reasonably shallow search-depths, but the cash-elements often
 // gets overwritten on higher search-depths resulting in calculation of more
 // nodes and shorter extracted PV-lines. Also, each hash-element gets bigger because
 // the hash-tag itself must also be stored in each element.)
-using TT = C2_chess::Transposition_table_2;
-using TT_elem = C2_chess::TT_element_2;
+// using TT = C2_chess::Transposition_table_2;
+// using TT_elem = C2_chess::TT_element_2;
 
 namespace C2_chess
 {
@@ -201,6 +201,10 @@ class Bitboard
 
     inline void update_state_after_king_move(const Bitmove& m);
 
+    void save_in_takeback_state(Takeback_state& tb_state) const;
+
+    void make_nullmove(Takeback_state& tb_state, const bool add_to_history);
+
     void takeback_promotion(const Bitmove& m, const Color moving_side);
 
     void takeback_en_passant(const Bitmove& m, const Color moving_side);
@@ -209,11 +213,11 @@ class Bitboard
 
     void takeback_normal_move(const Bitmove& m, const Color moving_side);
 
-    void save_in_takeback_state(Takeback_state& tb_state) const;
-
     void takeback_from_state(const Takeback_state& state);
 
     void takeback_latest_move(const Takeback_state& tb_state, const bool takeback_from_history = true);
+
+    void takeback_null_move(const Takeback_state& tb_state, const bool takeback_from_history);
 
     // ### Protected methods for searching for the best move ###
     // ---------------------------------------------------------
@@ -241,6 +245,8 @@ class Bitboard
     void clear_PV_table();
 
     float Quiesence_search(float alpha, float beta, uint8_t max_search_ply);
+
+    bool not_likely_in_zugswang();
 
   public:
 
@@ -285,9 +291,7 @@ class Bitboard
     // if he's on turn.
     int make_move(Playertype player_type);
 
-//    // This make_move() doesn't require a generated movelist.
-//    void make_move(const Bitmove& m, Takeback_state& tb_state, Takeback_state& next_tb_state, const Gentype gt, const bool add_to_history = true);
-
+    // This make_move() doesn't require a generated movelist.
     void new_make_move(const Bitmove& m, Takeback_state& tb_state, const bool add_to_history = true);
 
     // All properties of a move are not decided immediately,
@@ -296,10 +300,10 @@ class Bitboard
     // So we save the move, until then, in _latest_move.
     // The check-property is mostly for the presentation of the
     // move in text, and unnecessary for other purposes.
-//    Bitmove get_latest_move() const
-//    {
-//      return _latest_move;
-//    }
+    // Bitmove get_latest_move() const
+    // {
+    //   return _latest_move;
+    // }
 
     // The chess-engine keeps track of the game, which is
     // not necessary, but nice to see in the log-files.
@@ -367,7 +371,7 @@ class Bitboard
     void init_material_evaluation();
 
     // Search function
-    float negamax_with_pruning(float alpha, float beta, Bitmove& best_move, const uint8_t max_search_ply);
+    float negamax_with_pruning(float alpha, float beta, Bitmove& best_move, const uint8_t search_depth, const bool nullmove_pruning = true);
 
     unsigned int perft_test(uint8_t search_ply, uint8_t max_search_plies);
 

@@ -576,8 +576,7 @@ int Bitboard::count_passers_and_isolanis() const
     // double pawns
     count -= std::popcount(to_file(pawn_square) & _white_pieces.Pawns) - 1;
     // isolated pawns
-    pattern = adjust_isolani_pattern(isolated_pawn_pattern, pawn_square);
-    count -= (pattern & _white_pieces.Pawns) ? 0 : 1;
+    count -= (isolani_pattern[file_idx(pawn_square)] & _white_pieces.Pawns) ? 0 : 1;
     // passed_pawns
     pattern = adjust_passer_pattern(passed_pawn_pattern_W, pawn_square, bit_idx(e2_square));
     count += (pattern & _black_pieces.Pawns) ? 0 : rank_idx(pawn_square) - 1;
@@ -590,7 +589,7 @@ int Bitboard::count_passers_and_isolanis() const
     pattern = adjust_isolani_pattern(isolated_pawn_pattern, pawn_square);
     count += (pattern & _black_pieces.Pawns) ? 0 : 1;
     pattern = adjust_passer_pattern(passed_pawn_pattern_B, pawn_square, bit_idx(e7_square));
-    count -= (pattern & _white_pieces.Pawns) ? 0 : 8-rank_idx(pawn_square);
+    count -= (pattern & _white_pieces.Pawns) ? 0 : 8 - rank_idx(pawn_square);
   }
   return count;
 }
@@ -845,7 +844,7 @@ float Bitboard::Quiesence_search(float alpha, float beta, uint8_t max_search_ply
   list_t movelist;
   find_legal_moves(movelist, Gentype::Captures_and_Promotions);
 
-  auto move_score = -infinity;
+  auto move_score = -infinite;
 // Collect the best value from all possible "capture-moves"
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
@@ -885,14 +884,22 @@ float Bitboard::Quiesence_search(float alpha, float beta, uint8_t max_search_ply
   return alpha;
 }
 
+bool Bitboard::not_likely_in_zugswang()
+{
+  // If we have at least one "big piece" left, we are likely not in zugzwang.
+  if (_own->pieces & ~_own->King & ~_own->Pawns)
+    return true;
+  return false;
+}
+
 // Search algorithm: Negamax with alpha-beta-pruning
-float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move, const uint8_t search_depth)
+float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move, const uint8_t search_depth, const bool nullmove_pruning)
 {
 
   assert(beta > alpha);
 
   best_move = NO_MOVE;
-  if (_search_ply == search_depth)
+  if (_search_ply >= search_depth)
   {
     // Quiescence search.
     // It takes over the searching and the node counting from here,
@@ -930,9 +937,32 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
     }
   }
 
+  // Nullmove heuristic.
+  // Don't make a move, just hand over the turn to move to the opponent,
+  // search on a lower depth to see if the opponent can improve beta,
+  // otherwise we can cut off the search-tree here.
+  // (Doesn't work if we're in check. Gives wrong result if we're in zugzwang,
+  // when our best alternative would in fact be to, illegally, do nothing.)
+  Takeback_state tb_state;
+  float nullmove_score = -infinite; // Must be lower than lowest evaluation
+  if (nullmove_pruning &&
+      _search_ply >= 1 &&
+      (_latest_move.properties() & move_props_check) == 0 &&
+      not_likely_in_zugswang() &&
+      search_depth > 4)
+  {
+    make_nullmove(tb_state, do_update_history);
+    nullmove_score = -negamax_with_pruning(-beta, -beta + 1, best_move, search_depth - 4, no_nullmove_pruning);
+    takeback_null_move(tb_state, do_update_history);
+    if (nullmove_score >= beta && fabs(nullmove_score) < 90.0F) // not mate
+    {
+      search_info.nullmove_cutoffs++;
+      return beta;
+    }
+  }
+
   // Now it's time to generate all possible moves in the position
   Bitmove best_move_dummy;
-  Takeback_state tb_state;
   list_t movelist;
   find_legal_moves(movelist, Gentype::All);
 
@@ -947,14 +977,14 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
     return element._best_move._evaluation;
   }
 
-  float move_score = -infinity; // Must be lower than lowest evaluation
+  float move_score = -infinite; // Must be lower than lowest evaluation
   // Collect the best value from all possible moves
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
     // Make the selected move and ask min() to evaluate it further.
     //std::cout << static_cast<int>(search_ply) << " " << magic_enum::enum_name(_side_to_move) << " " << movelist[i] << std::endl;
     new_make_move(movelist[i], tb_state);
-    move_score = -negamax_with_pruning(-beta, -alpha, best_move_dummy, search_depth);
+    move_score = -negamax_with_pruning(-beta, -alpha, best_move_dummy, search_depth, nullmove_pruning);
 
     // Restore game history and state to current position.
     takeback_latest_move(tb_state);

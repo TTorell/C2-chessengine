@@ -201,7 +201,7 @@ Bitmove Game::find_best_move(float& score, unsigned int search_depth)
   Bitmove best_move;
   steady_clock.tic();
   _chessboard.set_search_ply(0);
-  score = _chessboard.negamax_with_pruning(-infinity, infinity, best_move, search_depth);
+  score = _chessboard.negamax_with_pruning(-infinite, infinite, best_move, search_depth);
   _chessboard.get_search_info().time_taken = steady_clock.toc_ms();
   _chessboard.get_search_info().score = score;
   if (_chessboard.get_side_to_move() == Color::White)
@@ -228,7 +228,7 @@ Bitmove Game::find_best_move(float& score, unsigned int search_depth)
   }
   if (best_move == SEARCH_HAS_BEEN_INTERRUPTED)
   {
-    logfile << "The search has been interruted." << "\n";
+    logfile << "The search has been interrupted." << "\n";
   }
   return best_move;
 }

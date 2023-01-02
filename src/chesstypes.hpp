@@ -28,6 +28,16 @@ const auto start_position_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w K
 
 const auto infinity = std::numeric_limits<float>::infinity(); // float
 
+// If we use infinity above with alpha and beta-values,
+// we get an assert error for assert(beta > alpha) in the
+// Nullmove pruning in the negamax routine,
+// with input parameters alpha = -beta and beta = -beta + 1;
+// If beta then is infinity, alpha will become -infinity
+// and beta will become -infinity + 1 = -infinity as well.
+// and assert(beta > alpha) will fail.
+// So we need a limited value which will change when 1 is added to it.
+const auto infinite = 100000;
+
 const auto a = 0; // int
 const auto b = 1;
 const auto c = 2;
@@ -43,6 +53,7 @@ const auto epsilon = 0.00000001F;
 const auto N_SEARCH_PLIES_DEFAULT = 64U;
 
 const auto dont_update_history = false;
+const auto do_update_history = true;
 const auto init_pieces = true;
 const auto dont_evaluate_zero_moves = false;
 const auto use_max_search_depth = true;
@@ -50,6 +61,8 @@ const auto on_same_line = true;
 const auto on_separate_lines = false;
 const auto xray_threats_through_king_allowed = true;
 const auto no_xray_threats_through_king = false;
+const auto do_nullmove_pruning = true;
+const auto no_nullmove_pruning = false;
 
 // It's important that the four promotion-piecetypes
 // Comes first and have index 0 to 3 (00, 01, 10 and 11),
@@ -127,6 +140,7 @@ struct Search_info
     unsigned int hash_hits;
     unsigned int first_beta_cutoffs;
     unsigned int beta_cutoffs;
+    unsigned int nullmove_cutoffs;
     unsigned long time_taken;
     unsigned long max_search_depth;
     bool search_interrupted;
@@ -490,6 +504,17 @@ constexpr uint64_t bishop_center_control_pattern2 = (diagonal[7] | anti_diagonal
 constexpr uint64_t isolated_pawn_pattern = d_file | f_file;
 constexpr uint64_t passed_pawn_pattern_W = (d_file | e_file | f_file) & ~(row_1 | row_2 | row_8);
 constexpr uint64_t passed_pawn_pattern_B = (d_file | e_file | f_file) & ~(row_1 | row_7 | row_8);
+
+constexpr uint64_t ip(const int file_idx)
+{
+  int shift = file_idx - e;
+  if (shift >= 0)
+    return (isolated_pawn_pattern >> shift) & ~a_file;
+  else
+    return (isolated_pawn_pattern << -shift) & ~h_file;
+}
+
+constexpr uint64_t isolani_pattern[8] = {ip(a), ip(b), ip(c), ip(d), ip(e), ip(f), ip(g), ip(h)};
 
 } // namespace C2_chess
 #endif

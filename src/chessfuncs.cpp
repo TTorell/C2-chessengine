@@ -719,6 +719,7 @@ std::ostream& operator <<(std::ostream& os, const Search_info& si)
   os << "score: " << si.get_score() << std::endl;
   os << "beta_cutoffs: " << static_cast<int>(si.beta_cutoffs) << " first_beta_cutoffs: " << std::fixed << std::setprecision(1)
      << static_cast<float>(si.first_beta_cutoffs) / static_cast<float>(si.beta_cutoffs) * 100.0F << "%" << std::endl;
+  os << "nullmove_cutoffs: " << static_cast<int>(si.nullmove_cutoffs) << std::endl;
   os << "hash_hits:" << static_cast<int>(si.hash_hits) << std::endl;
   os << "highest quiescense search-ply:" << static_cast<int>(si.highest_search_ply) << std::endl;
   return os;

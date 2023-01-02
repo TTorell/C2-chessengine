@@ -273,6 +273,47 @@ void Bitboard::make_move(const size_t i, Takeback_state& tb_state)
   new_make_move(movelist[i], tb_state);
 }
 
+void Bitboard::make_nullmove(Takeback_state& tb_state, const bool add_to_history)
+{
+  //write(std::cerr, Color::White);
+  save_in_takeback_state(tb_state);
+  if (_ep_square)
+    clear_ep_square();
+  _latest_move = NO_MOVE;
+  update_side_to_move();
+  if (_side_to_move == Color::White)
+    _move_number++;
+  update_half_move_counter();
+  // add_position to game_history
+  if (add_to_history)
+  {
+    history.add_position(_hash_tag);
+  }
+  _search_ply++;
+  //write(std::cerr, Color::White);
+}
+
+void Bitboard::takeback_null_move(const Takeback_state& tb_state, const bool takeback_from_history)
+{
+  assert((_own->pieces & _other->pieces) == zero);
+
+  // Keeping the definition of to_square and from_square from the move itself,
+  // even if the move will be reversed.
+  // _side_to_move is the side that didn't make the move.
+
+  //  Set up the board for other player:
+  update_side_to_move();
+  if (_side_to_move == Color::Black)
+    _move_number--;
+  if (takeback_from_history)
+  {
+    history.takeback_latest_move();
+  }
+
+  takeback_from_state(tb_state);
+  _search_ply--;
+}
+
 void Bitboard::new_make_move(const Bitmove& m, Takeback_state& tb_state, const bool add_to_history)
 {
   assert((_own->pieces & _other->pieces) == zero);
