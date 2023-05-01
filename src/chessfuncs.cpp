@@ -157,16 +157,20 @@ bool is_sorted_descending(list_ref movelist)
 
 bool is_positive_number(const std::string& s)
 {
-//    return std::ranges::all_of(s.begin(), s.end(),
-//                  [](char c){ return isdigit(c) != 0; });
   if (s.empty())
     return false;
-  for (const char& ch : s)
-  {
-    if (!std::isdigit(ch))
-      return false;
-  }
-  return true;
+  return std::all_of(s.begin(), s.end(), ::isdigit);
+// or;
+//  return std::ranges::all_of(s.begin(), s.end(), [](char ch)
+//  { return std::isdigit(ch);});
+// or simply;
+//  if (s.empty())
+//    return false;
+//  for (const char& ch : s)
+//  {
+//    if (!std::isdigit(ch))
+//      return false;
+//  }
 }
 
 #ifdef __linux__
@@ -230,29 +234,26 @@ void require_m(bool bo, std::string File, std::string method, int line, const Bi
 std::string uci_move(const Bitmove& m)
 {
   std::stringstream ss;
-  ss << static_cast<char>('a' + file_idx(m.from())) << static_cast<int>(rank_idx(m.from())) <<
-     static_cast<char>('a' + file_idx(m.to())) << static_cast<int>(rank_idx(m.to()));
+  ss << static_cast<char>('a' + file_idx(m.from())) << static_cast<int>(rank_idx(m.from())) << static_cast<char>('a' + file_idx(m.to())) << static_cast<int>(rank_idx(m.to()));
   if (m.properties() & move_props_promotion)
   {
     switch (m.promotion_piece_type())
     {
-    case Piecetype::Queen:
-      ss << "q";
-      break;
-    case Piecetype::Rook:
-      ss << "r";
-      break;
-    case Piecetype::Knight:
-      ss << "n";
-      break;
-    case Piecetype::Bishop:
-      ss << "b" << std::endl;
-      break;
-    default:
-      std::cerr << "Invalid promotion piece-type: "
-                << magic_enum::enum_name(m.promotion_piece_type())
-                << std::endl;
-      assert(false);
+      case Piecetype::Queen:
+        ss << "q";
+        break;
+      case Piecetype::Rook:
+        ss << "r";
+        break;
+      case Piecetype::Knight:
+        ss << "n";
+        break;
+      case Piecetype::Bishop:
+        ss << "b" << std::endl;
+        break;
+      default:
+        std::cerr << "Invalid promotion piece-type: " << magic_enum::enum_name(m.promotion_piece_type()) << std::endl;
+        assert(false);
     }
   }
   return ss.str();
@@ -269,7 +270,8 @@ std::string uci_pv_line(const std::vector<Bitmove>& pv_line)
       ss << uci_move(move);
       first = false;
     }
-    else ss << " " << uci_move(move);
+    else
+      ss << " " << uci_move(move);
   }
   return ss.str();
 }
@@ -724,8 +726,6 @@ std::ostream& operator <<(std::ostream& os, const Search_info& si)
   os << "highest quiescense search-ply:" << static_cast<int>(si.highest_search_ply) << std::endl;
   return os;
 }
-
-
 
 std::ostream& operator <<(std::ostream& os, History_state hs)
 {
