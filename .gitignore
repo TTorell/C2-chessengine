@@ -5,6 +5,7 @@ src/.project
 .settings
 .tracecompass/
 .vs
+.vscode/
 command_log.txt
 testlog.txt
 C2_log*
