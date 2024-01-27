@@ -1,23 +1,23 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.20)
 
 set( CMAKE_VERBOSE_MAKEFILE TRUE )
 
 # set the project name
-project(C2 VERSION 1.0)
+project(C2-chessengine VERSION 1.0)
 
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(SOURCE_FILES
-    ${PROJECT_SOURCE_DIR}/bitboard.cpp
-    ${PROJECT_SOURCE_DIR}/bitboard_make_move.cpp
-    ${PROJECT_SOURCE_DIR}/bitboard_movegen.cpp
-    ${PROJECT_SOURCE_DIR}/bitboard_with_utils.cpp
-    ${PROJECT_SOURCE_DIR}/chessfuncs.cpp
-    ${PROJECT_SOURCE_DIR}/cmd_line.cpp
-    ${PROJECT_SOURCE_DIR}/game.cpp
-    ${PROJECT_SOURCE_DIR}/shared_ostream.cpp
+    ${PROJECT_SOURCE_DIR}/src/bitboard.cpp
+    ${PROJECT_SOURCE_DIR}/src/bitboard_make_move.cpp
+    ${PROJECT_SOURCE_DIR}/src/bitboard_movegen.cpp
+    ${PROJECT_SOURCE_DIR}/src/bitboard_with_utils.cpp
+    ${PROJECT_SOURCE_DIR}/src/chessfuncs.cpp
+    ${PROJECT_SOURCE_DIR}/src/cmd_line.cpp
+    ${PROJECT_SOURCE_DIR}/src/game.cpp
+    ${PROJECT_SOURCE_DIR}/src/shared_ostream.cpp
 )
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -45,11 +45,15 @@ else()
 endif()
 
 # add the executable
-add_executable(C2 C2.cpp ${SOURCE_FILES})
+add_executable(C2-chessengine ${PROJECT_SOURCE_DIR}/src/C2.cpp ${SOURCE_FILES})
+
+# add test executable
+add_executable(C2-chessengine_test ${PROJECT_SOURCE_DIR}/tests/test.cpp ${SOURCE_FILES})
 
 if(UNIX AND NOT APPLE)
     # for Linux, BSD, Solaris, Minix
-    target_link_libraries(C2 pthread)
+    # target_link_libraries(C2-chessengine pthread)
+    # is  defined with -pthread compiler-flag instead
     
     # Don't know if the --stack flag has any effect on linkers in LINUX.
     # In Ubuntu it seems like you get approximately 8 megabytes as default.
@@ -63,9 +67,9 @@ else()
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:10000")
 endif()
 
-configure_file(C2Config.h.in C2Config.h)
+#configure_file(C2Config.h.in C2Config.h)
 
-target_include_directories(C2 PUBLIC
+target_include_directories(C2-chessengine PUBLIC
                            "${PROJECT_BINARY_DIR}"
                            )
 
