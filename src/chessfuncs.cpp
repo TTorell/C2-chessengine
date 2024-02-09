@@ -14,6 +14,9 @@
 #include <vector>
 #include <thread>
 #include <algorithm>
+#include <chrono>
+#include <mutex>
+#include <condition_variable>
 //#include <memory>
 //#include <array>
 //#include <utility>
@@ -39,9 +42,70 @@ extern "C"
 #include <unistd.h>
 }
 #endif // __linux__
-
 namespace C2_chess
 {
+
+bool ready = false;
+bool processed = false;
+std::condition_variable cv;
+auto answer = ""s;
+std::mutex mtx;
+
+static void worker_thread()
+{
+    // Wait until main() sends data
+    std::unique_lock<std::mutex>  lck(mtx);
+    cv.wait(lck, []{ return ready; });
+ 
+    // after the wait, we own the lock.
+    std::cout << "Worker thread is processing data\n";
+    lck.unlock();
+    // Send data back to main()
+    std::cin >> answer;
+    std::cout << "Worker thread signals data processing completed\n";
+ 
+    // Manual unlocking is done before notifying, to avoid waking up
+    // the waiting thread only to block again (see notify_one for details)
+    
+    cv.notify_one();
+}
+
+/// @brief 
+/// @param request 
+/// @return 
+std::string ask_for_input_with_timeout(const std::string& request)
+{
+    std::cout << request << ": ";
+    std::thread th(worker_thread);
+
+    // send data to the worker thread
+    {
+        std::lock_guard lck(mtx);
+        ready = true;
+        std::cout << "main() signals data ready for processing\n";
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    cv.notify_one();
+ 
+    // wait for the worker
+    {
+        std::cout << "Before LOCK" << std::endl;
+        std::unique_lock<std::mutex> lck(mtx);
+        std::cout << "After LOCK" << std::endl;
+        std::cv_status cvStatus = cv.wait_for(lck, std::chrono::seconds(5));
+        if (cvStatus == std::cv_status::timeout)
+        std::cout << "TIMEOUT\n" << std::endl;
+    }
+    std::cout << "Back in main(), answer = " << answer << '\n';
+ 
+    std::cout << "\nTime-Out: 2 second:";
+    std::cout << "\nPlease enter the input:";
+    std::cout << "You entered: " << answer << std::endl;
+
+    th.join();
+
+    return answer;
+}
 
 Color other_color(const Color& side)
 {
@@ -281,6 +345,12 @@ bool check_execution_dir(const std::string& preferred_exec_dir)
   return true;
 }
 
+bool check_working_directory(const fs::path& preferred_working_dir)
+{
+  // Same as check_execution_dir, but a lot simpler
+  return fs::current_path() == preferred_working_dir;
+}
+
 // Here the regexp_string (pattern) must match the whole line.
 bool regexp_match(const std::string& line, const std::string& regexp_string)
 {
@@ -290,7 +360,8 @@ bool regexp_match(const std::string& line, const std::string& regexp_string)
 }
 
 // Tries to find a part of line which matches the regexp_string.
-// similar to the grep-function in Unix shells.
+// (line can be printed outside if return-vaslue is true, to resemble
+// the grep-function in Unix/Linux shells)
 bool regexp_grep(const std::string& line, const std::string& regexp_string)
 {
   std::smatch m;
@@ -298,8 +369,7 @@ bool regexp_grep(const std::string& line, const std::string& regexp_string)
   return (std::regex_search(line, m, r));
 }
 
-// Tries to find a part of line which matches the regexp_string.
-// similar to the grep-function in Unix shells.
+// Tries to find parts of line which matches the regexp_string.
 // The matching string(s) in line are put in the string-vector called matches.
 bool regexp_grep(const std::string& line, const std::string& regexp_string, std::vector<std::string>& matches)
 {
@@ -377,7 +447,7 @@ std::string cut(const std::string& s, char delim, uint64_t field_number)
   return tokens[field_number - 1];
 }
 
-// Split where delimiter consists of multiple chars
+// Split when delimiter consists of multiple chars
 std::vector<std::string> split(const std::string& input, std::string& delimiter)
 {
   std::istringstream ss(input);
@@ -551,10 +621,10 @@ std::string to_binary_board(uint64_t in)
 
 bool question_to_user(const std::string& question, std::string regexp_correct_answer)
 {
-  std::string answer;
+  std::string the_answer;
   std::cout << question;
   std::cin >> answer;
-  return regexp_match(answer, regexp_correct_answer);
+  return regexp_match(the_answer, regexp_correct_answer);
 }
 
 std::string user_input(const std::string& message)

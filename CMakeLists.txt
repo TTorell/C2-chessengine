@@ -2,28 +2,37 @@ cmake_minimum_required(VERSION 3.20)
 
 set( CMAKE_VERBOSE_MAKEFILE TRUE )
 
+cmake_policy(SET CMP0145 NEW)
+
+
 # set the project name
-project(C2-chessengine VERSION 1.0)
+project(C2-chessengine LANGUAGES CXX)
 
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(SOURCE_FILES
-    ${PROJECT_SOURCE_DIR}/src/bitboard.cpp
-    ${PROJECT_SOURCE_DIR}/src/bitboard_make_move.cpp
-    ${PROJECT_SOURCE_DIR}/src/bitboard_movegen.cpp
-    ${PROJECT_SOURCE_DIR}/src/bitboard_with_utils.cpp
-    ${PROJECT_SOURCE_DIR}/src/chessfuncs.cpp
-    ${PROJECT_SOURCE_DIR}/src/cmd_line.cpp
-    ${PROJECT_SOURCE_DIR}/src/game.cpp
-    ${PROJECT_SOURCE_DIR}/src/shared_ostream.cpp
-)
-
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+include(CTest)
+
+configure_file(C2Config.h.in C2Config.h)
+
+# set output directories for all builds (Debug, Release, etc.)
+#foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
+#    string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
+#    set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/lib ) # lib.a
+#    set( CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/lib ) # lib.so
+#    set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/bin ) # binaries
+#endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
+
+set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib ) # lib.a
+set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib ) # lib.so
+set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin ) # binaries
+
+# specify compiler flags
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest /W4")
     # Default debug flags are OK in windows 
@@ -44,14 +53,9 @@ else()
     endif()
 endif()
 
-# add the executable
-add_executable(C2-chessengine ${PROJECT_SOURCE_DIR}/src/C2.cpp ${SOURCE_FILES})
-
-# add test executable
-add_executable(C2-chessengine_test ${PROJECT_SOURCE_DIR}/tests/test.cpp ${SOURCE_FILES})
-
 if(UNIX AND NOT APPLE)
     # for Linux, BSD, Solaris, Minix
+
     # target_link_libraries(C2-chessengine pthread)
     # is  defined with -pthread compiler-flag instead
     
@@ -67,11 +71,10 @@ else()
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:10000")
 endif()
 
-#configure_file(C2Config.h.in C2Config.h)
+enable_testing()
 
-target_include_directories(C2-chessengine PUBLIC
-                           "${PROJECT_BINARY_DIR}"
-                           )
+add_subdirectory(src)
+add_subdirectory(tests)
 
 # To have a look at the CMake variables:
 get_cmake_property(_variableNames VARIABLES)

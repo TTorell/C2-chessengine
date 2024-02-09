@@ -18,20 +18,34 @@
 #include "../src/uci.hpp"
 
 using namespace C2_chess;
-
+namespace fs = std::filesystem;
 namespace // file private namespace
 {
 Current_time steady_clock;
 std::ofstream ofs(get_logfile_name());
 Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
+const fs::path project_root_dir(""s + getenv("HOME") + "/eclipse-workspace/C2-chessengine");
+const fs::path test_pos_filename(project_root_dir.string() + "/tests/test_positions/FEN_test_positions.txt");
+const fs::path perft_suite_filename(project_root_dir.string() + "/tests/test_positions/perftsuite.epd");
+
+// void cd_project_root_dir()
+// {
+//   // setting current working directory
+//   fs::current_path(project_root_dir);
+//   REQUIRE(fs::current_path().string() == project_root_dir);  
+// }
 
 std::string get_FEN_test_position(unsigned int n)
 {
-  std::string line;
-  std::string filename = "tests/test_positions/FEN_test_positions.txt";
-  std::ifstream ifs(filename);
+  // auto path = std::filesystem::current_path(); // getting path
+  
+  // set current working directory
+  //cd_project_root_dir();
+
+  std::ifstream ifs(test_pos_filename);
   REQUIRE(ifs.is_open());
   unsigned int testnum = 1;
+  std::string line;
   while (std::getline(ifs, line))
   {
     // Skip empty lines and lines starting with a blank.
@@ -42,7 +56,7 @@ std::string get_FEN_test_position(unsigned int n)
       // In this case each line in FEN_test_positions.txt contains the FEN-string
       // followed by a list of all legal moves in the position at the end.
       // Extract the actual FEN_string:
-      // Match the first 6 tokens in the string.
+      // Match the first 6 tokens in the std::string line.
       std::vector<std::string> matches;
       regexp_grep(line, "^([^\\s]+\\s){5}[^\\s]+", matches);
       return matches[0];
@@ -118,14 +132,14 @@ TEST_CASE("perft_test") // A thorough move-generation test with public test-data
   uint64_t timediff;
   //nst bool init_pieces = true;
   const bool same_line = true;
-  std::string line;
-  std::string filename = "tests/test_positions/perftsuite.epd";
-  std::ifstream ifs(filename);
+  std::cout << perft_suite_filename.string() << std::endl;
+  std::ifstream ifs(perft_suite_filename.string());
   REQUIRE(ifs.is_open());
   std::vector<unsigned int> failed_testcases;
   std::vector<std::string> input_vector;
   unsigned int testnum = 1;
-
+  
+  std::string line;
   while (std::getline(ifs, line))
   {
     bool failed = false;
@@ -192,12 +206,11 @@ TEST_CASE("move_generation")
   std::cout << "or you can add a new test-position by entering its" << std::endl;
   std::cout << "filename, testpos72.pgn for instance." << std::endl;
   std::cout << "Entering all will test all test-positions. " << std::endl;
-  std::cout << "Your choice: ";
+  auto Answer = ask_for_input_with_timeout("Your choice: ");
   std::cin >> arg;
   steady_clock.tic();
-  const char* const preferred_test_exec_dir = "/home/torsten/eclipse-workspace/C2-chessengine";
-  REQUIRE(check_execution_dir(preferred_test_exec_dir));
   Bitboard_with_utils chessboard;
+
   chessboard.init();
   unsigned int single_testnum = 0;
   if (arg != "" && arg != "all")
@@ -773,7 +786,7 @@ TEST_CASE("evaluation, mate and stalemate")
 
 TEST_CASE("find_best_move")
 {
-  logfile << "TEST STARTED find_best_move" << "\n";
+  logfile << "TEST STARTED find_best_move"s << "\n";
   Config_params config_params;
   config_params.set_config_param("max_search_depth", "6");
   Game game(config_params);

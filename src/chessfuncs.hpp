@@ -413,5 +413,7 @@ bool question_to_user(const std::string& question, std::string regexp_correct_an
 std::string user_input(const std::string& message);
 std::string reverse_FEN_string(const std::string& FEN_string);
 std::vector<std::string> reverse_moves(const std::vector<std::string>& moves);
+std::string ask_for_input_with_timeout(const std::string& request);
+
 } // End namespace C2_chess
 #endif //CHESSFUNCS_HPP_
