@@ -16,6 +16,7 @@ Debug/
 Release/
 build/
 test/
+testing/
 src/out/
 *~
 /unit_test/
