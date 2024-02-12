@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
   {
     // Processing the GUI commands
 
-    using enum UCI_cmd;
+    //using enum UCI_cmd;
 
     command = input_buffer.get();
     if (command.empty())
