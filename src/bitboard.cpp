@@ -801,6 +801,7 @@ void Bitboard::takeback_from_state(const Takeback_state& tb_state)
   _has_castled[index(Color::White)] = tb_state.has_castled_w;
   _has_castled[index(Color::Black)] = tb_state.has_castled_b;
   _latest_move = tb_state.latest_move;
+  _search_ply = tb_state.search_ply;
 }
 
 void Bitboard::save_in_takeback_state(Takeback_state& tb_state) const
@@ -812,6 +813,7 @@ void Bitboard::save_in_takeback_state(Takeback_state& tb_state) const
   tb_state.has_castled_w = _has_castled[index(Color::White)];
   tb_state.has_castled_b = _has_castled[index(Color::Black)];
   tb_state.latest_move = _latest_move;
+  tb_state.search_ply = _search_ply;
 }
 
 float Bitboard::Quiesence_search(float alpha, float beta, uint8_t max_search_ply)
@@ -838,14 +840,14 @@ float Bitboard::Quiesence_search(float alpha, float beta, uint8_t max_search_ply
     alpha = score;
   }
 
-//search_ply++;
+  //search_ply++;
 
   Takeback_state tb_state;
   list_t movelist;
   find_legal_moves(movelist, Gentype::Captures_and_Promotions);
 
   auto move_score = -infinite;
-// Collect the best value from all possible "capture-moves"
+  // Collect the best value from all possible "capture-moves"
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
 
@@ -889,6 +891,18 @@ bool Bitboard::not_likely_in_zugswang()
   // If we have at least one "big piece" left, we are likely not in zugzwang.
   if (_own->pieces & ~_own->King & ~_own->Pawns)
     return true;
+  return false;
+}
+
+bool Bitboard::nullmove_conditions(const uint8_t search_depth)
+{
+  if (_search_ply >= 1 &&
+      (_latest_move.properties() & move_props_check) == 0 &&
+      not_likely_in_zugswang() &&
+      search_depth > 4)
+  {
+    return true;
+  }
   return false;
 }
 
@@ -945,15 +959,12 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
   // when our best alternative would in fact be to, illegally, do nothing.)
   Takeback_state tb_state;
   float nullmove_score = -infinite; // Must be lower than lowest evaluation
-  if (nullmove_pruning &&
-      _search_ply >= 1 &&
-      (_latest_move.properties() & move_props_check) == 0 &&
-      not_likely_in_zugswang() &&
-      search_depth > 4)
+
+  if (nullmove_pruning && nullmove_conditions(search_depth) == true)
   {
-    make_nullmove(tb_state, do_update_history);
-    nullmove_score = -negamax_with_pruning(-beta, -beta + 1, best_move, search_depth - 4, no_nullmove_pruning);
-    takeback_null_move(tb_state, do_update_history);
+    make_nullmove(tb_state, dont_update_history);
+    nullmove_score = -negamax_with_pruning(-beta, -beta + 1, best_move, 4, no_nullmove_pruning);
+    takeback_null_move(tb_state, dont_update_history);
     if (nullmove_score >= beta && fabs(nullmove_score) < 90.0F) // not mate
     {
       search_info.nullmove_cutoffs++;

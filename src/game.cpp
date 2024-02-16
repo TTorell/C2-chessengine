@@ -247,9 +247,9 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   // Best moves from the previous search depth will be searched first.
   // When searching incrementally we stop searching after movetime.
   // If movetime is zero we search infinitely until the GUI sends a stop command,
-  // or the predefined search-boards limit has been reached.
+  // or the predefined search-depth limit has been reached and finished.
 
-  // We will need some takeback-states for Quiescense-search too, so:
+  // We will need some search plies for Quiescense-search too, so:
   const unsigned int max_search_depth = std::min((N_SEARCH_PLIES_DEFAULT / 2), max_depth);
 
   Bitmove best_move;

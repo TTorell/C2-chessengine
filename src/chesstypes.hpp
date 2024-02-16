@@ -328,6 +328,7 @@ struct Takeback_state
     bool has_castled_w;
     bool has_castled_b;
     Bitmove latest_move;
+    uint8_t search_ply;
 };
 
 // constexpr is a way of telling the compiler

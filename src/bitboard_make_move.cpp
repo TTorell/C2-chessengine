@@ -277,6 +277,8 @@ void Bitboard::make_nullmove(Takeback_state& tb_state, const bool add_to_history
 {
   //write(std::cerr, Color::White);
   save_in_takeback_state(tb_state);
+  // reset search_ply for a new shorter search to begin
+  _search_ply = 0;
   if (_ep_square)
     clear_ep_square();
   _latest_move = NO_MOVE;
@@ -289,6 +291,7 @@ void Bitboard::make_nullmove(Takeback_state& tb_state, const bool add_to_history
   {
     history.add_position(_hash_tag);
   }
+    // We are inside a search operation. Increase search-ply.
   _search_ply++;
   //write(std::cerr, Color::White);
 }
@@ -311,7 +314,6 @@ void Bitboard::takeback_null_move(const Takeback_state& tb_state, const bool tak
   }
 
   takeback_from_state(tb_state);
-  _search_ply--;
 }
 
 void Bitboard::new_make_move(const Bitmove& m, Takeback_state& tb_state, const bool add_to_history)
@@ -615,7 +617,7 @@ void Bitboard::takeback_latest_move(const Takeback_state& tb_state, const bool t
 
   takeback_from_state(tb_state);
   // Decrease search-ply (in case we are inside a search operation).
-  _search_ply--;
+  // _search_ply--;
 }
 
 } // namespace C2_chess
