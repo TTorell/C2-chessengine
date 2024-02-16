@@ -206,7 +206,7 @@ Bitmove Game::find_best_move(float& score, unsigned int search_depth)
   _chessboard.get_search_info().score = score;
   if (_chessboard.get_side_to_move() == Color::White)
   {
-    if (best_move == NO_MOVE && is_close(score, -100.0F))
+    if (best_move == NO_MOVE && is_close(score, eval_min))
     {
       logfile << "White was check mated." << "\n"; // TODO
     }

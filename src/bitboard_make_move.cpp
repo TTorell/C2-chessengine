@@ -291,8 +291,9 @@ void Bitboard::make_nullmove(Takeback_state& tb_state, const bool add_to_history
   {
     history.add_position(_hash_tag);
   }
-    // We are inside a search operation. Increase search-ply.
-  _search_ply++;
+  
+  // We are inside a search operation. Increase search-ply.
+  //_search_ply++;
   //write(std::cerr, Color::White);
 }
 

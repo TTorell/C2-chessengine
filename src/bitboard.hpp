@@ -247,8 +247,8 @@ class Bitboard
     float Quiesence_search(float alpha, float beta, uint8_t max_search_ply);
 
     bool not_likely_in_zugswang();
-    
-    bool nullmove_conditions(const uint8_t search_depth);
+
+    bool nullmove_conditions_OK(const uint8_t search_depth);
 
   public:
 

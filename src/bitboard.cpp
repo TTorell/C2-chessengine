@@ -894,12 +894,11 @@ bool Bitboard::not_likely_in_zugswang()
   return false;
 }
 
-bool Bitboard::nullmove_conditions(const uint8_t search_depth)
+bool Bitboard::nullmove_conditions_OK(const uint8_t search_depth)
 {
-  if (_search_ply >= 1 &&
+  if (search_depth - _search_ply >= 4 &&
       (_latest_move.properties() & move_props_check) == 0 &&
-      not_likely_in_zugswang() &&
-      search_depth > 4)
+      not_likely_in_zugswang())
   {
     return true;
   }
@@ -913,7 +912,7 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
   assert(beta > alpha);
 
   best_move = NO_MOVE;
-  if (_search_ply >= search_depth)
+  if (_search_ply >= search_depth) // TODO: isn't a check for equality enough?
   {
     // Quiescence search.
     // It takes over the searching and the node counting from here,
@@ -960,10 +959,10 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
   Takeback_state tb_state;
   float nullmove_score = -infinite; // Must be lower than lowest evaluation
 
-  if (nullmove_pruning && nullmove_conditions(search_depth) == true)
+  if (nullmove_pruning && nullmove_conditions_OK(search_depth))
   {
     make_nullmove(tb_state, dont_update_history);
-    nullmove_score = -negamax_with_pruning(-beta, -beta + 1, best_move, 4, no_nullmove_pruning);
+    nullmove_score = -negamax_with_pruning(-beta, -beta + 1.0F, best_move, search_depth - _search_ply - 4, no_nullmove_pruning);
     takeback_null_move(tb_state, dont_update_history);
     if (nullmove_score >= beta && fabs(nullmove_score) < 90.0F) // not mate
     {
