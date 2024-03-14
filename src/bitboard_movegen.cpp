@@ -5,14 +5,15 @@
  *      Author: torsten
  */
 #include "bitboard.hpp"
+#include "chessfuncs.hpp"
 #include "chesstypes.hpp"
-#include "current_time.hpp"
+//#include "current_time.hpp"
 #include "transposition_table.hpp"
 
 namespace C2_chess
 {
 
-void Bitboard::find_long_castling(list_ref movelist) const
+void Bitboard::find_long_castling(list_ref movelist, const int search_ply) const
 {
   uint64_t King_initial_square = (_side_to_move == Color::White) ? e1_square : e8_square;
   if (_castling_rights & ((_side_to_move == Color::White) ? castling_right_WQ : castling_right_BQ))
@@ -29,11 +30,11 @@ void Bitboard::find_long_castling(list_ref movelist) const
       if (square_is_threatened(popright_square(castling_empty_squares), false))
         return;
     }
-    add_move(movelist, Piecetype::King, Piecetype::Undefined, move_props_castling, King_initial_square, King_initial_square << 2);
+    add_move(search_ply, movelist, Piecetype::King, Piecetype::Undefined, move_props_castling, King_initial_square, King_initial_square << 2);
   }
 }
 
-void Bitboard::find_short_castling(list_ref movelist) const
+void Bitboard::find_short_castling(list_ref movelist, const int search_ply) const
 {
   uint64_t King_initial_square = (_side_to_move == Color::White) ? e1_square : e8_square;
   if (_castling_rights & ((_side_to_move == Color::White) ? castling_right_WK : castling_right_BK))
@@ -46,7 +47,7 @@ void Bitboard::find_short_castling(list_ref movelist) const
       if (square_is_threatened(popright_square(castling_empty_squares), false))
         return;
     }
-    add_move(movelist, Piecetype::King, Piecetype::Undefined, move_props_castling, King_initial_square, King_initial_square >> 2);
+    add_move(search_ply, movelist, Piecetype::King, Piecetype::Undefined, move_props_castling, King_initial_square, King_initial_square >> 2);
   }
 }
 
@@ -84,7 +85,7 @@ uint64_t Bitboard::find_legal_squares(uint64_t sq, uint64_t mask) const
     return ((left_blocker - one) | other_color_blockers) & mask;
 }
 
-void Bitboard::find_Queen_Rook_and_Bishop_moves(list_ref movelist, Gentype gt) const
+void Bitboard::find_Queen_Rook_and_Bishop_moves(list_ref movelist, Gentype gt, const int search_ply) const
 {
   uint64_t from_square;
   uint64_t to_square;
@@ -124,22 +125,22 @@ void Bitboard::find_Queen_Rook_and_Bishop_moves(list_ref movelist, Gentype gt) c
     {
       to_square = popright_square(legal_squares);
       if (to_square & _other->pieces)
-        add_move(movelist, p_type, get_piece_type(to_square), move_props_capture, from_square, to_square);
+        add_move(search_ply, movelist, p_type, get_piece_type(to_square), move_props_capture, from_square, to_square);
       else
-        add_move(movelist, p_type, Piecetype::Undefined, move_props_none, from_square, to_square);
+        add_move(search_ply, movelist, p_type, Piecetype::Undefined, move_props_none, from_square, to_square);
     }
   }
 }
 
-void Bitboard::find_legal_moves_for_pinned_pieces(list_ref movelist, Gentype gt) const
+void Bitboard::find_legal_moves_for_pinned_pieces(list_ref movelist, Gentype gt,const int search_ply) const
 {
   // Pinned Pawns have been taken care of elsewhere.
   assert(_pinned_pieces & ~_own->Pawns); // Pinned Pawns have been taken care of.
   uint64_t from_square;
   uint64_t to_square;
   uint64_t legal_squares = zero;
-  uint64_t King_file_idx = file_idx(_own->King);
-  uint64_t King_rank_idx = rank_idx(_own->King);
+  uint8_t King_file_idx = file_idx(_own->King);
+  uint8_t King_rank_idx = rank_idx(_own->King);
   uint64_t pieces = (_own->Queens | _own->Rooks | _own->Bishops) & _pinned_pieces;
   while (pieces)
   {
@@ -185,14 +186,14 @@ void Bitboard::find_legal_moves_for_pinned_pieces(list_ref movelist, Gentype gt)
     {
       to_square = popright_square(legal_squares);
       if (to_square & _other->pieces)
-        add_move(movelist, p_type, get_piece_type(to_square), move_props_capture, from_square, to_square);
+        add_move(search_ply, movelist, p_type, get_piece_type(to_square), move_props_capture, from_square, to_square);
       else
-        add_move(movelist, p_type, Piecetype::Undefined, move_props_none, from_square, to_square);
+        add_move(search_ply, movelist, p_type, Piecetype::Undefined, move_props_none, from_square, to_square);
     }
   }
 }
 
-void Bitboard::find_Knight_moves(list_ref movelist, Gentype gt) const
+void Bitboard::find_Knight_moves(list_ref movelist, Gentype gt, const int search_ply) const
 {
   uint64_t from_square;
   uint64_t to_square;
@@ -210,9 +211,9 @@ void Bitboard::find_Knight_moves(list_ref movelist, Gentype gt) const
         {
           to_square = popright_square(to_squares);
           if (to_square & _other->pieces)
-            add_move(movelist, Piecetype::Knight, get_piece_type(to_square), move_props_capture, from_square, to_square);
+            add_move(search_ply, movelist, Piecetype::Knight, get_piece_type(to_square), move_props_capture, from_square, to_square);
           else
-            add_move(movelist, Piecetype::Knight, Piecetype::Undefined, move_props_none, from_square, to_square);
+            add_move(search_ply, movelist, Piecetype::Knight, Piecetype::Undefined, move_props_none, from_square, to_square);
         }
       }
       else
@@ -221,7 +222,7 @@ void Bitboard::find_Knight_moves(list_ref movelist, Gentype gt) const
         while (to_squares)
         {
           to_square = popright_square(to_squares);
-          add_move(movelist, Piecetype::Knight, get_piece_type(to_square), move_props_capture, from_square, to_square);
+          add_move(search_ply, movelist, Piecetype::Knight, get_piece_type(to_square), move_props_capture, from_square, to_square);
         }
 
       }
@@ -229,12 +230,12 @@ void Bitboard::find_Knight_moves(list_ref movelist, Gentype gt) const
   }
 }
 
-void Bitboard::find_Pawn_moves(list_ref movelist, Gentype gt) const
+void Bitboard::find_Pawn_moves(list_ref movelist, Gentype gt, const int search_ply) const
 {
   uint64_t to_square;
   uint64_t moved_pawns;
-  uint64_t King_file_idx = file_idx(_own->King);
-  uint64_t King_rank_idx = rank_idx(_own->King);
+  uint8_t King_file_idx = file_idx(_own->King);
+  uint8_t King_rank_idx = rank_idx(_own->King);
   uint64_t King_file = file[King_file_idx];
   uint64_t King_diagonal = to_diagonal(King_file_idx, King_rank_idx);
   uint64_t King_anti_diagonal = to_anti_diagonal(King_file_idx, King_rank_idx);
@@ -250,7 +251,7 @@ void Bitboard::find_Pawn_moves(list_ref movelist, Gentype gt) const
     while (pawns)
     {
       to_square = popright_square(pawns);
-      add_pawn_move_check_promotion(movelist, (_side_to_move == Color::White) ? to_square << 8 : to_square >> 8, to_square);
+      add_pawn_move_check_promotion(movelist, (_side_to_move == Color::White) ? to_square << 8 : to_square >> 8, to_square, search_ply);
     }
     // Check if any of the moved pawns can take another step forward
     if (moved_pawns)
@@ -259,7 +260,7 @@ void Bitboard::find_Pawn_moves(list_ref movelist, Gentype gt) const
       while (moved_pawns)
       {
         to_square = popright_square(moved_pawns);
-        add_move(movelist, Piecetype::Pawn, Piecetype::Undefined, move_props_none, (_side_to_move == Color::White) ? to_square << 16 : to_square >> 16, to_square);
+        add_move(search_ply, movelist, Piecetype::Pawn, Piecetype::Undefined, move_props_none, (_side_to_move == Color::White) ? to_square << 16 : to_square >> 16, to_square);
       }
     }
   }
@@ -270,7 +271,7 @@ void Bitboard::find_Pawn_moves(list_ref movelist, Gentype gt) const
     while (pawns)
     {
       to_square = popright_square(pawns);
-      add_pawn_move_check_promotion(movelist, (_side_to_move == Color::White) ? to_square << 8 : to_square >> 8, to_square);
+      add_pawn_move_check_promotion(movelist, (_side_to_move == Color::White) ? to_square << 8 : to_square >> 8, to_square, search_ply);
     }
   }
 
@@ -282,9 +283,9 @@ void Bitboard::find_Pawn_moves(list_ref movelist, Gentype gt) const
   {
     to_square = popright_square(moved_pawns);
     if (to_square & _other->pieces)
-      add_pawn_move_check_promotion(movelist, (_side_to_move == Color::White) ? to_square << 9 : to_square >> 9, to_square);
+      add_pawn_move_check_promotion(movelist, (_side_to_move == Color::White) ? to_square << 9 : to_square >> 9, to_square, search_ply);
     else if (to_square == _ep_square)
-      try_adding_ep_pawn_move(movelist, (_side_to_move == Color::White) ? to_square << 9 : to_square >> 9);
+      try_adding_ep_pawn_move(movelist, (_side_to_move == Color::White) ? to_square << 9 : to_square >> 9, search_ply);
   }
   pawns = _own->Pawns & ~(_pinned_pieces & ~King_anti_diagonal);
   moved_pawns = (_side_to_move == Color::White) ? (pawns >> 7) & not_h_file : (pawns << 7) & not_a_file;
@@ -292,32 +293,32 @@ void Bitboard::find_Pawn_moves(list_ref movelist, Gentype gt) const
   {
     to_square = popright_square(moved_pawns);
     if (to_square & _other->pieces)
-      add_pawn_move_check_promotion(movelist, (_side_to_move == Color::White) ? to_square << 7 : to_square >> 7, to_square);
+      add_pawn_move_check_promotion(movelist, (_side_to_move == Color::White) ? to_square << 7 : to_square >> 7, to_square, search_ply);
     else if (to_square == _ep_square)
-      try_adding_ep_pawn_move(movelist, (_side_to_move == Color::White) ? to_square << 7 : to_square >> 7);
+      try_adding_ep_pawn_move(movelist, (_side_to_move == Color::White) ? to_square << 7 : to_square >> 7, search_ply);
   }
 }
 
-void Bitboard::find_normal_legal_moves(list_ref movelist, Gentype gt) const
+void Bitboard::find_normal_legal_moves(list_ref movelist, Gentype gt, const int search_ply) const
 {
-  find_Pawn_moves(movelist, gt);
-  find_Knight_moves(movelist, gt);
+  find_Pawn_moves(movelist, gt, search_ply);
+  find_Knight_moves(movelist, gt, search_ply);
   if (_pinned_pieces & ~_own->Pawns)
-    find_legal_moves_for_pinned_pieces(movelist, gt);
-  find_Queen_Rook_and_Bishop_moves(movelist, gt);
+    find_legal_moves_for_pinned_pieces(movelist, gt, search_ply);
+  find_Queen_Rook_and_Bishop_moves(movelist, gt, search_ply);
   if (gt == Gentype::All)
   {
     if ((_side_to_move == Color::White && _own->King == e1_square) || (_side_to_move == Color::Black && _own->King == e8_square))
     {
-      find_short_castling(movelist);
-      find_long_castling(movelist);
+      find_short_castling(movelist, search_ply);
+      find_long_castling(movelist, search_ply);
     }
   }
   // Other King-moves have already been taken care of.
 
 }
 
-void Bitboard::find_Knight_moves_to_square(list_ref movelist, const uint64_t to_square) const
+void Bitboard::find_Knight_moves_to_square(list_ref movelist, const uint64_t to_square, const int search_ply) const
 {
   assert(to_square & ~_own->pieces);
   if (_own->Knights)
@@ -329,9 +330,9 @@ void Bitboard::find_Knight_moves_to_square(list_ref movelist, const uint64_t to_
       if (knight & ~_pinned_pieces)
       {
         if (to_square & _other->pieces)
-          add_move(movelist, Piecetype::Knight, get_piece_type(to_square), move_props_capture, knight, to_square);
+          add_move(search_ply, movelist, Piecetype::Knight, get_piece_type(to_square), move_props_capture, knight, to_square);
         else
-          add_move(movelist, Piecetype::Knight, Piecetype::Undefined, move_props_none, knight, to_square);
+          add_move(search_ply, movelist, Piecetype::Knight, Piecetype::Undefined, move_props_none, knight, to_square);
       }
     }
   }
@@ -403,7 +404,7 @@ bool Bitboard::check_if_other_pawn_is_pinned_ep(uint64_t other_pawn_square, uint
 // - _ep_square may not be OL.
 // - from square must be located such that ep_capture
 //   to _ep_square is possible.
-void Bitboard::try_adding_ep_pawn_move(list_ref movelist, uint64_t from_square) const
+void Bitboard::try_adding_ep_pawn_move(list_ref movelist, uint64_t from_square, const int search_ply) const
 {
   assert(
       std::has_single_bit(from_square) && _ep_square
@@ -426,7 +427,7 @@ void Bitboard::try_adding_ep_pawn_move(list_ref movelist, uint64_t from_square) 
       if (check_if_other_pawn_is_pinned_ep(other_pawn_square, from_square))
         return;
     }
-    add_move(movelist, Piecetype::Pawn, Piecetype::Pawn, move_props_capture | move_props_en_passant, from_square, _ep_square);
+    add_move(search_ply, movelist, Piecetype::Pawn, Piecetype::Pawn, move_props_capture | move_props_en_passant, from_square, _ep_square);
   }
   else
   {
@@ -435,13 +436,13 @@ void Bitboard::try_adding_ep_pawn_move(list_ref movelist, uint64_t from_square) 
     if (_ep_square & (to_diagonal(_own->King) | to_anti_diagonal(_own->King)))
     {
       // No need to check if other_pawn is pinned, it can't be.
-      add_move(movelist, Piecetype::Pawn, Piecetype::Pawn, move_props_capture | move_props_en_passant, from_square, _ep_square);
+      add_move(search_ply, movelist, Piecetype::Pawn, Piecetype::Pawn, move_props_capture | move_props_en_passant, from_square, _ep_square);
     }
   }
 }
 
 // Adding Pawn move considering promotion of the Pawn.
-void Bitboard::add_pawn_move_check_promotion(list_ref movelist, uint64_t from_square, uint64_t to_square) const
+void Bitboard::add_pawn_move_check_promotion(list_ref movelist, uint64_t from_square, uint64_t to_square, const int search_ply) const
 {
   assert(std::has_single_bit(from_square) && (from_square & _own->Pawns) && std::has_single_bit(to_square));
 
@@ -452,11 +453,11 @@ void Bitboard::add_pawn_move_check_promotion(list_ref movelist, uint64_t from_sq
     {
       // To empty squares we only allow "straight" pawn-moves. (or e.p., already taken care of)
       if (to_square == (_side_to_move == Color::White) ? from_square >> 8 : from_square << 8)
-        add_move(movelist, Piecetype::Pawn, Piecetype::Undefined, move_props_none, from_square, to_square);
+        add_move(search_ply, movelist, Piecetype::Pawn, Piecetype::Undefined, move_props_none, from_square, to_square);
     }
     else if (to_square & _other->pieces)
     {
-      add_move(movelist, Piecetype::Pawn, get_piece_type(to_square), move_props_capture, from_square, to_square);
+      add_move(search_ply, movelist, Piecetype::Pawn, get_piece_type(to_square), move_props_capture, from_square, to_square);
     }
   }
   else
@@ -469,16 +470,16 @@ void Bitboard::add_pawn_move_check_promotion(list_ref movelist, uint64_t from_sq
       move_props |= move_props_capture;
       capture_p_type = get_piece_type(to_square);
     }
-    add_move(movelist, Piecetype::Pawn, capture_p_type, move_props, from_square, to_square, Piecetype::Bishop);
-    add_move(movelist, Piecetype::Pawn, capture_p_type, move_props, from_square, to_square, Piecetype::Knight);
-    add_move(movelist, Piecetype::Pawn, capture_p_type, move_props, from_square, to_square, Piecetype::Rook);
-    add_move(movelist, Piecetype::Pawn, capture_p_type, move_props, from_square, to_square); // Queen
+    add_move(search_ply, movelist, Piecetype::Pawn, capture_p_type, move_props, from_square, to_square, Piecetype::Bishop);
+    add_move(search_ply, movelist, Piecetype::Pawn, capture_p_type, move_props, from_square, to_square, Piecetype::Knight);
+    add_move(search_ply, movelist, Piecetype::Pawn, capture_p_type, move_props, from_square, to_square, Piecetype::Rook);
+    add_move(search_ply, movelist, Piecetype::Pawn, capture_p_type, move_props, from_square, to_square); // Queen
   }
 }
 
 // preconditions:
 // - to_square should be empty
-void Bitboard::find_pawn_moves_to_empty_square(list_ref movelist, uint64_t to_square, Gentype gt) const
+void Bitboard::find_pawn_moves_to_empty_square(list_ref movelist, uint64_t to_square, Gentype gt, const int search_ply) const
 {
   assert(std::has_single_bit(to_square) && is_empty_square(to_square));
   uint64_t from_square;
@@ -490,7 +491,7 @@ void Bitboard::find_pawn_moves_to_empty_square(list_ref movelist, uint64_t to_sq
     // color _col_to_move, which isn't pinned. (for pins along the file see elsewhere)
     if ((from_square & _own->Pawns) && is_not_pinned(from_square))
     {
-      add_pawn_move_check_promotion(movelist, from_square, to_square);
+      add_pawn_move_check_promotion(movelist, from_square, to_square, search_ply);
     }
     else if (is_empty_square(from_square) && (to_square & ((_side_to_move == Color::White) ? row_4 : row_5)))
     {
@@ -499,7 +500,7 @@ void Bitboard::find_pawn_moves_to_empty_square(list_ref movelist, uint64_t to_sq
       (_side_to_move == Color::White) ? from_square <<= 8 : from_square >>= 8; // second step
       if ((from_square & _own->Pawns) && is_not_pinned(from_square))
       {
-        add_move(movelist, Piecetype::Pawn, Piecetype::Undefined, move_props_none, from_square, to_square);
+        add_move(search_ply, movelist, Piecetype::Pawn, Piecetype::Undefined, move_props_none, from_square, to_square);
       }
     }
   }
@@ -513,7 +514,7 @@ void Bitboard::find_pawn_moves_to_empty_square(list_ref movelist, uint64_t to_sq
       // color _side_to_move, which isn't pinned.
       if ((from_square & _own->Pawns) && is_not_pinned(from_square))
       {
-        add_pawn_move_check_promotion(movelist, from_square, to_square);
+        add_pawn_move_check_promotion(movelist, from_square, to_square, search_ply);
       }
     }
   }
@@ -526,19 +527,19 @@ void Bitboard::find_pawn_moves_to_empty_square(list_ref movelist, uint64_t to_sq
     {
       from_square = (_side_to_move == Color::White) ? _ep_square << 7 : _ep_square >> 9;
       if (from_square & _own->Pawns)
-        try_adding_ep_pawn_move(movelist, from_square);
+        try_adding_ep_pawn_move(movelist, from_square, search_ply);
     }
     if (_ep_square & not_a_file)
     {
       from_square = (_side_to_move == Color::White) ? _ep_square << 9 : _ep_square >> 7;
       if (from_square & _own->Pawns)
-        try_adding_ep_pawn_move(movelist, from_square);
+        try_adding_ep_pawn_move(movelist, from_square, search_ply);
     }
   }
 }
 
 // The following method doesn't consider possible King-moves to square
-void Bitboard::find_moves_to_square(list_ref movelist, uint64_t to_square, Gentype gt) const
+void Bitboard::find_moves_to_square(list_ref movelist, uint64_t to_square, Gentype gt, const int search_ply) const
 {
   assert((to_square & ~_own->pieces) && std::has_single_bit(to_square));
   uint64_t from_square;
@@ -547,7 +548,7 @@ void Bitboard::find_moves_to_square(list_ref movelist, uint64_t to_square, Genty
   uint64_t between_squares;
   if (to_square & ~_all_pieces)
   {
-    find_pawn_moves_to_empty_square(movelist, to_square, gt);
+    find_pawn_moves_to_empty_square(movelist, to_square, gt, search_ply);
   }
   else if (to_square & _other->pieces)
   {
@@ -556,19 +557,19 @@ void Bitboard::find_moves_to_square(list_ref movelist, uint64_t to_square, Genty
     {
       from_square = (_side_to_move == Color::White) ? to_square << 7 : to_square >> 9;
       if ((from_square & _own->Pawns) && is_not_pinned(from_square))
-        add_pawn_move_check_promotion(movelist, from_square, to_square);
+        add_pawn_move_check_promotion(movelist, from_square, to_square, search_ply);
     }
     if (to_square & not_a_file)
     {
       from_square = (_side_to_move == Color::White) ? to_square << 9 : to_square >> 7;
       if ((from_square & _own->Pawns) && is_not_pinned(from_square))
-        add_pawn_move_check_promotion(movelist, from_square, to_square);
+        add_pawn_move_check_promotion(movelist, from_square, to_square, search_ply);
     }
   }
 
   if (gt == Gentype::All || (to_square & _other->pieces))
   {
-    find_Knight_moves_to_square(movelist, to_square);
+    find_Knight_moves_to_square(movelist, to_square, search_ply);
 
     // Check file and rank
     uint64_t Queens_or_Rooks = _own->Queens | _own->Rooks;
@@ -586,9 +587,9 @@ void Bitboard::find_moves_to_square(list_ref movelist, uint64_t to_square, Genty
           {
             Piecetype p_type = (move_candidate & _own->Queens) ? Piecetype::Queen : Piecetype::Rook;
             if (to_square & ~_all_pieces)
-              add_move(movelist, p_type, Piecetype::Undefined, move_props_none, move_candidate, to_square);
+              add_move(search_ply, movelist, p_type, Piecetype::Undefined, move_props_none, move_candidate, to_square);
             else if (to_square & _other->pieces)
-              add_move(movelist, p_type, get_piece_type(to_square), move_props_capture, move_candidate, to_square);
+              add_move(search_ply, movelist, p_type, get_piece_type(to_square), move_props_capture, move_candidate, to_square);
           }
         }
       }
@@ -610,9 +611,9 @@ void Bitboard::find_moves_to_square(list_ref movelist, uint64_t to_square, Genty
           {
             Piecetype p_type = (move_candidate & _own->Queens) ? Piecetype::Queen : Piecetype::Bishop;
             if (to_square & ~_all_pieces)
-              add_move(movelist, p_type, Piecetype::Undefined, move_props_none, move_candidate, to_square);
+              add_move(search_ply, movelist, p_type, Piecetype::Undefined, move_props_none, move_candidate, to_square);
             else if (to_square & _other->pieces)
-              add_move(movelist, p_type, get_piece_type(to_square), move_props_capture, move_candidate, to_square);
+              add_move(search_ply, movelist, p_type, get_piece_type(to_square), move_props_capture, move_candidate, to_square);
           }
         }
       }
@@ -620,7 +621,7 @@ void Bitboard::find_moves_to_square(list_ref movelist, uint64_t to_square, Genty
   }
 }
 
-void Bitboard::find_moves_after_check(list_ref movelist, Gentype gt) const
+void Bitboard::find_moves_after_check(list_ref movelist, Gentype gt, const int search_ply) const
 {
   assert(std::has_single_bit(_checkers));
   // All possible King-moves have already been found.
@@ -637,7 +638,7 @@ void Bitboard::find_moves_after_check(list_ref movelist, Gentype gt) const
       while (between_squares)
       {
         between_square = popright_square(between_squares);
-        find_moves_to_square(movelist, between_square, gt);
+        find_moves_to_square(movelist, between_square, gt, search_ply);
       }
     }
     else
@@ -650,14 +651,14 @@ void Bitboard::find_moves_after_check(list_ref movelist, Gentype gt) const
         while (between_squares)
         {
           between_square = popright_square(between_squares);
-          find_moves_to_square(movelist, between_square, gt);
+          find_moves_to_square(movelist, between_square, gt, search_ply);
         }
       }
     }
   }
 
   // Can we take the checking piece?
-  find_moves_to_square(movelist, _checkers, gt);
+  find_moves_to_square(movelist, _checkers, gt, search_ply);
 
   // Also check if the checker is a Pawn which can be taken e.p.
   if (_ep_square & ((_side_to_move == Color::White) ? _checkers >> 8 : _checkers << 8))
@@ -666,13 +667,13 @@ void Bitboard::find_moves_after_check(list_ref movelist, Gentype gt) const
     {
       uint64_t from_square = (_side_to_move == Color::White) ? _ep_square << 9 : _ep_square >> 7;
       if (from_square & _own->Pawns)
-        try_adding_ep_pawn_move(movelist, from_square);
+        try_adding_ep_pawn_move(movelist, from_square, search_ply);
     }
     if (_ep_square & not_h_file)
     {
       uint64_t from_square = (_side_to_move == Color::White) ? _ep_square << 7 : _ep_square >> 9;
       if (from_square & _own->Pawns)
-        try_adding_ep_pawn_move(movelist, from_square);
+        try_adding_ep_pawn_move(movelist, from_square, search_ply);
     }
   }
 }
@@ -897,7 +898,7 @@ bool Bitboard::square_is_threatened2(uint64_t to_square, bool King_is_asking) co
 }
 
 // Finds normal King-moves not including castling.
-inline void Bitboard::find_king_moves(list_ref movelist, Gentype gt) const
+inline void Bitboard::find_king_moves(list_ref movelist, Gentype gt, const int search_ply) const
 {
   uint64_t king_moves = adjust_pattern(king_pattern, _own->King);
   switch (gt)
@@ -911,9 +912,9 @@ inline void Bitboard::find_king_moves(list_ref movelist, Gentype gt) const
         {
           // Found a valid King move
           if (to_square & _other->pieces)
-            add_move(movelist, Piecetype::King, get_piece_type(to_square), move_props_capture, _own->King, to_square);
+            add_move(search_ply, movelist, Piecetype::King, get_piece_type(to_square), move_props_capture, _own->King, to_square);
           else
-            add_move(movelist, Piecetype::King, Piecetype::Undefined, move_props_none, _own->King, to_square);
+            add_move(search_ply, movelist, Piecetype::King, Piecetype::Undefined, move_props_none, _own->King, to_square);
         }
       }
       break;
@@ -924,7 +925,7 @@ inline void Bitboard::find_king_moves(list_ref movelist, Gentype gt) const
       {
         uint64_t to_square = popright_square(king_moves);
         if (!square_is_threatened(to_square, true))
-          add_move(movelist, Piecetype::King, get_piece_type(to_square), move_props_capture, _own->King, to_square);
+          add_move(search_ply, movelist, Piecetype::King, get_piece_type(to_square), move_props_capture, _own->King, to_square);
       }
       break;
     default:
@@ -996,8 +997,7 @@ inline float Bitboard::get_piece_value(uint64_t square) const
 // A smaller, but still significant effect, giving the none-capture moves which
 // improves the value of alpha also gets a small value.
 
-inline void Bitboard::add_move(list_ref movelist, Piecetype p_type, Piecetype capture_p_type, uint16_t move_props, uint64_t from_square, uint64_t to_square,
-                               Piecetype promotion_p_type) const
+inline void Bitboard::add_move(const int search_ply, list_ref movelist, Piecetype p_type, Piecetype capture_p_type, uint16_t move_props, uint64_t from_square, uint64_t to_square, Piecetype promotion_p_type) const
 {
   Bitmove new_move(p_type, capture_p_type, move_props, from_square, to_square, promotion_p_type);
 
@@ -1016,13 +1016,13 @@ inline void Bitboard::add_move(list_ref movelist, Piecetype p_type, Piecetype ca
     }
 //  }
 
-  if (new_move == _beta_killers[0][_search_ply])
+  if (new_move == _beta_killers[0][search_ply])
   {
     new_move._evaluation = 900000.0;
     movelist.push_front(new_move);
     return;
   }
-  if (new_move == _beta_killers[1][_search_ply])
+  if (new_move == _beta_killers[1][search_ply])
   {
     new_move._evaluation = 800000.0;
     movelist.push_front(new_move);
@@ -1034,7 +1034,7 @@ inline void Bitboard::add_move(list_ref movelist, Piecetype p_type, Piecetype ca
     auto alpha_move_value = alpha_move_cash[index(_side_to_move)][index(p_type)][bit_idx(to_square)];
     if (alpha_move_value > 0)
     {
-      new_move._evaluation = alpha_move_value*0.001;
+      new_move._evaluation = static_cast<float>(alpha_move_value)*0.001F;
       movelist.push_front(new_move);
       return;
     }
@@ -1089,8 +1089,10 @@ inline void Bitboard::sort_moves(list_ref movelist) const
     std::stable_sort(movelist.begin(), end_it);
 }
 
-void Bitboard::find_legal_moves(list_ref movelist, Gentype gt)
+void Bitboard::find_legal_moves(list_ref movelist, Gentype gt, const int search_depth)
 {
+  int search_ply = _iteration_depth - search_depth;
+
   // What did the previous search have to say about best_move in this position?
   // Playing around. Testing that decltype(auto) also adds reference qualifier (and const/volatile),
   // which only "auto" wouldn't do.
@@ -1104,7 +1106,7 @@ void Bitboard::find_legal_moves(list_ref movelist, Gentype gt)
   //  typename2() gives a different output (maybe more detailed)
   //  std::cout << type_name2<decltype(start_position_FEN)>() << std::endl;
   //  // Gives "const std::basic_string<char>", which also seems OK.
-  if (tte.is_initialized() && tte._search_ply <= _search_ply)
+  if (tte.is_initialized() && tte._search_depth >= search_depth)
   {
     _previous_search_best_move = tte._best_move;
   }
@@ -1116,7 +1118,7 @@ void Bitboard::find_legal_moves(list_ref movelist, Gentype gt)
   init_piece_state();
   assert((_own->pieces & _other->pieces) == zero);
 
-  find_king_moves(movelist, gt);
+  find_king_moves(movelist, gt, search_ply);
   find_checkers_and_pinned_pieces();
   int n_checkers = std::popcount(_checkers);
   if (n_checkers > 1)
@@ -1133,7 +1135,7 @@ void Bitboard::find_legal_moves(list_ref movelist, Gentype gt)
     // the checking piece can be taken or if we
     // can put a piece in between that piece
     // and the King.
-    find_moves_after_check(movelist, gt);
+    find_moves_after_check(movelist, gt, search_ply);
     sort_moves(movelist);
     return;
   }
@@ -1142,7 +1144,7 @@ void Bitboard::find_legal_moves(list_ref movelist, Gentype gt)
     // Not a check. We're free to use all our
     // pieces, though some of them may be pinned
     // of course.
-    find_normal_legal_moves(movelist, gt);
+    find_normal_legal_moves(movelist, gt, search_ply);
   }
   sort_moves(movelist);
 }

@@ -7,14 +7,15 @@
 #ifndef Bitboard_with_utils_HPP_
 #define Bitboard_with_utils_HPP_
 
-#include <fstream>
+#include <deque>
 #include <vector>
 #include <string>
 #include "bitboard.hpp"
-#include "config_param.hpp"
 
 namespace C2_chess
 {
+
+using list_t = std::deque<Bitmove>;
 
 std::ostream& operator <<(std::ostream& os, const Bitmove& m);
 
@@ -105,9 +106,9 @@ class Bitboard_with_utils: public Bitboard
       _latest_move.add_property(move_props_stalemate);
     }
 
-    void set_search_ply(uint8_t search_ply)
+    void set_iteration_depth(const int iteration_depth)
     {
-      _search_ply = search_ply;
+      _iteration_depth = iteration_depth;
     }
 
     void set_draw_by_repetition()

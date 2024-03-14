@@ -7,11 +7,13 @@
 
 #ifndef SRC_UCI_HPP_
 #define SRC_UCI_HPP_
+#include <cstring>
 #include <string>
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 #include "circular_fifo.hpp"
-#include "magic_enum.hpp"
+//#include "magic_enum.hpp"
+#include "config_param.hpp"
 
 namespace C2_chess
 {
@@ -237,7 +239,7 @@ class UCI
         output_buffer.put("id name C2 experimental");
         output_buffer.put("id author Torsten Torell");
         // Tell GUI which parameters are configurable.
-        for (auto it : config_params.get_map())
+        for (auto it : config_params)
         {
           output_buffer.put(it.second.get_UCI_string_for_gui());
         }

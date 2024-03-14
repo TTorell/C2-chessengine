@@ -1,8 +1,6 @@
 #include <iostream>
 #include <sstream>
-#include <map>
-#include <thread>
-#include <chrono>
+#include <fstream>
 #include <cmath>
 #include "game.hpp"
 #include "current_time.hpp"
@@ -191,7 +189,7 @@ void Game::actions_after_a_move()
   }
 }
 
-Bitmove Game::find_best_move(float& score, unsigned int search_depth)
+Bitmove Game::find_best_move(float& score, const int search_depth, const bool nullmove_pruning)
 {
   Shared_ostream& logfile = *(Shared_ostream::get_instance());
   _chessboard.clear_search_info();
@@ -200,8 +198,7 @@ Bitmove Game::find_best_move(float& score, unsigned int search_depth)
   _chessboard.clear_transposition_table();
   Bitmove best_move;
   steady_clock.tic();
-  _chessboard.set_search_ply(0);
-  score = _chessboard.negamax_with_pruning(-infinite, infinite, best_move, search_depth);
+  score = _chessboard.new_negamax_with_pruning(-infinite, infinite, best_move, search_depth, nullmove_pruning);
   _chessboard.get_search_info().time_taken = steady_clock.toc_ms();
   _chessboard.get_search_info().score = score;
   if (_chessboard.get_side_to_move() == Color::White)
@@ -233,14 +230,14 @@ Bitmove Game::find_best_move(float& score, unsigned int search_depth)
   return best_move;
 }
 
-void Game::send_uci_info(unsigned int search_time_ms, const std::vector<Bitmove>& pv_line)
+void Game::send_uci_info(int search_time_ms, const std::vector<Bitmove>& pv_line)
 {
   auto info = _chessboard.get_search_info();
-  std::cout << "info score cp " << static_cast<int>(info.score * 100.0) << " depth " << info.max_search_depth << " nodes " << info.node_counter << " time " << search_time_ms
+  std::cout << "info score cp " << static_cast<int>(info.score * 100.0F) << " depth " << info.max_search_depth << " nodes " << info.node_counter << " time " << search_time_ms
             << " pv " << uci_pv_line(pv_line) << std::endl;
 }
 
-Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_depth)
+Bitmove Game::incremental_search(const double movetime_ms, const int max_depth, const bool nullmove_pruning)
 {
   // Incremental search, to have a best-move available as quickly
   // as possible and it actually saves search-time due to move-ordering.
@@ -250,7 +247,7 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   // or the predefined search-depth limit has been reached and finished.
 
   // We will need some search plies for Quiescense-search too, so:
-  const unsigned int max_search_depth = std::min((N_SEARCH_PLIES_DEFAULT / 2), max_depth);
+  const int max_search_depth = std::min((MAX_N_SEARCH_PLIES_DEFAULT / 2), max_depth);
 
   Bitmove best_move;
   Bitmove local_best_move; // Best move from a specific search-depth.
@@ -277,10 +274,11 @@ Bitmove Game::incremental_search(const double movetime_ms, unsigned int max_dept
   _chessboard.clear_transposition_table(Table::Both);
   _chessboard.clear_search_vars();
 
-  for (unsigned int search_depth = 1; search_depth <= max_search_depth; search_depth++)
+  for (int search_depth = 1; search_depth <= max_search_depth; search_depth++)
   {
     _chessboard.switch_tt_tables();
-    local_best_move = find_best_move(_score, search_depth);
+    _chessboard.set_iteration_depth(search_depth);
+    local_best_move = find_best_move(_score, search_depth, nullmove_pruning);
     // Has the search on this ply been aborted by time limit?
     if (local_best_move == SEARCH_HAS_BEEN_INTERRUPTED)
     {
@@ -332,16 +330,14 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
   // Shared_ostream& logfile = *(Shared_ostream::get_instance());
 
   // Default values only.
-  bool use_incremental_search = true;
-  unsigned int max_search_depth = 7;
+  //bool use_incremental_search = true;
+  //int max_search_depth = 7;
+  //bool nullmove_pruning = true;
 
   // Read some configuration parameters
-  std::string s = config_params.get_config_param("max_search_depth");
-  if (!s.empty())
-    max_search_depth = static_cast<unsigned int>(std::atoi(s.c_str()));
-  s = config_params.get_config_param("use_incremental_search");
-  if (!s.empty())
-    use_incremental_search = (s == "true");
+  auto max_search_depth = config_params.Get_config_value<int>("max_search_depth");
+  auto use_incremental_search = config_params.Get_config_value<bool>("use_incremental_search");
+  auto nullmove_pruning =  config_params.Get_config_value<bool>("use_nullmove_pruning");
 
   //_chessboard.init_material_evaluation(); // TODO: Should this be placed somewhere else, init_piece_state()?
 
@@ -350,7 +346,7 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
   {
     if (go_params.infinite == true)
     {
-      return incremental_search(0.0); // movetime should be zero here
+      return incremental_search(0.0, MAX_N_SEARCH_PLIES_DEFAULT/2, nullmove_pruning); // movetime should be zero here
     }
     else if (go_params.movetime > 0.0)
     {
@@ -359,11 +355,11 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
         // This is for testing, to get the same best_move from different computers,
         // and when running in debug-mode or not. Different search_depths may be reached
         // and give different results otherwise.
-        return incremental_search(go_params.movetime, max_search_depth);
+        return incremental_search(go_params.movetime, max_search_depth, nullmove_pruning);
       }
       else
       {
-        return incremental_search(go_params.movetime);
+        return incremental_search(go_params.movetime, MAX_N_SEARCH_PLIES_DEFAULT/2, nullmove_pruning);
       }
       //merge return incremental_search(go_params.movetime);
     }
@@ -376,19 +372,20 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
         moves_left_approx += 20;
       bool is_white_to_move = (_chessboard.get_side_to_move() == Color::White);
       double time = (is_white_to_move) ? go_params.wtime + moves_left_approx * go_params.winc : go_params.btime + moves_left_approx * go_params.binc;
-      return incremental_search(time / moves_left_approx);
+      return incremental_search(time / moves_left_approx, MAX_N_SEARCH_PLIES_DEFAULT/2, nullmove_pruning);
     }
     else
     {
-      return incremental_search(0.0);
+      return incremental_search(0.0, MAX_N_SEARCH_PLIES_DEFAULT/2, nullmove_pruning);
     }
   }
   else
   {
-    // Not incremental search, start searching directly at max_search_ply and stop when finished.
+    // Not incremental search, start searching directly at max_search_depth and stop when finished.
     // Ignore movetime.
     _chessboard.set_time_left(true);
-    Bitmove best_move = find_best_move(_score, max_search_depth);
+    _chessboard.set_iteration_depth(max_search_depth);
+    Bitmove best_move = find_best_move(_score, max_search_depth, nullmove_pruning);
     if (best_move.is_valid())
     {
       Takeback_state tb_state_dummy;

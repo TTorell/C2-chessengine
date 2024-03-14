@@ -6,6 +6,8 @@ src/.project
 .tracecompass/
 .vs
 .vscode/
+.cache/
+.clangd
 command_log.txt
 testlog.txt
 C2_log*

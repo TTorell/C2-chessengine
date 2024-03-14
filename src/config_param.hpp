@@ -14,6 +14,7 @@
 
 namespace C2_chess
 {
+
 class Config_param
 {
   protected:
@@ -70,35 +71,29 @@ class Config_param
     }
 };
 
-class Config_params
+class Config_params: public std::map<std::string, Config_param>
 {
   protected:
-    std::map<std::string, Config_param> _config_params;
+
 
   public:
-    Config_params() :
-        _config_params()
+    Config_params()
     {
       // This construct is just to not leakmemory
       Config_param p1("max_search_depth", "7", "spin", "7", "2", "8");
-      Config_param p2("use_pruning", "true", "check", "true");
+      Config_param p2("use_nullmove_pruning", "true", "check", "true");
       Config_param p3("use_incremental_search", "true", "check", "true");
       Config_param p4("search_until_no_captures", "false", "check", "false");
-      _config_params.insert(std::make_pair("max_search_depth", p1));
-      _config_params.insert(std::make_pair("use_pruning", p2));
-      _config_params.insert(std::make_pair("use_incremental_search", p3));
-      _config_params.insert(std::make_pair("search_until_no_captures", p4));
+      insert(std::make_pair("max_search_depth", p1));
+      insert(std::make_pair("use_pruning", p2));
+      insert(std::make_pair("use_incremental_search", p3));
+      insert(std::make_pair("search_until_no_captures", p4));
     }
 
-    std::map<std::string, Config_param> get_map() const
+    void set_config_param(const std::string &name, const std::string& value)
     {
-      return _config_params;
-    }
-
-    void set_config_param(const std::string &name, const std::string &value)
-    {
-      auto search = _config_params.find(name);
-      if (search != _config_params.end())
+      auto search = find(name);
+      if (search != end())
         search->second.set_value(value);
       else
       {
@@ -107,21 +102,61 @@ class Config_params
       }
     }
 
-    std::string get_config_param(const std::string &name) const
+    std::string get_config_param(const std::string& name) const
     {
-      auto it = _config_params.find(name);
-      if (it != _config_params.end())
+      auto it = find(name);
+      if (it != end())
         return it->second.get_value();
       else
       {
+        Shared_ostream& logfile = *(Shared_ostream::get_instance());
+        logfile << "Warning: Couldn't find config-parameter " << name << "\n"
+                << "returning empty string.\n";
         return "";
       }
     }
 
-    std::string get_params_string() const
+    template <typename T>
+    T Get_config_value(const std::string& param_name) const; // purposely left undefined
+
+    template<>
+    inline int Get_config_value<int>(const std::string& param_name) const
+    {
+      auto str_value = get_config_param(param_name);
+      if (!str_value.empty())
+        return std::stoi(str_value);
+      else
+       return 0;
+    }
+
+    template<>
+    inline float Get_config_value<float>(const std::string& param_name) const
+    {
+      auto str_value = get_config_param(param_name);
+      if (!str_value.empty())
+        return std::stof(str_value);
+      else
+        return 0.0;
+    }
+
+    template<>
+    inline bool Get_config_value<bool>(const std::string& param_name) const
+    {
+      auto str_value = get_config_param(param_name);
+      return str_value == "true" || str_value == "TRUE" || str_value == "True";
+    }
+
+    template<>
+    inline std::string Get_config_value<std::string>(const std::string& param_name) const
+    {
+      auto str_value = get_config_param(param_name);
+      return str_value;
+    }
+
+    std::string get_all_params_string() const
     {
       std::string s = "";
-      for (const std::pair<const std::string, Config_param> &param : _config_params)
+      for (const std::pair<const std::string, Config_param> &param : *this)
       {
         s += param.first + ": " + param.second.get_value() + "\n";
       }

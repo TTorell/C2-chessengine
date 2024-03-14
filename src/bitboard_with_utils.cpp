@@ -6,10 +6,13 @@
  */
 
 #include <vector>
+#include <fstream>
 
 #include "bitboard_with_utils.hpp"
 #include "chessfuncs.hpp"
 #include "current_time.hpp"
+#include "config_param.hpp"
+
 
 namespace C2_chess
 {
@@ -89,7 +92,7 @@ std::ostream& operator<<(std::ostream& os, const Bitmove& m)
 std::ostream& operator<<(std::ostream& os, const Config_params& params)
 {
   os << "Configuration parameters:" << std::endl;
-  os << params.get_params_string() << std::endl;
+  os << params.get_all_params_string() << std::endl;
   return os;
 }
 
@@ -119,7 +122,7 @@ std::vector<std::string> Bitboard_with_utils::convert_moves_to_UCI(const std::ve
           stripped_move.push_back(ch);
         }
         if (promotion)
-          stripped_move.push_back(std::tolower(ch));
+          stripped_move.push_back(static_cast<char>(std::tolower(ch)));
         if (ch == '=')
           promotion = true;
       }
@@ -147,7 +150,7 @@ void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move, Takeback_st
     out_moves_vector.push_back(out_move);
   out_moves_vector = convert_moves_to_UCI(out_moves_vector, _side_to_move);
   bool found = false;
-  int i = 0;
+  size_t  i = 0;
   for (const std::string& s : out_moves_vector)
   {
     if (s == UCI_move)
@@ -564,4 +567,3 @@ void Bitboard_with_utils::takeback_latest_move(Takeback_state& tb_state)
 }
 
 } // End namespace C2_chess
-

@@ -8,12 +8,15 @@
 #ifndef SRC_GAME_HISTORY_HPP_
 #define SRC_GAME_HISTORY_HPP_
 
+#include <cassert>
 #include <cstdint>
+#include <cstring>
+#include <ostream>
 
 namespace
 {
-const uint64_t MAX_HISTORY_PLIES = 1024;
-const uint64_t MAX_REPEATED_POSITIONS = 256;
+const int MAX_HISTORY_PLIES = 1024;
+const int MAX_REPEATED_POSITIONS = 256;
 }
 
 namespace C2_chess
@@ -41,8 +44,8 @@ struct Position_element
 
 struct History_state
 {
-    size_t _n_plies;
-    size_t _n_repeated_positions;
+    int _n_plies;
+    int _n_repeated_positions;
     bool _is_threefold_repetiotion;
 
     History_state() :
@@ -50,14 +53,14 @@ struct History_state
     {
     }
 
-    History_state(uint32_t n_plies, uint32_t n_repeated_positions, bool is_threefold_repetiotion) :
+    History_state(int n_plies, int n_repeated_positions, bool is_threefold_repetiotion) :
         _n_plies(n_plies), _n_repeated_positions(n_repeated_positions), _is_threefold_repetiotion(is_threefold_repetiotion)
     {
     }
 
     void clear()
     {
-      memset(this, 0, sizeof(History_state));
+      std::memset(this, 0, sizeof(History_state));
     }
 
     // For test purpose
@@ -78,7 +81,7 @@ class Game_history
     Position_element _moves_played[MAX_HISTORY_PLIES];
     uint64_t _repeated_positions[MAX_REPEATED_POSITIONS];
 
-    void remove_repeated_position(size_t idx)
+    void remove_repeated_position(int idx)
     {
       assert(idx < _state._n_repeated_positions);
       for (auto i = idx; i < _state._n_repeated_positions - 1; i++)
@@ -88,17 +91,17 @@ class Game_history
 
   public:
     Game_history() :
-        _state(), _moves_played {0}, _repeated_positions {0}
+        _state(), _moves_played {{0}}, _repeated_positions {0}
     {
     }
 
     // For test purpose
     Game_history(const Game_history& gh) :
-        _state(gh._state), _moves_played {0}, _repeated_positions {0}
+        _state(gh._state), _moves_played {{0}}, _repeated_positions {0}
     {
-      for (size_t i = 0; i < _state._n_plies; i++)
+      for (int i = 0; i < _state._n_plies; i++)
         _moves_played[i] = gh._moves_played[i];
-      for (size_t i = 0; i < _state._n_repeated_positions; i++)
+      for (int i = 0; i < _state._n_repeated_positions; i++)
         _repeated_positions[i] = gh._repeated_positions[i];
     }
 
@@ -107,12 +110,12 @@ class Game_history
     {
       if (_state != gh._state)
         return false;
-      for (size_t i = 0; i < _state._n_repeated_positions; i++)
+      for (int i = 0; i < _state._n_repeated_positions; i++)
       {
         if (_repeated_positions[i] != gh._repeated_positions[i])
           return false;
       }
-      for (size_t i = 0; i < _state._n_plies; i++)
+      for (int i = 0; i < _state._n_plies; i++)
       {
         if (_moves_played[i] != gh._moves_played[i])
           return false;

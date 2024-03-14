@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <iostream>
 #include <iomanip>
+#include <ostream>
 #include <sstream>
 #include <regex>
 #include <vector>
@@ -28,8 +29,8 @@
 //#include <sys/stat.h>
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
-#include "bitboard.hpp"
 #include "game_history.hpp"
+#include "magic_enum.hpp"
 #include "movelog.hpp"
 
 // Redefining a namespace to something shorter.
@@ -56,23 +57,23 @@ static void worker_thread()
     // Wait until main() sends data
     std::unique_lock<std::mutex>  lck(mtx);
     cv.wait(lck, []{ return ready; });
- 
+
     // after the wait, we own the lock.
     std::cout << "Worker thread is processing data\n";
     lck.unlock();
     // Send data back to main()
     std::cin >> answer;
     std::cout << "Worker thread signals data processing completed\n";
- 
+
     // Manual unlocking is done before notifying, to avoid waking up
     // the waiting thread only to block again (see notify_one for details)
-    
+
     cv.notify_one();
 }
 
-/// @brief 
-/// @param request 
-/// @return 
+/// @brief
+/// @param request
+/// @return
 std::string ask_for_input_with_timeout(const std::string& request)
 {
     std::cout << request << ": ";
@@ -86,7 +87,7 @@ std::string ask_for_input_with_timeout(const std::string& request)
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     cv.notify_one();
- 
+
     // wait for the worker
     {
         std::cout << "Before LOCK" << std::endl;
@@ -97,7 +98,7 @@ std::string ask_for_input_with_timeout(const std::string& request)
         std::cout << "TIMEOUT\n" << std::endl;
     }
     std::cout << "Back in main(), answer = " << answer << '\n';
- 
+
     std::cout << "\nTime-Out: 2 second:";
     std::cout << "\nPlease enter the input:";
     std::cout << "You entered: " << answer << std::endl;
@@ -106,6 +107,16 @@ std::string ask_for_input_with_timeout(const std::string& request)
 
     return answer;
 }
+
+std::string ask_user_for_input(const std::string& request)
+{
+  std::string user_answer;
+  std::cout << request;
+  std:: cin >> user_answer;
+  std::cout << user_answer << std::endl;
+  return user_answer;
+}
+
 
 Color other_color(const Color& side)
 {
@@ -615,7 +626,7 @@ std::string to_binary_board(uint64_t in)
   uint8_t row;
   for (int n = 0; n < 8; n++, in >>= 8)
   {
-    row = in & mask;
+    row = static_cast<uint8_t>(in & mask);
     oss << to_binary(row) << std::endl;
   }
   return oss.str();
@@ -650,9 +661,9 @@ std::string reverse_FEN_string(const std::string& FEN_string)
   for (char& ch : reversed_position)
   {
     if (std::islower(ch))
-      ch = std::toupper(ch);
+      ch = static_cast<char>(std::toupper(ch));
     else if (std::isupper(ch))
-      ch = std::tolower(ch);
+      ch = static_cast<char>(std::tolower(ch));
   }
   // Reverse order of the ranks.
   std::vector<std::string> rank_vector = split(reversed_position, '/');
@@ -670,9 +681,9 @@ std::string reverse_FEN_string(const std::string& FEN_string)
   for (char& ch : castling_rights)
   {
     if (std::islower(ch))
-      ch = std::toupper(ch);
+      ch = static_cast<char>(std::toupper(ch));
     else if (std::isupper(ch))
-      ch = std::tolower(ch);
+      ch = static_cast<char>(std::tolower(ch));
   }
   reversed_FEN_string += castling_rights + " ";
   // en_passant square
@@ -768,4 +779,3 @@ std::ostream& Movelog::write(std::ostream& os) const
 }
 
 } // End namespace C2_chess
-

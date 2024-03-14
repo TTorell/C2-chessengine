@@ -12,6 +12,7 @@
 #include <random>
 #include <cmath>
 #include <cstring>
+#include <iostream>
 #include "chesstypes.hpp"
 
 namespace C2_chess
@@ -21,24 +22,24 @@ struct TT_element
 {
     //int best_move_index;
     Bitmove _best_move;
-    int _search_ply;
+    int _search_depth;
 
     // An unused element will have best_move = UNDEFINED_MOVE.
     TT_element() :
         _best_move(UNDEFINED_MOVE),
-        _search_ply(0)
+        _search_depth(0)
     {
     }
 
     void set(unsigned long hash_tag,
              const Bitmove& move,
              float evaluation,
-             int search_ply)
+             int search_depth)
     {
        if (hash_tag == 0){};
        _best_move = move;
        _best_move._evaluation = evaluation;
-       _search_ply = search_ply;
+       _search_depth = search_depth;
     }
 
     bool is_initialized() const
@@ -143,14 +144,14 @@ inline void Transposition_table::init_random_numbers()
     for (int row = 1; row <= 8; row++)
       for (int col = index(Color::White); col <= index(Color::Black); col++)
         for (int type = index(Piecetype::Queen); type <= index(Piecetype::King); type++)
-          _random_table[square_index][col][type] = round(dist(mt));
-  _castling_rights[1] = round(dist(mt));
-  _castling_rights[2] = round(dist(mt));
-  _castling_rights[4] = round(dist(mt));
-  _castling_rights[8] = round(dist(mt));
+          _random_table[square_index][col][type] = static_cast<uint64_t>(round(dist(mt)));
+  _castling_rights[1] = static_cast<uint64_t>(round(dist(mt)));
+  _castling_rights[2] = static_cast<uint64_t>(round(dist(mt)));
+  _castling_rights[4] = static_cast<uint64_t>(round(dist(mt)));
+  _castling_rights[8] =static_cast<uint64_t>( round(dist(mt)));
   for (int i = 0; i < 8; i++)
-    _en_passant_file[i] = round(dist(mt));
-  _toggle_side_to_move = round(dist(mt));
+    _en_passant_file[i] = static_cast<uint64_t>(round(dist(mt)));
+  _toggle_side_to_move = static_cast<uint64_t>(round(dist(mt)));
 }
 
 //Second alternative
@@ -159,25 +160,25 @@ struct TT_element_2
     //int best_move_index;
     unsigned long _hash_tag;
     Bitmove _best_move;
-    int _search_ply;
+    int _search_depth;
 
     // An unused element will have best_move = UNDEFINED_MOVE.
     TT_element_2() :
         _hash_tag(0),
         _best_move(UNDEFINED_MOVE),
-        _search_ply(0)
+        _search_depth(0)
     {
     }
 
     void set(unsigned long hash_tag,
              const Bitmove& move,
              float evaluation,
-             int search_ply)
+             int search_depth)
     {
        _hash_tag = hash_tag;
        _best_move = move;
        _best_move._evaluation = evaluation;
-       _search_ply = search_ply;
+       _search_depth = search_depth;
     }
 
     bool is_initialized() const
@@ -298,17 +299,16 @@ inline void Transposition_table_2::init_random_numbers()
     for (int row = 1; row <= 8; row++)
       for (int col = index(Color::White); col <= index(Color::Black); col++)
         for (int type = index(Piecetype::Queen); type <= index(Piecetype::King); type++)
-          _random_table[square_index][col][type] = round(dist(mt));
-  _castling_rights[1] = round(dist(mt));
-  _castling_rights[2] = round(dist(mt));
-  _castling_rights[4] = round(dist(mt));
-  _castling_rights[8] = round(dist(mt));
+          _random_table[square_index][col][type] = static_cast<uint64_t>(round(dist(mt)));
+  _castling_rights[1] = static_cast<uint64_t>(round(dist(mt)));
+  _castling_rights[2] = static_cast<uint64_t>(round(dist(mt)));
+  _castling_rights[4] = static_cast<uint64_t>(round(dist(mt)));
+  _castling_rights[8] = static_cast<uint64_t>(round(dist(mt)));
   for (int i = 0; i < 8; i++)
-    _en_passant_file[i] = round(dist(mt));
-  _toggle_side_to_move = round(dist(mt));
+    _en_passant_file[i] = static_cast<uint64_t>(round(dist(mt)));
+  _toggle_side_to_move = static_cast<uint64_t>(round(dist(mt)));
 }
 
 } // End namespace C2_chess
 
 #endif
-

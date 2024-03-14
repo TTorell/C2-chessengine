@@ -1,23 +1,16 @@
 #include <iostream>
 #include <fstream>
-#include <sstream>
-#include <iomanip>
 #include <thread>
-#include <chrono>
-#include <vector>
 #include <atomic>
 #include <cstring>
 #include <cstdio>
 
-#include "bitboard_with_utils.hpp"
 #include "chessfuncs.hpp"
 #include "chesstypes.hpp"
 #include "config_param.hpp"
 #include "game.hpp"
 #include "circular_fifo.hpp"
-#include "current_time.hpp"
 #include "uci.hpp"
-#include "magic_enum.hpp"
 
 namespace C2_chess
 {
@@ -270,4 +263,3 @@ int main(int argc, char* argv[])
   ofs.close();
   return 0;
 }
-

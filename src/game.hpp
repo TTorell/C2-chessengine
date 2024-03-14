@@ -4,9 +4,9 @@
 #include "chesstypes.hpp"
 #include "bitboard_with_utils.hpp"
 #include "movelog.hpp"
-#include "pgn_info.hpp"
 #include "shared_ostream.hpp"
 #include "game_history.hpp"
+#include "config_param.hpp"
 
 namespace // fileprivate namespace
 {
@@ -30,8 +30,9 @@ class Game
     //    PGN_info _pgn_info;
     Config_params& _config_params;
     bool _playing;
-    void send_uci_info( unsigned int search_time_ms, const std::vector<Bitmove>& pv_line);
-    public:
+    void send_uci_info( const int search_time_ms, const std::vector<Bitmove>& pv_line);
+
+  public:
     Game(Config_params& config_params);
     Game(Color side, Config_params& config_params);
     Game(const Game&) = delete;
@@ -52,8 +53,8 @@ class Game
     void init_board_hash_tag();
     void actions_after_a_move();
     void start();
-    Bitmove find_best_move(float& score, unsigned int max_search_ply);
-    Bitmove incremental_search(const double movetime, unsigned int max_depth = N_SEARCH_PLIES_DEFAULT/2);
+    Bitmove find_best_move(float& score, const int max_search_ply, const bool nullmove_pruning);
+    Bitmove incremental_search(const double movetime, const int max_depth = MAX_N_SEARCH_PLIES_DEFAULT/2, const bool nullmove_pruning = true);
     Bitmove engine_go(const Config_params& config_params, const Go_params& go_params, const bool apply_max_search_depth = false);
     //void start_timer_thread(const std::string& max_search_time);
     bool has_time_left();
@@ -87,11 +88,10 @@ class Game
     void figure_out_last_move(const Bitboard& new_position);
     void start_new_game();
     int read_position(const std::string& filename);
-    int make_a_move(float& score, const uint8_t max_search_ply);
+    int make_a_move(float& score, const uint8_t max_search_ply, const bool nullmove_pruning);
     void make_move(const std::string& move, Takeback_state& tb_state);
     void takeback_latest_move(Takeback_state& tb_state);
 };
 
 } // namespace C2_chess
 #endif
-

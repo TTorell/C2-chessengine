@@ -5,7 +5,6 @@
 #include <bit>
 #include <cassert>
 #include <ostream>
-#include <sstream>
 #include <limits>
 #include <deque>
 
@@ -36,7 +35,7 @@ const auto infinity = std::numeric_limits<float>::infinity(); // float
 // and beta will become -infinity + 1 = -infinity as well.
 // and assert(beta > alpha) will fail.
 // So we need a limited value which will change when 1 is added to it.
-const auto infinite = 100000;
+const auto infinite = 100000.0F;
 
 const auto a = 0; // int
 const auto b = 1;
@@ -50,7 +49,7 @@ const auto eval_max = 100.0F;
 const auto eval_min = -eval_max;
 const auto epsilon = 0.00000001F;
 
-const auto N_SEARCH_PLIES_DEFAULT = 64U;
+const auto MAX_N_SEARCH_PLIES_DEFAULT = 64;
 
 const auto dont_update_history = false;
 const auto do_update_history = true;
@@ -142,10 +141,10 @@ struct Search_info
     unsigned int beta_cutoffs;
     unsigned int nullmove_cutoffs;
     unsigned long time_taken;
-    unsigned long max_search_depth;
+    int max_search_depth;
     bool search_interrupted;
     float score;
-    unsigned int highest_search_ply;
+    int highest_search_ply;
 
     float get_score() const
     {
@@ -196,13 +195,20 @@ inline uint8_t bit_idx(uint64_t square)
   assert(std::has_single_bit(square));
   // return std::countr_zero(square); // -std=c++20
   // Seems a tiny bit slower and eventually calls the same builtin after some type checks.
-  return __builtin_ctzll(square);
+  return static_cast<uint8_t>(std::countr_zero(square)); //__builtin_ctzll(square);
 }
 
 constexpr uint64_t zero = 0x0000000000000000;
 constexpr uint64_t one = 0x0000000000000001;
 
 inline uint64_t square(uint8_t bit_idx)
+{
+  assert(bit_idx < 64);
+  return one << bit_idx;
+}
+
+// This comes in handy when the argument comes from e.g. std::countr_zero()
+inline uint64_t square_from_int(int bit_idx)
 {
   assert(bit_idx < 64);
   return one << bit_idx;
@@ -233,7 +239,7 @@ struct Bitmove
         Piecetype promotion_pt = Piecetype::Queen) : // bit 13-14
         _move(0), _evaluation(0.0)
     {
-      _move = (static_cast<uint32_t>(index(p_type)) << 27) | (static_cast<uint32_t>(index(capture_p_type)) << 24) | (move_props << 14)
+      _move = (static_cast<uint32_t>(index(p_type)) << 27) | (static_cast<uint32_t>(index(capture_p_type)) << 24) | (static_cast<uint32_t>(move_props) << 14)
               | (static_cast<uint32_t>(index(promotion_pt) << 12)) | (static_cast<uint32_t>(bit_idx(from_square)) << 6) | (static_cast<uint32_t>(bit_idx(to_square)));
     }
 
@@ -328,7 +334,6 @@ struct Takeback_state
     bool has_castled_w;
     bool has_castled_b;
     Bitmove latest_move;
-    uint8_t search_ply;
 };
 
 // constexpr is a way of telling the compiler
@@ -435,7 +440,7 @@ constexpr uint64_t castling_empty_squares_K = (row_1 | row_8) & (f_file | g_file
 constexpr uint64_t castling_empty_squares_Q = (row_1 | row_8) & (b_file | c_file | d_file);
 
 // Generate diagonals and anti-diagonals in compile-time
-constexpr uint64_t di(int i)
+constexpr uint64_t di(uint8_t i)
 {
   uint8_t fi = a;
   uint8_t r = 0;
@@ -455,7 +460,7 @@ constexpr uint64_t di(int i)
 
 constexpr uint64_t diagonal[15] = {di(0), di(1), di(2), di(3), di(4), di(5), di(6), di(7), di(8), di(9), di(10), di(11), di(12), di(13), di(14)};
 
-constexpr uint64_t ad(const int i)
+constexpr uint64_t ad(const uint8_t i)
 {
   auto fi = a; // important: NOT uint8_t because f-- may then become 255, not -1
   uint8_t r = 1;
@@ -467,7 +472,7 @@ constexpr uint64_t ad(const int i)
   }
   else
   {
-    for (fi = h, r = i - 6; r <= 8; fi--, r++)
+    for (fi = h, r = i - uint8_t(6); r <= 8; fi--, r++)
       val |= file[fi] & rank[r];
   }
   return val;

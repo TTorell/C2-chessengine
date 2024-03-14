@@ -6,12 +6,16 @@
  */
 
 #include "bitboard.hpp"
+#include "chessfuncs.hpp"
 #include "chesstypes.hpp"
 #include "game_history.hpp"
 #include "transposition_table.hpp"
+#include <deque>
 
 namespace C2_chess
 {
+
+using list_t = std::deque<Bitmove>;
 
 Piecetype Bitboard::get_piece_type(uint64_t square) const
 {
@@ -277,8 +281,6 @@ void Bitboard::make_nullmove(Takeback_state& tb_state, const bool add_to_history
 {
   //write(std::cerr, Color::White);
   save_in_takeback_state(tb_state);
-  // reset search_ply for a new shorter search to begin
-  _search_ply = 0;
   if (_ep_square)
     clear_ep_square();
   _latest_move = NO_MOVE;
@@ -291,9 +293,7 @@ void Bitboard::make_nullmove(Takeback_state& tb_state, const bool add_to_history
   {
     history.add_position(_hash_tag);
   }
-  
-  // We are inside a search operation. Increase search-ply.
-  //_search_ply++;
+
   //write(std::cerr, Color::White);
 }
 
@@ -374,19 +374,19 @@ void Bitboard::new_make_move(const Bitmove& m, Takeback_state& tb_state, const b
       switch (m.promotion_piece_type())
       {
         case Piecetype::Queen:
-          (_side_to_move == Color::White) ? (_material_diff += 8.0, _white_pieces.Queens |= to_square) : (_material_diff -= 8.0, _black_pieces.Queens |= to_square);
+          (_side_to_move == Color::White) ? (_material_diff += 8.0F, _white_pieces.Queens |= to_square) : (_material_diff -= 8.0F, _black_pieces.Queens |= to_square);
           update_hash_tag(to_square, _side_to_move, Piecetype::Queen);
           break;
         case Piecetype::Rook:
-          (_side_to_move == Color::White) ? (_material_diff += 4.0, _white_pieces.Rooks |= to_square) : (_material_diff -= 4.0, _black_pieces.Rooks |= to_square);
+          (_side_to_move == Color::White) ? (_material_diff += 4.0F, _white_pieces.Rooks |= to_square) : (_material_diff -= 4.0F, _black_pieces.Rooks |= to_square);
           update_hash_tag(to_square, _side_to_move, Piecetype::Rook);
           break;
         case Piecetype::Knight:
-          (_side_to_move == Color::White) ? (_material_diff += 2.0, _white_pieces.Knights |= to_square) : (_material_diff -= 2.0, _black_pieces.Knights |= to_square);
+          (_side_to_move == Color::White) ? (_material_diff += 2.0F, _white_pieces.Knights |= to_square) : (_material_diff -= 2.0F, _black_pieces.Knights |= to_square);
           update_hash_tag(to_square, _side_to_move, Piecetype::Knight);
           break;
         case Piecetype::Bishop:
-          (_side_to_move == Color::White) ? (_material_diff += 2.0, _white_pieces.Bishops |= to_square) : (_material_diff -= 2.0, _black_pieces.Bishops |= to_square);
+          (_side_to_move == Color::White) ? (_material_diff += 2.0F, _white_pieces.Bishops |= to_square) : (_material_diff -= 2.0F, _black_pieces.Bishops |= to_square);
           update_hash_tag(to_square, _side_to_move, Piecetype::Bishop);
           break;
         default:
@@ -398,12 +398,12 @@ void Bitboard::new_make_move(const Bitmove& m, Takeback_state& tb_state, const b
       // Remove the pawn taken e.p.
       if (_side_to_move == Color::White)
       {
-        _black_pieces.Pawns ^= tmp_ep_square << 8, _material_diff += 1.0;
+        _black_pieces.Pawns ^= tmp_ep_square << 8, _material_diff += 1.0F;
         update_hash_tag(tmp_ep_square << 8, Color::Black, Piecetype::Pawn);
       }
       else
       {
-        _white_pieces.Pawns ^= tmp_ep_square >> 8, _material_diff -= 1.0;
+        _white_pieces.Pawns ^= tmp_ep_square >> 8, _material_diff -= 1.0F;
         update_hash_tag(tmp_ep_square >> 8, Color::White, Piecetype::Pawn);
       }
     }
@@ -433,8 +433,6 @@ void Bitboard::new_make_move(const Bitmove& m, Takeback_state& tb_state, const b
   {
     history.add_position(_hash_tag);
   }
-  // Increase search-ply (in case we are inside a search operation).
-  _search_ply++;
 }
 
 void Bitboard::takeback_en_passant(const Bitmove& m, const Color moving_side)
@@ -617,9 +615,6 @@ void Bitboard::takeback_latest_move(const Takeback_state& tb_state, const bool t
   }
 
   takeback_from_state(tb_state);
-  // Decrease search-ply (in case we are inside a search operation).
-  // _search_ply--;
-}
+ }
 
 } // namespace C2_chess
-

@@ -1,7 +1,9 @@
 #include <cstring>
+#include <thread>
 #include "chesstypes.hpp"
 #include "chessfuncs.hpp"
 #include "bitboard_with_utils.hpp"
+#include "config_param.hpp"
 #include "game.hpp"
 #include "current_time.hpp"
 #include "uci.hpp"
@@ -181,7 +183,7 @@ void play_on_cmd_line(Config_params& config_params)
   }
 }
 
-int Game::make_a_move(float& score, const uint8_t max_search_ply)
+int Game::make_a_move(float& score, const uint8_t max_search_depth, const bool nullmove_pruning)
 {
   if (_player_type[index(_chessboard.get_side_to_move())] == Playertype::Human)
   {
@@ -193,8 +195,8 @@ int Game::make_a_move(float& score, const uint8_t max_search_ply)
     _chessboard.clear_transposition_table();
     _chessboard.clear_search_vars();
     _chessboard.init_material_evaluation();
-    _chessboard.set_search_ply(0);
-    score = _chessboard.negamax_with_pruning(-infinite, infinite, best_move, max_search_ply);
+    _chessboard.set_iteration_depth(max_search_depth);
+    score = _chessboard.new_negamax_with_pruning(-infinite, infinite, best_move, max_search_depth, nullmove_pruning);
     if (best_move == NO_MOVE && is_close(score, -100.0F))
     {
       std::cout << "White was check mated." << std::endl; // TODO
@@ -219,7 +221,13 @@ void Game::start()
 
   logfile << "\nNew Game started\n\n";
   logfile << _config_params;
-  cmdline << "\n" << "New Game started" << "\n";
+    cmdline << "\n" << "New Game started" << "\n";
+
+  bool nullmove_pruning = true;
+  std::string s = _config_params.get_config_param("use_nullmove_pruning");
+  if (!s.empty())
+    nullmove_pruning = (s == "true");
+
 // Init the hash tag for the initial board-position to
 // use in the Zobrist hash transposition-table.
   init_board_hash_tag();
@@ -236,7 +244,7 @@ void Game::start()
     uint64_t nsec_start = current_time.nanoseconds();
     if (_player_type[index(_chessboard.get_side_to_move())] == Playertype::Human)
     {
-      if (make_a_move(_score, max_search_ply) != 0)
+      if (make_a_move(_score, max_search_ply, nullmove_pruning) != 0)
       {
         cmdline << "Stopped playing" << "\n";
         _playing = false;
@@ -253,7 +261,7 @@ void Game::start()
       go_params.movetime = 40000000.0; // Just something big (in milliseconds).
       engine_go(_config_params, go_params);
     }
-    uint64_t timediff = current_time.nanoseconds() - nsec_start;
+    auto timediff = static_cast<double>(current_time.nanoseconds() - nsec_start);
     cmdline << "time spent thinking: " << timediff / 1.0e9 << " seconds" << "\n";
     logfile << "time spent thinking: " << timediff / 1.0e9 << " seconds" << "\n";
   }
@@ -275,10 +283,10 @@ int Bitboard::make_move(Playertype player)
     return -1;
   Shared_ostream& cmdline = *(Shared_ostream::get_cout_instance());
 
-  uint8_t from_file_idx;
-  uint8_t from_rank_idx;
-  uint8_t to_file_idx;
-  uint8_t to_rank_idx;
+  int from_file_idx;
+  int from_rank_idx;
+  int to_file_idx;
+  int to_rank_idx;
   Piecetype p_type;
   Piecetype promotion_piecetype = Piecetype::Queen; // Default
   uint8_t move_props = move_props_none;

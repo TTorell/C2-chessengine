@@ -6,19 +6,19 @@
 // Description : C++ code for a bitboard-representation of a chess board.
 //============================================================================
 
-#include "bitboard.hpp"
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include <string>
 #include <atomic>
 #include <functional>
 #include <cstring>
+#include <thread>
 #include "chessfuncs.hpp"
 #include "chesstypes.hpp"
 #include "shared_ostream.hpp"
 #include "current_time.hpp"
 #include "transposition_table.hpp"
+#include "bitboard.hpp"
 
 namespace
 {
@@ -33,20 +33,21 @@ std::atomic<bool> Bitboard::time_left(false);
 //struct Takeback_element Bitboard::takeback_list[N_SEARCH_PLIES_DEFAULT] {};
 Game_history Bitboard::history;
 TT Bitboard::transposition_table(4000000);
-int Bitboard::alpha_move_cash[2][7][64] {0};
+int Bitboard::alpha_move_cash[2][7][64];
 
 Bitboard::Bitboard() :
-    _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _latest_move(), _search_ply(0),
+    _hash_tag(zero), _side_to_move(Color::White), _move_number(1), _castling_rights(castling_rights_none), _ep_square(zero), _material_diff(0), _latest_move(), _iteration_depth(0),
     _checkers(zero), _pinners(zero), _pinned_pieces(zero), _all_pieces(zero), _white_pieces(), _black_pieces(), _own(nullptr), _other(nullptr), _half_move_counter(0)
 {
   //std::cerr << "BitBoard Default constructor" << std::endl;
   _own = &_white_pieces;
   _other = &_black_pieces;
+
 }
 
 Bitboard::Bitboard(const Bitboard& bb) :
     _hash_tag(bb._hash_tag), _side_to_move(bb._side_to_move), _move_number(bb._move_number), _castling_rights(bb._castling_rights), _ep_square(bb._ep_square),
-    _material_diff(bb._material_diff), _latest_move(bb._latest_move), _search_ply(bb._search_ply), _checkers(bb._checkers), _pinners(bb._pinners),
+    _material_diff(bb._material_diff), _latest_move(bb._latest_move), _iteration_depth(bb._iteration_depth), _checkers(bb._checkers), _pinners(bb._pinners),
     _pinned_pieces(bb._pinned_pieces), _all_pieces(bb._all_pieces), _white_pieces(bb._white_pieces), _black_pieces(bb._black_pieces), _own(nullptr), _other(nullptr),
     _half_move_counter(bb._half_move_counter)
 {
@@ -412,24 +413,24 @@ void Bitboard::set_time_left(bool value)
 
 void Bitboard::init_material_evaluation()
 {
-  const float weight = 1.0F;
-  float sum = 0.0;
-  sum += std::popcount(_white_pieces.Pawns) * weight;
-  sum -= std::popcount(_black_pieces.Pawns) * weight;
-  sum += std::popcount(_white_pieces.Knights) * 3.0 * weight;
-  sum -= std::popcount(_black_pieces.Knights) * 3.0 * weight;
-  sum += std::popcount(_white_pieces.Bishops) * 3.0 * weight;
-  sum -= std::popcount(_black_pieces.Bishops) * 3.0 * weight;
-  sum += std::popcount(_white_pieces.Rooks) * 5.0 * weight;
-  sum -= std::popcount(_black_pieces.Rooks) * 5.0 * weight;
-  sum += std::popcount(_white_pieces.Queens) * 9.0 * weight;
-  sum -= std::popcount(_black_pieces.Queens) * 9.0 * weight;
+  const auto weight{1.0F};
+  auto sum{0.0F};
+  sum += static_cast<float>(std::popcount(_white_pieces.Pawns)) * weight;
+  sum -= static_cast<float>(std::popcount(_black_pieces.Pawns)) * weight;
+  sum += static_cast<float>(std::popcount(_white_pieces.Knights)) * 3.0F * weight;
+  sum -= static_cast<float>( std::popcount(_black_pieces.Knights)) * 3.0F * weight;
+  sum += static_cast<float>(std::popcount(_white_pieces.Bishops)) * 3.0F * weight;
+  sum -= static_cast<float>(std::popcount(_black_pieces.Bishops)) * 3.0F * weight;
+  sum += static_cast<float>(std::popcount(_white_pieces.Rooks)) * 5.0F * weight;
+  sum -= static_cast<float>(std::popcount(_black_pieces.Rooks)) * 5.0F * weight;
+  sum += static_cast<float>(std::popcount(_white_pieces.Queens)) * 9.0F * weight;
+  sum -= static_cast<float>(std::popcount(_black_pieces.Queens)) * 9.0F * weight;
   _material_diff = sum;
 }
 
 void Bitboard::count_pawns_in_centre(float& sum, float weight) const
 {
-  sum += weight * (std::popcount(center_squares & _white_pieces.Pawns) - std::popcount(center_squares & _black_pieces.Pawns));
+  sum += weight * static_cast<float>(std::popcount(center_squares & _white_pieces.Pawns) - std::popcount(center_squares & _black_pieces.Pawns));
 }
 
 void Bitboard::count_castling(float& sum, float weight) const
@@ -439,7 +440,7 @@ void Bitboard::count_castling(float& sum, float weight) const
     counter++;
   if (_has_castled[index(Color::Black)])
     counter--;
-  sum += counter * weight;
+  sum += static_cast<float>(counter) * weight;
 }
 
 void Bitboard::count_development(float& sum, float weight) const
@@ -451,7 +452,7 @@ void Bitboard::count_development(float& sum, float weight) const
   counter += std::popcount(_black_pieces.Rooks & rook_initial_squares_black);
   counter += std::popcount(_black_pieces.Knights & knight_initial_squares_black);
   counter += std::popcount(_black_pieces.Bishops & bishop_initial_squares_black);
-  sum += counter * weight;
+  sum += static_cast<float>(counter) * weight;
 }
 
 int Bitboard::walk_into_center(const uint64_t from_sq, const int n_center_sqs, std::function<void(uint64_t&)> shift_func) const
@@ -600,7 +601,7 @@ float Bitboard::evaluate_empty_movelist(int search_ply) const
   {
     // This is checkmate, we want to evaluate the quickest way to mate higher
     // so we add/subtract level.
-    return (_side_to_move == Color::White) ? (eval_min + search_ply) : (eval_max - search_ply);
+    return (_side_to_move == Color::White) ? (eval_min + static_cast<float>(search_ply)) : (eval_max - static_cast<float>(search_ply));
   }
   else
   {
@@ -617,11 +618,11 @@ float Bitboard::evaluate_position() const
   sum += _material_diff;
 
   //count center control
-  sum += (count_threats_to_center_squares(_white_pieces, pawn_center_control_W_pattern) - count_threats_to_center_squares(_black_pieces, pawn_center_control_B_pattern)) * 0.02F;
+  sum += static_cast<float>(count_threats_to_center_squares(_white_pieces, pawn_center_control_W_pattern) - count_threats_to_center_squares(_black_pieces, pawn_center_control_B_pattern)) * 0.02F;
   count_development(sum, 0.05F);
   count_pawns_in_centre(sum, 0.03F);
   count_castling(sum, 0.10F);
-  sum += count_passers_and_isolanis() * 0.02F;
+  sum += static_cast<float>(count_passers_and_isolanis()) * 0.02F;
   return sum;
 }
 
@@ -696,7 +697,7 @@ std::ostream& Bitboard::write(std::ostream& os, const Color from_perspective) co
 }
 
 // TODO: Put this outside Bitboard?
-std::ostream& Bitboard::write_movelist(const list_ref movelist, std::ostream& os, bool same_line) const
+std::ostream& Bitboard::write_movelist(const std::deque<Bitmove> & movelist, std::ostream& os, bool same_line) const
 {
   if (movelist.size() > 0)
   {
@@ -730,7 +731,7 @@ void Bitboard::get_pv_line(std::vector<Bitmove>& pv_line) const
   for (int i = 0; i < 20; i++)
   {
     TT_elem& tte = transposition_table.find(bb._hash_tag);
-    if (!tte._best_move.is_valid() || tte._search_ply != i)
+    if (!tte._best_move.is_valid() || tte._search_depth != _iteration_depth - i)
       break;
     bb.new_make_move(tte._best_move, tb_state_dummy, dont_update_history);
     pv_line.push_back(bb._latest_move);
@@ -753,7 +754,7 @@ Search_info& Bitboard::get_search_info() const
   return search_info;
 }
 
-unsigned int Bitboard::perft_test(uint8_t search_ply, uint8_t max_search_depth)
+unsigned int Bitboard::perft_test(int search_ply, const int max_search_depth)
 {
   search_ply++;
 
@@ -801,7 +802,6 @@ void Bitboard::takeback_from_state(const Takeback_state& tb_state)
   _has_castled[index(Color::White)] = tb_state.has_castled_w;
   _has_castled[index(Color::Black)] = tb_state.has_castled_b;
   _latest_move = tb_state.latest_move;
-  _search_ply = tb_state.search_ply;
 }
 
 void Bitboard::save_in_takeback_state(Takeback_state& tb_state) const
@@ -813,10 +813,9 @@ void Bitboard::save_in_takeback_state(Takeback_state& tb_state) const
   tb_state.has_castled_w = _has_castled[index(Color::White)];
   tb_state.has_castled_b = _has_castled[index(Color::Black)];
   tb_state.latest_move = _latest_move;
-  tb_state.search_ply = _search_ply;
 }
 
-float Bitboard::Quiesence_search(float alpha, float beta, uint8_t max_search_ply)
+float Bitboard::Quiesence_search(float alpha, float beta, const int search_ply, const int max_search_ply)
 {
   assert(beta > alpha);
 
@@ -825,10 +824,15 @@ float Bitboard::Quiesence_search(float alpha, float beta, uint8_t max_search_ply
 
   if (history.is_threefold_repetition() || is_draw_by_50_moves())
   {
-    return 0.0;
+    return 0.0F;
   }
 
   auto score = (_side_to_move == Color::White) ? evaluate_position() : -evaluate_position();
+
+  if (search_ply >= max_search_ply)
+  {
+    return score;
+  }
 
   if (score >= beta)
   {
@@ -840,8 +844,6 @@ float Bitboard::Quiesence_search(float alpha, float beta, uint8_t max_search_ply
     alpha = score;
   }
 
-  //search_ply++;
-
   Takeback_state tb_state;
   list_t movelist;
   find_legal_moves(movelist, Gentype::Captures_and_Promotions);
@@ -851,13 +853,13 @@ float Bitboard::Quiesence_search(float alpha, float beta, uint8_t max_search_ply
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
 
-    if (_search_ply > search_info.highest_search_ply)
-      search_info.highest_search_ply = _search_ply;
+    if (search_ply > search_info.highest_search_ply)
+      search_info.highest_search_ply = search_ply;
 
-    // Make the selected move on the "ply-board" and ask  Quiesence_search() to evaluate it further.
+    // Make the selected move and ask  Quiesence_search() to evaluate it further.
     new_make_move(movelist[i], tb_state);
     //std::cout << search_ply << level_boards[search_ply].last_move() << std::endl;
-    move_score = -Quiesence_search(-beta, -alpha, max_search_ply);
+    move_score = -Quiesence_search(-beta, -alpha, search_ply + 1, max_search_ply);
 
     // Restore game history, state and search_ply to "current position".
     takeback_latest_move(tb_state);
@@ -890,13 +892,15 @@ bool Bitboard::not_likely_in_zugswang()
 {
   // If we have at least one "big piece" left, we are likely not in zugzwang.
   if (_own->pieces & ~_own->King & ~_own->Pawns)
+  {
     return true;
+  }
   return false;
 }
 
-bool Bitboard::nullmove_conditions_OK(const uint8_t search_depth)
+bool Bitboard::nullmove_conditions_OK(const int search_depth)
 {
-  if (search_depth - _search_ply >= 4 &&
+  if (search_depth >= 4 &&
       (_latest_move.properties() & move_props_check) == 0 &&
       not_likely_in_zugswang())
   {
@@ -905,19 +909,170 @@ bool Bitboard::nullmove_conditions_OK(const uint8_t search_depth)
   return false;
 }
 
+// // Search algorithm: Negamax with alpha-beta-pruning
+// float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move, const uint8_t search_depth, const bool nullmove_pruning)
+// {
+
+//   assert(beta > alpha);
+
+//   best_move = NO_MOVE;
+//   if (_search_ply >= search_depth) // TODO: isn't a check for equality enough?
+//   {
+//     // Quiescence search.
+//     // It takes over the searching and the node counting from here,
+//     search_info.leaf_node_counter++;
+//     auto evaluation = Quiesence_search(alpha, beta, N_SEARCH_PLIES_DEFAULT);
+//     //std::cout << "Q search " << evaluation << std::endl;
+//     return evaluation;
+//   }
+
+//   search_info.node_counter++;
+
+//   if (history.is_threefold_repetition())
+//   {
+//     best_move = DRAW_BY_THREEFOLD_REPETITION;
+//     return 0.0;
+//   }
+
+//   if (is_draw_by_50_moves())
+//   {
+//     best_move = DRAW_BY_50_MOVES_RULE;
+//     return 0.0;
+//   }
+
+//   // Check if position and evaluation is already in the hash_table
+//   TT_elem& element = transposition_table.find(_hash_tag);
+//   if (element.is_valid(_hash_tag))
+//   {
+//     // The position was found in the transposition table,
+//     // but is the evaluation good enough?
+//     if (element._search_ply <= _search_ply)
+//     {
+//       search_info.hash_hits++;
+//       best_move = element._best_move;
+//       return element._best_move._evaluation;
+//     }
+//   }
+
+//   // Nullmove heuristic.
+//   // Don't make a move, just hand over the turn to move to the opponent,
+//   // search on a lower depth to see if the opponent can improve beta,
+//   // otherwise we can cut off the search-tree here.
+//   // (Doesn't work if we're in check. Gives wrong result if we're in zugzwang,
+//   // when our best alternative would in fact be to, illegally, do nothing.)
+//   Takeback_state tb_state;
+//   float nullmove_score = -infinite; // Must be lower than lowest evaluation
+
+//   if (nullmove_pruning && nullmove_conditions_OK(search_depth))
+//   {
+//     make_nullmove(tb_state, do_update_history); // Attention! Increases _search_ply
+//     nullmove_score = -negamax_with_pruning(-beta, -beta + 1.0F, best_move, search_depth - (_search_ply - 1) - 4, no_nullmove_pruning);
+//     takeback_null_move(tb_state, dont_update_history);
+//     if (nullmove_score >= beta && fabs(nullmove_score) < 90.0F) // not mate
+//     {
+//       search_info.nullmove_cutoffs++;
+//       return beta;
+//     }
+//   }
+
+//   // Now it's time to generate all possible moves in the position
+//   Bitmove best_move_dummy;
+//   list_t movelist;
+//   find_legal_moves(movelist, Gentype::All);
+
+//   // If there are no possible moves, evaluate_empty_movelist() will check for such things as
+//   // mate or stalemate which may happen before max_search_ply has been reached.
+//   if (movelist.size() == 0)
+//   {
+//     // ---------------------------------------
+//     float evaluation = (_side_to_move == Color::White) ? evaluate_empty_movelist(_search_ply) : -evaluate_empty_movelist(_search_ply);
+//     element.set(_hash_tag, UNDEFINED_MOVE, evaluation, _search_ply);
+//     // ---------------------------------------
+//     return element._best_move._evaluation;
+//   }
+
+//   float move_score = -infinite; // Must be lower than lowest evaluation
+//   // Collect the best value from all possible moves
+//   for (std::size_t i = 0; i < movelist.size(); i++)
+//   {
+//     // Make the selected move and ask min() to evaluate it further.
+//     //std::cout << static_cast<int>(search_ply) << " " << magic_enum::enum_name(_side_to_move) << " " << movelist[i] << std::endl;
+//     new_make_move(movelist[i], tb_state);
+//     move_score = -negamax_with_pruning(-beta, -alpha, best_move_dummy, search_depth, nullmove_pruning);
+
+//     // Restore game history and state to current position.
+//     takeback_latest_move(tb_state);
+
+//     // Pruning:
+//     if (move_score >= beta)
+//     {
+//       // Beta cut-off.
+//       // Look no further. Skip the rest of the branches.
+//       // The other player won't choose this path anyway.
+//       // TODO: what about best_move;
+//       search_info.beta_cutoffs++;
+//       if (i == 0)
+//         search_info.first_beta_cutoffs++;
+//       // Save beta-killers for next move ordering.
+//       if ((movelist[i].properties() & move_props_capture) == 0 && (movelist[i].properties() & move_props_promotion) == 0)
+//       {
+//         _beta_killers[1][_search_ply] = _beta_killers[0][_search_ply];
+//         _beta_killers[0][_search_ply] = movelist[i];
+//       }
+//       return beta;
+//     }
+//     if (move_score > alpha)
+//     {
+//       // Update alpha value.
+//       // We have found a better move.
+//       best_move = (movelist)[i];
+//       best_move._evaluation = move_score;
+//       alpha = move_score;
+//       alpha_move_cash[index(_side_to_move)][index(best_move.piece_type())][bit_idx(best_move.from())] += search_depth - _search_ply;
+//     }
+
+//     // Somewhere we have to check if time is up, or if the chess-engine
+//     // has received a "stop"-command, to interrupt the search.
+//     // This seems to be a good place to do that.
+//     if (!time_left)
+//     {
+//       best_move = SEARCH_HAS_BEEN_INTERRUPTED;
+//       search_info.search_interrupted = true;
+//       return 0.0;
+//     }
+//   }
+
+//   // Save evaluation of the position to the TT-cash and return the best
+//   // value among the possible moves.
+//   // If we haven't found any best_move (better than the original alpha)
+//   // then best_move isn't valid.
+//   if (best_move.is_valid())
+//   {
+//     element.set(_hash_tag, best_move, alpha, _search_ply);
+//   }
+//   return alpha;
+// }
+
 // Search algorithm: Negamax with alpha-beta-pruning
-float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move, const uint8_t search_depth, const bool nullmove_pruning)
+float Bitboard::new_negamax_with_pruning(float alpha, float beta, Bitmove& best_move, const int search_depth, const bool nullmove_pruning)
 {
 
   assert(beta > alpha);
+  //assert(nullmove_pruning == false);
+  // if (nullmove_pruning)
+  // {
+  //   std::cout << "NULLMOVEPRUNING !!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+  // }
+
+  int search_ply = _iteration_depth - search_depth;
 
   best_move = NO_MOVE;
-  if (_search_ply >= search_depth) // TODO: isn't a check for equality enough?
+  if (search_depth <= 0) // TODO: isn't a check for equality enough?
   {
     // Quiescence search.
     // It takes over the searching and the node counting from here,
     search_info.leaf_node_counter++;
-    auto evaluation = Quiesence_search(alpha, beta, N_SEARCH_PLIES_DEFAULT);
+    auto evaluation = Quiesence_search(alpha, beta, search_ply, MAX_N_SEARCH_PLIES_DEFAULT);
     //std::cout << "Q search " << evaluation << std::endl;
     return evaluation;
   }
@@ -942,7 +1097,7 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
   {
     // The position was found in the transposition table,
     // but is the evaluation good enough?
-    if (element._search_ply <= _search_ply)
+    if (element._search_depth >= search_depth)
     {
       search_info.hash_hits++;
       best_move = element._best_move;
@@ -950,21 +1105,20 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
     }
   }
 
-  // Nullmove heuristic.
+  // Nullmove heuristics.
   // Don't make a move, just hand over the turn to move to the opponent,
   // search on a lower depth to see if the opponent can improve beta,
   // otherwise we can cut off the search-tree here.
   // (Doesn't work if we're in check. Gives wrong result if we're in zugzwang,
   // when our best alternative would in fact be to, illegally, do nothing.)
   Takeback_state tb_state;
-  float nullmove_score = -infinite; // Must be lower than lowest evaluation
 
   if (nullmove_pruning && nullmove_conditions_OK(search_depth))
   {
-    make_nullmove(tb_state, dont_update_history);
-    nullmove_score = -negamax_with_pruning(-beta, -beta + 1.0F, best_move, search_depth - _search_ply - 4, no_nullmove_pruning);
+    make_nullmove(tb_state, do_update_history);
+    auto nullmove_score = -new_negamax_with_pruning(-beta, -beta + 1.0F, best_move, search_depth - 4, nullmove_pruning);
     takeback_null_move(tb_state, dont_update_history);
-    if (nullmove_score >= beta && fabs(nullmove_score) < 90.0F) // not mate
+    if (nullmove_score >= beta && fabsf(nullmove_score) < 90.0F) // not mate
     {
       search_info.nullmove_cutoffs++;
       return beta;
@@ -974,15 +1128,15 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
   // Now it's time to generate all possible moves in the position
   Bitmove best_move_dummy;
   list_t movelist;
-  find_legal_moves(movelist, Gentype::All);
+  find_legal_moves(movelist, Gentype::All, search_depth);
 
   // If there are no possible moves, evaluate_empty_movelist() will check for such things as
   // mate or stalemate which may happen before max_search_ply has been reached.
   if (movelist.size() == 0)
   {
     // ---------------------------------------
-    float evaluation = (_side_to_move == Color::White) ? evaluate_empty_movelist(_search_ply) : -evaluate_empty_movelist(_search_ply);
-    element.set(_hash_tag, UNDEFINED_MOVE, evaluation, _search_ply);
+    float evaluation = (_side_to_move == Color::White) ? evaluate_empty_movelist(search_ply) : -evaluate_empty_movelist(search_ply);
+    element.set(_hash_tag, UNDEFINED_MOVE, evaluation, search_depth);
     // ---------------------------------------
     return element._best_move._evaluation;
   }
@@ -992,9 +1146,9 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
   for (std::size_t i = 0; i < movelist.size(); i++)
   {
     // Make the selected move and ask min() to evaluate it further.
-    //std::cout << static_cast<int>(search_ply) << " " << magic_enum::enum_name(_side_to_move) << " " << movelist[i] << std::endl;
+    //std::cout << static_cast<int>(search_depth) << " " << magic_enum::enum_name(_side_to_move) << " " << movelist[i] << std::endl;
     new_make_move(movelist[i], tb_state);
-    move_score = -negamax_with_pruning(-beta, -alpha, best_move_dummy, search_depth, nullmove_pruning);
+    move_score = -new_negamax_with_pruning(-beta, -alpha, best_move_dummy, search_depth - 1, nullmove_pruning);
 
     // Restore game history and state to current position.
     takeback_latest_move(tb_state);
@@ -1012,11 +1166,12 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
       // Save beta-killers for next move ordering.
       if ((movelist[i].properties() & move_props_capture) == 0 && (movelist[i].properties() & move_props_promotion) == 0)
       {
-        _beta_killers[1][_search_ply] = _beta_killers[0][_search_ply];
-        _beta_killers[0][_search_ply] = movelist[i];
+        _beta_killers[1][search_ply] = _beta_killers[0][search_ply];
+        _beta_killers[0][search_ply] = movelist[i];
       }
       return beta;
     }
+
     if (move_score > alpha)
     {
       // Update alpha value.
@@ -1024,7 +1179,7 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
       best_move = (movelist)[i];
       best_move._evaluation = move_score;
       alpha = move_score;
-      alpha_move_cash[index(_side_to_move)][index(best_move.piece_type())][bit_idx(best_move.from())] += search_depth - _search_ply;
+      alpha_move_cash[index(_side_to_move)][index(best_move.piece_type())][bit_idx(best_move.from())] +=  search_depth;
     }
 
     // Somewhere we have to check if time is up, or if the chess-engine
@@ -1044,10 +1199,9 @@ float Bitboard::negamax_with_pruning(float alpha, float beta, Bitmove& best_move
   // then best_move isn't valid.
   if (best_move.is_valid())
   {
-    element.set(_hash_tag, best_move, alpha, _search_ply);
+    element.set(_hash_tag, best_move, alpha, search_depth);
   }
   return alpha;
 }
 
 } // End namespace C2_chess
-

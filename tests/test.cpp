@@ -32,13 +32,13 @@ const fs::path perft_suite_filename(project_root_dir.string() + "/tests/test_pos
 // {
 //   // setting current working directory
 //   fs::current_path(project_root_dir);
-//   REQUIRE(fs::current_path().string() == project_root_dir);  
+//   REQUIRE(fs::current_path().string() == project_root_dir);
 // }
 
 std::string get_FEN_test_position(unsigned int n)
 {
   // auto path = std::filesystem::current_path(); // getting path
-  
+
   // set current working directory
   //cd_project_root_dir();
 
@@ -128,7 +128,7 @@ TEST_CASE("perft_test") // A thorough move-generation test with public test-data
   // extra blank to the line and split the line with semicolon as delimiter).
   // max_depth should be 6 to fully run all pert-test, but that takes time,
   // so for a regression test I set it to 4 after testing through all 6 depths.
-  size_t max_depth = 4;
+  int max_depth = 4;
   uint64_t timediff;
   //nst bool init_pieces = true;
   const bool same_line = true;
@@ -138,7 +138,7 @@ TEST_CASE("perft_test") // A thorough move-generation test with public test-data
   std::vector<unsigned int> failed_testcases;
   std::vector<std::string> input_vector;
   unsigned int testnum = 1;
-  
+
   std::string line;
   while (std::getline(ifs, line))
   {
@@ -162,16 +162,16 @@ TEST_CASE("perft_test") // A thorough move-generation test with public test-data
     bb.init();
     bb.read_position(input_vector[0], init_pieces);
     //bb.find_legal_moves(*bb.get_movelist(0), Gentype::All);
-    for (size_t max_search_depth = 2; max_search_depth <= max_depth; max_search_depth++)
+    for (int max_search_depth = 2; max_search_depth <= max_depth; max_search_depth++)
     {
       bb.clear_search_info();
       steady_clock.tic();
       unsigned long int n_searched_nodes = bb.perft_test(0, max_search_depth);
       timediff = steady_clock.toc_us();
-      if (n_searched_nodes != static_cast<unsigned int>(std::stol(input_vector[max_search_depth - 1])))
+      if (n_searched_nodes != static_cast<unsigned int>(std::stol(input_vector[static_cast<std::size_t>(max_search_depth - 1)])))
       {
         failed = true;
-        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_depth - 1 << " failed. " << n_searched_nodes << " : " << input_vector[max_search_depth - 1]
+        std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_depth - 1 << " failed. " << n_searched_nodes << " : " << input_vector[static_cast<std::size_t>(max_search_depth - 1)]
                   << std::endl;
       }
       else
@@ -179,7 +179,7 @@ TEST_CASE("perft_test") // A thorough move-generation test with public test-data
         std::cout << "PERFT-testcase " << testnum << " for depth = " << max_search_depth - 1 << " passed. " << "n_leaf_nodes = " << n_searched_nodes << ". It took " << timediff
                   << " micro seconds." << std::endl;
       }
-      REQUIRE(n_searched_nodes == static_cast<unsigned int>(std::stoi(input_vector[max_search_depth - 1])));
+      REQUIRE(n_searched_nodes == static_cast<unsigned int>(std::stoi(input_vector[static_cast<std::size_t>(max_search_depth - 1)])));
     }
     if (failed)
     {
@@ -200,30 +200,31 @@ TEST_CASE("perft_test") // A thorough move-generation test with public test-data
 TEST_CASE("move_generation")
 {
   uint64_t timediff;
-  std::string arg = "";
   std::cout << "Please enter an argument to the Move_generation_test." << std::endl;
   std::cout << "You can enter the number of a specific test-position," << std::endl;
   std::cout << "or you can add a new test-position by entering its" << std::endl;
   std::cout << "filename, testpos72.pgn for instance." << std::endl;
   std::cout << "Entering all will test all test-positions. " << std::endl;
-  auto Answer = ask_for_input_with_timeout("Your choice: ");
-  std::cin >> arg;
+  //auto Answer = ask_for_input_with_timeout("Your choice: ");
+  //std::string answer = ask_user_for_input("Your choice: ");
+  std::string answer = "testpos101.pgn";
+  std::cout << answer << std::endl;
   steady_clock.tic();
   Bitboard_with_utils chessboard;
 
   chessboard.init();
   unsigned int single_testnum = 0;
-  if (arg != "" && arg != "all")
+  if (answer != "" && answer != "all")
   {
-    if (regexp_match(arg, "^testpos[0-9]+.pgn$")) // matches e.g. testpos23.pgn
+    if (regexp_match(answer, "^testpos[0-9]+.pgn$")) // matches e.g. testpos23.pgn
     {
-      REQUIRE(chessboard.add_mg_test_position(arg) == 0);
+      REQUIRE(chessboard.add_mg_test_position(answer) == 0);
     }
-    else if (regexp_match(arg, "^[0-9]+$")) // matches e.g 23
-      single_testnum = static_cast<unsigned int>(std::stoi(arg));
+    else if (regexp_match(answer, "^[0-9]+$")) // matches e.g 23
+      single_testnum = static_cast<unsigned int>(std::stoi(answer));
     else
     {
-      std::cerr << "ERROR: Unknown input argument: " << arg << std::endl;
+      std::cerr << "ERROR: Unknown input argument: " << answer << std::endl;
       exit(-1);
     }
   }
@@ -262,9 +263,9 @@ TEST_CASE("history")
     bwu.add_position_to_game_history(hash_tag);
     REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
     REQUIRE(bwu.get_history_state()._n_repeated_positions == zero);
-    REQUIRE(bwu.get_history_state()._n_plies == hash_tag + 1);
+    REQUIRE(bwu.get_history_state()._n_plies == static_cast<int>(hash_tag + 1));
   }
-  for (std::size_t n_plies = 256; n_plies > 0; n_plies--)
+  for (int n_plies = 256; n_plies > 0; n_plies--)
   {
     bwu.takeback_from_game_history();
     REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
@@ -277,11 +278,11 @@ TEST_CASE("history")
     bwu.add_position_to_game_history(hash_tag);
     bwu.add_position_to_game_history(hash_tag);
     REQUIRE(bwu.get_history_state()._is_threefold_repetiotion == zero);
-    REQUIRE(bwu.get_history_state()._n_repeated_positions == hash_tag + 1);
-    REQUIRE(bwu.get_history_state()._n_plies == 2 * (hash_tag + 1));
+    REQUIRE(bwu.get_history_state()._n_repeated_positions == static_cast<int>(hash_tag + 1));
+    REQUIRE(bwu.get_history_state()._n_plies ==  static_cast<int>(2 * (hash_tag + 1)));
   }
-  size_t tmp = 256;
-  for (std::size_t n_plies = 256; n_plies > 0; n_plies--)
+  int tmp = 256;
+  for (int n_plies = 256; n_plies > 0; n_plies--)
   {
     bwu.takeback_from_game_history();
     REQUIRE(bwu.get_history_state()._n_plies == 256 + n_plies - 1);
@@ -536,7 +537,7 @@ TEST_CASE("popright_square")
 //  std::cout << "" << std::endl;
   squares = diagonal[7];
   saved_squares = squares;
-  uint64_t bit_idx = 0;
+  uint8_t bit_idx = 0;
   while (squares)
   {
 //    std::cout << to_binary(squares) << std::endl;
@@ -641,114 +642,114 @@ TEST_CASE("evaluation")
   chessboard.init();
   chessboard.read_position(start_position_FEN);
   //chessboard.find_legal_moves(*chessboard.get_movelist(0), Gentype::All);
-  REQUIRE(fabs(chessboard.evaluate_position()) < 0.01);
+  REQUIRE(fabsf(chessboard.evaluate_position()) < 0.01F);
   chessboard.make_UCI_move("e2e4");
   now.tic();
   evaluation = chessboard.evaluate_position();
   time_taken = now.toc_ns();
   std::cout << "evaluation-time: " << time_taken << " nanoseconds." << std::endl;
-  REQUIRE(fabs(evaluation - 0.05) < 0.01);
+  REQUIRE(fabsf(evaluation - 0.05F) < 0.01F);
   chessboard.make_UCI_move("e7e5");
-  REQUIRE(fabs(chessboard.evaluate_position()) < 0.01);
+  REQUIRE(fabsf(chessboard.evaluate_position()) < 0.01F);
   chessboard.make_UCI_move("g1f3");
   now.tic();
   evaluation = chessboard.evaluate_position();
   time_taken = now.toc_ns();
   std::cout << "evaluation-time: " << time_taken << " nanoseconds." << std::endl;
-  REQUIRE(fabs(evaluation - 0.09) < 0.01);
+  REQUIRE(fabsf(evaluation - 0.09F) < 0.01F);
   chessboard.make_UCI_move("b8c6");
-  REQUIRE(fabs(chessboard.evaluate_position()) < 0.01);
+  REQUIRE(fabsf(chessboard.evaluate_position()) < 0.01F);
   chessboard.make_UCI_move("d2d4");
   now.tic();
   evaluation = chessboard.evaluate_position();
   time_taken = now.toc_ns();
   std::cout << "evaluation-time: " << time_taken << " nanoseconds." << std::endl;
-  REQUIRE(fabs(evaluation - 0.07) < 0.01);
+  REQUIRE(fabsf(evaluation - 0.07F) < 0.01F);
   chessboard.make_UCI_move("d7d5");
-  REQUIRE(fabs(chessboard.evaluate_position()) < 0.01);
+  REQUIRE(fabsf(chessboard.evaluate_position()) < 0.01F);
   chessboard.make_UCI_move("e4d5");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 0.99) < 0.01);
+  REQUIRE(fabsf(evaluation - 0.99F) < 0.01F);
   chessboard.make_UCI_move("e5d4");
-  REQUIRE(fabs(chessboard.evaluate_position()) < 0.01);
+  REQUIRE(fabsf(chessboard.evaluate_position()) < 0.01F);
   chessboard.make_UCI_move("d5c6");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 2.95) < 0.01);
+  REQUIRE(fabsf(evaluation - 2.95F) < 0.01F);
   chessboard.make_UCI_move("b7c6");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 2.03) < 0.01);
+  REQUIRE(fabsf(evaluation - 2.03F) < 0.01F);
   chessboard.make_UCI_move("d1d4");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.14) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.14F) < 0.01F);
   chessboard.make_UCI_move("d8d4");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation + 5.94) < 0.01);
+  REQUIRE(fabsf(evaluation + 5.94F) < 0.01F);
   chessboard.make_UCI_move("f3d4");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.08) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.08F) < 0.01F);
   chessboard.make_UCI_move("c8h3");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.03) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.03F) < 0.01F);
   chessboard.make_UCI_move("f1c4");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.10) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.10F) < 0.01F);
   chessboard.make_UCI_move("e8c8");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 2.91) < 0.01);
+  REQUIRE(fabsf(evaluation - 2.91F) < 0.01F);
   chessboard.make_UCI_move("e1g1");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.06) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.06F) < 0.01F);
   chessboard.make_UCI_move("d8d4");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 0.06) < 0.01);
+  REQUIRE(fabsf(evaluation - 0.06F) < 0.01F);
   chessboard.make_UCI_move("g2h3");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 2.96) < 0.01);
+  REQUIRE(fabsf(evaluation - 2.96F) < 0.01F);
   chessboard.make_UCI_move("d4c4");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation + 0.06) < 0.01);
+  REQUIRE(fabsf(evaluation + 0.06F) < 0.01F);
   chessboard.make_UCI_move("f1e1");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation + 0.02) < 0.01);
+  REQUIRE(fabsf(evaluation + 0.02F) < 0.01F);
   chessboard.make_UCI_move("g8f6");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation + 0.11) < 0.01);
+  REQUIRE(fabsf(evaluation + 0.11F) < 0.01F);
   chessboard.make_UCI_move("c1g5");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation + 0.06) < 0.01);
+  REQUIRE(fabsf(evaluation + 0.06F) < 0.01F);
   chessboard.make_UCI_move("c4c2");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation + 1.02) < 0.01);
+  REQUIRE(fabsf(evaluation + 1.02F) < 0.01F);
   chessboard.make_UCI_move("b1c3");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation + 0.93) < 0.01);
+  REQUIRE(fabsf(evaluation + 0.93F) < 0.01F);
   chessboard.make_UCI_move("c2f2");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation + 1.93) < 0.01);
+  REQUIRE(fabsf(evaluation + 1.93F) < 0.01F);
   chessboard.make_UCI_move("g1f2");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.07) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.07F) < 0.01F);
   chessboard.make_UCI_move("h7h6");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.07) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.07F) < 0.01F);
   chessboard.make_UCI_move("g5f6");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 6.15) < 0.01);
+  REQUIRE(fabsf(evaluation - 6.15F) < 0.01F);
   chessboard.make_UCI_move("g7f6");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.15) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.15F) < 0.01F);
   chessboard.make_UCI_move("c3e4");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.09) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.09F) < 0.01F);
   chessboard.make_UCI_move("h6h5");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.09) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.09F) < 0.01F);
   chessboard.make_UCI_move("e4c5");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.13) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.13F) < 0.01F);
   chessboard.make_UCI_move("h8g8");
   evaluation = chessboard.evaluate_position();
-  REQUIRE(fabs(evaluation - 3.08) < 0.01);
+  REQUIRE(fabsf(evaluation - 3.08F) < 0.01F);
   chessboard.make_UCI_move("e1e8");
   evaluation = chessboard.evaluate_empty_movelist(7);
   REQUIRE(is_close(evaluation, 93.0F));
@@ -964,6 +965,29 @@ TEST_CASE("find_best_move")
   SECTION("examining_strange_rook-move")
   {
     std::string FEN_string = get_FEN_test_position(80);
+    game.read_position_FEN(FEN_string);
+    game.init();
+    go_params.movetime = 100000; // milliseconds
+    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    std::stringstream ss;
+    ss << bestmove;
+    REQUIRE(ss.str() == "Rc8-c4");
+    std::cout << FEN_string << std::endl;
+    std::cout << reverse_FEN_string(FEN_string) << std::endl;
+    game.read_position_FEN(reverse_FEN_string(FEN_string));
+    game.init();
+    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    ss.clear();
+    ss.str("");
+    ss << bestmove;
+    REQUIRE(ss.str() == "Rc1-c5");
+  }
+
+  SECTION("examining_strange_queen_move2")
+  {
+    std::string FEN_string = get_FEN_test_position(101);
     game.read_position_FEN(FEN_string);
     game.init();
     go_params.movetime = 100000; // milliseconds

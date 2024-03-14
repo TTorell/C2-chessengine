@@ -1,10 +1,9 @@
 #ifndef __SHARED_OSTREAM
 #define __SHARED_OSTREAM
 
-#include <thread>
 #include <mutex>
 #include <iostream>
-#include "chessfuncs.hpp"
+#include <sstream>
 
 //// Declaration of the concept "arithmetic", which
 //// is satisfied by any type 'T' such that for values 'a'
@@ -17,32 +16,31 @@
 //{
 //  requires std::is_arithmetic_v<T>;
 //};
-namespace
-{
+// namespace
+// {
 
-// The chessboard prints some utf-8 cgaracters.
-// So, I figured it would be good if the whole logfile
-// has the same character format.
-std::string iso_8859_1_to_utf8(const std::string& str)
-{
-  std::string str_out;
-  for (const char ch : str)
-  {
-    uint8_t byte = static_cast<uint8_t>(ch);
-    if (byte < 0x80)
-    {
-      str_out.push_back(static_cast<char>(byte));
-    }
-    else
-    {
-      str_out.push_back(static_cast<char>(0xc0 | (byte >> 6)));
-      str_out.push_back(static_cast<char>(0x80 | (byte & 0x3f)));
-    }
-  }
-  return str_out;
-}
-
-} // End of fileprivate namespace
+// // The chessboard prints some utf-8 characters.
+// // So, I figured it would be good if the whole logfile
+// // has the same character format.
+// std::string iso_8859_1_to_utf8(const std::string& str)
+// {
+//   std::string str_out;
+//   for (const char ch : str)
+//   {
+//     uint8_t byte = static_cast<uint8_t>(ch);
+//     if (byte < 0x80)
+//     {
+//       str_out.push_back(static_cast<char>(byte));
+//     }
+//     else
+//     {
+//       str_out.push_back(static_cast<char>(0xc0 | (byte >> 6)));
+//       str_out.push_back(static_cast<char>(0x80 | (byte & 0x3f)));
+//     }
+//   }
+//   return str_out;
+// }
+// } // End of fileprivate namespace
 
 namespace C2_chess
 {
@@ -100,6 +98,29 @@ namespace C2_chess
 // TODO: Maybe something to check dynamically in the class.
 // instead of checking _is_open. Didn,t think of that,
 // but all ostreams doesn't have an is_open() method.
+
+
+// The chessboard prints some utf-8 characters.
+// So, I figured it would be good if the whole logfile
+// has the same character format.
+inline std::string iso_8859_1_to_utf8(const std::string& str)
+{
+  std::string str_out;
+  for (const char ch : str)
+  {
+    uint8_t byte = static_cast<uint8_t>(ch);
+    if (byte < 0x80)
+    {
+      str_out.push_back(static_cast<char>(byte));
+    }
+    else
+    {
+      str_out.push_back(static_cast<char>(0xc0 | (byte >> 6)));
+      str_out.push_back(static_cast<char>(0x80 | (byte & 0x3f)));
+    }
+  }
+  return str_out;
+}
 
 class Shared_ostream
 {

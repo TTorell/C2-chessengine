@@ -21,7 +21,7 @@
 #include <bitset>
 #include <cmath>
 
-#include "magic_enum.hpp"
+//#include "magic_enum.hpp"
 #include "chesstypes.hpp"
 
 namespace fs = std::filesystem;
@@ -91,7 +91,7 @@ constexpr auto type_name2() {
 template<typename T>
 inline bool is_close(T val1, T val2, T marginal)
 {
-  if (fabs(val1 - val2) <= marginal)
+  if (fabs(static_cast<double>(val1 - val2)) <= static_cast<double>(marginal))
     return true;
   return false;
 }
@@ -99,7 +99,7 @@ inline bool is_close(T val1, T val2, T marginal)
 template<typename T>
 inline bool is_close(T val1, T val2)
 {
-  const T marginal = 1e-10;
+  const T marginal = static_cast<T>(1e-10);
   return is_close(val1, val2, marginal);
 }
 
@@ -212,7 +212,7 @@ inline uint64_t rightmost_square(const uint64_t squares)
   if (squares)
   {
     // return (squares & (squares - 1)) ^ (squares); // Is just a little bit slower
-    return square(__builtin_ctzll(squares));
+    return square(static_cast<uint8_t>(std::countr_zero(squares)));
   }
   return zero;
 }
@@ -222,7 +222,7 @@ inline uint64_t leftmost_square(uint64_t squares)
   if (squares)
   {
     // return square(63 - std::countl_zero(squares)); -std=c++20
-    return square(63 - __builtin_clzl(squares));
+    return square_from_int(63 - std::countl_zero(squares));
   }
   return zero;
 }
@@ -306,7 +306,7 @@ inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diago
 //  return idx;
 //}
 
-inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square, uint64_t pattern_center_idx = e4_square_idx)
+inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square, int pattern_center_idx = e4_square_idx)
 {
   assert(pattern);
   assert(std::has_single_bit(center_square));
@@ -325,7 +325,7 @@ inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square, uint64_
   return squares;
 }
 
-inline uint64_t adjust_passer_pattern(uint64_t pattern, uint64_t center_square, uint64_t pattern_center_idx = e4_square_idx)
+inline uint64_t adjust_passer_pattern(uint64_t pattern, uint64_t center_square, int pattern_center_idx = e4_square_idx)
 {
   assert(pattern);
   assert(std::has_single_bit(center_square));
@@ -450,6 +450,7 @@ std::string user_input(const std::string& message);
 std::string reverse_FEN_string(const std::string& FEN_string);
 std::vector<std::string> reverse_moves(const std::vector<std::string>& moves);
 std::string ask_for_input_with_timeout(const std::string& request);
+std::string ask_user_for_input(const std::string& request);
 
 } // End namespace C2_chess
 #endif //CHESSFUNCS_HPP_
