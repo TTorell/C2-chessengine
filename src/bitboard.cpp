@@ -1113,7 +1113,7 @@ float Bitboard::new_negamax_with_pruning(float alpha, float beta, Bitmove& best_
   // when our best alternative would in fact be to, illegally, do nothing.)
   Takeback_state tb_state;
 
-  if (nullmove_pruning && nullmove_conditions_OK(search_depth))
+  if (nullmove_pruning && search_ply > 0 && nullmove_conditions_OK(search_depth))
   {
     make_nullmove(tb_state, do_update_history);
     auto nullmove_score = -new_negamax_with_pruning(-beta, -beta + 1.0F, best_move, search_depth - 4, nullmove_pruning);

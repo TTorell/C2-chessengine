@@ -11,7 +11,6 @@
 #include "bitboard_with_utils.hpp"
 #include "chessfuncs.hpp"
 #include "current_time.hpp"
-#include "config_param.hpp"
 
 
 namespace C2_chess
@@ -86,13 +85,6 @@ std::ostream& operator<<(std::ostream& os, const Bitmove& m)
   if (m.properties() & move_props_stalemate)
     sstr << " stalemate";
   os << sstr.str();
-  return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const Config_params& params)
-{
-  os << "Configuration parameters:" << std::endl;
-  os << params.get_all_params_string() << std::endl;
   return os;
 }
 

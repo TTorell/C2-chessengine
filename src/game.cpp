@@ -335,11 +335,10 @@ Bitmove Game::engine_go(const Config_params& config_params, const Go_params& go_
   //bool nullmove_pruning = true;
 
   // Read some configuration parameters
-  auto max_search_depth = config_params.Get_config_value<int>("max_search_depth");
-  auto use_incremental_search = config_params.Get_config_value<bool>("use_incremental_search");
-  auto nullmove_pruning =  config_params.Get_config_value<bool>("use_nullmove_pruning");
-
-  //_chessboard.init_material_evaluation(); // TODO: Should this be placed somewhere else, init_piece_state()?
+  auto max_search_depth = Get_config_value<int>("max_search_depth", config_params);
+  auto use_incremental_search = Get_config_value<bool>("use_incremental_search", config_params);
+  auto nullmove_pruning = Get_config_value<bool>("use_nullmove_pruning", config_params);
+  _chessboard.init_material_evaluation(); // TODO: Should this be placed somewhere else, init_piece_state()?
 
   // Search for best move
   if (use_incremental_search)

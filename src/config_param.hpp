@@ -79,7 +79,7 @@ class Config_params: public std::map<std::string, Config_param>
   public:
     Config_params()
     {
-      // This construct is just to not leakmemory
+      // This construct is just to not leak memory
       Config_param p1("max_search_depth", "7", "spin", "7", "2", "8");
       Config_param p2("use_nullmove_pruning", "true", "check", "true");
       Config_param p3("use_incremental_search", "true", "check", "true");
@@ -116,43 +116,6 @@ class Config_params: public std::map<std::string, Config_param>
       }
     }
 
-    template <typename T>
-    T Get_config_value(const std::string& param_name) const; // purposely left undefined
-
-    template<>
-    inline int Get_config_value<int>(const std::string& param_name) const
-    {
-      auto str_value = get_config_param(param_name);
-      if (!str_value.empty())
-        return std::stoi(str_value);
-      else
-       return 0;
-    }
-
-    template<>
-    inline float Get_config_value<float>(const std::string& param_name) const
-    {
-      auto str_value = get_config_param(param_name);
-      if (!str_value.empty())
-        return std::stof(str_value);
-      else
-        return 0.0;
-    }
-
-    template<>
-    inline bool Get_config_value<bool>(const std::string& param_name) const
-    {
-      auto str_value = get_config_param(param_name);
-      return str_value == "true" || str_value == "TRUE" || str_value == "True";
-    }
-
-    template<>
-    inline std::string Get_config_value<std::string>(const std::string& param_name) const
-    {
-      auto str_value = get_config_param(param_name);
-      return str_value;
-    }
-
     std::string get_all_params_string() const
     {
       std::string s = "";
@@ -165,6 +128,50 @@ class Config_params: public std::map<std::string, Config_param>
 
     friend std::ostream& operator<<(std::ostream& os, const Config_params& m);
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Config_params& params)
+{
+  os << "Configuration parameters:" << std::endl;
+  os << params.get_all_params_string() << std::endl;
+  return os;
+}
+
+template <typename T>
+T Get_config_value(const std::string& param_name, const Config_params& config_params); // purposely left undefined
+
+template<>
+inline int Get_config_value<int>(const std::string& param_name, const Config_params& config_params)
+{
+  auto str_value = config_params.get_config_param(param_name);
+  if (!str_value.empty())
+    return std::stoi(str_value);
+  else
+   return 0;
+}
+
+template<>
+inline float Get_config_value<float>(const std::string& param_name, const Config_params& config_params)
+{
+  auto str_value = config_params.get_config_param(param_name);
+  if (!str_value.empty())
+    return std::stof(str_value);
+  else
+    return 0.0;
+}
+
+template<>
+inline bool Get_config_value<bool>(const std::string& param_name, const Config_params& config_params)
+{
+  auto str_value = config_params.get_config_param(param_name);
+  return str_value == "true" || str_value == "TRUE" || str_value == "True";
+}
+
+template<>
+inline std::string Get_config_value<std::string>(const std::string& param_name, const Config_params& config_params)
+{
+  auto str_value = config_params.get_config_param(param_name);
+  return str_value;
+}
 
 } // namespace C2_chess
 

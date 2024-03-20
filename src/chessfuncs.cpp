@@ -636,7 +636,7 @@ bool question_to_user(const std::string& question, std::string regexp_correct_an
 {
   std::string the_answer;
   std::cout << question;
-  std::cin >> answer;
+  std::cin >> the_answer;
   return regexp_match(the_answer, regexp_correct_answer);
 }
 

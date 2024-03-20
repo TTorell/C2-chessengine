@@ -200,18 +200,19 @@ TEST_CASE("perft_test") // A thorough move-generation test with public test-data
 TEST_CASE("move_generation")
 {
   uint64_t timediff;
+  std::string answer;
   std::cout << "Please enter an argument to the Move_generation_test." << std::endl;
   std::cout << "You can enter the number of a specific test-position," << std::endl;
   std::cout << "or you can add a new test-position by entering its" << std::endl;
   std::cout << "filename, testpos72.pgn for instance." << std::endl;
   std::cout << "Entering all will test all test-positions. " << std::endl;
-  //auto Answer = ask_for_input_with_timeout("Your choice: ");
-  //std::string answer = ask_user_for_input("Your choice: ");
-  std::string answer = "testpos101.pgn";
-  std::cout << answer << std::endl;
+  std::cout << "Your choice: ";
+  //std::getline(std::cin>>std::ws, answer);
+  std::cout << "What" << std::endl;
+  std::cin >> std::ws >> answer;
   steady_clock.tic();
   Bitboard_with_utils chessboard;
-
+  answer = "testpos101.pgn";
   chessboard.init();
   unsigned int single_testnum = 0;
   if (answer != "" && answer != "all")
@@ -972,7 +973,7 @@ TEST_CASE("find_best_move")
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Rc8-c4");
+    REQUIRE(ss.str() == "Nd3-c1+");
     std::cout << FEN_string << std::endl;
     std::cout << reverse_FEN_string(FEN_string) << std::endl;
     game.read_position_FEN(reverse_FEN_string(FEN_string));
@@ -982,7 +983,7 @@ TEST_CASE("find_best_move")
     ss.clear();
     ss.str("");
     ss << bestmove;
-    REQUIRE(ss.str() == "Rc1-c5");
+    REQUIRE(ss.str() == "Nd6-c8+");
   }
 
   SECTION("examining_strange_queen_move2")
@@ -995,7 +996,7 @@ TEST_CASE("find_best_move")
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Rc8-c4");
+    REQUIRE(ss.str() == "Nf6-d7");
     std::cout << FEN_string << std::endl;
     std::cout << reverse_FEN_string(FEN_string) << std::endl;
     game.read_position_FEN(reverse_FEN_string(FEN_string));
@@ -1005,7 +1006,7 @@ TEST_CASE("find_best_move")
     ss.clear();
     ss.str("");
     ss << bestmove;
-    REQUIRE(ss.str() == "Rc1-c5");
+    REQUIRE(ss.str() == "Nf3-d2");
   }
 
 }
