@@ -269,7 +269,7 @@ inline void Bitboard::update_state_after_king_move(const Bitmove& m)
   }
 }
 
-void Bitboard::make_move(const size_t i, Takeback_state& tb_state)
+void Bitboard::make_move(const std::size_t i, Takeback_state& tb_state)
 {
   list_t movelist;
   find_legal_moves(movelist, Gentype::All);

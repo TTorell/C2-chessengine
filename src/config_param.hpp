@@ -85,7 +85,7 @@ class Config_params: public std::map<std::string, Config_param>
       Config_param p3("use_incremental_search", "true", "check", "true");
       Config_param p4("search_until_no_captures", "false", "check", "false");
       insert(std::make_pair("max_search_depth", p1));
-      insert(std::make_pair("use_pruning", p2));
+      insert(std::make_pair("use_nullmove_pruning", p2));
       insert(std::make_pair("use_incremental_search", p3));
       insert(std::make_pair("search_until_no_captures", p4));
     }

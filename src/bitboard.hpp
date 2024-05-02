@@ -23,16 +23,16 @@
 #include <cassert>
 
 // using a hash-table built on a std::unordered_map
-using TT = C2_chess::Transposition_table;
-using TT_elem = C2_chess::TT_element;
+// using TT = C2_chess::Hash_map_TT;
+// using TT_elem = C2_chess::TT_element;
 
 // An experiment with a more traditional hash-table:
 // (It's a little faster for reasonably shallow search-depths, but the cash-elements often
 // gets overwritten on higher search-depths resulting in calculation of more
 // nodes and shorter extracted PV-lines. Also, each hash-element gets bigger because
 // the hash-tag itself must also be stored in each element.)
-// using TT = C2_chess::Transposition_table_2;
-// using TT_elem = C2_chess::TT_element_2;
+using TT = C2_chess::Classic_hash_list_TT;
+using TT_elem = C2_chess::TT_element_2;
 
 namespace C2_chess
 {
@@ -47,7 +47,7 @@ class Bitboard
     // a position doesn't have to be recalculated if it appears again during the
     // search. The information is also used to retrieve the PV-moves used in the
     // move-ordering, essential for the pruning of the "search-tree".
-    static TT transposition_table;
+    static TT transposition_table; // One miljon positions
 
     // history stores the move-history in the game as well as during a search-operation.
     // Needed for instance to decide "threefold-draw".
@@ -282,7 +282,7 @@ class Bitboard
     // ------------------------------------
 
     // Looks up the i:th move in movelist and makes it.
-    void make_move(const size_t i, Takeback_state& tb_state);
+    void make_move(const std::size_t i, Takeback_state& tb_state);
 
     // Only for the command-line interface, where the user
     // is prompted to enter the new move on the keyboard,
@@ -350,9 +350,7 @@ class Bitboard
 
     void start_timer_thread(const double time);
 
-    void clear_transposition_table(Table table = Table::Current);
-
-    void switch_tt_tables();
+    void clear_transposition_table();
 
     inline Color get_side_to_move() const
     {

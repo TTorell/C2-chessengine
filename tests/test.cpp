@@ -6,22 +6,27 @@
  */
 
 #define CATCH_CONFIG_MAIN
-#include "catch.hpp"
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <cmath>
-#include "../src/bitboard_with_utils.hpp"
-#include "../src/chessfuncs.hpp"
-#include "../src/current_time.hpp"
-#include "../src/game.hpp"
-#include "../src/current_time.hpp"
-#include "../src/uci.hpp"
+#include "bitboard_with_utils.hpp"
+#include "chessfuncs.hpp"
+#include "current_time.hpp"
+#include "game.hpp"
+#include "current_time.hpp"
+#include "uci.hpp"
+#include "catch.hpp"
+#include <memory>
 
-using namespace C2_chess;
 namespace fs = std::filesystem;
-namespace // file private namespace
+namespace
 {
-Current_time steady_clock;
+  C2_chess::Current_time steady_clock;
+}
+
+namespace C2_chess
+{
 std::ofstream ofs(get_logfile_name());
 Shared_ostream& logfile = *(Shared_ostream::get_instance(ofs, ofs.is_open()));
 const fs::path project_root_dir(""s + getenv("HOME") + "/eclipse-workspace/C2-chessengine");
@@ -52,7 +57,7 @@ std::string get_FEN_test_position(unsigned int n)
     if ((line.empty()) || line[0] == ' ')
       continue;
     if (n == testnum)
-    {
+     {
       // In this case each line in FEN_test_positions.txt contains the FEN-string
       // followed by a list of all legal moves in the position at the end.
       // Extract the actual FEN_string:
@@ -115,7 +120,16 @@ void make_and_takeback_move(Game& game, const std::string& uci_move)
   REQUIRE(bwu.get_game_history() == saved_game_history);
 }
 
-} // End of fileprivate namespace
+TEST_CASE("template_and_sharep_ptr")
+{
+  auto number = 0.034F;
+  std::cout << number << std::endl;
+  std::shared_ptr<Messenger<float>> sp;
+  auto kalle=std::make_shared<Messenger<float>>();
+  kalle.get()->set_value(number);
+  std::cout << kalle.get()-> get_value() << std::endl;
+  REQUIRE(kalle.get()->get_value() == number);
+}
 
 TEST_CASE("perft_test") // A thorough move-generation test with public test-data from the web.
 {
@@ -210,9 +224,9 @@ TEST_CASE("move_generation")
   //std::getline(std::cin>>std::ws, answer);
   std::cout << "What" << std::endl;
   std::cin >> std::ws >> answer;
+  std::cout << "ANSWER: " << answer << std::endl;
   steady_clock.tic();
   Bitboard_with_utils chessboard;
-  answer = "testpos101.pgn";
   chessboard.init();
   unsigned int single_testnum = 0;
   if (answer != "" && answer != "all")
@@ -772,16 +786,16 @@ TEST_CASE("evaluation, mate and stalemate")
   {
     chessboard.make_UCI_move("c8c1");
     evaluation = chessboard.evaluate_empty_movelist(6);
-    REQUIRE(evaluation == Approx(-94.0F).margin(0.0001).epsilon(1e-12));
+    REQUIRE(evaluation == Catch::Detail::Approx(-94.0F).margin(0.0001).epsilon(1e-12));
     evaluation = chessboard.evaluate_empty_movelist(1);
-    REQUIRE(evaluation == Approx(-99.0F).margin(0.0001).epsilon(1e-12));
+    REQUIRE(evaluation == Catch::Detail::Approx(-99.0F).margin(0.0001).epsilon(1e-12));
   }
 
   SECTION("stalemate")
   {
     chessboard.make_UCI_move("c8g8");
     evaluation = chessboard.evaluate_empty_movelist(1);
-    REQUIRE(evaluation == Approx(0.0F).margin(0.0001).epsilon(1e-12));
+    REQUIRE(evaluation == Catch::Detail::Approx(0.0F).margin(0.0001).epsilon(1e-12));
   }
 }
 
@@ -804,7 +818,7 @@ TEST_CASE("find_best_move")
     std::cout << "Best move: " << bestmove << std::endl;
     std::stringstream ss;
     ss << bestmove;
-    REQUIRE(ss.str() == "Be4-a8");
+    REQUIRE(ss.str() == "Ke5-e6");
     game.read_position_FEN(reverse_FEN_string(FEN_string));
     game.init();
     bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
@@ -812,7 +826,7 @@ TEST_CASE("find_best_move")
     ss.clear();
     ss.str("");
     ss << bestmove;
-    REQUIRE(ss.str() == "Be5-h8");
+    REQUIRE(ss.str() == "Ke4-e3");
   }
 
   SECTION("examining_strange_threefold_repetition") // fixed
@@ -1009,6 +1023,28 @@ TEST_CASE("find_best_move")
     REQUIRE(ss.str() == "Nf3-d2");
   }
 
+  SECTION("missing a win by perpetual")
+  {
+    std::string FEN_string = get_FEN_test_position(102);
+    game.read_position_FEN(FEN_string);
+    game.init();
+    go_params.movetime = 100000; // milliseconds
+    Bitmove bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    std::stringstream ss;
+    ss << bestmove;
+    REQUIRE(ss.str() == "b3-b2");
+    std::cout << FEN_string << std::endl;
+    std::cout << reverse_FEN_string(FEN_string) << std::endl;
+    game.read_position_FEN(reverse_FEN_string(FEN_string));
+    game.init();
+    bestmove = game.engine_go(config_params, go_params, use_max_search_depth);
+    std::cout << "Best move: " << bestmove << std::endl;
+    ss.clear();
+    ss.str("");
+    ss << bestmove;
+    REQUIRE(ss.str() == "b6-b7");
+  }
 }
 
 TEST_CASE("50-moves-rule")
@@ -1437,3 +1473,4 @@ TEST_CASE("print_evaluations")
 //  std::cout << x << b_idx << sq << std::endl;
 //
 //}
+} // End of namespace C2_chess

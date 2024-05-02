@@ -1004,17 +1004,13 @@ inline void Bitboard::add_move(const int search_ply, list_ref movelist, Piecetyp
   // See if new_move is the "PV-move" for the current position.
   // If it is, Then give it a high evaluation for the move-ordering,
   // so it'll be sorted as the first move.
-
-//  if (_previous_search_best_move.is_valid())
-//  {
-    if (new_move == _previous_search_best_move)
-    {
-      //std::cout << "Sorting, best move: " << _previous_search_best_move << ":" << new_move << std::endl;
-      new_move._evaluation = infinite;
-      movelist.push_front(new_move);
-      return;
-    }
-//  }
+  if (new_move == _previous_search_best_move)
+  {
+    //std::cout << "Sorting, best move: " << _previous_search_best_move << ":" << new_move << std::endl;
+    new_move._evaluation = infinite;
+    movelist.push_front(new_move);
+    return;
+  }
 
   if (new_move == _beta_killers[0][search_ply])
   {
@@ -1096,7 +1092,7 @@ void Bitboard::find_legal_moves(list_ref movelist, Gentype gt, const int search_
   // What did the previous search have to say about best_move in this position?
   // Playing around. Testing that decltype(auto) also adds reference qualifier (and const/volatile),
   // which only "auto" wouldn't do.
-  decltype(auto) tte = transposition_table.find(_hash_tag, Table::Previous);
+  decltype(auto) tte = transposition_table.find(_hash_tag);
   //  std::cout << type_name<decltype(tte)>() << std::endl;
   //  // Gives "C2_chess::TT_element&" as it should.
   //
@@ -1106,7 +1102,7 @@ void Bitboard::find_legal_moves(list_ref movelist, Gentype gt, const int search_
   //  typename2() gives a different output (maybe more detailed)
   //  std::cout << type_name2<decltype(start_position_FEN)>() << std::endl;
   //  // Gives "const std::basic_string<char>", which also seems OK.
-  if (tte.is_initialized() && tte._search_depth >= search_depth)
+  if (tte.is_initialized())
   {
     _previous_search_best_move = tte._best_move;
   }

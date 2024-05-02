@@ -196,12 +196,12 @@ std::ostream& print_backtrace(std::ostream& os)
   {
     dup2(2, 1); // redirect output to stderr
     os << "stack trace for " << name_buf << " pid=" << pid_buf << std::endl;
-    execlp("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, NULL);
+    execlp("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, nullptr);
     abort(); /* If gdb failed to start */
   }
   else
   {
-    waitpid(child_pid, NULL, 0);
+    waitpid(child_pid, nullptr, 0);
   }
   return os;
 }
@@ -304,7 +304,7 @@ std::string get_stdout_from_cmd(std::string cmd)
   if (stream)
   {
     while (!feof(stream))
-      if (fgets(buffer, max_buffer, stream) != NULL)
+      if (fgets(buffer, max_buffer, stream) != nullptr)
         data.append(buffer);
     close_pipe(stream);
   }

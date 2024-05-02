@@ -271,12 +271,11 @@ Bitmove Game::incremental_search(const double movetime_ms, const int max_depth, 
     //std::this_thread::sleep_for(std::chrono::microseconds(200));
   }
 
-  _chessboard.clear_transposition_table(Table::Both);
+  _chessboard.clear_transposition_table();
   _chessboard.clear_search_vars();
 
   for (int search_depth = 1; search_depth <= max_search_depth; search_depth++)
   {
-    _chessboard.switch_tt_tables();
     _chessboard.set_iteration_depth(search_depth);
     local_best_move = find_best_move(_score, search_depth, nullmove_pruning);
     // Has the search on this ply been aborted by time limit?

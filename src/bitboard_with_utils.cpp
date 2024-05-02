@@ -142,7 +142,7 @@ void Bitboard_with_utils::make_UCI_move(const std::string& UCI_move, Takeback_st
     out_moves_vector.push_back(out_move);
   out_moves_vector = convert_moves_to_UCI(out_moves_vector, _side_to_move);
   bool found = false;
-  size_t  i = 0;
+  std::size_t i = 0;
   for (const std::string& s : out_moves_vector)
   {
     if (s == UCI_move)

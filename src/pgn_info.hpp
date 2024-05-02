@@ -9,6 +9,7 @@
 #define _PGN_INFO
 
 #include <string>
+#include <iostream>
 
 namespace C2_chess
 {

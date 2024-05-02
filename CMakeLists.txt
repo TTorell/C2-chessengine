@@ -34,10 +34,12 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib ) # lib.a
 set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib ) # lib.so
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin ) # binaries
 
+include_directories("/home/torsten/eclipse-workspace/C2-chessengine/src")
+
 # specify compiler flags
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest /W4")
-    # Default debug flags are OK in windows 
+    # Default debug flags are OK in windows
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
     # Tried /favour:{INTEL64} as well to make it faster on my own system,
     # but the build system didn't seem to understand, and It's hardly
@@ -48,7 +50,7 @@ else()
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -g0")
 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES /usr/include/c++/13 /usr/include/x86_64-linux-gnu/c++/13 /usr/include/c++/13/backward /usr/lib/llvm-18/lib/clang/18/include /usr/local/include /usr/include/x86_64-linux-gnu /usr/include) 
+        set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES /usr/include/c++/13 /usr/include/x86_64-linux-gnu/c++/13 /usr/include/c++/13/backward /usr/lib/llvm-18/lib/clang/18/include /usr/local/include /usr/include/x86_64-linux-gnu /usr/include)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -m64 -march=native -mpopcnt -msse2 -DNDEBUG -pedantic -pedantic-errors -Wall -Wextra -Werror -Wcast-qual -Wshadow -Wconversion -Wdouble-promotion -fmessage-length=0 -pthread -stdlib=libstdc++")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lc++ -lc++abi")
     else()
@@ -64,7 +66,7 @@ if(UNIX AND NOT APPLE)
 
     # target_link_libraries(C2-chessengine pthread)
     # is  defined with -pthread compiler-flag instead
-    
+
     # Don't know if the --stack flag has any effect on linkers in LINUX.
     # In Ubuntu it seems like you get approximately 8 megabytes as default.
     # You can change stacksize in the bash-shell from cmd-line with "ulimit -s <size>"
@@ -88,4 +90,3 @@ list (SORT _variableNames)
 foreach (_variableName ${_variableNames})
     message(STATUS "${_variableName}=${${_variableName}}")
 endforeach()
-

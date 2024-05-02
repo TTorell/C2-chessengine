@@ -32,7 +32,7 @@ Current_time steady_clock;
 std::atomic<bool> Bitboard::time_left(false);
 //struct Takeback_element Bitboard::takeback_list[N_SEARCH_PLIES_DEFAULT] {};
 Game_history Bitboard::history;
-TT Bitboard::transposition_table(4000000);
+TT Bitboard::transposition_table(1000000);
 int Bitboard::alpha_move_cash[2][7][64];
 
 Bitboard::Bitboard() :
@@ -342,15 +342,11 @@ int Bitboard::read_position(const std::string& FEN_string, const bool initialize
   return 0;
 }
 
-void Bitboard::clear_transposition_table(Table table)
+void Bitboard::clear_transposition_table()
 {
-  transposition_table.clear(table);
+  transposition_table.clear();
 }
 
-void Bitboard::switch_tt_tables()
-{
-  transposition_table.switch_maps();
-}
 
 void Bitboard::update_half_move_counter()
 {
@@ -1116,8 +1112,8 @@ float Bitboard::new_negamax_with_pruning(float alpha, float beta, Bitmove& best_
   if (nullmove_pruning && search_ply > 0 && nullmove_conditions_OK(search_depth))
   {
     make_nullmove(tb_state, do_update_history);
-    auto nullmove_score = -new_negamax_with_pruning(-beta, -beta + 1.0F, best_move, search_depth - 4, nullmove_pruning);
-    takeback_null_move(tb_state, dont_update_history);
+    auto nullmove_score = -new_negamax_with_pruning(-beta, -beta + 1.0F, best_move, search_depth - 4, no_nullmove_pruning);
+    takeback_null_move(tb_state, do_update_history);
     if (nullmove_score >= beta && fabsf(nullmove_score) < 90.0F) // not mate
     {
       search_info.nullmove_cutoffs++;
