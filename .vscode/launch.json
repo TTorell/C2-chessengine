@@ -1,0 +1,12 @@
+{
+    "configurations": [
+    {
+        "type": "gdb",
+        "request": "launch",
+        "name": "debug test",
+        "target": "./build/bin/C2-chessengine_test",
+        "cwd": "${workspaceFolder}",
+        "valuesFormatting": "parseText"
+    }
+    ]
+}
