@@ -14,8 +14,8 @@
 #include <filesystem>
 #include <iostream>
 #include <sstream>
-#include <vector>
 #include <string>
+#include <vector>
 //#include <utility>
 #include <bit>
 #include <bitset>
@@ -32,36 +32,29 @@ namespace fs = std::filesystem;
 #include <type_traits>
 #include <typeinfo>
 #ifndef _MSC_VER
-#   include <cxxabi.h>
+#include <cxxabi.h>
 #endif
-#include <memory>
 #include <cstdlib>
+#include <memory>
 
 template <class T>
-std::string
-type_name()
-{
-    typedef typename std::remove_reference<T>::type TR;
-    std::unique_ptr<char, void(*)(void*)> own
-           (
+std::string type_name() {
+  typedef typename std::remove_reference<T>::type TR;
+  std::unique_ptr<char, void (*)(void*)> own(
 #ifndef _MSC_VER
-                abi::__cxa_demangle(typeid(TR).name(), nullptr,
-                                           nullptr, nullptr),
+  abi::__cxa_demangle(typeid(TR).name(), nullptr, nullptr, nullptr),
 #else
-                nullptr,
+  nullptr,
 #endif
-                std::free
-           );
-    std::string r = own != nullptr ? own.get() : typeid(TR).name();
-    if (std::is_const<TR>::value)
-        r += " const";
-    if (std::is_volatile<TR>::value)
-        r += " volatile";
-    if (std::is_lvalue_reference<T>::value)
-        r += "&";
-    else if (std::is_rvalue_reference<T>::value)
-        r += "&&";
-    return r;
+      std::free);
+  std::string r = own != nullptr ? own.get() : typeid(TR).name();
+  if (std::is_const<TR>::value) r += " const";
+  if (std::is_volatile<TR>::value) r += " volatile";
+  if (std::is_lvalue_reference<T>::value)
+    r += "&";
+  else if (std::is_rvalue_reference<T>::value)
+    r += "&&";
+  return r;
 }
 
 #include <string_view>
@@ -88,28 +81,23 @@ constexpr auto type_name2() {
 }
 
 // templates for comparing floats or doubles
-template<typename T>
-inline bool is_close(T val1, T val2, T marginal)
-{
+template <typename T>
+inline bool is_close(T val1, T val2, T marginal) {
   if (fabs(static_cast<double>(val1 - val2)) <= static_cast<double>(marginal))
     return true;
   return false;
 }
 
-template<typename T>
-inline bool is_close(T val1, T val2)
-{
+template <typename T>
+inline bool is_close(T val1, T val2) {
   const T marginal = static_cast<T>(1e-10);
   return is_close(val1, val2, marginal);
 }
 
-template<typename T>
-inline bool is_in_vector(const std::vector<T>& v, const T& element)
-{
-  for (const T& e:v)
-  {
-    if (e == element)
-      return true;
+template <typename T>
+inline bool is_in_vector(const std::vector<T>& v, const T& element) {
+  for (const T& e : v) {
+    if (e == element) return true;
   }
   return false;
 }
@@ -117,63 +105,53 @@ inline bool is_in_vector(const std::vector<T>& v, const T& element)
 // A fast log2 function for integer types.
 // Uses a gcc-function
 #ifdef __linux__
-template<typename T>
-inline unsigned int LOG2(const T& val)
-{
+template <typename T>
+inline unsigned int LOG2(const T& val) {
   return (64 - __builtin_clzl((static_cast<long unsigned int>(val))) - 1);
 }
 #endif
 
-template<typename T>
-std::ostream& write_list(const std::deque<T>* list, std::ostream& os, bool same_line = false)
-{
+template <typename T>
+std::ostream& write_list(const std::deque<T>* list, std::ostream& os,
+                         bool same_line = false) {
   bool first = true;
-  for (const T& element : *list)
-  {
-    if (!first && same_line)
-      os << " ";
+  for (const T& element : *list) {
+    if (!first && same_line) os << " ";
     os << element;
-    if (!same_line)
-      os << std::endl;
+    if (!same_line) os << std::endl;
     first = false;
   }
   os << std::endl;
   return os;
 }
 
-template<typename T>
-std::ostream& write_vector(const std::vector<T>& list, std::ostream& os, bool same_line = false)
-{
+template <typename T>
+std::ostream& write_vector(const std::vector<T>& list, std::ostream& os,
+                           bool same_line = false) {
   bool first = true;
-  for (const T& element : list)
-  {
-    if (!first && same_line)
-      os << " ";
+  for (const T& element : list) {
+    if (!first && same_line) os << " ";
     os << element;
-    if (!same_line)
-      os << std::endl;
+    if (!same_line) os << std::endl;
     first = false;
   }
   os << std::endl;
   return os;
 }
 
-template<typename T>
-T size_align(T base, T number)
-{
-  static_assert( std::is_integral<T>());
+template <typename T>
+T size_align(T base, T number) {
+  static_assert(std::is_integral<T>());
   if (number % base != 0)
     return (number / base + 1) * base;
   else
     return number;
 }
 
-namespace C2_chess
-{
+namespace C2_chess {
 
-template<typename T>
-std::string to_binary(const T& x)
-{
+template <typename T>
+std::string to_binary(const T& x) {
   std::stringstream ss;
   ss << std::bitset<sizeof(T) * 8>(x);
   return ss.str();
@@ -183,54 +161,45 @@ bool is_positive_number(const std::string& s);
 
 bool is_sorted_descending(list_ref movelist);
 
-inline uint8_t file_idx(uint8_t bit_idx)
-{
+inline uint8_t file_idx(uint8_t bit_idx) {
   assert(bit_idx < 64);
   return 7 - (bit_idx & 7);
 }
 
-inline uint8_t file_idx(uint64_t square)
-{
+inline uint8_t file_idx(uint64_t square) {
   // return 7 - (bit_idx(square) % 8); // is possibly a tiny little bit slower
   return 7 - (bit_idx(square) & 7);
 }
 
-inline uint8_t rank_idx(uint8_t bit_idx)
-{
+inline uint8_t rank_idx(uint8_t bit_idx) {
   assert(bit_idx < 64);
   return 8 - (bit_idx >> 3);
 }
 
-inline uint8_t rank_idx(uint64_t square)
-{
+inline uint8_t rank_idx(uint64_t square) {
   // return 8 - (bit_idx(square) % 8); // is possibly a tiny little bit slower
   return 8 - (bit_idx(square) >> 3);
 }
 
-inline uint64_t rightmost_square(const uint64_t squares)
-{
-  if (squares)
-  {
-    // return (squares & (squares - 1)) ^ (squares); // Is just a little bit slower
+inline uint64_t rightmost_square(const uint64_t squares) {
+  if (squares) {
+    // return (squares & (squares - 1)) ^ (squares); // Is just a little bit
+    // slower
     return square(static_cast<uint8_t>(std::countr_zero(squares)));
   }
   return zero;
 }
 
-inline uint64_t leftmost_square(uint64_t squares)
-{
-  if (squares)
-  {
+inline uint64_t leftmost_square(uint64_t squares) {
+  if (squares) {
     // return square(63 - std::countl_zero(squares)); -std=c++20
     return square_from_int(63 - std::countl_zero(squares));
   }
   return zero;
 }
 
-inline uint64_t popright_square(uint64_t& squares)
-{
-  if (squares)
-  {
+inline uint64_t popright_square(uint64_t& squares) {
+  if (squares) {
     //    The following also works fine:
     //    uint64_t tmp_squares = squares;
     //    squares &= (squares - 1);
@@ -242,49 +211,39 @@ inline uint64_t popright_square(uint64_t& squares)
   return zero;
 }
 
-inline uint64_t popleft_square(uint64_t& squares)
-{
+inline uint64_t popleft_square(uint64_t& squares) {
   assert(squares);
   uint64_t sq = leftmost_square(squares);
   squares ^= sq;
   return sq;
 }
 
-inline uint64_t to_file(uint64_t square)
-{
-  return file[file_idx(square)];
-}
+inline uint64_t to_file(uint64_t square) { return file[file_idx(square)]; }
 
-inline uint64_t to_rank(uint64_t square)
-{
-  return rank[rank_idx(square)];
-}
+inline uint64_t to_rank(uint64_t square) { return rank[rank_idx(square)]; }
 
-inline uint64_t to_diagonal(uint64_t square)
-{
+inline uint64_t to_diagonal(uint64_t square) {
   return diagonal[8 - rank_idx(square) + file_idx(square)];
 }
 
-inline uint64_t to_diagonal(uint8_t f_idx, uint8_t r_idx)
-{
+inline uint64_t to_diagonal(uint8_t f_idx, uint8_t r_idx) {
   assert(f_idx < 8 && r_idx <= 8 && r_idx > 0);
   return diagonal[8 - r_idx + f_idx];
 }
 
-inline uint64_t to_anti_diagonal(uint64_t square)
-{
+inline uint64_t to_anti_diagonal(uint64_t square) {
   return anti_diagonal[file_idx(square) + rank_idx(square) - 1];
 }
 
-inline uint64_t to_anti_diagonal(uint8_t f_idx, uint8_t r_idx)
-{
+inline uint64_t to_anti_diagonal(uint8_t f_idx, uint8_t r_idx) {
   assert(f_idx < 8 && r_idx <= 8 && r_idx > 0);
   return anti_diagonal[f_idx + r_idx - 1];
 }
 
-// Precondition: sq1 and sq2 must be on the same file, rank, diagonal or antidiagonal.
-inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diagonals = false)
-{
+// Precondition: sq1 and sq2 must be on the same file, rank, diagonal or
+// antidiagonal.
+inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares,
+                        bool diagonals = false) {
   assert(squares);
   uint64_t common_squares;
   if (diagonals)
@@ -297,17 +256,17 @@ inline uint64_t between(uint64_t sq1, uint64_t sq2, uint64_t squares, bool diago
     return common_squares & ((sq2 - one) ^ ((sq1 << 1) - one));
 }
 
-//inline uint8_t popright_bit_idx(uint64_t& squares)
+// inline uint8_t popright_bit_idx(uint64_t& squares)
 //{
-//  assert(squares);
-//  // uint8_t idx = std::countr_zero(squares);
-//  uint8_t idx = __builtin_ctzll(squares);
-//  squares &= (squares - 1);
-//  return idx;
-//}
+//   assert(squares);
+//   // uint8_t idx = std::countr_zero(squares);
+//   uint8_t idx = __builtin_ctzll(squares);
+//   squares &= (squares - 1);
+//   return idx;
+// }
 
-inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square, int pattern_center_idx = e4_square_idx)
-{
+inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square,
+                               int pattern_center_idx = e4_square_idx) {
   assert(pattern);
   assert(std::has_single_bit(center_square));
   uint64_t squares;
@@ -325,8 +284,8 @@ inline uint64_t adjust_pattern(uint64_t pattern, uint64_t center_square, int pat
   return squares;
 }
 
-inline uint64_t adjust_passer_pattern(uint64_t pattern, uint64_t center_square, int pattern_center_idx = e4_square_idx)
-{
+inline uint64_t adjust_passer_pattern(uint64_t pattern, uint64_t center_square,
+                                      int pattern_center_idx = e4_square_idx) {
   assert(pattern);
   assert(std::has_single_bit(center_square));
   uint64_t squares;
@@ -344,8 +303,8 @@ inline uint64_t adjust_passer_pattern(uint64_t pattern, uint64_t center_square, 
   return squares;
 }
 
-inline uint64_t adjust_isolani_pattern(uint64_t pattern, uint64_t center_square)
-{
+inline uint64_t adjust_isolani_pattern(uint64_t pattern,
+                                       uint64_t center_square) {
   assert(pattern);
   assert(std::has_single_bit(center_square));
   uint64_t squares;
@@ -363,56 +322,30 @@ inline uint64_t adjust_isolani_pattern(uint64_t pattern, uint64_t center_square)
   return squares;
 }
 
-inline uint64_t ortogonal_squares(uint64_t square)
-{
+inline uint64_t ortogonal_squares(uint64_t square) {
   uint8_t b_idx = bit_idx(square);
   return file[file_idx(b_idx)] | rank[rank_idx(b_idx)];
 }
 
-inline uint64_t diagonal_squares(uint64_t square)
-{
+inline uint64_t diagonal_squares(uint64_t square) {
   return to_diagonal(square) | to_anti_diagonal(square);
 }
 
-inline void go_east(uint64_t& square)
-{
-  square >>= 1;
-}
+inline void go_east(uint64_t& square) { square >>= 1; }
 
-inline void go_west(uint64_t& square)
-{
-  square <<= 1;
-}
+inline void go_west(uint64_t& square) { square <<= 1; }
 
-inline void go_north(uint64_t& square)
-{
-  square >>= 8;
-}
+inline void go_north(uint64_t& square) { square >>= 8; }
 
-inline void go_south(uint64_t& square)
-{
-  square <<= 8;
-}
+inline void go_south(uint64_t& square) { square <<= 8; }
 
-inline void go_north_west(uint64_t& square)
-{
-  square >>= 7;
-}
+inline void go_north_west(uint64_t& square) { square >>= 7; }
 
-inline void go_north_east(uint64_t& square)
-{
-  square >>= 9;
-}
+inline void go_north_east(uint64_t& square) { square >>= 9; }
 
-inline void go_south_west(uint64_t& square)
-{
-  square <<= 9;
-}
+inline void go_south_west(uint64_t& square) { square <<= 9; }
 
-inline void go_south_east(uint64_t& square)
-{
-  square <<= 7;
-}
+inline void go_south_east(uint64_t& square) { square <<= 7; }
 
 std::string uci_move(const Bitmove& m);
 std::string uci_pv_line(const std::vector<Bitmove>& pv_line);
@@ -424,33 +357,42 @@ inline Color& operator++(Color& side);
 Color col_from_string(const std::string& s);
 std::string get_logfile_name();
 void require(bool b, std::string file, std::string method, int line);
-void require_m(bool b, std::string file, std::string method, int line, const Bitmove& m);
+void require_m(bool b, std::string file, std::string method, int line,
+               const Bitmove& m);
 std::ostream& print_backtrace(std::ostream& os);
 std::string get_stdout_from_cmd(std::string cmd);
 std::pair<std::string, int> exec(const char* cmd);
 bool check_execution_dir(const std::string& preferred_exec_dir);
 bool regexp_match(const std::string& line, const std::string& regexp_string);
 bool regexp_grep(const std::string& line, const std::string& regexp_string);
-bool regexp_grep(const std::string& line, const std::string& regexp_string, std::vector<std::string>& matches);
-std::string rexexp_sed(const std::string& line, const std::string& regexp_string, const std::string& replacement_string);
+bool regexp_grep(const std::string& line, const std::string& regexp_string,
+                 std::vector<std::string>& matches);
+std::string rexexp_sed(const std::string& line,
+                       const std::string& regexp_string,
+                       const std::string& replacement_string);
 std::vector<std::string> split(const std::string& s, char delim);
-std::vector<std::string> split(const std::string& input, std::string& delimiter);
+std::vector<std::string> split(const std::string& input,
+                               std::string& delimiter);
 std::string cut(const std::string& s, char delim, uint64_t field_number);
 void play_on_cmd_line(Config_params& config_params);
 void print_filetype(std::ostream& os, const fs::file_status& s);
 void print_filepermissions(fs::perms p);
 bool is_regular_read_OK(const fs::path& filepath);
 bool is_regular_write_OK(const fs::path& filepath);
-bool has_duplicates(const std::vector<std::string>& vector, const std::string& move_kind);
-bool compare_move_lists(const std::vector<std::string>& out_vector, const std::vector<std::string>& ref_vector);
-bool all_in_a_exist_in_b(const std::vector<std::string>& a, const std::vector<std::string>& b, bool order_out_ref);
+bool has_duplicates(const std::vector<std::string>& vector,
+                    const std::string& move_kind);
+bool compare_move_lists(const std::vector<std::string>& out_vector,
+                        const std::vector<std::string>& ref_vector);
+bool all_in_a_exist_in_b(const std::vector<std::string>& a,
+                         const std::vector<std::string>& b, bool order_out_ref);
 std::string to_binary_board(uint64_t in);
-bool question_to_user(const std::string& question, std::string regexp_correct_answer);
+bool question_to_user(const std::string& question,
+                      std::string regexp_correct_answer);
 std::string user_input(const std::string& message);
 std::string reverse_FEN_string(const std::string& FEN_string);
 std::vector<std::string> reverse_moves(const std::vector<std::string>& moves);
 std::string ask_for_input_with_timeout(const std::string& request);
 std::string ask_user_for_input(const std::string& request);
 
-} // End namespace C2_chess
-#endif //CHESSFUNCS_HPP_
+}  // End namespace C2_chess
+#endif  // CHESSFUNCS_HPP_
