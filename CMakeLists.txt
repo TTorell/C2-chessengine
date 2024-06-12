@@ -50,14 +50,15 @@ else()
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -g0")
 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES /usr/include/c++/13 /usr/include/x86_64-linux-gnu/c++/13 /usr/include/c++/13/backward /usr/lib/llvm-18/lib/clang/18/include /usr/local/include /usr/include/x86_64-linux-gnu /usr/include)
+        #set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES /usr/include/c++/13 /usr/include/x86_64-linux-gnu/c++/13 /usr/include/c++/13/backward /usr/lib/llvm-18/lib/clang/18/include /usr/local/include /usr/include/x86_64-linux-gnu /usr/include)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -m64 -march=native -mpopcnt -msse2 -DNDEBUG -pedantic -pedantic-errors -Wall -Wextra -Werror -Wcast-qual -Wshadow -Wconversion -Wdouble-promotion -fmessage-length=0 -pthread -stdlib=libstdc++")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lc++ -lc++abi")
     else()
         # for gcc at the moment
-        set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES /usr/include/c++/13 /usr/include/x86_64-linux-gnu/c++/13 /usr/include/c++/13/backward /usr/lib/gcc/x86_64-linux-gnu/13/include /usr/local/include /usr/include/x86_64-linux-gnu /usr/include)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -m64 -march=native -mpopcnt -msse2 -DNDEBUG -pedantic -pedantic-errors -Wall -Wextra -Werror -Wcast-qual -Wshadow -Wconversion -Wdouble-promotion -fmessage-length=0 -Wabi-tag -D_GLIBCXX_USE_CXX11_ABI=0 -pthread")
-    endif()
+        #set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES /usr/include/c++/13 /usr/include/x86_64-linux-gnu/c++/13 /usr/include/c++/13/backward /usr/lib/gcc/x86_64-linux-gnu/13/include /usr/local/include /usr/include/x86_64-linux-gnu /usr/include)
+        #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -m64 -march=native -mpopcnt -msse2 -DNDEBUG -pedantic -pedantic-errors -Wall -Wextra -Werror -Wcast-qual -Wshadow -Wconversion -Wdouble-promotion -fmessage-length=0 -Wabi-tag -D_GLIBCXX_USE_CXX11_ABI=0 -pthread")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -m64 -march=native -mpopcnt -msse2 -DNDEBUG -pedantic -pedantic-errors -Wall -Wextra -Werror -Wcast-qual -Wshadow -Wconversion -Wdouble-promotion -fmessage-length=0 -pthread")
+        endif()
 endif()
 
 
