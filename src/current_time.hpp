@@ -10,6 +10,8 @@
 
 #include <chrono>
 #include <cstdint>
+#include <sstream>
+
 namespace C2_chess
 {
 
@@ -56,6 +58,13 @@ class Current_time
     {
       _stop_time_ns = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(_clock.now().time_since_epoch()).count());
       return (_stop_time_ns - _start_time_ns)/1000000;
+    }
+
+    std::string date_and_time()
+    {
+      std::stringstream ss;
+      ss << std::chrono::zoned_time{std::chrono::current_zone(), std::chrono::system_clock::now()};
+      return ss.str();
     }
 };
 }
